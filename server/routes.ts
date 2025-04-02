@@ -1,8 +1,11 @@
-import type { Express, Request, Response } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { upload, saveFileInfo, getFileUrl } from "./upload";
+import path from "path";
+import fs from "fs";
 import {
   insertUserSchema,
   insertDocumentSchema,
@@ -1454,6 +1457,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(status);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch document translation status" });
+    }
+  });
+
+  // File upload routes
+  app.post("/api/upload", upload.single("file"), saveFileInfo, (req: Request, res: Response) => {
+    if (!req.uploadedFile) {
+      return res.status(400).json({ message: "Upload failed, no file information available" });
+    }
+    
+    // Return the file information with a public URL
+    const fileInfo = {
+      ...req.uploadedFile,
+      url: getFileUrl(req.uploadedFile.filename)
+    };
+    
+    res.status(201).json(fileInfo);
+  });
+
+  // Route to serve uploaded files
+  app.use("/uploads", (req: Request, res: Response, next: NextFunction) => {
+    const filePath = path.join(process.cwd(), "uploads", req.path);
+    fs.access(filePath, fs.constants.F_OK, (err) => {
+      if (err) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      next();
+    });
+  }, express.static(path.join(process.cwd(), "uploads")));
+
+  // Get file information
+  app.get("/api/files/:id", async (req: Request, res: Response) => {
+    try {
+      const fileId = Number(req.params.id);
+      const file = await storage.getUploadedFile(fileId);
+      
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Add the URL to the file info
+      const fileWithUrl = {
+        ...file,
+        url: getFileUrl(file.filename)
+      };
+      
+      res.json(fileWithUrl);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch file information" });
+    }
+  });
+
+  // Delete file
+  app.delete("/api/files/:id", async (req: Request, res: Response) => {
+    try {
+      const fileId = Number(req.params.id);
+      const file = await storage.getUploadedFile(fileId);
+      
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Delete the physical file
+      const filePath = path.join(process.cwd(), "uploads", file.filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      
+      // Delete the database record
+      const success = await storage.deleteUploadedFile(fileId);
+      if (!success) {
+        return res.status(500).json({ message: "Failed to delete file record" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete file" });
     }
   });
 

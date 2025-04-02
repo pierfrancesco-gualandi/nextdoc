@@ -2,6 +2,18 @@ import { pgTable, text, serial, integer, boolean, timestamp, json, jsonb, unique
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Uploaded files schema
+export const uploadedFiles = pgTable("uploaded_files", {
+  id: serial("id").primaryKey(),
+  filename: text("filename").notNull(),
+  originalName: text("original_name").notNull(),
+  path: text("path").notNull(),
+  mimetype: text("mimetype").notNull(),
+  size: integer("size").notNull(),
+  uploadedById: integer("uploaded_by_id").notNull(),
+  uploadedAt: timestamp("uploaded_at").notNull().defaultNow(),
+});
+
 // User schema
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -396,3 +408,16 @@ export type InsertTranslationImport = z.infer<typeof insertTranslationImportSche
 
 export type TranslationAIRequest = typeof translationAIRequests.$inferSelect;
 export type InsertTranslationAIRequest = z.infer<typeof insertTranslationAIRequestSchema>;
+
+// Create upload schema
+export const insertUploadedFileSchema = createInsertSchema(uploadedFiles).pick({
+  filename: true,
+  originalName: true,
+  path: true,
+  mimetype: true,
+  size: true,
+  uploadedById: true,
+});
+
+export type UploadedFile = typeof uploadedFiles.$inferSelect;
+export type InsertUploadedFile = z.infer<typeof insertUploadedFileSchema>;

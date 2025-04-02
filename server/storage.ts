@@ -8,6 +8,7 @@ import {
   boms, Bom, InsertBom,
   bomItems, BomItem, InsertBomItem,
   sectionComponents, SectionComponent, InsertSectionComponent,
+  uploadedFiles, UploadedFile, InsertUploadedFile,
   comments, Comment, InsertComment,
   // Translation schemas and types
   languages, Language, InsertLanguage,
@@ -154,6 +155,12 @@ export interface IStorage {
     reviewedSections: number;
     reviewedModules: number;
   }>;
+  
+  // File upload operations
+  getUploadedFile(id: number): Promise<UploadedFile | undefined>;
+  getUploadedFiles(): Promise<UploadedFile[]>;
+  createUploadedFile(file: InsertUploadedFile): Promise<UploadedFile>;
+  deleteUploadedFile(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -1128,6 +1135,26 @@ export class MemStorage implements IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // File upload operations
+  async getUploadedFile(id: number): Promise<UploadedFile | undefined> {
+    const [file] = await db.select().from(uploadedFiles).where(eq(uploadedFiles.id, id));
+    return file;
+  }
+
+  async getUploadedFiles(): Promise<UploadedFile[]> {
+    return await db.select().from(uploadedFiles);
+  }
+
+  async createUploadedFile(file: InsertUploadedFile): Promise<UploadedFile> {
+    const [newFile] = await db.insert(uploadedFiles).values(file).returning();
+    return newFile;
+  }
+
+  async deleteUploadedFile(id: number): Promise<boolean> {
+    const result = await db.delete(uploadedFiles).where(eq(uploadedFiles.id, id));
+    return result.rowCount > 0;
+  }
+  
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
