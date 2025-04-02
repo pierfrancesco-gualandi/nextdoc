@@ -24,6 +24,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import TranslationComponentLink from "@/components/translation-component-link";
 
 // Componenti interni per organizzare la pagina
 
@@ -573,6 +575,293 @@ function TranslationImports() {
   );
 }
 
+// Componente per gestire le traduzioni delle sezioni con i componenti BOM associati
+function SectionTranslationManager() {
+  const { data: documents } = useQuery({
+    queryKey: ['/api/documents'],
+  });
+  
+  const { data: languages } = useQuery({
+    queryKey: ['/api/languages'],
+  });
+  
+  const [selectedDocument, setSelectedDocument] = useState<string>('');
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('');
+  const [selectedSection, setSelectedSection] = useState<string>('');
+  const [sections, setSections] = useState<any[]>([]);
+  const [translation, setTranslation] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [saved, setSaved] = useState<boolean>(false);
+  
+  // Carica le sezioni quando viene selezionato un documento
+  const loadSections = async (documentId: string) => {
+    if (!documentId) return;
+    
+    try {
+      const response = await fetch(`/api/documents/${documentId}/sections`);
+      if (response.ok) {
+        const data = await response.json();
+        setSections(data);
+      }
+    } catch (error) {
+      console.error('Errore nel caricamento delle sezioni:', error);
+    }
+  };
+  
+  // Carica la traduzione quando viene selezionata una sezione e una lingua
+  const loadTranslation = async () => {
+    if (!selectedSection || !selectedLanguage) return;
+    
+    setLoading(true);
+    setSaved(false);
+    
+    try {
+      // Prima verifica se esiste già una traduzione
+      const response = await fetch(`/api/section-translations?sectionId=${selectedSection}&languageId=${selectedLanguage}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.length > 0) {
+          setTranslation(data[0]);
+        } else {
+          // Se non esiste, crea un oggetto vuoto per una nuova traduzione
+          const section = sections.find((s: any) => s.id === parseInt(selectedSection));
+          setTranslation({
+            sectionId: parseInt(selectedSection),
+            languageId: parseInt(selectedLanguage),
+            title: section?.title || '',
+            description: section?.description || '',
+            status: 'draft',
+            translatedById: 1, // Utilizzare l'utente corrente
+            reviewedById: null,
+            updatedAt: new Date().toISOString()
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Errore nel caricamento della traduzione:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Gestisce il cambio di documento
+  const handleDocumentChange = (documentId: string) => {
+    setSelectedDocument(documentId);
+    setSelectedSection('');
+    setTranslation(null);
+    setSections([]);
+    if (documentId) {
+      loadSections(documentId);
+    }
+  };
+  
+  // Salva la traduzione
+  const handleSaveTranslation = async () => {
+    if (!translation) return;
+    
+    setLoading(true);
+    try {
+      let response;
+      
+      if (translation.id) {
+        // Aggiorna traduzione esistente
+        response = await fetch(`/api/section-translations/${translation.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: translation.title,
+            description: translation.description,
+            status: translation.status,
+            translatedById: translation.translatedById,
+            reviewedById: translation.reviewedById
+          }),
+        });
+      } else {
+        // Crea nuova traduzione
+        response = await fetch('/api/section-translations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(translation),
+        });
+      }
+      
+      if (response.ok) {
+        const data = await response.json();
+        setTranslation(data);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      }
+    } catch (error) {
+      console.error('Errore durante il salvataggio della traduzione:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Ottieni il nome della sezione
+  const getSectionName = (sectionId: number) => {
+    const section = sections.find((s: any) => s.id === sectionId);
+    return section ? section.title : 'Sezione non trovata';
+  };
+  
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Gestione Traduzioni Sezioni</CardTitle>
+          <CardDescription>Traduci le sezioni e gestisci i componenti BOM associati</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="space-y-2">
+              <Label htmlFor="document">Documento</Label>
+              <select 
+                id="document" 
+                className="w-full p-2 border rounded"
+                value={selectedDocument}
+                onChange={(e) => handleDocumentChange(e.target.value)}
+              >
+                <option value="">Seleziona un documento</option>
+                {documents?.map((doc: any) => (
+                  <option key={doc.id} value={doc.id}>
+                    {doc.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="section">Sezione</Label>
+              <select 
+                id="section" 
+                className="w-full p-2 border rounded"
+                value={selectedSection}
+                onChange={(e) => setSelectedSection(e.target.value)}
+                disabled={!selectedDocument || sections.length === 0}
+              >
+                <option value="">Seleziona una sezione</option>
+                {sections.map((section: any) => (
+                  <option key={section.id} value={section.id}>
+                    {section.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="language">Lingua</Label>
+              <select 
+                id="language" 
+                className="w-full p-2 border rounded"
+                value={selectedLanguage}
+                onChange={(e) => setSelectedLanguage(e.target.value)}
+              >
+                <option value="">Seleziona una lingua</option>
+                {languages?.filter((lang: any) => lang.isActive && !lang.isDefault).map((language: any) => (
+                  <option key={language.id} value={language.id}>
+                    {language.name} ({language.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <div className="flex justify-center mb-6">
+            <Button 
+              onClick={loadTranslation}
+              disabled={!selectedDocument || !selectedSection || !selectedLanguage}
+            >
+              Carica Traduzione
+            </Button>
+          </div>
+          
+          {loading && (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p>Caricamento in corso...</p>
+            </div>
+          )}
+          
+          {!loading && translation && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Titolo</Label>
+                  <Input 
+                    id="title" 
+                    value={translation.title} 
+                    onChange={(e) => setTranslation({...translation, title: e.target.value})} 
+                    placeholder="Inserisci il titolo tradotto" 
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="description">Descrizione</Label>
+                  <textarea 
+                    id="description" 
+                    className="w-full p-2 border rounded min-h-24"
+                    value={translation.description || ''} 
+                    onChange={(e) => setTranslation({...translation, description: e.target.value})} 
+                    placeholder="Inserisci la descrizione tradotta"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="status">Stato</Label>
+                  <select 
+                    id="status" 
+                    className="w-full p-2 border rounded"
+                    value={translation.status}
+                    onChange={(e) => setTranslation({...translation, status: e.target.value})}
+                  >
+                    <option value="draft">Bozza</option>
+                    <option value="in_progress">In corso</option>
+                    <option value="review">In revisione</option>
+                    <option value="completed">Completata</option>
+                  </select>
+                </div>
+              </div>
+              
+              <Separator className="my-6" />
+              
+              <div>
+                <h3 className="text-lg font-medium mb-4">Componenti BOM associati</h3>
+                {translation.id && (
+                  <TranslationComponentLink 
+                    translationId={translation.id} 
+                    languageId={parseInt(selectedLanguage)} 
+                  />
+                )}
+                {!translation.id && (
+                  <p className="text-center py-4 text-gray-500 italic">
+                    Salva la traduzione per gestire i componenti BOM associati
+                  </p>
+                )}
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <Button 
+                  onClick={handleSaveTranslation}
+                  disabled={!translation.title}
+                >
+                  {translation.id ? 'Aggiorna traduzione' : 'Crea traduzione'}
+                </Button>
+                
+                {saved && (
+                  <Badge className="bg-green-100 text-green-800 border-green-200">
+                    Traduzione salvata con successo
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // Sezione stato traduzioni
 function TranslationStatus() {
   const { data: documents } = useQuery({
@@ -1080,9 +1369,10 @@ export default function Translations({ toggleSidebar }: { toggleSidebar: () => v
 
       <main className="flex-1 overflow-y-auto p-6 bg-neutral-lightest">
         <Tabs defaultValue="languages" className="w-full">
-          <TabsList className="grid grid-cols-5 w-full max-w-4xl mx-auto mb-8">
+          <TabsList className="grid grid-cols-6 w-full max-w-4xl mx-auto mb-8">
             <TabsTrigger value="languages">Lingue</TabsTrigger>
             <TabsTrigger value="assignments">Assegnazioni</TabsTrigger>
+            <TabsTrigger value="section-edit">Traduci Sezioni</TabsTrigger>
             <TabsTrigger value="imports">Importazioni</TabsTrigger>
             <TabsTrigger value="status">Stato</TabsTrigger>
             <TabsTrigger value="ai">AI Traduzioni</TabsTrigger>
@@ -1095,6 +1385,10 @@ export default function Translations({ toggleSidebar }: { toggleSidebar: () => v
             
             <TabsContent value="assignments">
               <TranslationAssignments />
+            </TabsContent>
+            
+            <TabsContent value="section-edit">
+              <SectionTranslationManager />
             </TabsContent>
             
             <TabsContent value="imports">

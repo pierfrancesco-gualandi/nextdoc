@@ -1093,6 +1093,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const sectionId = req.query.sectionId ? Number(req.query.sectionId) : undefined;
       const languageId = req.query.languageId ? Number(req.query.languageId) : undefined;
+      const includeComponents = req.query.includeComponents === "true";
       
       let translations = [];
       if (sectionId && languageId) {
@@ -1106,6 +1107,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Either sectionId or languageId is required" });
       }
       
+      // Se richiesto, arricchisci le traduzioni con i componenti BOM associati alle sezioni originali
+      if (includeComponents && translations.length > 0) {
+        translations = await Promise.all(translations.map(async (translation) => {
+          const section = await storage.getSection(translation.sectionId);
+          
+          // Ottieni i componenti BOM associati alla sezione originale
+          const sectionComponents = await storage.getSectionComponentsBySectionId(translation.sectionId);
+          
+          // Arricchisci con i dettagli completi dei componenti
+          const componentsWithDetails = await Promise.all(
+            sectionComponents.map(async (sc) => {
+              const component = await storage.getComponent(sc.componentId);
+              return {
+                id: sc.id,
+                sectionId: sc.sectionId,
+                component,
+                quantity: sc.quantity,
+                notes: sc.notes
+              };
+            })
+          );
+          
+          return {
+            ...translation,
+            section,
+            components: componentsWithDetails
+          };
+        }));
+      }
+      
       res.json(translations);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch section translations" });
@@ -1114,11 +1145,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/section-translations/:id", async (req: Request, res: Response) => {
     try {
-      const translation = await storage.getSectionTranslation(Number(req.params.id));
+      const id = Number(req.params.id);
+      const translation = await storage.getSectionTranslation(id);
       if (!translation) {
         return res.status(404).json({ message: "Section translation not found" });
       }
-      res.json(translation);
+      
+      // Recupera i dettagli della sezione originale
+      const section = await storage.getSection(translation.sectionId);
+      
+      // Recupera i componenti BOM associati alla sezione originale
+      const sectionComponents = await storage.getSectionComponentsBySectionId(translation.sectionId);
+      
+      // Arricchisci con i dettagli completi dei componenti
+      const componentsWithDetails = await Promise.all(
+        sectionComponents.map(async (sc) => {
+          const component = await storage.getComponent(sc.componentId);
+          return {
+            id: sc.id,
+            sectionId: sc.sectionId,
+            component,
+            quantity: sc.quantity,
+            notes: sc.notes
+          };
+        })
+      );
+      
+      // Restituisci la traduzione con le informazioni sui componenti BOM associati
+      res.json({
+        ...translation,
+        section,
+        components: componentsWithDetails
+      });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch section translation" });
     }

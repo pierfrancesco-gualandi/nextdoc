@@ -28,6 +28,20 @@ interface SectionComponentLink {
   };
 }
 
+interface SectionTranslation {
+  id: number;
+  sectionId: number;
+  languageId: number;
+  title: string;
+  description: string | null;
+  status: string;
+  translatedById: number | null;
+  reviewedById: number | null;
+  updatedAt: string;
+  components?: SectionComponentLink[];
+  section?: Section;
+}
+
 interface DocumentTreeViewProps {
   documentId: string;
   onSectionSelect?: (section: Section) => void;
