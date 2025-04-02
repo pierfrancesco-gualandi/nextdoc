@@ -1,0 +1,502 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Header from "@/components/header";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+
+interface BomManagementProps {
+  toggleSidebar?: () => void;
+}
+
+export default function BomManagement({ toggleSidebar }: BomManagementProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("boms");
+  const [newBomTitle, setNewBomTitle] = useState("");
+  const [newBomDescription, setNewBomDescription] = useState("");
+  const [newComponentCode, setNewComponentCode] = useState("");
+  const [newComponentDescription, setNewComponentDescription] = useState("");
+  const [selectedBom, setSelectedBom] = useState<any>(null);
+  const [selectedComponent, setSelectedComponent] = useState<any>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Fetch BOMs
+  const { data: boms, isLoading: bomsLoading } = useQuery({
+    queryKey: ['/api/boms'],
+  });
+  
+  // Fetch Components
+  const { data: components, isLoading: componentsLoading } = useQuery({
+    queryKey: ['/api/components', searchQuery],
+    queryFn: async ({ queryKey }) => {
+      const [_, query] = queryKey;
+      const url = query ? `/api/components?q=${encodeURIComponent(query)}` : '/api/components';
+      const res = await fetch(url, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch components');
+      return await res.json();
+    },
+  });
+  
+  // Fetch BOM items when a BOM is selected
+  const { data: bomItems, isLoading: bomItemsLoading } = useQuery({
+    queryKey: [`/api/boms/${selectedBom?.id}/items`],
+    enabled: !!selectedBom,
+  });
+  
+  // Create BOM mutation
+  const createBomMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest('POST', '/api/boms', data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/boms'] });
+      setNewBomTitle("");
+      setNewBomDescription("");
+      toast({
+        title: "Distinta creata",
+        description: "La distinta base è stata creata con successo"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore",
+        description: `Si è verificato un errore: ${error}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Create Component mutation
+  const createComponentMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest('POST', '/api/components', data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/components'] });
+      setNewComponentCode("");
+      setNewComponentDescription("");
+      toast({
+        title: "Componente creato",
+        description: "Il componente è stato creato con successo"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore",
+        description: `Si è verificato un errore: ${error}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Add component to BOM mutation
+  const addComponentToBomMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest('POST', '/api/bom-items', data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/boms/${selectedBom?.id}/items`] });
+      setSelectedComponent(null);
+      toast({
+        title: "Componente aggiunto",
+        description: "Il componente è stato aggiunto alla distinta base"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore",
+        description: `Si è verificato un errore: ${error}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Handle creating a new BOM
+  const handleCreateBom = () => {
+    if (!newBomTitle) {
+      toast({
+        title: "Errore",
+        description: "Il titolo è obbligatorio",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    createBomMutation.mutate({
+      title: newBomTitle,
+      description: newBomDescription
+    });
+  };
+  
+  // Handle creating a new component
+  const handleCreateComponent = () => {
+    if (!newComponentCode || !newComponentDescription) {
+      toast({
+        title: "Errore",
+        description: "Codice e descrizione sono obbligatori",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    createComponentMutation.mutate({
+      code: newComponentCode,
+      description: newComponentDescription,
+      details: {}
+    });
+  };
+  
+  // Handle adding a component to a BOM
+  const handleAddComponentToBom = () => {
+    if (!selectedBom || !selectedComponent) {
+      toast({
+        title: "Errore",
+        description: "Seleziona una distinta base e un componente",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    addComponentToBomMutation.mutate({
+      bomId: selectedBom.id,
+      componentId: selectedComponent.id,
+      quantity: 1
+    });
+  };
+  
+  return (
+    <>
+      <Header title="Gestione Distinte Base" toggleSidebar={toggleSidebar} />
+      
+      <main className="flex-1 overflow-y-auto bg-neutral-lightest p-6">
+        <div className="max-w-7xl mx-auto">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h1 className="text-2xl font-bold text-neutral-darkest">Distinte Base</h1>
+                <p className="text-neutral-dark">Gestisci componenti e distinte base</p>
+              </div>
+              <TabsList>
+                <TabsTrigger value="boms">Distinte</TabsTrigger>
+                <TabsTrigger value="components">Componenti</TabsTrigger>
+              </TabsList>
+            </div>
+            
+            <TabsContent value="boms">
+              <div className="flex gap-6">
+                {/* Left column: BOMs list */}
+                <div className="w-1/3">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <CardTitle>Distinte Base</CardTitle>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button size="sm">
+                            <span className="material-icons text-sm mr-1">add</span>
+                            Nuova
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Crea Nuova Distinta Base</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4 py-2">
+                            <div>
+                              <Label htmlFor="bom-title">Titolo</Label>
+                              <Input 
+                                id="bom-title" 
+                                value={newBomTitle}
+                                onChange={(e) => setNewBomTitle(e.target.value)}
+                                placeholder="Es. RC100 - Pannello Controllo"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="bom-description">Descrizione</Label>
+                              <Input 
+                                id="bom-description"
+                                value={newBomDescription}
+                                onChange={(e) => setNewBomDescription(e.target.value)}
+                                placeholder="Descrizione opzionale"
+                              />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button onClick={handleCreateBom}>Crea Distinta</Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </CardHeader>
+                    <CardContent>
+                      {bomsLoading ? (
+                        <div className="space-y-2">
+                          {[1, 2, 3].map(i => (
+                            <div key={i} className="animate-pulse">
+                              <div className="h-10 bg-neutral-light rounded-md"></div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {boms && boms.length > 0 ? (
+                            boms.map((bom: any) => (
+                              <Card 
+                                key={bom.id} 
+                                className={`cursor-pointer hover:bg-neutral-lightest ${selectedBom?.id === bom.id ? 'border-primary' : ''}`}
+                                onClick={() => setSelectedBom(bom)}
+                              >
+                                <CardContent className="p-3">
+                                  <div className="font-medium">{bom.title}</div>
+                                  {bom.description && (
+                                    <div className="text-sm text-neutral-dark">{bom.description}</div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            ))
+                          ) : (
+                            <div className="text-center py-4 text-neutral-medium">
+                              Nessuna distinta base disponibile
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                {/* Right column: BOM details */}
+                <div className="w-2/3">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>
+                        {selectedBom ? selectedBom.title : "Seleziona una distinta base"}
+                      </CardTitle>
+                      {selectedBom && (
+                        <CardDescription>{selectedBom.description}</CardDescription>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      {!selectedBom ? (
+                        <div className="text-center py-12 text-neutral-medium">
+                          Seleziona una distinta base per visualizzare i componenti
+                        </div>
+                      ) : bomItemsLoading ? (
+                        <div className="animate-pulse space-y-2">
+                          <div className="h-10 bg-neutral-light rounded-md"></div>
+                          <div className="h-10 bg-neutral-light rounded-md"></div>
+                          <div className="h-10 bg-neutral-light rounded-md"></div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-medium">Componenti</h3>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button size="sm">
+                                  <span className="material-icons text-sm mr-1">add</span>
+                                  Aggiungi componente
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Aggiungi Componente</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4 py-2">
+                                  <div className="relative">
+                                    <Input
+                                      placeholder="Cerca componenti..."
+                                      value={searchQuery}
+                                      onChange={(e) => setSearchQuery(e.target.value)}
+                                      className="pl-10"
+                                    />
+                                    <span className="material-icons absolute left-3 top-2 text-neutral-medium">search</span>
+                                  </div>
+                                  
+                                  <div className="h-60 overflow-y-auto border rounded-md">
+                                    {componentsLoading ? (
+                                      <div className="p-4 text-center">Caricamento componenti...</div>
+                                    ) : components && components.length > 0 ? (
+                                      <div className="divide-y">
+                                        {components.map((component: any) => (
+                                          <div 
+                                            key={component.id} 
+                                            className={`p-2 cursor-pointer hover:bg-neutral-lightest ${selectedComponent?.id === component.id ? 'bg-primary bg-opacity-10' : ''}`}
+                                            onClick={() => setSelectedComponent(component)}
+                                          >
+                                            <div className="font-medium">{component.code}</div>
+                                            <div className="text-sm text-neutral-dark">{component.description}</div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className="p-4 text-center text-neutral-medium">
+                                        Nessun componente trovato
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <DialogFooter>
+                                  <Button onClick={handleAddComponentToBom} disabled={!selectedComponent}>
+                                    Aggiungi
+                                  </Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                          </div>
+                          
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Codice</TableHead>
+                                <TableHead>Descrizione</TableHead>
+                                <TableHead>Quantità</TableHead>
+                                <TableHead className="w-[100px]">Azioni</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {bomItems && bomItems.length > 0 ? (
+                                bomItems.map((item: any) => (
+                                  <TableRow key={item.id}>
+                                    <TableCell>{item.component?.code}</TableCell>
+                                    <TableCell>{item.component?.description}</TableCell>
+                                    <TableCell>{item.quantity}</TableCell>
+                                    <TableCell>
+                                      <Button variant="ghost" size="sm">
+                                        <span className="material-icons text-sm">edit</span>
+                                      </Button>
+                                      <Button variant="ghost" size="sm">
+                                        <span className="material-icons text-sm">delete</span>
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              ) : (
+                                <TableRow>
+                                  <TableCell colSpan={4} className="text-center py-4 text-neutral-medium">
+                                    Nessun componente in questa distinta
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </TableBody>
+                          </Table>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="components">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Componenti</CardTitle>
+                  <div className="flex space-x-2">
+                    <div className="relative">
+                      <Input
+                        placeholder="Cerca componenti..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                      <span className="material-icons absolute left-3 top-2 text-neutral-medium">search</span>
+                    </div>
+                    
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <span className="material-icons text-sm mr-1">add</span>
+                          Nuovo
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Crea Nuovo Componente</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-2">
+                          <div>
+                            <Label htmlFor="component-code">Codice</Label>
+                            <Input 
+                              id="component-code" 
+                              value={newComponentCode}
+                              onChange={(e) => setNewComponentCode(e.target.value)}
+                              placeholder="Es. RC100-BASE"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="component-description">Descrizione</Label>
+                            <Input 
+                              id="component-description"
+                              value={newComponentDescription}
+                              onChange={(e) => setNewComponentDescription(e.target.value)}
+                              placeholder="Es. Base pannello in alluminio"
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button onClick={handleCreateComponent}>Crea Componente</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Codice</TableHead>
+                        <TableHead>Descrizione</TableHead>
+                        <TableHead className="w-[100px]">Azioni</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {componentsLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center py-4">
+                            Caricamento componenti...
+                          </TableCell>
+                        </TableRow>
+                      ) : components && components.length > 0 ? (
+                        components.map((component: any) => (
+                          <TableRow key={component.id}>
+                            <TableCell className="font-medium">{component.code}</TableCell>
+                            <TableCell>{component.description}</TableCell>
+                            <TableCell>
+                              <Button variant="ghost" size="sm">
+                                <span className="material-icons text-sm">edit</span>
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <span className="material-icons text-sm">delete</span>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center py-4 text-neutral-medium">
+                            {searchQuery ? 
+                              `Nessun risultato per "${searchQuery}"` : 
+                              "Nessun componente disponibile"}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
+    </>
+  );
+}
