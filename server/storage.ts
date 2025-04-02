@@ -16,6 +16,8 @@ import {
   translationImports, TranslationImport, InsertTranslationImport,
   translationAIRequests, TranslationAIRequest, InsertTranslationAIRequest
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, like, or, desc, asc, isNull, count } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -1070,4 +1072,881 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  // User operations
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const [newUser] = await db.insert(users).values(user).returning();
+    return newUser;
+  }
+
+  async getUsers(): Promise<User[]> {
+    return db.select().from(users);
+  }
+
+  async updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set(user)
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    const result = await db.delete(users).where(eq(users.id, id));
+    return !!result;
+  }
+
+  // Document operations
+  async getDocument(id: number): Promise<Document | undefined> {
+    const [document] = await db.select().from(documents).where(eq(documents.id, id));
+    return document;
+  }
+
+  async getDocuments(): Promise<Document[]> {
+    return db.select().from(documents);
+  }
+
+  async createDocument(document: InsertDocument): Promise<Document> {
+    const [newDocument] = await db
+      .insert(documents)
+      .values({
+        ...document,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return newDocument;
+  }
+
+  async updateDocument(id: number, document: Partial<InsertDocument>): Promise<Document | undefined> {
+    const [updatedDocument] = await db
+      .update(documents)
+      .set({
+        ...document,
+        updatedAt: new Date()
+      })
+      .where(eq(documents.id, id))
+      .returning();
+    return updatedDocument;
+  }
+
+  async deleteDocument(id: number): Promise<boolean> {
+    const result = await db.delete(documents).where(eq(documents.id, id));
+    return !!result;
+  }
+
+  async searchDocuments(query: string): Promise<Document[]> {
+    const searchQuery = `%${query}%`;
+    return db
+      .select()
+      .from(documents)
+      .where(
+        or(
+          like(documents.title, searchQuery),
+          like(documents.description as any, searchQuery)
+        )
+      );
+  }
+
+  // Section operations
+  async getSection(id: number): Promise<Section | undefined> {
+    const [section] = await db.select().from(sections).where(eq(sections.id, id));
+    return section;
+  }
+
+  async getSectionsByDocumentId(documentId: number): Promise<Section[]> {
+    return db
+      .select()
+      .from(sections)
+      .where(eq(sections.documentId, documentId))
+      .orderBy(sections.order);
+  }
+
+  async createSection(section: InsertSection): Promise<Section> {
+    const [newSection] = await db.insert(sections).values(section).returning();
+    return newSection;
+  }
+
+  async updateSection(id: number, section: Partial<InsertSection>): Promise<Section | undefined> {
+    const [updatedSection] = await db
+      .update(sections)
+      .set(section)
+      .where(eq(sections.id, id))
+      .returning();
+    return updatedSection;
+  }
+
+  async deleteSection(id: number): Promise<boolean> {
+    const result = await db.delete(sections).where(eq(sections.id, id));
+    return !!result;
+  }
+
+  async reorderSections(documentId: number, sectionIds: number[]): Promise<boolean> {
+    try {
+      for (let i = 0; i < sectionIds.length; i++) {
+        await db
+          .update(sections)
+          .set({ order: i })
+          .where(and(
+            eq(sections.id, sectionIds[i]),
+            eq(sections.documentId, documentId)
+          ));
+      }
+      return true;
+    } catch (error) {
+      console.error("Error reordering sections:", error);
+      return false;
+    }
+  }
+
+  // Content module operations
+  async getContentModule(id: number): Promise<ContentModule | undefined> {
+    const [module] = await db
+      .select()
+      .from(contentModules)
+      .where(eq(contentModules.id, id));
+    return module;
+  }
+
+  async getContentModulesBySectionId(sectionId: number): Promise<ContentModule[]> {
+    return db
+      .select()
+      .from(contentModules)
+      .where(eq(contentModules.sectionId, sectionId))
+      .orderBy(contentModules.order);
+  }
+
+  async createContentModule(module: InsertContentModule): Promise<ContentModule> {
+    const [newModule] = await db
+      .insert(contentModules)
+      .values(module)
+      .returning();
+    return newModule;
+  }
+
+  async updateContentModule(id: number, module: Partial<InsertContentModule>): Promise<ContentModule | undefined> {
+    const [updatedModule] = await db
+      .update(contentModules)
+      .set(module)
+      .where(eq(contentModules.id, id))
+      .returning();
+    return updatedModule;
+  }
+
+  async deleteContentModule(id: number): Promise<boolean> {
+    const result = await db.delete(contentModules).where(eq(contentModules.id, id));
+    return !!result;
+  }
+
+  async reorderContentModules(sectionId: number, moduleIds: number[]): Promise<boolean> {
+    try {
+      for (let i = 0; i < moduleIds.length; i++) {
+        await db
+          .update(contentModules)
+          .set({ order: i })
+          .where(and(
+            eq(contentModules.id, moduleIds[i]),
+            eq(contentModules.sectionId, sectionId)
+          ));
+      }
+      return true;
+    } catch (error) {
+      console.error("Error reordering modules:", error);
+      return false;
+    }
+  }
+
+  // Document version operations
+  async getDocumentVersion(id: number): Promise<DocumentVersion | undefined> {
+    const [version] = await db
+      .select()
+      .from(documentVersions)
+      .where(eq(documentVersions.id, id));
+    return version;
+  }
+
+  async getDocumentVersionsByDocumentId(documentId: number): Promise<DocumentVersion[]> {
+    return db
+      .select()
+      .from(documentVersions)
+      .where(eq(documentVersions.documentId, documentId))
+      .orderBy(desc(documentVersions.createdAt));
+  }
+
+  async createDocumentVersion(version: InsertDocumentVersion): Promise<DocumentVersion> {
+    const [newVersion] = await db
+      .insert(documentVersions)
+      .values({
+        ...version,
+        createdAt: new Date()
+      })
+      .returning();
+    return newVersion;
+  }
+
+  // Component (BOM) operations
+  async getComponent(id: number): Promise<Component | undefined> {
+    const [component] = await db
+      .select()
+      .from(components)
+      .where(eq(components.id, id));
+    return component;
+  }
+
+  async getComponents(): Promise<Component[]> {
+    return db.select().from(components);
+  }
+
+  async getComponentByCode(code: string): Promise<Component | undefined> {
+    const [component] = await db
+      .select()
+      .from(components)
+      .where(eq(components.code, code));
+    return component;
+  }
+
+  async createComponent(component: InsertComponent): Promise<Component> {
+    const [newComponent] = await db
+      .insert(components)
+      .values(component)
+      .returning();
+    return newComponent;
+  }
+
+  async updateComponent(id: number, component: Partial<InsertComponent>): Promise<Component | undefined> {
+    const [updatedComponent] = await db
+      .update(components)
+      .set(component)
+      .where(eq(components.id, id))
+      .returning();
+    return updatedComponent;
+  }
+
+  async deleteComponent(id: number): Promise<boolean> {
+    const result = await db.delete(components).where(eq(components.id, id));
+    return !!result;
+  }
+
+  async searchComponents(query: string): Promise<Component[]> {
+    const searchQuery = `%${query}%`;
+    return db
+      .select()
+      .from(components)
+      .where(
+        or(
+          like(components.code, searchQuery),
+          like(components.description, searchQuery)
+        )
+      );
+  }
+
+  // BOM operations
+  async getBom(id: number): Promise<Bom | undefined> {
+    const [bom] = await db.select().from(boms).where(eq(boms.id, id));
+    return bom;
+  }
+
+  async getBoms(): Promise<Bom[]> {
+    return db.select().from(boms);
+  }
+
+  async createBom(bom: InsertBom): Promise<Bom> {
+    const [newBom] = await db.insert(boms).values(bom).returning();
+    return newBom;
+  }
+
+  async updateBom(id: number, bom: Partial<InsertBom>): Promise<Bom | undefined> {
+    const [updatedBom] = await db
+      .update(boms)
+      .set(bom)
+      .where(eq(boms.id, id))
+      .returning();
+    return updatedBom;
+  }
+
+  async deleteBom(id: number): Promise<boolean> {
+    const result = await db.delete(boms).where(eq(boms.id, id));
+    return !!result;
+  }
+
+  // BOM item operations
+  async getBomItem(id: number): Promise<BomItem | undefined> {
+    const [item] = await db.select().from(bomItems).where(eq(bomItems.id, id));
+    return item;
+  }
+
+  async getBomItemsByBomId(bomId: number): Promise<BomItem[]> {
+    return db.select().from(bomItems).where(eq(bomItems.bomId, bomId));
+  }
+
+  async createBomItem(item: InsertBomItem): Promise<BomItem> {
+    const [newItem] = await db.insert(bomItems).values(item).returning();
+    return newItem;
+  }
+
+  async updateBomItem(id: number, item: Partial<InsertBomItem>): Promise<BomItem | undefined> {
+    const [updatedItem] = await db
+      .update(bomItems)
+      .set(item)
+      .where(eq(bomItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deleteBomItem(id: number): Promise<boolean> {
+    const result = await db.delete(bomItems).where(eq(bomItems.id, id));
+    return !!result;
+  }
+
+  // Comment operations
+  async getComment(id: number): Promise<Comment | undefined> {
+    const [comment] = await db.select().from(comments).where(eq(comments.id, id));
+    return comment;
+  }
+
+  async getCommentsByDocumentId(documentId: number): Promise<Comment[]> {
+    return db
+      .select()
+      .from(comments)
+      .where(eq(comments.documentId, documentId))
+      .orderBy(desc(comments.createdAt));
+  }
+
+  async createComment(comment: InsertComment): Promise<Comment> {
+    const [newComment] = await db
+      .insert(comments)
+      .values({
+        ...comment,
+        createdAt: new Date()
+      })
+      .returning();
+    return newComment;
+  }
+
+  async deleteComment(id: number): Promise<boolean> {
+    const result = await db.delete(comments).where(eq(comments.id, id));
+    return !!result;
+  }
+
+  // Module library operations
+  async getModules(): Promise<Section[]> {
+    return db
+      .select()
+      .from(sections)
+      .where(eq(sections.isModule, true));
+  }
+
+  // Language operations
+  async getLanguage(id: number): Promise<Language | undefined> {
+    const [language] = await db.select().from(languages).where(eq(languages.id, id));
+    return language;
+  }
+
+  async getLanguageByCode(code: string): Promise<Language | undefined> {
+    const [language] = await db.select().from(languages).where(eq(languages.code, code));
+    return language;
+  }
+
+  async getLanguages(activeOnly: boolean = false): Promise<Language[]> {
+    let query = db.select().from(languages);
+    if (activeOnly) {
+      query = query.where(eq(languages.isActive, true));
+    }
+    return query;
+  }
+
+  async createLanguage(language: InsertLanguage): Promise<Language> {
+    // If this is set as the default language, unset any existing defaults
+    if (language.isDefault) {
+      await db
+        .update(languages)
+        .set({ isDefault: false })
+        .where(eq(languages.isDefault, true));
+    }
+    
+    const [newLanguage] = await db.insert(languages).values(language).returning();
+    return newLanguage;
+  }
+
+  async updateLanguage(id: number, language: Partial<InsertLanguage>): Promise<Language | undefined> {
+    // If this is being set as the default language, unset any existing defaults
+    if (language.isDefault) {
+      await db
+        .update(languages)
+        .set({ isDefault: false })
+        .where(and(
+          eq(languages.isDefault, true),
+          language.isDefault ? language.isDefault : false
+        ));
+    }
+    
+    const [updatedLanguage] = await db
+      .update(languages)
+      .set(language)
+      .where(eq(languages.id, id))
+      .returning();
+    return updatedLanguage;
+  }
+
+  async deleteLanguage(id: number): Promise<boolean> {
+    // Check if it's the default language
+    const [language] = await db
+      .select()
+      .from(languages)
+      .where(eq(languages.id, id));
+    
+    if (language?.isDefault) {
+      return false; // Cannot delete the default language
+    }
+    
+    // Check for translations in this language
+    const [sectionCount] = await db
+      .select({ count: count() })
+      .from(sectionTranslations)
+      .where(eq(sectionTranslations.languageId, id));
+    
+    if (sectionCount && sectionCount.count > 0) {
+      return false; // Language has translations, cannot delete
+    }
+    
+    const result = await db.delete(languages).where(eq(languages.id, id));
+    return !!result;
+  }
+
+  // Translation assignment operations
+  async getTranslationAssignment(id: number): Promise<TranslationAssignment | undefined> {
+    const [assignment] = await db
+      .select()
+      .from(translationAssignments)
+      .where(eq(translationAssignments.id, id));
+    return assignment;
+  }
+
+  async getTranslationAssignmentsByUserId(userId: number): Promise<TranslationAssignment[]> {
+    return db
+      .select()
+      .from(translationAssignments)
+      .where(eq(translationAssignments.userId, userId));
+  }
+
+  async getTranslationAssignmentsByLanguageId(languageId: number): Promise<TranslationAssignment[]> {
+    return db
+      .select()
+      .from(translationAssignments)
+      .where(eq(translationAssignments.languageId, languageId));
+  }
+
+  async createTranslationAssignment(assignment: InsertTranslationAssignment): Promise<TranslationAssignment> {
+    const [newAssignment] = await db
+      .insert(translationAssignments)
+      .values(assignment)
+      .returning();
+    return newAssignment;
+  }
+
+  async updateTranslationAssignment(id: number, assignment: Partial<InsertTranslationAssignment>): Promise<TranslationAssignment | undefined> {
+    const [updatedAssignment] = await db
+      .update(translationAssignments)
+      .set(assignment)
+      .where(eq(translationAssignments.id, id))
+      .returning();
+    return updatedAssignment;
+  }
+
+  async deleteTranslationAssignment(id: number): Promise<boolean> {
+    const result = await db
+      .delete(translationAssignments)
+      .where(eq(translationAssignments.id, id));
+    return !!result;
+  }
+
+  // Section translation operations
+  async getSectionTranslation(id: number): Promise<SectionTranslation | undefined> {
+    const [translation] = await db
+      .select()
+      .from(sectionTranslations)
+      .where(eq(sectionTranslations.id, id));
+    return translation;
+  }
+
+  async getSectionTranslationByLanguage(sectionId: number, languageId: number): Promise<SectionTranslation | undefined> {
+    const [translation] = await db
+      .select()
+      .from(sectionTranslations)
+      .where(and(
+        eq(sectionTranslations.sectionId, sectionId),
+        eq(sectionTranslations.languageId, languageId)
+      ));
+    return translation;
+  }
+
+  async getSectionTranslationsByLanguageId(languageId: number): Promise<SectionTranslation[]> {
+    return db
+      .select()
+      .from(sectionTranslations)
+      .where(eq(sectionTranslations.languageId, languageId));
+  }
+
+  async getSectionTranslationsBySectionId(sectionId: number): Promise<SectionTranslation[]> {
+    return db
+      .select()
+      .from(sectionTranslations)
+      .where(eq(sectionTranslations.sectionId, sectionId));
+  }
+
+  async createSectionTranslation(translation: InsertSectionTranslation): Promise<SectionTranslation> {
+    const [newTranslation] = await db
+      .insert(sectionTranslations)
+      .values({
+        ...translation,
+        updatedAt: new Date()
+      })
+      .returning();
+    return newTranslation;
+  }
+
+  async updateSectionTranslation(id: number, translation: Partial<InsertSectionTranslation>): Promise<SectionTranslation | undefined> {
+    const [updatedTranslation] = await db
+      .update(sectionTranslations)
+      .set({
+        ...translation,
+        updatedAt: new Date()
+      })
+      .where(eq(sectionTranslations.id, id))
+      .returning();
+    return updatedTranslation;
+  }
+
+  async deleteSectionTranslation(id: number): Promise<boolean> {
+    const result = await db
+      .delete(sectionTranslations)
+      .where(eq(sectionTranslations.id, id));
+    return !!result;
+  }
+
+  // Content module translation operations
+  async getContentModuleTranslation(id: number): Promise<ContentModuleTranslation | undefined> {
+    const [translation] = await db
+      .select()
+      .from(contentModuleTranslations)
+      .where(eq(contentModuleTranslations.id, id));
+    return translation;
+  }
+
+  async getContentModuleTranslationByLanguage(moduleId: number, languageId: number): Promise<ContentModuleTranslation | undefined> {
+    const [translation] = await db
+      .select()
+      .from(contentModuleTranslations)
+      .where(and(
+        eq(contentModuleTranslations.moduleId, moduleId),
+        eq(contentModuleTranslations.languageId, languageId)
+      ));
+    return translation;
+  }
+
+  async getContentModuleTranslationsByLanguageId(languageId: number): Promise<ContentModuleTranslation[]> {
+    return db
+      .select()
+      .from(contentModuleTranslations)
+      .where(eq(contentModuleTranslations.languageId, languageId));
+  }
+
+  async getContentModuleTranslationsByModuleId(moduleId: number): Promise<ContentModuleTranslation[]> {
+    return db
+      .select()
+      .from(contentModuleTranslations)
+      .where(eq(contentModuleTranslations.moduleId, moduleId));
+  }
+
+  async createContentModuleTranslation(translation: InsertContentModuleTranslation): Promise<ContentModuleTranslation> {
+    const [newTranslation] = await db
+      .insert(contentModuleTranslations)
+      .values({
+        ...translation,
+        updatedAt: new Date()
+      })
+      .returning();
+    return newTranslation;
+  }
+
+  async updateContentModuleTranslation(id: number, translation: Partial<InsertContentModuleTranslation>): Promise<ContentModuleTranslation | undefined> {
+    const [updatedTranslation] = await db
+      .update(contentModuleTranslations)
+      .set({
+        ...translation,
+        updatedAt: new Date()
+      })
+      .where(eq(contentModuleTranslations.id, id))
+      .returning();
+    return updatedTranslation;
+  }
+
+  async deleteContentModuleTranslation(id: number): Promise<boolean> {
+    const result = await db
+      .delete(contentModuleTranslations)
+      .where(eq(contentModuleTranslations.id, id));
+    return !!result;
+  }
+
+  // Translation import operations
+  async getTranslationImport(id: number): Promise<TranslationImport | undefined> {
+    const [importRecord] = await db
+      .select()
+      .from(translationImports)
+      .where(eq(translationImports.id, id));
+    return importRecord;
+  }
+
+  async getTranslationImports(): Promise<TranslationImport[]> {
+    return db
+      .select()
+      .from(translationImports)
+      .orderBy(desc(translationImports.importedAt));
+  }
+
+  async createTranslationImport(importData: InsertTranslationImport): Promise<TranslationImport> {
+    const [newImport] = await db
+      .insert(translationImports)
+      .values({
+        ...importData,
+        importedAt: new Date()
+      })
+      .returning();
+    return newImport;
+  }
+
+  async processTranslationImport(importId: number, data: any): Promise<boolean> {
+    try {
+      // TODO: Implement proper import processing logic
+      // For now, just update the import status to complete
+      await db
+        .update(translationImports)
+        .set({
+          status: "success",
+          details: { processed: new Date(), stats: { sections: 0, modules: 0 } }
+        })
+        .where(eq(translationImports.id, importId));
+      
+      return true;
+    } catch (error) {
+      console.error("Error processing translation import:", error);
+      
+      await db
+        .update(translationImports)
+        .set({
+          status: "error",
+          details: { error: "Failed to process import" }
+        })
+        .where(eq(translationImports.id, importId));
+      
+      return false;
+    }
+  }
+
+  // Translation AI operations
+  async getTranslationAIRequest(id: number): Promise<TranslationAIRequest | undefined> {
+    const [request] = await db
+      .select()
+      .from(translationAIRequests)
+      .where(eq(translationAIRequests.id, id));
+    return request;
+  }
+
+  async getTranslationAIRequests(): Promise<TranslationAIRequest[]> {
+    return db
+      .select()
+      .from(translationAIRequests)
+      .orderBy(desc(translationAIRequests.requestedAt));
+  }
+
+  async createTranslationAIRequest(request: InsertTranslationAIRequest): Promise<TranslationAIRequest> {
+    const [newRequest] = await db
+      .insert(translationAIRequests)
+      .values({
+        ...request,
+        requestedAt: new Date()
+      })
+      .returning();
+    return newRequest;
+  }
+
+  async updateTranslationAIRequest(id: number, request: Partial<InsertTranslationAIRequest>): Promise<TranslationAIRequest | undefined> {
+    const [updatedRequest] = await db
+      .update(translationAIRequests)
+      .set(request)
+      .where(eq(translationAIRequests.id, id))
+      .returning();
+    return updatedRequest;
+  }
+
+  // Document translations - utility methods
+  async getDocumentTranslationStatus(documentId: number, languageId: number): Promise<{
+    totalSections: number;
+    totalModules: number;
+    translatedSections: number;
+    translatedModules: number;
+    reviewedSections: number;
+    reviewedModules: number;
+  }> {
+    // Get all sections for the document
+    const docSections = await this.getSectionsByDocumentId(documentId);
+    const totalSections = docSections.length;
+    
+    // Get modules for each section
+    let totalModules = 0;
+    const sectionIds = docSections.map(section => section.id);
+    
+    for (const sectionId of sectionIds) {
+      const modules = await this.getContentModulesBySectionId(sectionId);
+      totalModules += modules.length;
+    }
+    
+    // Get translated sections
+    const sectionTranslations = await Promise.all(
+      sectionIds.map(sectionId => this.getSectionTranslationByLanguage(sectionId, languageId))
+    );
+    
+    const translatedSections = sectionTranslations.filter(t => t !== undefined).length;
+    const reviewedSections = sectionTranslations.filter(t => t !== undefined && t.status === "approved").length;
+    
+    // Get translated modules (this is more complex and might be slow for large documents)
+    let translatedModules = 0;
+    let reviewedModules = 0;
+    
+    for (const sectionId of sectionIds) {
+      const modules = await this.getContentModulesBySectionId(sectionId);
+      for (const module of modules) {
+        const translation = await this.getContentModuleTranslationByLanguage(module.id, languageId);
+        if (translation) {
+          translatedModules++;
+          if (translation.status === "approved") {
+            reviewedModules++;
+          }
+        }
+      }
+    }
+    
+    return {
+      totalSections,
+      totalModules,
+      translatedSections,
+      translatedModules,
+      reviewedSections,
+      reviewedModules
+    };
+  }
+
+  // Seed initial data method - can be called after tables are created
+  async seedInitialData(): Promise<void> {
+    // Check if users table is empty
+    const users = await this.getUsers();
+    if (users.length === 0) {
+      // Add an initial admin user
+      await this.createUser({
+        username: "admin",
+        password: "admin123",
+        role: "admin",
+        name: "Administrator",
+        email: "admin@example.com"
+      });
+    }
+
+    // Check if languages table is empty
+    const langs = await this.getLanguages();
+    if (langs.length === 0) {
+      // Add default languages
+      const languages = [
+        { name: "Italiano", code: "it", isActive: true, isDefault: true },
+        { name: "English", code: "en", isActive: true, isDefault: false },
+        { name: "Français", code: "fr", isActive: true, isDefault: false },
+        { name: "Deutsch", code: "de", isActive: true, isDefault: false },
+        { name: "Español", code: "es", isActive: true, isDefault: false }
+      ];
+      
+      for (const lang of languages) {
+        await this.createLanguage(lang);
+      }
+    }
+
+    // Check if components table is empty
+    const comps = await this.getComponents();
+    if (comps.length === 0) {
+      // Add sample components
+      const components = [
+        { code: "RC100-BASE", description: "Base pannello in alluminio" },
+        { code: "RC100-PCB", description: "Scheda elettronica principale" },
+        { code: "RC100-SW", description: "Set interruttori" },
+        { code: "RC100-CON", description: "Connettori esterni" },
+        { code: "RC100-CVR", description: "Copertura in plexiglass" },
+        { code: "RC100-EX-PCB", description: "Scheda elettronica principale estesa" },
+        { code: "RC100-EX-CON", description: "Set connettori esterni" },
+        { code: "RC100-EX-SW", description: "Set interruttori avanzati" },
+        { code: "RC100-EX-DSP", description: "Display LCD touchscreen" },
+        { code: "RC100-EX-WIFI", description: "Modulo Wi-Fi" }
+      ];
+
+      for (const comp of components) {
+        await this.createComponent({
+          code: comp.code,
+          description: comp.description,
+          details: {}
+        });
+      }
+    }
+
+    // Check if BOMs table is empty
+    const bomsList = await this.getBoms();
+    if (bomsList.length === 0) {
+      // Add sample BOMs
+      const bomId1 = (await this.createBom({
+        title: "RC100 - Pannello Controllo Standard",
+        description: "Distinta base per il pannello di controllo standard RC100"
+      })).id;
+
+      const bomId2 = (await this.createBom({
+        title: "RC100-EX - Pannello Controllo Esteso",
+        description: "Distinta base per il pannello di controllo esteso RC100-EX"
+      })).id;
+
+      // Add items to BOM 1
+      const components1 = ["RC100-BASE", "RC100-PCB", "RC100-SW", "RC100-CON", "RC100-CVR"];
+      for (const code of components1) {
+        const component = await this.getComponentByCode(code);
+        if (component) {
+          await this.createBomItem({
+            bomId: bomId1,
+            componentId: component.id,
+            quantity: code === "RC100-SW" ? 3 : code === "RC100-CON" ? 4 : 1
+          });
+        }
+      }
+
+      // Add items to BOM 2
+      const components2 = ["RC100-BASE", "RC100-EX-PCB", "RC100-EX-SW", "RC100-EX-CON", "RC100-CVR", "RC100-EX-DSP", "RC100-EX-WIFI"];
+      for (const code of components2) {
+        const component = await this.getComponentByCode(code);
+        if (component) {
+          await this.createBomItem({
+            bomId: bomId2,
+            componentId: component.id,
+            quantity: code === "RC100-EX-SW" ? 5 : code === "RC100-EX-CON" ? 6 : 1
+          });
+        }
+      }
+    }
+  }
+}
+
+// Export a singleton instance of the storage
+export const storage = new DatabaseStorage();
