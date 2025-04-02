@@ -557,6 +557,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to delete BOM" });
     }
   });
+  
+  // Endpoint per l'importazione di BOM da file Excel
+  app.post("/api/boms/import", upload.single("file"), async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Nessun file caricato" });
+      }
+      
+      // Verifica che sia un file Excel
+      const allowedTypes = [
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/octet-stream'
+      ];
+      
+      if (!allowedTypes.includes(req.file.mimetype)) {
+        return res.status(400).json({ 
+          message: "Formato file non supportato. Caricare un file Excel (.xls o .xlsx)" 
+        });
+      }
+      
+      const filePath = req.file.path;
+      const XLSX = require('xlsx');
+      const workbook = XLSX.readFile(filePath);
+      
+      // Assume che il primo foglio del file Excel contenga i dati BOM
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      
+      // Converte i dati del foglio in un array di oggetti
+      const bomItems = XLSX.utils.sheet_to_json(worksheet);
+      
+      if (!bomItems || bomItems.length === 0) {
+        return res.status(400).json({ 
+          message: "Il file Excel non contiene dati validi" 
+        });
+      }
+      
+      // Crea una nuova BOM
+      const bomTitle = req.body.title || `BOM importata il ${new Date().toLocaleString()}`;
+      const newBom = await storage.createBom({
+        title: bomTitle,
+        description: req.body.description || `Importata da file Excel: ${req.file.originalname}`
+      });
+      
+      // Converte ogni riga Excel in un componente BOM
+      const components = [];
+      const bomItemsToCreate = [];
+      
+      // Esempio di mapping (da adattare in base alla struttura del file Excel)
+      // Assume che il file Excel contenga colonne come: Codice, Descrizione, Quantità, Livello
+      for (const row of bomItems) {
+        // Verifica che la riga contenga i dati necessari
+        if (!row.Codice && !row.Code) {
+          continue;
+        }
+        
+        const code = row.Codice || row.Code || '';
+        const description = row.Descrizione || row.Description || '';
+        const quantity = row.Quantità || row.Quantity || 1;
+        const level = row.Livello || row.Level || 0;
+        
+        // Crea il componente se non esiste già
+        let component;
+        try {
+          // Prima cerca se il componente con lo stesso codice esiste già
+          const existingComponent = await storage.getComponentByCode(code);
+          if (existingComponent) {
+            component = existingComponent;
+          } else {
+            component = await storage.createComponent({
+              code,
+              description,
+              details: {}
+            });
+            components.push(component);
+          }
+          
+          // Aggiungi il componente alla BOM
+          bomItemsToCreate.push({
+            bomId: newBom.id,
+            componentId: component.id,
+            quantity,
+            level
+          });
+        } catch (error) {
+          console.error(`Errore nell'elaborazione del componente ${code}:`, error);
+        }
+      }
+      
+      // Crea gli elementi BOM
+      const createdBomItems = [];
+      for (const item of bomItemsToCreate) {
+        try {
+          const bomItem = await storage.createBomItem(item);
+          createdBomItems.push(bomItem);
+        } catch (error) {
+          console.error(`Errore nella creazione del BOM item:`, error);
+        }
+      }
+      
+      // Elimina il file temporaneo
+      fs.unlinkSync(filePath);
+      
+      res.status(201).json({
+        bom: newBom,
+        components: components.length,
+        bomItems: createdBomItems.length,
+        message: `BOM importata con successo. ${createdBomItems.length} componenti importati.`
+      });
+    } catch (error) {
+      console.error("Errore nell'importazione della BOM:", error);
+      res.status(500).json({ message: `Errore nell'importazione: ${error.message}` });
+    }
+  });
 
   // BOM items routes
   app.get("/api/boms/:bomId/items", async (req: Request, res: Response) => {

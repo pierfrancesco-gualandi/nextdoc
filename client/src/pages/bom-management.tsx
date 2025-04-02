@@ -11,6 +11,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import BomTreeView from "@/components/BomTreeView";
+import BomExcelImporter from "@/components/BomExcelImporter";
 import { Switch } from "@/components/ui/switch";
 
 interface BomManagementProps {
@@ -196,7 +197,13 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
             </div>
             
             <TabsContent value="boms">
-              <div className="flex gap-6">
+              <div className="flex flex-col gap-6">
+                <BomExcelImporter onImportSuccess={(bomId) => {
+                  const bom = boms.find((b: any) => b.id === bomId);
+                  if (bom) setSelectedBom(bom);
+                }} />
+                
+                <div className="flex gap-6">
                 {/* Left column: BOMs list */}
                 <div className="w-1/3">
                   <Card>
@@ -421,6 +428,7 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
                       )}
                     </CardContent>
                   </Card>
+                </div>
                 </div>
               </div>
             </TabsContent>

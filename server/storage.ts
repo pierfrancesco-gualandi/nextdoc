@@ -63,6 +63,7 @@ export interface IStorage {
   getComponent(id: number): Promise<Component | undefined>;
   getComponents(): Promise<Component[]>;
   getComponentByCode(code: string): Promise<Component | undefined>;
+  getComponentsByCode(code: string): Promise<Component[]>;
   createComponent(component: InsertComponent): Promise<Component>;
   updateComponent(id: number, component: Partial<InsertComponent>): Promise<Component | undefined>;
   deleteComponent(id: number): Promise<boolean>;
@@ -547,6 +548,12 @@ export class MemStorage implements IStorage {
   async getComponentByCode(code: string): Promise<Component | undefined> {
     return Array.from(this.components.values()).find(
       component => component.code === code
+    );
+  }
+  
+  async getComponentsByCode(code: string): Promise<Component[]> {
+    return Array.from(this.components.values()).filter(
+      component => component.code.includes(code)
     );
   }
 
@@ -1415,6 +1422,13 @@ export class DatabaseStorage implements IStorage {
       .from(components)
       .where(eq(components.code, code));
     return component;
+  }
+  
+  async getComponentsByCode(code: string): Promise<Component[]> {
+    return await db
+      .select()
+      .from(components)
+      .where(like(components.code, `%${code}%`));
   }
 
   async createComponent(component: InsertComponent): Promise<Component> {
