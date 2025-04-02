@@ -559,40 +559,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Endpoint per l'importazione di BOM da file Excel
+  // Endpoint per l'importazione di BOM da file Excel o CSV
   app.post("/api/boms/import", upload.single("file"), async (req: Request, res: Response) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "Nessun file caricato" });
       }
       
-      // Verifica che sia un file Excel
-      const allowedTypes = [
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/octet-stream'
-      ];
+      const filePath = req.file.path;
+      const fileExt = req.file.originalname.split('.').pop()?.toLowerCase();
+      let bomItems = [];
       
-      if (!allowedTypes.includes(req.file.mimetype)) {
-        return res.status(400).json({ 
-          message: "Formato file non supportato. Caricare un file Excel (.xls o .xlsx)" 
+      // Verifica il tipo di file e lo elabora di conseguenza
+      if (fileExt === 'csv') {
+        // Importazione CSV
+        const fs = require('fs');
+        const { parse } = require('csv-parse/sync');
+        
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        const records = parse(fileContent, {
+          columns: true,
+          skip_empty_lines: true,
+          trim: true
+        });
+        
+        if (!records || records.length === 0) {
+          return res.status(400).json({
+            message: "Il file CSV non contiene dati validi"
+          });
+        }
+        
+        bomItems = records;
+        console.log("Dati CSV importati:", JSON.stringify(bomItems.slice(0, 2)));
+      } else if (fileExt === 'xlsx' || fileExt === 'xls') {
+        // Importazione Excel
+        const allowedTypes = [
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/octet-stream',
+          'application/xlsx', 
+          'application/excel'
+        ];
+        
+        if (!allowedTypes.includes(req.file.mimetype) && !['xlsx', 'xls'].includes(fileExt)) {
+          return res.status(400).json({ 
+            message: "Formato file non supportato. Caricare un file Excel (.xls o .xlsx) o CSV (.csv)" 
+          });
+        }
+        
+        const XLSX = require('xlsx');
+        const workbook = XLSX.readFile(filePath);
+        
+        // Assume che il primo foglio del file Excel contenga i dati BOM
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // Converte i dati del foglio in un array di oggetti
+        bomItems = XLSX.utils.sheet_to_json(worksheet);
+        console.log("Dati Excel importati:", JSON.stringify(bomItems.slice(0, 2)));
+      } else {
+        return res.status(400).json({
+          message: "Formato file non supportato. Caricare un file Excel (.xls o .xlsx) o CSV (.csv)"
         });
       }
       
-      const filePath = req.file.path;
-      const XLSX = require('xlsx');
-      const workbook = XLSX.readFile(filePath);
-      
-      // Assume che il primo foglio del file Excel contenga i dati BOM
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      
-      // Converte i dati del foglio in un array di oggetti
-      const bomItems = XLSX.utils.sheet_to_json(worksheet);
-      
       if (!bomItems || bomItems.length === 0) {
         return res.status(400).json({ 
-          message: "Il file Excel non contiene dati validi" 
+          message: "Il file non contiene dati validi" 
         });
       }
       
@@ -600,31 +633,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const bomTitle = req.body.title || `BOM importata il ${new Date().toLocaleString()}`;
       const newBom = await storage.createBom({
         title: bomTitle,
-        description: req.body.description || `Importata da file Excel: ${req.file.originalname}`
+        description: req.body.description || `Importata da ${fileExt.toUpperCase()}: ${req.file.originalname}`
       });
       
-      // Converte ogni riga Excel in un componente BOM
+      // Converte ogni riga in un componente BOM
       const components = [];
       const bomItemsToCreate = [];
       
-      // Mapping in base alla struttura del file Excel specificata:
-      // Livello, Codice, Descrizione, Quantità, Unità di misura
-      for (const row of bomItems) {
-        // Log per debug
-        console.log("Riga Excel:", JSON.stringify(row));
+      // Identificazione delle colonne in base alle intestazioni
+      const firstRow = bomItems[0];
+      const columnHeaders = Object.keys(firstRow);
+      
+      // Mappa delle colonne
+      const columnMap = {
+        level: null,
+        code: null,
+        description: null,
+        quantity: null,
+        uom: null
+      };
+      
+      // Rileva i nomi delle colonne cercando corrispondenze
+      columnHeaders.forEach(header => {
+        const lowerHeader = header.toLowerCase();
         
-        // Verifica che la riga contenga i dati necessari
-        if (!row.Codice && !row.Code && !row['Codice']) {
-          console.log("Riga saltata: codice mancante");
+        if (lowerHeader.includes('liv') || lowerHeader === 'level' || lowerHeader === 'livello') {
+          columnMap.level = header;
+        }
+        else if (lowerHeader.includes('cod') || lowerHeader === 'code' || lowerHeader === 'codice') {
+          columnMap.code = header;
+        }
+        else if (lowerHeader.includes('desc') || lowerHeader === 'description' || lowerHeader === 'descrizione') {
+          columnMap.description = header;
+        }
+        else if (lowerHeader.includes('quant') || lowerHeader === 'quantity' || lowerHeader === 'quantità' || lowerHeader === 'quantita') {
+          columnMap.quantity = header;
+        }
+        else if (lowerHeader.includes('unità') || lowerHeader.includes('unita') || lowerHeader === 'uom' || lowerHeader === 'unit') {
+          columnMap.uom = header;
+        }
+      });
+      
+      console.log("Mappa delle colonne rilevata:", columnMap);
+      
+      // Elabora ogni riga del file
+      for (const row of bomItems) {
+        // Recupera i dati dalle colonne mappate o usa colonne standard
+        let code = '';
+        if (columnMap.code) {
+          code = row[columnMap.code];
+        } else {
+          code = row.Codice || row.Code || row['Codice'] || '';
+        }
+        
+        // Salta le righe senza codice
+        if (!code) {
+          console.log("Riga saltata: codice mancante", row);
           continue;
         }
         
-        // Recupera i dati dalle colonne con i nomi italiani o inglesi
-        const code = row.Codice || row.Code || row['Codice'] || '';
-        const description = row.Descrizione || row.Description || row['Descrizione'] || '';
-        const quantity = row.Quantità || row.Quantity || row['Quantità'] || row['Quantita'] || 1;
-        const level = row.Livello || row.Level || row['Livello'] || 0;
-        const unitOfMeasure = row["Unità di misura"] || row["Unita di misura"] || row["Unità"] || row.UOM || '';
+        let description = '';
+        if (columnMap.description) {
+          description = row[columnMap.description];
+        } else {
+          description = row.Descrizione || row.Description || row['Descrizione'] || '';
+        }
+        
+        let quantity = 1;
+        if (columnMap.quantity) {
+          quantity = parseFloat(row[columnMap.quantity]) || 1;
+        } else {
+          quantity = parseFloat(row.Quantità || row.Quantity || row['Quantità'] || row['Quantita'] || 1);
+        }
+        
+        let level = 0;
+        if (columnMap.level) {
+          level = parseInt(row[columnMap.level], 10) || 0;
+        } else {
+          level = parseInt(row.Livello || row.Level || row['Livello'] || 0, 10);
+        }
+        
+        let unitOfMeasure = '';
+        if (columnMap.uom) {
+          unitOfMeasure = row[columnMap.uom] || '';
+        } else {
+          unitOfMeasure = row["Unità di misura"] || row["Unita di misura"] || row["Unità"] || row.UOM || '';
+        }
         
         // Crea il componente se non esiste già
         let component;
