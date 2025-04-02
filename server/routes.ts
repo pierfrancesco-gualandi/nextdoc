@@ -12,6 +12,7 @@ import {
   insertComponentSchema,
   insertBomSchema,
   insertBomItemSchema,
+  insertSectionComponentSchema,
   insertCommentSchema,
   insertLanguageSchema,
   insertTranslationAssignmentSchema,
@@ -618,6 +619,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).end();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete BOM item" });
+    }
+  });
+  
+  // Section-Component routes
+  app.get("/api/sections/:sectionId/components", async (req: Request, res: Response) => {
+    try {
+      const sectionId = Number(req.params.sectionId);
+      const sectionComponents = await storage.getSectionComponentsBySectionId(sectionId);
+      res.json(sectionComponents);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch section components" });
+    }
+  });
+  
+  app.get("/api/components/:componentId/sections", async (req: Request, res: Response) => {
+    try {
+      const componentId = Number(req.params.componentId);
+      const sectionComponents = await storage.getSectionComponentsByComponentId(componentId);
+      res.json(sectionComponents);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch section components" });
+    }
+  });
+  
+  app.get("/api/section-components/:id", async (req: Request, res: Response) => {
+    try {
+      const sectionComponent = await storage.getSectionComponent(Number(req.params.id));
+      if (!sectionComponent) {
+        return res.status(404).json({ message: "Section-Component association not found" });
+      }
+      res.json(sectionComponent);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch section-component association" });
+    }
+  });
+  
+  app.post("/api/section-components", async (req: Request, res: Response) => {
+    try {
+      const { data, error } = validateBody(insertSectionComponentSchema, req.body);
+      if (error) {
+        return res.status(400).json({ message: error });
+      }
+      
+      const sectionComponent = await storage.createSectionComponent(data);
+      res.status(201).json(sectionComponent);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create section-component association" });
+    }
+  });
+  
+  app.put("/api/section-components/:id", async (req: Request, res: Response) => {
+    try {
+      const sectionComponentId = Number(req.params.id);
+      const { data, error } = validateBody(insertSectionComponentSchema.partial(), req.body);
+      if (error) {
+        return res.status(400).json({ message: error });
+      }
+      
+      const sectionComponent = await storage.updateSectionComponent(sectionComponentId, data);
+      if (!sectionComponent) {
+        return res.status(404).json({ message: "Section-Component association not found" });
+      }
+      
+      res.json(sectionComponent);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update section-component association" });
+    }
+  });
+  
+  app.delete("/api/section-components/:id", async (req: Request, res: Response) => {
+    try {
+      const sectionComponentId = Number(req.params.id);
+      const success = await storage.deleteSectionComponent(sectionComponentId);
+      if (!success) {
+        return res.status(404).json({ message: "Section-Component association not found" });
+      }
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete section-component association" });
     }
   });
 

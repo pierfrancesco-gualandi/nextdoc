@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 interface Section {
   id: number;
@@ -13,11 +15,31 @@ interface Section {
   isModule: boolean;
 }
 
+interface SectionComponentLink {
+  id: number;
+  sectionId: number;
+  componentId: number;
+  quantity: number;
+  notes: string | null;
+  component?: {
+    id: number;
+    code: string;
+    description: string;
+  };
+}
+
 interface DocumentTreeViewProps {
   documentId: string;
   onSectionSelect?: (section: Section) => void;
   selectedSectionId?: number;
 }
+
+type DragItem = {
+  type: string;
+  id: number;
+  originalParentId: number | null;
+  originalIndex: number;
+};
 
 export default function DocumentTreeView({ 
   documentId, 
@@ -53,6 +75,23 @@ export default function DocumentTreeView({
     }
   });
   
+  const updateSectionMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number, data: any }) => {
+      const res = await apiRequest('PUT', `/api/sections/${id}`, data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/documents/${documentId}/sections`] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore",
+        description: `Errore durante l'aggiornamento della sezione: ${error}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
   const addNewSection = (parentId: number | null = null) => {
     if (!documentId || documentId === 'new') return;
     
@@ -68,90 +107,394 @@ export default function DocumentTreeView({
     });
   };
   
+  const moveSection = (sectionId: number, newParentId: number | null, newOrder: number) => {
+    if (!sections) return;
+    
+    const section = sections.find(s => s.id === sectionId);
+    if (!section) return;
+    
+    updateSectionMutation.mutate({
+      id: sectionId,
+      data: {
+        parentId: newParentId,
+        order: newOrder
+      }
+    });
+  };
+  
   if (isLoading || !sections) {
     return <div className="p-4 text-sm text-neutral-medium">Caricamento struttura...</div>;
   }
-  
-  // Organize sections into a hierarchical structure
-  const rootSections = sections.filter(section => !section.parentId)
-    .sort((a, b) => a.order - b.order);
-    
-  const childSections = sections.filter(section => section.parentId)
-    .sort((a, b) => a.order - b.order);
-  
-  const renderSection = (section: Section) => {
-    const children = childSections.filter(child => child.parentId === section.id);
-    const isFolder = children.length > 0;
-    const isActive = selectedSectionId === section.id;
-    
-    return (
-      <div key={section.id}>
-        <div 
-          className={`tree-item ${isActive ? 'tree-item-active' : ''} px-2 py-1 rounded-sm my-1 flex items-center justify-between group cursor-pointer`}
-          onClick={() => onSectionSelect && onSectionSelect(section)}
-        >
-          <div className="flex items-center">
-            <span className={`material-icons text-sm mr-1 ${isActive ? 'text-primary' : 'text-neutral-medium'}`}>
-              {isFolder ? 'folder' : 'article'}
-            </span>
-            <span>{section.title}</span>
-          </div>
-          
+
+  return (
+    <DndProvider backend={HTML5Backend}>
+      <div className="tree-view pl-1 text-sm">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-medium text-sm text-neutral-dark">STRUTTURA DOCUMENTO</h3>
           <button 
-            className="hidden group-hover:inline-flex text-neutral-medium hover:text-neutral-dark"
-            onClick={(e) => {
-              e.stopPropagation();
-              addNewSection(section.id);
-            }}
+            className="text-primary hover:text-primary-dark"
+            onClick={() => addNewSection()}
           >
             <span className="material-icons text-sm">add</span>
           </button>
         </div>
         
-        {isFolder && (
-          <div className="pl-4">
-            {children.map(child => (
-              <div 
-                key={child.id} 
-                className={`tree-item ${selectedSectionId === child.id ? 'tree-item-active' : ''} px-2 py-1 rounded-sm my-1 flex items-center cursor-pointer`}
-                onClick={() => onSectionSelect && onSectionSelect(child)}
-              >
-                <span className={`material-icons text-sm mr-1 ${selectedSectionId === child.id ? 'text-primary' : 'text-neutral-medium'}`}>
-                  label
-                </span>
-                <span>{child.title}</span>
-              </div>
-            ))}
+        <SectionTree 
+          sections={sections} 
+          parentId={null} 
+          level={0} 
+          selectedSectionId={selectedSectionId}
+          onSectionSelect={onSectionSelect}
+          onAddSection={addNewSection}
+          onMoveSection={moveSection}
+          documentId={documentId}
+        />
+        
+        {sections.filter(s => !s.parentId).length === 0 && (
+          <div className="text-sm text-neutral-medium py-2">
+            Nessuna sezione disponibile.
+            <button 
+              className="block mt-2 text-primary hover:text-primary-dark"
+              onClick={() => addNewSection()}
+            >
+              + Aggiungi sezione
+            </button>
           </div>
         )}
       </div>
+    </DndProvider>
+  );
+}
+
+interface SectionTreeProps {
+  sections: Section[];
+  parentId: number | null;
+  level: number;
+  selectedSectionId?: number;
+  onSectionSelect?: (section: Section) => void;
+  onAddSection: (parentId: number | null) => void;
+  onMoveSection: (sectionId: number, newParentId: number | null, newOrder: number) => void;
+  documentId: string;
+}
+
+function SectionTree({ 
+  sections, 
+  parentId, 
+  level, 
+  selectedSectionId, 
+  onSectionSelect, 
+  onAddSection,
+  onMoveSection,
+  documentId
+}: SectionTreeProps) {
+  const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({});
+  
+  // Handle component links
+  const { data: sectionComponents } = useQuery<SectionComponentLink[]>({
+    queryKey: [`/api/sections/${parentId}/components`],
+    enabled: !!parentId && level > 0,
+  });
+
+  const currentLevelSections = sections
+    .filter(section => section.parentId === parentId)
+    .sort((a, b) => a.order - b.order);
+
+  const toggleExpand = (sectionId: number) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }));
+  };
+
+  const hasSectionChildren = (sectionId: number) => {
+    return sections.some(section => section.parentId === sectionId);
+  };
+
+  const getSectionComponentsLabel = (sectionId: number) => {
+    if (!sectionComponents) return null;
+    
+    const links = sectionComponents.filter(link => link.sectionId === sectionId);
+    if (links.length === 0) return null;
+    
+    return (
+      <div className="mt-1 text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full inline-flex items-center">
+        <span className="material-icons text-xs mr-1">link</span>
+        {links.length} componenti
+      </div>
     );
   };
+
+  return (
+    <div className={level > 0 ? "pl-4" : ""}>
+      {currentLevelSections.map((section, index) => (
+        <SectionItem
+          key={section.id}
+          section={section}
+          index={index}
+          level={level}
+          isSelected={selectedSectionId === section.id}
+          isExpanded={expandedSections[section.id] || false}
+          hasChildren={hasSectionChildren(section.id)}
+          onToggleExpand={() => toggleExpand(section.id)}
+          onSelect={() => onSectionSelect && onSectionSelect(section)}
+          onAddChild={() => onAddSection(section.id)}
+          onMove={onMoveSection}
+          parentId={parentId}
+          componentsLabel={getSectionComponentsLabel(section.id)}
+        >
+          {(expandedSections[section.id] || level < 1) && hasSectionChildren(section.id) && (
+            <SectionTree
+              sections={sections}
+              parentId={section.id}
+              level={level + 1}
+              selectedSectionId={selectedSectionId}
+              onSectionSelect={onSectionSelect}
+              onAddSection={onAddSection}
+              onMoveSection={onMoveSection}
+              documentId={documentId}
+            />
+          )}
+        </SectionItem>
+      ))}
+    </div>
+  );
+}
+
+interface SectionItemProps {
+  section: Section;
+  index: number;
+  level: number;
+  isSelected: boolean;
+  isExpanded: boolean;
+  hasChildren: boolean;
+  onToggleExpand: () => void;
+  onSelect: () => void;
+  onAddChild: () => void;
+  onMove: (sectionId: number, newParentId: number | null, newOrder: number) => void;
+  parentId: number | null;
+  children?: React.ReactNode;
+  componentsLabel: React.ReactNode;
+}
+
+function SectionItem({
+  section,
+  index,
+  level,
+  isSelected,
+  isExpanded,
+  hasChildren,
+  onToggleExpand,
+  onSelect,
+  onAddChild,
+  onMove,
+  parentId,
+  children,
+  componentsLabel
+}: SectionItemProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  
+  // Set up drag and drop
+  const [{ isDragging }, drag] = useDrag({
+    type: 'SECTION',
+    item: { 
+      type: 'SECTION',
+      id: section.id,
+      originalParentId: section.parentId,
+      originalIndex: index
+    },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging()
+    })
+  });
+  
+  const [{ isOver }, drop] = useDrop({
+    accept: 'SECTION',
+    hover(item: DragItem, monitor) {
+      if (!ref.current) return;
+      
+      const draggedId = item.id;
+      const hoveredId = section.id;
+      
+      // Don't replace items with themselves
+      if (draggedId === hoveredId) return;
+      
+      // Don't allow a section to become its own child
+      // This would be needed if we were to allow drop on the section rather than between sections
+    },
+    drop(item: DragItem) {
+      if (item.id === section.id) return;
+      
+      // When dropping on a section, place it as the next sibling
+      const newOrder = index;
+      onMove(item.id, parentId, newOrder);
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  });
+  
+  const [{ isOverTop }, dropTop] = useDrop({
+    accept: 'SECTION',
+    hover(item: DragItem, monitor) {
+      if (!ref.current) return;
+      
+      // Check if hovering near the top of the item
+      const hoverBoundingRect = ref.current.getBoundingClientRect();
+      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+      const clientOffset = monitor.getClientOffset();
+      const hoverClientY = (clientOffset?.y || 0) - hoverBoundingRect.top;
+      
+      if (hoverClientY > hoverMiddleY) return;
+    },
+    drop(item: DragItem) {
+      if (item.id === section.id) return;
+      
+      // When dropping above a section, place it as the previous sibling
+      onMove(item.id, parentId, index);
+    },
+    collect: (monitor) => ({
+      isOverTop: monitor.isOver(),
+    }),
+  });
+  
+  const [{ isOverBottom }, dropBottom] = useDrop({
+    accept: 'SECTION',
+    hover(item: DragItem, monitor) {
+      if (!ref.current) return;
+      
+      // Check if hovering near the bottom of the item
+      const hoverBoundingRect = ref.current.getBoundingClientRect();
+      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+      const clientOffset = monitor.getClientOffset();
+      const hoverClientY = (clientOffset?.y || 0) - hoverBoundingRect.top;
+      
+      if (hoverClientY < hoverMiddleY) return;
+    },
+    drop(item: DragItem) {
+      if (item.id === section.id) return;
+      
+      // When dropping below a section, place it as the next sibling
+      onMove(item.id, parentId, index + 1);
+    },
+    collect: (monitor) => ({
+      isOverBottom: monitor.isOver(),
+    }),
+  });
+  
+  const [{ isOverChild }, dropChild] = useDrop({
+    accept: 'SECTION',
+    drop(item: DragItem) {
+      if (item.id === section.id) return;
+      
+      // When dropping on the child area, make it a child of this section
+      const childrenCount = 0; // You would need to calculate this
+      onMove(item.id, section.id, childrenCount);
+    },
+    collect: (monitor) => ({
+      isOverChild: monitor.isOver(),
+    }),
+  });
+  
+  // Connect the drop ref with the drag ref
+  drag(drop(ref));
+
+  // Calculate padding based on level
+  const levelPadding = level > 0 ? `${Math.min(level * 0.5, 5)}rem` : '0';
   
   return (
-    <div className="tree-view pl-1 text-sm">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-medium text-sm text-neutral-dark">STRUTTURA DOCUMENTO</h3>
-        <button 
-          className="text-primary hover:text-primary-dark"
-          onClick={() => addNewSection()}
-        >
-          <span className="material-icons text-sm">add</span>
-        </button>
+    <div
+      className={`relative ${isDragging ? 'opacity-50' : 'opacity-100'}`}
+      ref={ref}
+    >
+      {/* Drop zone indicator for top */}
+      {isOverTop && (
+        <div 
+          ref={dropTop}
+          className="absolute top-0 left-0 w-full h-1 bg-primary z-10"
+        />
+      )}
+      
+      <div 
+        className={`
+          tree-item 
+          ${isSelected ? 'tree-item-active bg-gray-100' : ''} 
+          px-2 py-1 my-1 
+          flex flex-col 
+          rounded-sm 
+          transition-colors 
+          duration-100
+          ${isOver ? 'bg-gray-200' : ''}
+        `}
+        style={{ paddingLeft: levelPadding }}
+      >
+        <div className="flex items-center justify-between group cursor-pointer">
+          <div className="flex items-center flex-grow" onClick={onSelect}>
+            {hasChildren && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleExpand();
+                }}
+                className="mr-1 text-neutral-medium focus:outline-none"
+              >
+                <span className="material-icons text-sm">
+                  {isExpanded ? 'expand_more' : 'chevron_right'}
+                </span>
+              </button>
+            )}
+            
+            <span 
+              className={`
+                material-icons text-sm mr-1 
+                ${isSelected ? 'text-primary' : 'text-neutral-medium'}
+              `}
+            >
+              {hasChildren ? 'folder' : 'article'}
+            </span>
+            
+            <span className="truncate max-w-[180px]">{section.title}</span>
+            
+            {componentsLabel}
+          </div>
+          
+          <div className="hidden group-hover:flex items-center">
+            <button 
+              className="text-neutral-medium hover:text-neutral-dark p-1"
+              onClick={onAddChild}
+            >
+              <span className="material-icons text-sm">add</span>
+            </button>
+            <button 
+              className="text-neutral-medium hover:text-neutral-dark p-1 cursor-move"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="material-icons text-sm">drag_indicator</span>
+            </button>
+          </div>
+        </div>
+        
+        {/* Child drop zone - only show when expanded and can accept children */}
+        {isExpanded && (
+          <div 
+            ref={dropChild}
+            className={`
+              mt-1 pl-6 
+              border-l-2 
+              min-h-[20px]
+              ${isOverChild ? 'border-primary bg-primary-light/20' : 'border-gray-200'}
+            `}
+          >
+            {children}
+          </div>
+        )}
       </div>
       
-      {rootSections.map(section => renderSection(section))}
-      
-      {rootSections.length === 0 && (
-        <div className="text-sm text-neutral-medium py-2">
-          Nessuna sezione disponibile.
-          <button 
-            className="block mt-2 text-primary hover:text-primary-dark"
-            onClick={() => addNewSection()}
-          >
-            + Aggiungi sezione
-          </button>
-        </div>
+      {/* Drop zone indicator for bottom */}
+      {isOverBottom && (
+        <div 
+          ref={dropBottom}
+          className="absolute bottom-0 left-0 w-full h-1 bg-primary z-10"
+        />
       )}
     </div>
   );

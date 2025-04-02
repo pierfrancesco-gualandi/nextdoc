@@ -137,6 +137,22 @@ export const insertBomItemSchema = createInsertSchema(bomItems).pick({
   quantity: true,
 });
 
+// Section components (connecting Sections with components)
+export const sectionComponents = pgTable("section_components", {
+  id: serial("id").primaryKey(),
+  sectionId: integer("section_id").notNull(),
+  componentId: integer("component_id").notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  notes: text("notes"),
+});
+
+export const insertSectionComponentSchema = createInsertSchema(sectionComponents).pick({
+  sectionId: true,
+  componentId: true,
+  quantity: true,
+  notes: true,
+});
+
 // Document comments
 export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
@@ -180,6 +196,9 @@ export type InsertBom = z.infer<typeof insertBomSchema>;
 
 export type BomItem = typeof bomItems.$inferSelect;
 export type InsertBomItem = z.infer<typeof insertBomItemSchema>;
+
+export type SectionComponent = typeof sectionComponents.$inferSelect;
+export type InsertSectionComponent = z.infer<typeof insertSectionComponentSchema>;
 
 export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -13,22 +13,82 @@ import { Button } from '@/components/ui/button';
 import { 
   Bold, Italic, Underline, List, ListOrdered, Image as ImageIcon, 
   Link as LinkIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  Table as TableIcon, Heading1, Heading2, Heading3, Type
+  Table as TableIcon, Heading1, Heading2, Heading3, Type, Package
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 interface TiptapEditorProps {
   content: string;
   onChange: (content: string) => void;
   placeholder?: string;
   editable?: boolean;
+  sectionId?: number;
 }
 
 export function TiptapEditor({ 
   content, 
   onChange, 
   placeholder = 'Inizia a scrivere...',
-  editable = true 
+  editable = true,
+  sectionId
 }: TiptapEditorProps) {
+  // Fetch section components if sectionId is provided
+  const { data: sectionComponents } = useQuery<any[]>({
+    queryKey: [`/api/sections/${sectionId}/components`],
+    enabled: !!sectionId
+  });
+  
+  // Stato per mostrare i componenti BOM
+  const [bomComponents, setBomComponents] = useState<any[]>([]);
+
+  // Aggiorna i componenti BOM quando arrivano dal server
+  useEffect(() => {
+    if (sectionComponents && sectionComponents.length > 0) {
+      // Arricchisci con informazioni sui componenti
+      Promise.all(sectionComponents.map(async (link) => {
+        if (link.component) {
+          return {
+            id: link.componentId,
+            code: link.component.code,
+            description: link.component.description,
+            quantity: link.quantity,
+            notes: link.notes
+          };
+        }
+        
+        // Se il componente non è embedded nella risposta, lo recuperiamo
+        try {
+          const response = await fetch(`/api/components/${link.componentId}`);
+          if (response.ok) {
+            const component = await response.json();
+            return {
+              id: link.componentId,
+              code: component.code,
+              description: component.description,
+              quantity: link.quantity,
+              notes: link.notes
+            };
+          }
+        } catch (error) {
+          console.error('Error fetching component:', error);
+        }
+        
+        return {
+          id: link.componentId,
+          code: 'N/A',
+          description: 'Componente non disponibile',
+          quantity: link.quantity,
+          notes: link.notes
+        };
+      }))
+      .then((components) => {
+        setBomComponents(components);
+      });
+    } else {
+      setBomComponents([]);
+    }
+  }, [sectionComponents]);
+  
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -234,10 +294,45 @@ export function TiptapEditor({
           </Button>
         </div>
       )}
-      <EditorContent 
-        editor={editor} 
-        className={`p-4 prose max-w-none focus:outline-none min-h-[200px] ${editable ? 'resizable-editor' : ''}`}
-      />
+      <div>
+        <EditorContent 
+          editor={editor} 
+          className={`p-4 prose max-w-none focus:outline-none min-h-[200px] ${editable ? 'resizable-editor' : ''}`}
+        />
+        
+        {/* Visualizzazione dei componenti BOM associati alla sezione */}
+        {bomComponents.length > 0 && (
+          <div className="border-t border-neutral-light bg-blue-50 p-3">
+            <div className="flex items-center mb-2 text-blue-800">
+              <Package className="h-4 w-4 mr-1" />
+              <span className="font-medium text-sm">Componenti associati ({bomComponents.length})</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {bomComponents.map((component) => (
+                <div 
+                  key={component.id}
+                  className="bg-white border border-blue-200 rounded p-2 text-sm flex items-start"
+                >
+                  <div className="text-blue-600 font-mono bg-blue-50 px-2 py-1 rounded-md mr-2 flex-shrink-0">
+                    {component.code}
+                  </div>
+                  <div>
+                    <div className="font-medium">{component.description}</div>
+                    {component.notes && (
+                      <div className="text-neutral-medium mt-1">{component.notes}</div>
+                    )}
+                    {component.quantity > 1 && (
+                      <div className="text-neutral-dark mt-1">
+                        Quantità: {component.quantity}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

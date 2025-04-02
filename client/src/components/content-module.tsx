@@ -168,6 +168,7 @@ export default function ContentModule({
             <TiptapEditor 
               content={content.text} 
               onChange={(text) => setContent({ ...content, text })} 
+              sectionId={module.sectionId}
             />
           </div>
         );

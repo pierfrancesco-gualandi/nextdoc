@@ -7,6 +7,7 @@ import {
   components, Component, InsertComponent,
   boms, Bom, InsertBom,
   bomItems, BomItem, InsertBomItem,
+  sectionComponents, SectionComponent, InsertSectionComponent,
   comments, Comment, InsertComment,
   // Translation schemas and types
   languages, Language, InsertLanguage,
@@ -79,6 +80,15 @@ export interface IStorage {
   createBomItem(item: InsertBomItem): Promise<BomItem>;
   updateBomItem(id: number, item: Partial<InsertBomItem>): Promise<BomItem | undefined>;
   deleteBomItem(id: number): Promise<boolean>;
+  
+  // Section-Component operations
+  getSectionComponent(id: number): Promise<SectionComponent | undefined>;
+  getSectionComponentsBySectionId(sectionId: number): Promise<SectionComponent[]>;
+  getSectionComponentsByComponentId(componentId: number): Promise<SectionComponent[]>;
+  createSectionComponent(sectionComponent: InsertSectionComponent): Promise<SectionComponent>;
+  updateSectionComponent(id: number, sectionComponent: Partial<InsertSectionComponent>): Promise<SectionComponent | undefined>;
+  deleteSectionComponent(id: number): Promise<boolean>;
+  deleteSectionComponentsBySectionId(sectionId: number): Promise<boolean>;
   
   // Comment operations
   getComment(id: number): Promise<Comment | undefined>;
@@ -155,6 +165,7 @@ export class MemStorage implements IStorage {
   private components: Map<number, Component>;
   private boms: Map<number, Bom>;
   private bomItems: Map<number, BomItem>;
+  private sectionComponents: Map<number, SectionComponent>;
   private comments: Map<number, Comment>;
   
   // Translation-related maps
@@ -173,6 +184,7 @@ export class MemStorage implements IStorage {
   private currentComponentId: number;
   private currentBomId: number;
   private currentBomItemId: number;
+  private currentSectionComponentId: number;
   private currentCommentId: number;
   
   // Translation-related counters
@@ -192,6 +204,7 @@ export class MemStorage implements IStorage {
     this.components = new Map();
     this.boms = new Map();
     this.bomItems = new Map();
+    this.sectionComponents = new Map();
     this.comments = new Map();
     
     // Initialize translation maps
@@ -210,6 +223,7 @@ export class MemStorage implements IStorage {
     this.currentComponentId = 1;
     this.currentBomId = 1;
     this.currentBomItemId = 1;
+    this.currentSectionComponentId = 1;
     this.currentCommentId = 1;
     
     // Initialize translation counters
@@ -614,6 +628,47 @@ export class MemStorage implements IStorage {
 
   async deleteBomItem(id: number): Promise<boolean> {
     return this.bomItems.delete(id);
+  }
+
+  // Section-Component operations
+  async getSectionComponent(id: number): Promise<SectionComponent | undefined> {
+    return this.sectionComponents.get(id);
+  }
+
+  async getSectionComponentsBySectionId(sectionId: number): Promise<SectionComponent[]> {
+    return Array.from(this.sectionComponents.values())
+      .filter(sc => sc.sectionId === sectionId);
+  }
+
+  async getSectionComponentsByComponentId(componentId: number): Promise<SectionComponent[]> {
+    return Array.from(this.sectionComponents.values())
+      .filter(sc => sc.componentId === componentId);
+  }
+
+  async createSectionComponent(sectionComponent: InsertSectionComponent): Promise<SectionComponent> {
+    const id = this.currentSectionComponentId++;
+    const newSectionComponent: SectionComponent = { ...sectionComponent, id };
+    this.sectionComponents.set(id, newSectionComponent);
+    return newSectionComponent;
+  }
+
+  async updateSectionComponent(id: number, sectionComponent: Partial<InsertSectionComponent>): Promise<SectionComponent | undefined> {
+    const existingSectionComponent = this.sectionComponents.get(id);
+    if (!existingSectionComponent) return undefined;
+
+    const updatedSectionComponent = { ...existingSectionComponent, ...sectionComponent };
+    this.sectionComponents.set(id, updatedSectionComponent);
+    return updatedSectionComponent;
+  }
+
+  async deleteSectionComponent(id: number): Promise<boolean> {
+    return this.sectionComponents.delete(id);
+  }
+
+  async deleteSectionComponentsBySectionId(sectionId: number): Promise<boolean> {
+    const sectionComponents = await this.getSectionComponentsBySectionId(sectionId);
+    sectionComponents.forEach(sc => this.sectionComponents.delete(sc.id));
+    return true;
   }
 
   // Comment operations
