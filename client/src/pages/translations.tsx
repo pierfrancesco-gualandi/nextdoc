@@ -621,11 +621,11 @@ function SectionTranslationManager() {
       
       if (response.ok) {
         const data = await response.json();
-        if (data && data.length > 0) {
+        if (data && Array.isArray(data) && data.length > 0) {
           setTranslation(data[0]);
         } else {
           // Se non esiste, crea un oggetto vuoto per una nuova traduzione
-          const section = sections.find((s: any) => s.id === parseInt(selectedSection));
+          const section = sections.length > 0 ? sections.find((s: any) => s.id === parseInt(selectedSection)) : null;
           setTranslation({
             sectionId: parseInt(selectedSection),
             languageId: parseInt(selectedLanguage),
