@@ -9,6 +9,7 @@ import ContentModule from "@/components/content-module";
 import DocumentDetails from "@/components/document-details";
 import VersionComparison from "@/components/version-comparison";
 import BomManager from "@/components/bom-manager";
+import SectionBomAssociator from "@/components/section-bom-associator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -250,6 +251,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
             <TabsTrigger value="editor">Editor</TabsTrigger>
             <TabsTrigger value="preview">Anteprima</TabsTrigger>
             <TabsTrigger value="bom">Distinta Base</TabsTrigger>
+            <TabsTrigger value="bom-section">Associa BOM</TabsTrigger>
             <TabsTrigger value="permissions">Permessi</TabsTrigger>
             <TabsTrigger value="history">Cronologia</TabsTrigger>
           </TabsList>
@@ -442,6 +444,57 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                   <h3 className="text-lg font-medium">Gestione Distinte Base</h3>
                 </div>
                 <BomManager documentId={id} />
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="bom-section">
+            <div className="flex h-full">
+              {/* Left sidebar with document tree for section selection */}
+              <div className="w-64 bg-white shadow-inner border-r border-neutral-light p-4 overflow-y-auto">
+                {id !== 'new' ? (
+                  <div>
+                    <h3 className="text-sm font-medium text-neutral-darkest mb-2">Seleziona una sezione</h3>
+                    <DocumentTreeView 
+                      documentId={id}
+                      onSectionSelect={handleSectionSelect}
+                      selectedSectionId={selectedSection?.id}
+                    />
+                  </div>
+                ) : (
+                  <div className="text-sm text-neutral-medium">
+                    Salva il documento per aggiungere sezioni.
+                  </div>
+                )}
+              </div>
+              
+              {/* Main content area for BOM association */}
+              <div className="flex-1 overflow-y-auto">
+                {id === 'new' ? (
+                  <div className="p-6 text-center">
+                    <p>Salva il documento prima di associare le distinte base.</p>
+                  </div>
+                ) : selectedSection ? (
+                  <div className="max-w-5xl mx-auto bg-white shadow-sm">
+                    <div className="px-6 py-4 border-b border-neutral-light">
+                      <h3 className="text-lg font-medium">
+                        Associa componenti BOM alla sezione: <span className="text-primary">{selectedSection.title}</span>
+                      </h3>
+                      <p className="text-sm text-neutral-medium mt-1">
+                        In questa sezione puoi associare i componenti di una distinta base alla sezione selezionata.
+                      </p>
+                    </div>
+                    <SectionBomAssociator sectionId={selectedSection.id} />
+                  </div>
+                ) : (
+                  <div className="text-center p-10">
+                    <span className="material-icons text-5xl text-neutral-medium mb-3">view_list</span>
+                    <h3 className="text-xl font-medium text-neutral-dark mb-2">Seleziona una sezione</h3>
+                    <p className="text-neutral-medium">
+                      Seleziona una sezione dal menu a sinistra per associare componenti di una distinta base.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </TabsContent>
