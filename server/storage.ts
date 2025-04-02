@@ -7,7 +7,14 @@ import {
   components, Component, InsertComponent,
   boms, Bom, InsertBom,
   bomItems, BomItem, InsertBomItem,
-  comments, Comment, InsertComment
+  comments, Comment, InsertComment,
+  // Translation schemas and types
+  languages, Language, InsertLanguage,
+  translationAssignments, TranslationAssignment, InsertTranslationAssignment,
+  sectionTranslations, SectionTranslation, InsertSectionTranslation,
+  contentModuleTranslations, ContentModuleTranslation, InsertContentModuleTranslation,
+  translationImports, TranslationImport, InsertTranslationImport,
+  translationAIRequests, TranslationAIRequest, InsertTranslationAIRequest
 } from "@shared/schema";
 
 export interface IStorage {
@@ -79,6 +86,62 @@ export interface IStorage {
 
   // Module library operations
   getModules(): Promise<Section[]>;
+  
+  // Language operations
+  getLanguage(id: number): Promise<Language | undefined>;
+  getLanguageByCode(code: string): Promise<Language | undefined>;
+  getLanguages(activeOnly?: boolean): Promise<Language[]>;
+  createLanguage(language: InsertLanguage): Promise<Language>;
+  updateLanguage(id: number, language: Partial<InsertLanguage>): Promise<Language | undefined>;
+  deleteLanguage(id: number): Promise<boolean>;
+
+  // Translation assignment operations
+  getTranslationAssignment(id: number): Promise<TranslationAssignment | undefined>;
+  getTranslationAssignmentsByUserId(userId: number): Promise<TranslationAssignment[]>;
+  getTranslationAssignmentsByLanguageId(languageId: number): Promise<TranslationAssignment[]>;
+  createTranslationAssignment(assignment: InsertTranslationAssignment): Promise<TranslationAssignment>;
+  updateTranslationAssignment(id: number, assignment: Partial<InsertTranslationAssignment>): Promise<TranslationAssignment | undefined>;
+  deleteTranslationAssignment(id: number): Promise<boolean>;
+
+  // Section translation operations
+  getSectionTranslation(id: number): Promise<SectionTranslation | undefined>;
+  getSectionTranslationByLanguage(sectionId: number, languageId: number): Promise<SectionTranslation | undefined>;
+  getSectionTranslationsByLanguageId(languageId: number): Promise<SectionTranslation[]>;
+  getSectionTranslationsBySectionId(sectionId: number): Promise<SectionTranslation[]>;
+  createSectionTranslation(translation: InsertSectionTranslation): Promise<SectionTranslation>;
+  updateSectionTranslation(id: number, translation: Partial<InsertSectionTranslation>): Promise<SectionTranslation | undefined>;
+  deleteSectionTranslation(id: number): Promise<boolean>;
+
+  // Content module translation operations
+  getContentModuleTranslation(id: number): Promise<ContentModuleTranslation | undefined>;
+  getContentModuleTranslationByLanguage(moduleId: number, languageId: number): Promise<ContentModuleTranslation | undefined>;
+  getContentModuleTranslationsByLanguageId(languageId: number): Promise<ContentModuleTranslation[]>;
+  getContentModuleTranslationsByModuleId(moduleId: number): Promise<ContentModuleTranslation[]>;
+  createContentModuleTranslation(translation: InsertContentModuleTranslation): Promise<ContentModuleTranslation>;
+  updateContentModuleTranslation(id: number, translation: Partial<InsertContentModuleTranslation>): Promise<ContentModuleTranslation | undefined>;
+  deleteContentModuleTranslation(id: number): Promise<boolean>;
+
+  // Translation import operations
+  getTranslationImport(id: number): Promise<TranslationImport | undefined>;
+  getTranslationImports(): Promise<TranslationImport[]>;
+  createTranslationImport(importData: InsertTranslationImport): Promise<TranslationImport>;
+  processTranslationImport(importId: number, data: any): Promise<boolean>;
+
+  // Translation AI operations
+  getTranslationAIRequest(id: number): Promise<TranslationAIRequest | undefined>;
+  getTranslationAIRequests(): Promise<TranslationAIRequest[]>;
+  createTranslationAIRequest(request: InsertTranslationAIRequest): Promise<TranslationAIRequest>;
+  updateTranslationAIRequest(id: number, request: Partial<InsertTranslationAIRequest>): Promise<TranslationAIRequest | undefined>;
+  
+  // Document translations - utility methods
+  getDocumentTranslationStatus(documentId: number, languageId: number): Promise<{
+    totalSections: number;
+    totalModules: number;
+    translatedSections: number;
+    translatedModules: number;
+    reviewedSections: number;
+    reviewedModules: number;
+  }>;
 }
 
 export class MemStorage implements IStorage {
@@ -91,6 +154,14 @@ export class MemStorage implements IStorage {
   private boms: Map<number, Bom>;
   private bomItems: Map<number, BomItem>;
   private comments: Map<number, Comment>;
+  
+  // Translation-related maps
+  private languages: Map<number, Language>;
+  private translationAssignments: Map<number, TranslationAssignment>;
+  private sectionTranslations: Map<number, SectionTranslation>;
+  private contentModuleTranslations: Map<number, ContentModuleTranslation>;
+  private translationImports: Map<number, TranslationImport>;
+  private translationAIRequests: Map<number, TranslationAIRequest>;
 
   private currentUserId: number;
   private currentDocumentId: number;
@@ -101,6 +172,14 @@ export class MemStorage implements IStorage {
   private currentBomId: number;
   private currentBomItemId: number;
   private currentCommentId: number;
+  
+  // Translation-related counters
+  private currentLanguageId: number;
+  private currentTranslationAssignmentId: number;
+  private currentSectionTranslationId: number;
+  private currentContentModuleTranslationId: number;
+  private currentTranslationImportId: number;
+  private currentTranslationAIRequestId: number;
 
   constructor() {
     this.users = new Map();
@@ -112,6 +191,14 @@ export class MemStorage implements IStorage {
     this.boms = new Map();
     this.bomItems = new Map();
     this.comments = new Map();
+    
+    // Initialize translation maps
+    this.languages = new Map();
+    this.translationAssignments = new Map();
+    this.sectionTranslations = new Map();
+    this.contentModuleTranslations = new Map();
+    this.translationImports = new Map();
+    this.translationAIRequests = new Map();
 
     this.currentUserId = 1;
     this.currentDocumentId = 1;
@@ -122,6 +209,14 @@ export class MemStorage implements IStorage {
     this.currentBomId = 1;
     this.currentBomItemId = 1;
     this.currentCommentId = 1;
+    
+    // Initialize translation counters
+    this.currentLanguageId = 1;
+    this.currentTranslationAssignmentId = 1;
+    this.currentSectionTranslationId = 1;
+    this.currentContentModuleTranslationId = 1;
+    this.currentTranslationImportId = 1;
+    this.currentTranslationAIRequestId = 1;
 
     // Add an initial admin user
     this.createUser({
@@ -137,6 +232,9 @@ export class MemStorage implements IStorage {
 
     // Create sample BOM
     this.seedBoms();
+    
+    // Add default languages
+    this.seedLanguages();
   }
 
   private seedComponents() {
@@ -159,6 +257,21 @@ export class MemStorage implements IStorage {
         description: comp.description,
         details: {}
       });
+    });
+  }
+
+  private seedLanguages() {
+    // Add default languages
+    const languages = [
+      { name: "Italiano", code: "it", isActive: true, isDefault: true },
+      { name: "English", code: "en", isActive: true, isDefault: false },
+      { name: "Français", code: "fr", isActive: true, isDefault: false },
+      { name: "Deutsch", code: "de", isActive: true, isDefault: false },
+      { name: "Español", code: "es", isActive: true, isDefault: false }
+    ];
+    
+    languages.forEach(lang => {
+      this.createLanguage(lang);
     });
   }
 
@@ -527,6 +640,433 @@ export class MemStorage implements IStorage {
   // Module library operations
   async getModules(): Promise<Section[]> {
     return Array.from(this.sections.values()).filter(section => section.isModule);
+  }
+  
+  // Language operations
+  async getLanguage(id: number): Promise<Language | undefined> {
+    return this.languages.get(id);
+  }
+
+  async getLanguageByCode(code: string): Promise<Language | undefined> {
+    return Array.from(this.languages.values()).find(language => language.code === code);
+  }
+
+  async getLanguages(activeOnly = false): Promise<Language[]> {
+    const allLanguages = Array.from(this.languages.values());
+    return activeOnly ? allLanguages.filter(lang => lang.isActive) : allLanguages;
+  }
+
+  async createLanguage(language: InsertLanguage): Promise<Language> {
+    const id = this.currentLanguageId++;
+    const newLanguage: Language = { ...language, id };
+    
+    // Ensure only one default language
+    if (language.isDefault) {
+      Array.from(this.languages.values()).forEach(lang => {
+        if (lang.isDefault) {
+          this.languages.set(lang.id, { ...lang, isDefault: false });
+        }
+      });
+    }
+    
+    this.languages.set(id, newLanguage);
+    return newLanguage;
+  }
+
+  async updateLanguage(id: number, language: Partial<InsertLanguage>): Promise<Language | undefined> {
+    const existingLanguage = this.languages.get(id);
+    if (!existingLanguage) return undefined;
+
+    // Ensure only one default language
+    if (language.isDefault) {
+      Array.from(this.languages.values()).forEach(lang => {
+        if (lang.id !== id && lang.isDefault) {
+          this.languages.set(lang.id, { ...lang, isDefault: false });
+        }
+      });
+    }
+    
+    const updatedLanguage = { ...existingLanguage, ...language };
+    this.languages.set(id, updatedLanguage);
+    return updatedLanguage;
+  }
+
+  async deleteLanguage(id: number): Promise<boolean> {
+    // We should not allow deleting the default language
+    const language = this.languages.get(id);
+    if (language?.isDefault) return false;
+    
+    // Delete associated translations
+    Array.from(this.sectionTranslations.values())
+      .filter(translation => translation.languageId === id)
+      .forEach(translation => this.sectionTranslations.delete(translation.id));
+      
+    Array.from(this.contentModuleTranslations.values())
+      .filter(translation => translation.languageId === id)
+      .forEach(translation => this.contentModuleTranslations.delete(translation.id));
+      
+    Array.from(this.translationAssignments.values())
+      .filter(assignment => assignment.languageId === id)
+      .forEach(assignment => this.translationAssignments.delete(assignment.id));
+    
+    return this.languages.delete(id);
+  }
+
+  // Translation assignment operations
+  async getTranslationAssignment(id: number): Promise<TranslationAssignment | undefined> {
+    return this.translationAssignments.get(id);
+  }
+
+  async getTranslationAssignmentsByUserId(userId: number): Promise<TranslationAssignment[]> {
+    return Array.from(this.translationAssignments.values())
+      .filter(assignment => assignment.userId === userId);
+  }
+
+  async getTranslationAssignmentsByLanguageId(languageId: number): Promise<TranslationAssignment[]> {
+    return Array.from(this.translationAssignments.values())
+      .filter(assignment => assignment.languageId === languageId);
+  }
+
+  async createTranslationAssignment(assignment: InsertTranslationAssignment): Promise<TranslationAssignment> {
+    const id = this.currentTranslationAssignmentId++;
+    const newAssignment: TranslationAssignment = { ...assignment, id };
+    this.translationAssignments.set(id, newAssignment);
+    return newAssignment;
+  }
+
+  async updateTranslationAssignment(id: number, assignment: Partial<InsertTranslationAssignment>): Promise<TranslationAssignment | undefined> {
+    const existingAssignment = this.translationAssignments.get(id);
+    if (!existingAssignment) return undefined;
+
+    const updatedAssignment = { ...existingAssignment, ...assignment };
+    this.translationAssignments.set(id, updatedAssignment);
+    return updatedAssignment;
+  }
+
+  async deleteTranslationAssignment(id: number): Promise<boolean> {
+    return this.translationAssignments.delete(id);
+  }
+
+  // Section translation operations
+  async getSectionTranslation(id: number): Promise<SectionTranslation | undefined> {
+    return this.sectionTranslations.get(id);
+  }
+
+  async getSectionTranslationByLanguage(sectionId: number, languageId: number): Promise<SectionTranslation | undefined> {
+    return Array.from(this.sectionTranslations.values())
+      .find(translation => translation.sectionId === sectionId && translation.languageId === languageId);
+  }
+
+  async getSectionTranslationsByLanguageId(languageId: number): Promise<SectionTranslation[]> {
+    return Array.from(this.sectionTranslations.values())
+      .filter(translation => translation.languageId === languageId);
+  }
+
+  async getSectionTranslationsBySectionId(sectionId: number): Promise<SectionTranslation[]> {
+    return Array.from(this.sectionTranslations.values())
+      .filter(translation => translation.sectionId === sectionId);
+  }
+
+  async createSectionTranslation(translation: InsertSectionTranslation): Promise<SectionTranslation> {
+    const id = this.currentSectionTranslationId++;
+    const now = new Date();
+    const newTranslation: SectionTranslation = { 
+      ...translation, 
+      id, 
+      updatedAt: now 
+    };
+    this.sectionTranslations.set(id, newTranslation);
+    return newTranslation;
+  }
+
+  async updateSectionTranslation(id: number, translation: Partial<InsertSectionTranslation>): Promise<SectionTranslation | undefined> {
+    const existingTranslation = this.sectionTranslations.get(id);
+    if (!existingTranslation) return undefined;
+
+    const updatedTranslation = { 
+      ...existingTranslation, 
+      ...translation,
+      updatedAt: new Date()
+    };
+    this.sectionTranslations.set(id, updatedTranslation);
+    return updatedTranslation;
+  }
+
+  async deleteSectionTranslation(id: number): Promise<boolean> {
+    return this.sectionTranslations.delete(id);
+  }
+
+  // Content module translation operations
+  async getContentModuleTranslation(id: number): Promise<ContentModuleTranslation | undefined> {
+    return this.contentModuleTranslations.get(id);
+  }
+
+  async getContentModuleTranslationByLanguage(moduleId: number, languageId: number): Promise<ContentModuleTranslation | undefined> {
+    return Array.from(this.contentModuleTranslations.values())
+      .find(translation => translation.moduleId === moduleId && translation.languageId === languageId);
+  }
+
+  async getContentModuleTranslationsByLanguageId(languageId: number): Promise<ContentModuleTranslation[]> {
+    return Array.from(this.contentModuleTranslations.values())
+      .filter(translation => translation.languageId === languageId);
+  }
+
+  async getContentModuleTranslationsByModuleId(moduleId: number): Promise<ContentModuleTranslation[]> {
+    return Array.from(this.contentModuleTranslations.values())
+      .filter(translation => translation.moduleId === moduleId);
+  }
+
+  async createContentModuleTranslation(translation: InsertContentModuleTranslation): Promise<ContentModuleTranslation> {
+    const id = this.currentContentModuleTranslationId++;
+    const now = new Date();
+    const newTranslation: ContentModuleTranslation = { 
+      ...translation, 
+      id, 
+      updatedAt: now 
+    };
+    this.contentModuleTranslations.set(id, newTranslation);
+    return newTranslation;
+  }
+
+  async updateContentModuleTranslation(id: number, translation: Partial<InsertContentModuleTranslation>): Promise<ContentModuleTranslation | undefined> {
+    const existingTranslation = this.contentModuleTranslations.get(id);
+    if (!existingTranslation) return undefined;
+
+    const updatedTranslation = { 
+      ...existingTranslation, 
+      ...translation,
+      updatedAt: new Date()
+    };
+    this.contentModuleTranslations.set(id, updatedTranslation);
+    return updatedTranslation;
+  }
+
+  async deleteContentModuleTranslation(id: number): Promise<boolean> {
+    return this.contentModuleTranslations.delete(id);
+  }
+
+  // Translation import operations
+  async getTranslationImport(id: number): Promise<TranslationImport | undefined> {
+    return this.translationImports.get(id);
+  }
+
+  async getTranslationImports(): Promise<TranslationImport[]> {
+    return Array.from(this.translationImports.values())
+      .sort((a, b) => new Date(b.importedAt).getTime() - new Date(a.importedAt).getTime());
+  }
+
+  async createTranslationImport(importData: InsertTranslationImport): Promise<TranslationImport> {
+    const id = this.currentTranslationImportId++;
+    const now = new Date();
+    const newImport: TranslationImport = { 
+      ...importData, 
+      id, 
+      importedAt: now 
+    };
+    this.translationImports.set(id, newImport);
+    return newImport;
+  }
+
+  async processTranslationImport(importId: number, data: any): Promise<boolean> {
+    // This would handle parsing the import data and creating translations
+    // For simplicity in this in-memory implementation, we'll assume the data
+    // is already in the format we need
+    try {
+      const importRecord = await this.getTranslationImport(importId);
+      if (!importRecord) return false;
+      
+      let successCount = 0;
+      let errorCount = 0;
+      
+      // Process section translations
+      if (data.sections) {
+        for (const section of data.sections) {
+          try {
+            const existingTranslation = await this.getSectionTranslationByLanguage(
+              section.sectionId, 
+              importRecord.languageId
+            );
+            
+            if (existingTranslation) {
+              await this.updateSectionTranslation(existingTranslation.id, {
+                title: section.title,
+                description: section.description,
+                status: 'in_review',
+                translatedById: importRecord.importedById
+              });
+            } else {
+              await this.createSectionTranslation({
+                sectionId: section.sectionId,
+                languageId: importRecord.languageId,
+                title: section.title,
+                description: section.description,
+                status: 'in_review',
+                translatedById: importRecord.importedById,
+                reviewedById: null
+              });
+            }
+            successCount++;
+          } catch (error) {
+            errorCount++;
+          }
+        }
+      }
+      
+      // Process content module translations
+      if (data.modules) {
+        for (const module of data.modules) {
+          try {
+            const existingTranslation = await this.getContentModuleTranslationByLanguage(
+              module.moduleId, 
+              importRecord.languageId
+            );
+            
+            if (existingTranslation) {
+              await this.updateContentModuleTranslation(existingTranslation.id, {
+                content: module.content,
+                status: 'in_review',
+                translatedById: importRecord.importedById
+              });
+            } else {
+              await this.createContentModuleTranslation({
+                moduleId: module.moduleId,
+                languageId: importRecord.languageId,
+                content: module.content,
+                status: 'in_review',
+                translatedById: importRecord.importedById,
+                reviewedById: null
+              });
+            }
+            successCount++;
+          } catch (error) {
+            errorCount++;
+          }
+        }
+      }
+      
+      // Update import record with status
+      await this.updateTranslationImport(importId, {
+        status: errorCount > 0 ? (successCount > 0 ? 'partial' : 'error') : 'success',
+        details: {
+          totalItems: (data.sections?.length || 0) + (data.modules?.length || 0),
+          successCount,
+          errorCount,
+          completedAt: new Date()
+        }
+      });
+      
+      return successCount > 0;
+    } catch (error) {
+      return false;
+    }
+  }
+  
+  // Helper method for updating translation imports
+  private async updateTranslationImport(id: number, data: Partial<InsertTranslationImport>): Promise<TranslationImport | undefined> {
+    const existingImport = this.translationImports.get(id);
+    if (!existingImport) return undefined;
+    
+    const updatedImport = { ...existingImport, ...data };
+    this.translationImports.set(id, updatedImport);
+    return updatedImport;
+  }
+
+  // Translation AI operations
+  async getTranslationAIRequest(id: number): Promise<TranslationAIRequest | undefined> {
+    return this.translationAIRequests.get(id);
+  }
+
+  async getTranslationAIRequests(): Promise<TranslationAIRequest[]> {
+    return Array.from(this.translationAIRequests.values())
+      .sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
+  }
+
+  async createTranslationAIRequest(request: InsertTranslationAIRequest): Promise<TranslationAIRequest> {
+    const id = this.currentTranslationAIRequestId++;
+    const now = new Date();
+    const newRequest: TranslationAIRequest = { 
+      ...request, 
+      id, 
+      requestedAt: now 
+    };
+    this.translationAIRequests.set(id, newRequest);
+    return newRequest;
+  }
+
+  async updateTranslationAIRequest(id: number, request: Partial<InsertTranslationAIRequest>): Promise<TranslationAIRequest | undefined> {
+    const existingRequest = this.translationAIRequests.get(id);
+    if (!existingRequest) return undefined;
+    
+    const updatedRequest = { ...existingRequest, ...request };
+    this.translationAIRequests.set(id, updatedRequest);
+    return updatedRequest;
+  }
+  
+  // Document translations - utility methods
+  async getDocumentTranslationStatus(documentId: number, languageId: number): Promise<{
+    totalSections: number;
+    totalModules: number;
+    translatedSections: number;
+    translatedModules: number;
+    reviewedSections: number;
+    reviewedModules: number;
+  }> {
+    // Get all sections for the document
+    const sections = await this.getSectionsByDocumentId(documentId);
+    
+    // Count total modules
+    let totalModules = 0;
+    for (const section of sections) {
+      const modules = await this.getContentModulesBySectionId(section.id);
+      totalModules += modules.length;
+    }
+    
+    // Get all section translations for this language
+    const sectionTranslations = Array.from(this.sectionTranslations.values())
+      .filter(t => 
+        t.languageId === languageId && 
+        sections.some(s => s.id === t.sectionId)
+      );
+    
+    // Count translated and reviewed sections
+    const translatedSections = sectionTranslations.filter(t => 
+      t.status === 'ai_suggested' || t.status === 'in_review' || t.status === 'approved'
+    ).length;
+    
+    const reviewedSections = sectionTranslations.filter(t => 
+      t.status === 'approved'
+    ).length;
+    
+    // Get all module translations for this language
+    let translatedModules = 0;
+    let reviewedModules = 0;
+    
+    for (const section of sections) {
+      const modules = await this.getContentModulesBySectionId(section.id);
+      
+      for (const module of modules) {
+        const translation = await this.getContentModuleTranslationByLanguage(module.id, languageId);
+        
+        if (translation) {
+          if (translation.status === 'ai_suggested' || translation.status === 'in_review' || translation.status === 'approved') {
+            translatedModules++;
+          }
+          
+          if (translation.status === 'approved') {
+            reviewedModules++;
+          }
+        }
+      }
+    }
+    
+    return {
+      totalSections: sections.length,
+      totalModules,
+      translatedSections,
+      translatedModules,
+      reviewedSections,
+      reviewedModules
+    };
   }
 }
 

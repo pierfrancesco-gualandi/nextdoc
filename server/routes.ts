@@ -12,7 +12,13 @@ import {
   insertComponentSchema,
   insertBomSchema,
   insertBomItemSchema,
-  insertCommentSchema
+  insertCommentSchema,
+  insertLanguageSchema,
+  insertTranslationAssignmentSchema,
+  insertSectionTranslationSchema,
+  insertContentModuleTranslationSchema,
+  insertTranslationImportSchema,
+  insertTranslationAIRequestSchema
 } from "@shared/schema";
 
 // Helper function to validate request body against a schema
@@ -755,6 +761,619 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to compare BOMs" });
+    }
+  });
+
+  // Module library operations
+  app.get("/api/modules/library", async (req: Request, res: Response) => {
+    try {
+      const modules = await storage.getModules();
+      res.json(modules);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch module library" });
+    }
+  });
+
+  // Language routes
+  app.get("/api/languages", async (req: Request, res: Response) => {
+    try {
+      const activeOnly = req.query.active === "true";
+      const languages = await storage.getLanguages(activeOnly);
+      res.json(languages);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch languages" });
+    }
+  });
+
+  app.get("/api/languages/:id", async (req: Request, res: Response) => {
+    try {
+      const language = await storage.getLanguage(Number(req.params.id));
+      if (!language) {
+        return res.status(404).json({ message: "Language not found" });
+      }
+      res.json(language);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch language" });
+    }
+  });
+
+  app.post("/api/languages", async (req: Request, res: Response) => {
+    try {
+      const { data, error } = validateBody(insertLanguageSchema, req.body);
+      if (error) {
+        return res.status(400).json({ message: error });
+      }
+      
+      const existingLanguage = await storage.getLanguageByCode(data.code);
+      if (existingLanguage) {
+        return res.status(409).json({ message: "Language code already exists" });
+      }
+      
+      const language = await storage.createLanguage(data);
+      res.status(201).json(language);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create language" });
+    }
+  });
+
+  app.put("/api/languages/:id", async (req: Request, res: Response) => {
+    try {
+      const languageId = Number(req.params.id);
+      const { data, error } = validateBody(insertLanguageSchema.partial(), req.body);
+      if (error) {
+        return res.status(400).json({ message: error });
+      }
+      
+      if (data.code) {
+        const existingLanguage = await storage.getLanguageByCode(data.code);
+        if (existingLanguage && existingLanguage.id !== languageId) {
+          return res.status(409).json({ message: "Language code already exists" });
+        }
+      }
+      
+      const language = await storage.updateLanguage(languageId, data);
+      if (!language) {
+        return res.status(404).json({ message: "Language not found" });
+      }
+      
+      res.json(language);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update language" });
+    }
+  });
+
+  app.delete("/api/languages/:id", async (req: Request, res: Response) => {
+    try {
+      const languageId = Number(req.params.id);
+      const success = await storage.deleteLanguage(languageId);
+      if (!success) {
+        return res.status(400).json({ message: "Cannot delete this language" });
+      }
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete language" });
+    }
+  });
+
+  // Translation assignment routes
+  app.get("/api/translation-assignments", async (req: Request, res: Response) => {
+    try {
+      const userId = req.query.userId ? Number(req.query.userId) : undefined;
+      const languageId = req.query.languageId ? Number(req.query.languageId) : undefined;
+      
+      let assignments = [];
+      if (userId) {
+        assignments = await storage.getTranslationAssignmentsByUserId(userId);
+      } else if (languageId) {
+        assignments = await storage.getTranslationAssignmentsByLanguageId(languageId);
+      } else {
+        // We don't have a method to get all assignments, so we'll combine user and language queries
+        // In a real app, you'd add a method to get all or use pagination
+        const languages = await storage.getLanguages(true);
+        for (const language of languages) {
+          const langAssignments = await storage.getTranslationAssignmentsByLanguageId(language.id);
+          assignments = [...assignments, ...langAssignments];
+        }
+      }
+      
+      res.json(assignments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch translation assignments" });
+    }
+  });
+
+  app.get("/api/translation-assignments/:id", async (req: Request, res: Response) => {
+    try {
+      const assignment = await storage.getTranslationAssignment(Number(req.params.id));
+      if (!assignment) {
+        return res.status(404).json({ message: "Translation assignment not found" });
+      }
+      res.json(assignment);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch translation assignment" });
+    }
+  });
+
+  app.post("/api/translation-assignments", async (req: Request, res: Response) => {
+    try {
+      const { data, error } = validateBody(insertTranslationAssignmentSchema, req.body);
+      if (error) {
+        return res.status(400).json({ message: error });
+      }
+      
+      const assignment = await storage.createTranslationAssignment(data);
+      res.status(201).json(assignment);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create translation assignment" });
+    }
+  });
+
+  app.put("/api/translation-assignments/:id", async (req: Request, res: Response) => {
+    try {
+      const assignmentId = Number(req.params.id);
+      const { data, error } = validateBody(insertTranslationAssignmentSchema.partial(), req.body);
+      if (error) {
+        return res.status(400).json({ message: error });
+      }
+      
+      const assignment = await storage.updateTranslationAssignment(assignmentId, data);
+      if (!assignment) {
+        return res.status(404).json({ message: "Translation assignment not found" });
+      }
+      
+      res.json(assignment);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update translation assignment" });
+    }
+  });
+
+  app.delete("/api/translation-assignments/:id", async (req: Request, res: Response) => {
+    try {
+      const assignmentId = Number(req.params.id);
+      const success = await storage.deleteTranslationAssignment(assignmentId);
+      if (!success) {
+        return res.status(404).json({ message: "Translation assignment not found" });
+      }
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete translation assignment" });
+    }
+  });
+
+  // Section translation routes
+  app.get("/api/section-translations", async (req: Request, res: Response) => {
+    try {
+      const sectionId = req.query.sectionId ? Number(req.query.sectionId) : undefined;
+      const languageId = req.query.languageId ? Number(req.query.languageId) : undefined;
+      
+      let translations = [];
+      if (sectionId && languageId) {
+        const translation = await storage.getSectionTranslationByLanguage(sectionId, languageId);
+        translations = translation ? [translation] : [];
+      } else if (sectionId) {
+        translations = await storage.getSectionTranslationsBySectionId(sectionId);
+      } else if (languageId) {
+        translations = await storage.getSectionTranslationsByLanguageId(languageId);
+      } else {
+        return res.status(400).json({ message: "Either sectionId or languageId is required" });
+      }
+      
+      res.json(translations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch section translations" });
+    }
+  });
+
+  app.get("/api/section-translations/:id", async (req: Request, res: Response) => {
+    try {
+      const translation = await storage.getSectionTranslation(Number(req.params.id));
+      if (!translation) {
+        return res.status(404).json({ message: "Section translation not found" });
+      }
+      res.json(translation);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch section translation" });
+    }
+  });
+
+  app.post("/api/section-translations", async (req: Request, res: Response) => {
+    try {
+      const { data, error } = validateBody(insertSectionTranslationSchema, req.body);
+      if (error) {
+        return res.status(400).json({ message: error });
+      }
+      
+      // Check for existing translation
+      const existingTranslation = await storage.getSectionTranslationByLanguage(
+        data.sectionId, 
+        data.languageId
+      );
+      
+      if (existingTranslation) {
+        return res.status(409).json({ 
+          message: "Translation for this section and language already exists",
+          existingId: existingTranslation.id
+        });
+      }
+      
+      const translation = await storage.createSectionTranslation(data);
+      res.status(201).json(translation);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create section translation" });
+    }
+  });
+
+  app.put("/api/section-translations/:id", async (req: Request, res: Response) => {
+    try {
+      const translationId = Number(req.params.id);
+      const { data, error } = validateBody(insertSectionTranslationSchema.partial(), req.body);
+      if (error) {
+        return res.status(400).json({ message: error });
+      }
+      
+      const translation = await storage.updateSectionTranslation(translationId, data);
+      if (!translation) {
+        return res.status(404).json({ message: "Section translation not found" });
+      }
+      
+      res.json(translation);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update section translation" });
+    }
+  });
+
+  app.delete("/api/section-translations/:id", async (req: Request, res: Response) => {
+    try {
+      const translationId = Number(req.params.id);
+      const success = await storage.deleteSectionTranslation(translationId);
+      if (!success) {
+        return res.status(404).json({ message: "Section translation not found" });
+      }
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete section translation" });
+    }
+  });
+
+  // Content module translation routes
+  app.get("/api/module-translations", async (req: Request, res: Response) => {
+    try {
+      const moduleId = req.query.moduleId ? Number(req.query.moduleId) : undefined;
+      const languageId = req.query.languageId ? Number(req.query.languageId) : undefined;
+      
+      let translations = [];
+      if (moduleId && languageId) {
+        const translation = await storage.getContentModuleTranslationByLanguage(moduleId, languageId);
+        translations = translation ? [translation] : [];
+      } else if (moduleId) {
+        translations = await storage.getContentModuleTranslationsByModuleId(moduleId);
+      } else if (languageId) {
+        translations = await storage.getContentModuleTranslationsByLanguageId(languageId);
+      } else {
+        return res.status(400).json({ message: "Either moduleId or languageId is required" });
+      }
+      
+      res.json(translations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch module translations" });
+    }
+  });
+
+  app.get("/api/module-translations/:id", async (req: Request, res: Response) => {
+    try {
+      const translation = await storage.getContentModuleTranslation(Number(req.params.id));
+      if (!translation) {
+        return res.status(404).json({ message: "Module translation not found" });
+      }
+      res.json(translation);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch module translation" });
+    }
+  });
+
+  app.post("/api/module-translations", async (req: Request, res: Response) => {
+    try {
+      const { data, error } = validateBody(insertContentModuleTranslationSchema, req.body);
+      if (error) {
+        return res.status(400).json({ message: error });
+      }
+      
+      // Check for existing translation
+      const existingTranslation = await storage.getContentModuleTranslationByLanguage(
+        data.moduleId, 
+        data.languageId
+      );
+      
+      if (existingTranslation) {
+        return res.status(409).json({ 
+          message: "Translation for this module and language already exists",
+          existingId: existingTranslation.id
+        });
+      }
+      
+      const translation = await storage.createContentModuleTranslation(data);
+      res.status(201).json(translation);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create module translation" });
+    }
+  });
+
+  app.put("/api/module-translations/:id", async (req: Request, res: Response) => {
+    try {
+      const translationId = Number(req.params.id);
+      const { data, error } = validateBody(insertContentModuleTranslationSchema.partial(), req.body);
+      if (error) {
+        return res.status(400).json({ message: error });
+      }
+      
+      const translation = await storage.updateContentModuleTranslation(translationId, data);
+      if (!translation) {
+        return res.status(404).json({ message: "Module translation not found" });
+      }
+      
+      res.json(translation);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update module translation" });
+    }
+  });
+
+  app.delete("/api/module-translations/:id", async (req: Request, res: Response) => {
+    try {
+      const translationId = Number(req.params.id);
+      const success = await storage.deleteContentModuleTranslation(translationId);
+      if (!success) {
+        return res.status(404).json({ message: "Module translation not found" });
+      }
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete module translation" });
+    }
+  });
+
+  // Translation import routes
+  app.get("/api/translation-imports", async (req: Request, res: Response) => {
+    try {
+      const imports = await storage.getTranslationImports();
+      res.json(imports);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch translation imports" });
+    }
+  });
+
+  app.get("/api/translation-imports/:id", async (req: Request, res: Response) => {
+    try {
+      const importRecord = await storage.getTranslationImport(Number(req.params.id));
+      if (!importRecord) {
+        return res.status(404).json({ message: "Translation import not found" });
+      }
+      res.json(importRecord);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch translation import" });
+    }
+  });
+
+  app.post("/api/translation-imports", async (req: Request, res: Response) => {
+    try {
+      const { data, error } = validateBody(insertTranslationImportSchema, req.body);
+      if (error) {
+        return res.status(400).json({ message: error });
+      }
+      
+      const importRecord = await storage.createTranslationImport(data);
+      res.status(201).json(importRecord);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create translation import" });
+    }
+  });
+
+  app.post("/api/translation-imports/:id/process", async (req: Request, res: Response) => {
+    try {
+      const importId = Number(req.params.id);
+      const importData = req.body;
+      
+      if (!importData || !importData.sections && !importData.modules) {
+        return res.status(400).json({ message: "Invalid import data format" });
+      }
+      
+      const success = await storage.processTranslationImport(importId, importData);
+      if (!success) {
+        return res.status(400).json({ message: "Failed to process import" });
+      }
+      
+      const updatedImport = await storage.getTranslationImport(importId);
+      res.json(updatedImport);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to process translation import" });
+    }
+  });
+
+  // Translation AI routes
+  app.get("/api/translation-ai-requests", async (req: Request, res: Response) => {
+    try {
+      const requests = await storage.getTranslationAIRequests();
+      res.json(requests);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch translation AI requests" });
+    }
+  });
+
+  app.get("/api/translation-ai-requests/:id", async (req: Request, res: Response) => {
+    try {
+      const request = await storage.getTranslationAIRequest(Number(req.params.id));
+      if (!request) {
+        return res.status(404).json({ message: "Translation AI request not found" });
+      }
+      res.json(request);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch translation AI request" });
+    }
+  });
+
+  app.post("/api/translation-ai-requests", async (req: Request, res: Response) => {
+    try {
+      const { data, error } = validateBody(insertTranslationAIRequestSchema, req.body);
+      if (error) {
+        return res.status(400).json({ message: error });
+      }
+      
+      const request = await storage.createTranslationAIRequest({
+        ...data,
+        status: "pending"
+      });
+      
+      res.status(201).json(request);
+      
+      // In a real implementation, this would trigger an asynchronous process to handle the AI request
+      // For now, we'll simulate it with a delayed update
+      setTimeout(async () => {
+        try {
+          // Simulate AI processing
+          const sourceLanguage = await storage.getLanguage(request.sourceLanguageId);
+          const targetLanguage = await storage.getLanguage(request.targetLanguageId);
+          
+          if (!sourceLanguage || !targetLanguage) {
+            await storage.updateTranslationAIRequest(request.id, {
+              status: "error",
+              details: { error: "Source or target language not found" }
+            });
+            return;
+          }
+          
+          // Mock translation based on request type
+          if (request.requestType === "section") {
+            const section = await storage.getSection(request.sourceId);
+            if (!section) {
+              await storage.updateTranslationAIRequest(request.id, {
+                status: "error",
+                details: { error: "Section not found" }
+              });
+              return;
+            }
+            
+            // Create a mock translation - in real implementation, this would call an AI service
+            const mockTranslation = {
+              title: `[${targetLanguage.code}] ${section.title}`,
+              description: section.description ? `[${targetLanguage.code}] ${section.description}` : null
+            };
+            
+            // Check if translation already exists
+            const existingTranslation = await storage.getSectionTranslationByLanguage(
+              section.id,
+              targetLanguage.id
+            );
+            
+            if (existingTranslation) {
+              await storage.updateSectionTranslation(existingTranslation.id, {
+                ...mockTranslation,
+                status: "ai_suggested",
+                translatedById: request.requestedById
+              });
+            } else {
+              await storage.createSectionTranslation({
+                sectionId: section.id,
+                languageId: targetLanguage.id,
+                title: mockTranslation.title,
+                description: mockTranslation.description,
+                status: "ai_suggested",
+                translatedById: request.requestedById,
+                reviewedById: null
+              });
+            }
+            
+            await storage.updateTranslationAIRequest(request.id, {
+              status: "completed",
+              details: { 
+                completed: new Date(),
+                translation: mockTranslation
+              }
+            });
+          } else if (request.requestType === "module") {
+            const module = await storage.getContentModule(request.sourceId);
+            if (!module) {
+              await storage.updateTranslationAIRequest(request.id, {
+                status: "error",
+                details: { error: "Module not found" }
+              });
+              return;
+            }
+            
+            // Create a mock translation - in real implementation, this would call an AI service
+            let mockContent = module.content;
+            if (typeof mockContent === "object") {
+              // Handle different module types
+              if ("text" in mockContent) {
+                mockContent = { 
+                  ...mockContent, 
+                  text: `[${targetLanguage.code}] ${mockContent.text}` 
+                };
+              } else if ("caption" in mockContent) {
+                mockContent = { 
+                  ...mockContent, 
+                  caption: mockContent.caption ? `[${targetLanguage.code}] ${mockContent.caption}` : undefined
+                };
+              }
+            }
+            
+            // Check if translation already exists
+            const existingTranslation = await storage.getContentModuleTranslationByLanguage(
+              module.id,
+              targetLanguage.id
+            );
+            
+            if (existingTranslation) {
+              await storage.updateContentModuleTranslation(existingTranslation.id, {
+                content: mockContent,
+                status: "ai_suggested",
+                translatedById: request.requestedById
+              });
+            } else {
+              await storage.createContentModuleTranslation({
+                moduleId: module.id,
+                languageId: targetLanguage.id,
+                content: mockContent,
+                status: "ai_suggested",
+                translatedById: request.requestedById,
+                reviewedById: null
+              });
+            }
+            
+            await storage.updateTranslationAIRequest(request.id, {
+              status: "completed",
+              details: { 
+                completed: new Date(),
+                translation: mockContent
+              }
+            });
+          } else {
+            await storage.updateTranslationAIRequest(request.id, {
+              status: "error",
+              details: { error: "Unsupported request type" }
+            });
+          }
+        } catch (error) {
+          console.error("Error processing AI request:", error);
+          await storage.updateTranslationAIRequest(request.id, {
+            status: "error",
+            details: { error: "Internal server error" }
+          });
+        }
+      }, 2000); // Simulate a 2-second delay for AI processing
+      
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create translation AI request" });
+    }
+  });
+
+  // Document translation status
+  app.get("/api/documents/:documentId/translation-status/:languageId", async (req: Request, res: Response) => {
+    try {
+      const documentId = Number(req.params.documentId);
+      const languageId = Number(req.params.languageId);
+      
+      const status = await storage.getDocumentTranslationStatus(documentId, languageId);
+      res.json(status);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch document translation status" });
     }
   });
 

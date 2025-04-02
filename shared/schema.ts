@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -239,3 +239,141 @@ export type BomModuleContent = {
   bomId: number;
   filter?: string;
 };
+
+// Languages schema
+export const languages = pgTable("languages", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(), // ISO code (e.g., 'en', 'it', 'fr')
+  name: text("name").notNull(), // Full name (e.g., 'English', 'Italiano', 'Français')
+  isActive: boolean("is_active").notNull().default(true),
+  isDefault: boolean("is_default").default(false),
+});
+
+export const insertLanguageSchema = createInsertSchema(languages).pick({
+  code: true,
+  name: true,
+  isActive: true,
+  isDefault: true,
+});
+
+// Translation status enum values: 'not_translated', 'ai_suggested', 'in_review', 'approved'
+// Translation assignments for users
+export const translationAssignments = pgTable("translation_assignments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  languageId: integer("language_id").notNull(),
+  isReviewer: boolean("is_reviewer").default(false), // User can be translator and/or reviewer
+});
+
+export const insertTranslationAssignmentSchema = createInsertSchema(translationAssignments).pick({
+  userId: true,
+  languageId: true,
+  isReviewer: true,
+});
+
+// Section translations
+export const sectionTranslations = pgTable("section_translations", {
+  id: serial("id").primaryKey(),
+  sectionId: integer("section_id").notNull(),
+  languageId: integer("language_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("not_translated"), // not_translated, ai_suggested, in_review, approved
+  translatedById: integer("translated_by_id"),
+  reviewedById: integer("reviewed_by_id"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSectionTranslationSchema = createInsertSchema(sectionTranslations).pick({
+  sectionId: true,
+  languageId: true,
+  title: true,
+  description: true,
+  status: true,
+  translatedById: true,
+  reviewedById: true,
+});
+
+// Content module translations
+export const contentModuleTranslations = pgTable("content_module_translations", {
+  id: serial("id").primaryKey(),
+  moduleId: integer("module_id").notNull(),
+  languageId: integer("language_id").notNull(),
+  content: jsonb("content").notNull(),
+  status: text("status").notNull().default("not_translated"), // not_translated, ai_suggested, in_review, approved
+  translatedById: integer("translated_by_id"),
+  reviewedById: integer("reviewed_by_id"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertContentModuleTranslationSchema = createInsertSchema(contentModuleTranslations).pick({
+  moduleId: true,
+  languageId: true,
+  content: true,
+  status: true,
+  translatedById: true,
+  reviewedById: true,
+});
+
+// Translation import logs
+export const translationImports = pgTable("translation_imports", {
+  id: serial("id").primaryKey(),
+  filename: text("filename").notNull(),
+  importedById: integer("imported_by_id").notNull(),
+  languageId: integer("language_id").notNull(),
+  format: text("format").notNull(), // csv, json, etc.
+  status: text("status").notNull(), // success, partial, error
+  details: jsonb("details"), // Stats about the import
+  importedAt: timestamp("imported_at").notNull().defaultNow(),
+});
+
+export const insertTranslationImportSchema = createInsertSchema(translationImports).pick({
+  filename: true,
+  importedById: true,
+  languageId: true,
+  format: true, 
+  status: true,
+  details: true,
+});
+
+// Translation AI requests
+export const translationAIRequests = pgTable("translation_ai_requests", {
+  id: serial("id").primaryKey(),
+  sourceLanguageId: integer("source_language_id").notNull(),
+  targetLanguageId: integer("target_language_id").notNull(),
+  requestedById: integer("requested_by_id").notNull(),
+  requestedAt: timestamp("requested_at").notNull().defaultNow(),
+  status: text("status").notNull().default("pending"), // pending, completed, failed
+  requestType: text("request_type").notNull(), // document, section, module
+  sourceId: integer("source_id").notNull(), // ID of the document, section, or module
+  details: jsonb("details"), // Any details or response information
+});
+
+export const insertTranslationAIRequestSchema = createInsertSchema(translationAIRequests).pick({
+  sourceLanguageId: true,
+  targetLanguageId: true,
+  requestedById: true,
+  status: true,
+  requestType: true,
+  sourceId: true,
+  details: true,
+});
+
+// Export translation types
+export type Language = typeof languages.$inferSelect;
+export type InsertLanguage = z.infer<typeof insertLanguageSchema>;
+
+export type TranslationAssignment = typeof translationAssignments.$inferSelect;
+export type InsertTranslationAssignment = z.infer<typeof insertTranslationAssignmentSchema>;
+
+export type SectionTranslation = typeof sectionTranslations.$inferSelect;
+export type InsertSectionTranslation = z.infer<typeof insertSectionTranslationSchema>;
+
+export type ContentModuleTranslation = typeof contentModuleTranslations.$inferSelect;
+export type InsertContentModuleTranslation = z.infer<typeof insertContentModuleTranslationSchema>;
+
+export type TranslationImport = typeof translationImports.$inferSelect;
+export type InsertTranslationImport = z.infer<typeof insertTranslationImportSchema>;
+
+export type TranslationAIRequest = typeof translationAIRequests.$inferSelect;
+export type InsertTranslationAIRequest = z.infer<typeof insertTranslationAIRequestSchema>;
