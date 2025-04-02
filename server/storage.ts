@@ -1521,6 +1521,60 @@ export class DatabaseStorage implements IStorage {
     return !!result;
   }
 
+  // Section Component operations
+  async getSectionComponent(id: number): Promise<SectionComponent | undefined> {
+    const [sectionComponent] = await db
+      .select()
+      .from(sectionComponents)
+      .where(eq(sectionComponents.id, id));
+    return sectionComponent;
+  }
+
+  async getSectionComponentsBySectionId(sectionId: number): Promise<SectionComponent[]> {
+    return db
+      .select()
+      .from(sectionComponents)
+      .where(eq(sectionComponents.sectionId, sectionId));
+  }
+
+  async getSectionComponentsByComponentId(componentId: number): Promise<SectionComponent[]> {
+    return db
+      .select()
+      .from(sectionComponents)
+      .where(eq(sectionComponents.componentId, componentId));
+  }
+
+  async createSectionComponent(sectionComponent: InsertSectionComponent): Promise<SectionComponent> {
+    const [newSectionComponent] = await db
+      .insert(sectionComponents)
+      .values({
+        ...sectionComponent,
+        quantity: sectionComponent.quantity || 1, // Default to 1 if not specified
+        notes: sectionComponent.notes || null
+      })
+      .returning();
+    return newSectionComponent;
+  }
+
+  async updateSectionComponent(id: number, sectionComponent: Partial<InsertSectionComponent>): Promise<SectionComponent | undefined> {
+    const [updatedSectionComponent] = await db
+      .update(sectionComponents)
+      .set(sectionComponent)
+      .where(eq(sectionComponents.id, id))
+      .returning();
+    return updatedSectionComponent;
+  }
+
+  async deleteSectionComponent(id: number): Promise<boolean> {
+    const result = await db.delete(sectionComponents).where(eq(sectionComponents.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async deleteSectionComponentsBySectionId(sectionId: number): Promise<boolean> {
+    const result = await db.delete(sectionComponents).where(eq(sectionComponents.sectionId, sectionId));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
   // Module library operations
   async getModules(): Promise<Section[]> {
     return db
