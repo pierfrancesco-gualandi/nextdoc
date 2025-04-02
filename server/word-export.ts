@@ -1,0 +1,668 @@
+import * as docx from "docx";
+import {
+  Document,
+  Paragraph,
+  TextRun,
+  HeadingLevel,
+  ImageRun,
+  AlignmentType,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  BorderStyle,
+  PageBreak,
+  Packer,
+} from "docx";
+import fs from "fs";
+import path from "path";
+import { storage } from "./storage";
+import { ContentModule, Section } from "@shared/schema";
+
+// Define interface for document data
+interface DocExportData {
+  document: {
+    id: number;
+    title: string;
+    description: string | null;
+    version: string;
+  };
+  sections: {
+    section: Section;
+    modules: ContentModule[];
+    subSections: {
+      section: Section;
+      modules: ContentModule[];
+    }[];
+  }[];
+}
+
+/**
+ * Creates a Word document from the document data
+ */
+export async function createWordDocument(
+  documentId: number,
+  languageId?: number
+): Promise<string> {
+  try {
+    // Retrieve document data
+    const doc = await storage.getDocument(documentId);
+    if (!doc) {
+      throw new Error(`Document with ID ${documentId} not found`);
+    }
+
+    // Retrieve sections and organize them hierarchically
+    const allSections = await storage.getSectionsByDocumentId(doc.id);
+    const rootSections = allSections.filter((s) => !s.parentId);
+    
+    // Sort sections by order
+    rootSections.sort((a, b) => a.order - b.order);
+
+    // Prepare export data structure
+    const exportData: DocExportData = {
+      document: {
+        id: doc.id,
+        title: doc.title,
+        description: doc.description || "",
+        version: doc.version,
+      },
+      sections: [],
+    };
+
+    // For each root section, get content and sub-sections
+    for (const rootSection of rootSections) {
+      const modules = await storage.getContentModulesBySectionId(rootSection.id);
+      
+      // Get sub-sections
+      const subSections = allSections.filter(
+        (s) => s.parentId === rootSection.id
+      );
+      subSections.sort((a, b) => a.order - b.order);
+
+      const sectionData = {
+        section: rootSection,
+        modules: modules,
+        subSections: [],
+      };
+
+      // For each sub-section, get content
+      for (const subSection of subSections) {
+        const subModules = await storage.getContentModulesBySectionId(subSection.id);
+        sectionData.subSections.push({
+          section: subSection,
+          modules: subModules,
+        });
+      }
+
+      exportData.sections.push(sectionData);
+    }
+
+    // Create Word document
+    const wordDoc = new Document({
+      title: doc.title,
+      description: doc.description || "",
+      styles: {
+        paragraphStyles: [
+          {
+            id: "Normal",
+            name: "Normal",
+            run: {
+              size: 24, // 12pt
+              font: "Arial",
+            },
+            paragraph: {
+              spacing: {
+                after: 120, // 6pt
+              },
+            },
+          },
+          {
+            id: "Heading1",
+            name: "Heading 1",
+            run: {
+              size: 36, // 18pt
+              bold: true,
+              font: "Arial",
+              color: "000000",
+            },
+            paragraph: {
+              spacing: {
+                before: 240, // 12pt
+                after: 120, // 6pt
+              },
+            },
+          },
+          {
+            id: "Heading2",
+            name: "Heading 2",
+            run: {
+              size: 30, // 15pt
+              bold: true,
+              font: "Arial",
+              color: "000000",
+            },
+            paragraph: {
+              spacing: {
+                before: 160, // 8pt
+                after: 120, // 6pt
+              },
+            },
+          },
+          {
+            id: "TableHeader",
+            name: "Table Header",
+            run: {
+              size: 24, // 12pt
+              bold: true,
+              font: "Arial",
+            },
+            paragraph: {
+              spacing: {
+                before: 100, // 5pt
+                after: 100, // 5pt
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    const sections = [];
+
+    // Add document title
+    sections.push({
+      properties: {},
+      children: [
+        new Paragraph({
+          text: doc.title,
+          heading: HeadingLevel.TITLE,
+          alignment: AlignmentType.CENTER,
+          spacing: {
+            before: 400,
+            after: 200,
+          },
+        }),
+        new Paragraph({
+          text: `Versione: ${doc.version}`,
+          alignment: AlignmentType.CENTER,
+          spacing: {
+            after: 400,
+          },
+        }),
+        new Paragraph({
+          text: doc.description || "",
+          alignment: AlignmentType.CENTER,
+          spacing: {
+            after: 800,
+          },
+        }),
+        new Paragraph({
+          text: "",
+          pageBreakBefore: true,
+        }),
+      ],
+    });
+
+    // Process all sections and their content
+    const docElements = [];
+
+    for (const sectionData of exportData.sections) {
+      // Add section heading
+      docElements.push(
+        new Paragraph({
+          text: sectionData.section.title,
+          heading: HeadingLevel.HEADING_1,
+        })
+      );
+
+      if (sectionData.section.description) {
+        docElements.push(
+          new Paragraph({
+            text: sectionData.section.description || "",
+          })
+        );
+      }
+
+      // Add modules from this section
+      await addModulesToDocument(docElements, sectionData.modules);
+
+      // Process subsections
+      for (const subSection of sectionData.subSections) {
+        // Add subsection heading
+        docElements.push(
+          new Paragraph({
+            text: subSection.section.title,
+            heading: HeadingLevel.HEADING_2,
+          })
+        );
+
+        if (subSection.section.description) {
+          docElements.push(
+            new Paragraph({
+              text: subSection.section.description || "",
+            })
+          );
+        }
+
+        // Add modules from this subsection
+        await addModulesToDocument(docElements, subSection.modules);
+      }
+    }
+
+    // Add all elements to the document
+    sections.push({
+      properties: {},
+      children: docElements,
+    });
+
+    wordDoc.addSection({
+      properties: {},
+      children: [...sections[0].children, ...sections[1].children],
+    });
+
+    // Create the export directory if it doesn't exist
+    const exportsDir = path.join(__dirname, "../exports");
+    if (!fs.existsSync(exportsDir)) {
+      fs.mkdirSync(exportsDir, { recursive: true });
+    }
+
+    // Create a clean filename from the document title
+    const cleanTitle = doc.title
+      .replace(/[^a-z0-9]/gi, "_")
+      .toLowerCase();
+    const filename = `${cleanTitle}_v${doc.version.replace(/\./g, "_")}.docx`;
+    const outputPath = path.join(exportsDir, filename);
+
+    // Write the document to file
+    const buffer = await Packer.toBuffer(wordDoc);
+    fs.writeFileSync(outputPath, buffer);
+
+    return filename;
+  } catch (error) {
+    console.error("Error generating Word document:", error);
+    throw error;
+  }
+}
+
+/**
+ * Add content modules to the Word document
+ */
+async function addModulesToDocument(
+  docElements: any[],
+  modules: ContentModule[]
+): Promise<void> {
+  // Sort modules by order
+  modules.sort((a, b) => a.order - b.order);
+
+  for (const module of modules) {
+    try {
+      // Process the module based on its type
+      switch (module.type) {
+        case "text":
+          addTextModule(docElements, module);
+          break;
+        case "image":
+          await addImageModule(docElements, module);
+          break;
+        case "table":
+          addTableModule(docElements, module);
+          break;
+        case "warning":
+          addWarningModule(docElements, module);
+          break;
+        case "checklist":
+          addChecklistModule(docElements, module);
+          break;
+        case "component":
+          await addComponentModule(docElements, module);
+          break;
+        default:
+          // Add a placeholder for unsupported module types
+          docElements.push(
+            new Paragraph({
+              text: `[Contenuto di tipo "${module.type}" non supportato nell'esportazione Word]`,
+              style: "Normal",
+            })
+          );
+      }
+    } catch (error) {
+      console.error(`Error processing module of type ${module.type}:`, error);
+      // Add a placeholder for the errored module
+      docElements.push(
+        new Paragraph({
+          text: `[Errore nella conversione del contenuto di tipo "${module.type}"]`,
+          style: "Normal",
+        })
+      );
+    }
+  }
+}
+
+/**
+ * Add a text module to the document
+ */
+function addTextModule(docElements: any[], module: ContentModule): void {
+  const content = module.content as { text: string };
+  
+  // Process text that might contain HTML
+  // This is a simple approach - for more complex HTML we would need a proper HTML parser
+  const text = content.text
+    .replace(/<br>/g, "\n")
+    .replace(/<(?:.|\n)*?>/g, ""); // Remove HTML tags
+
+  // Split by line breaks and create paragraphs
+  const paragraphs = text.split("\n");
+  for (const para of paragraphs) {
+    docElements.push(
+      new Paragraph({
+        text: para,
+        style: "Normal",
+      })
+    );
+  }
+}
+
+/**
+ * Add an image module to the document
+ */
+async function addImageModule(
+  docElements: any[],
+  module: ContentModule
+): Promise<void> {
+  const content = module.content as { src: string; alt: string; caption?: string };
+  
+  // Check if file exists and is accessible
+  const imagePath = path.join(__dirname, "../uploads", path.basename(content.src));
+  if (!fs.existsSync(imagePath)) {
+    throw new Error(`Image file not found: ${imagePath}`);
+  }
+
+  // Read image as base64
+  const imageData = fs.readFileSync(imagePath);
+  
+  // Add the image
+  docElements.push(
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [
+        new ImageRun({
+          data: imageData,
+          transformation: {
+            width: 400, // Adjust width as needed, maintaining aspect ratio
+            height: 300, // Adjust height as needed
+          },
+        }),
+      ],
+    })
+  );
+
+  // Add caption if present
+  if (content.caption) {
+    docElements.push(
+      new Paragraph({
+        text: content.caption,
+        alignment: AlignmentType.CENTER,
+        style: "Normal",
+      })
+    );
+  }
+}
+
+/**
+ * Add a table module to the document
+ */
+function addTableModule(docElements: any[], module: ContentModule): void {
+  const content = module.content as {
+    headers: string[];
+    rows: string[][];
+    caption?: string;
+  };
+
+  // Create table
+  const table = new Table({
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+      left: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+      right: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+    },
+  });
+
+  // Add header row
+  const headerRow = new TableRow({
+    children: content.headers.map(
+      (header) =>
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: header,
+              style: "TableHeader",
+            }),
+          ],
+          shading: {
+            fill: "EEEEEE",
+          },
+        })
+    ),
+  });
+  table.addRow(headerRow);
+
+  // Add data rows
+  for (const rowData of content.rows) {
+    const row = new TableRow({
+      children: rowData.map(
+        (cell) =>
+          new TableCell({
+            children: [
+              new Paragraph({
+                text: cell,
+                style: "Normal",
+              }),
+            ],
+          })
+      ),
+    });
+    table.addRow(row);
+  }
+
+  // Add table to document
+  docElements.push(table);
+
+  // Add caption if present
+  if (content.caption) {
+    docElements.push(
+      new Paragraph({
+        text: content.caption,
+        alignment: AlignmentType.CENTER,
+        style: "Normal",
+      })
+    );
+  }
+}
+
+/**
+ * Add a warning module to the document
+ */
+function addWarningModule(docElements: any[], module: ContentModule): void {
+  const content = module.content as {
+    title: string;
+    message: string;
+    level: "info" | "warning" | "error";
+  };
+
+  // Set color based on warning level
+  let color = "0000FF"; // blue for info
+  if (content.level === "warning") {
+    color = "FF8C00"; // orange for warning
+  } else if (content.level === "error") {
+    color = "FF0000"; // red for error
+  }
+
+  // Add warning title
+  docElements.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: content.title,
+          bold: true,
+          color: color,
+        }),
+      ],
+      spacing: {
+        before: 200,
+      },
+    })
+  );
+
+  // Add warning message
+  docElements.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: content.message,
+          color: color,
+        }),
+      ],
+      spacing: {
+        after: 200,
+      },
+    })
+  );
+}
+
+/**
+ * Add a checklist module to the document
+ */
+function addChecklistModule(docElements: any[], module: ContentModule): void {
+  const content = module.content as {
+    items: { text: string; checked: boolean }[];
+  };
+
+  for (const item of content.items) {
+    // Use "☑" for checked items and "☐" for unchecked items
+    const checkbox = item.checked ? "☑" : "☐";
+    
+    docElements.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `${checkbox} ${item.text}`,
+          }),
+        ],
+        style: "Normal",
+      })
+    );
+  }
+}
+
+/**
+ * Add a component module to the document
+ */
+async function addComponentModule(
+  docElements: any[],
+  module: ContentModule
+): Promise<void> {
+  const content = module.content as { componentId: number; quantity: number };
+  
+  // Fetch component details
+  const component = await storage.getComponent(content.componentId);
+  if (!component) {
+    throw new Error(`Component with ID ${content.componentId} not found`);
+  }
+
+  // Create a table with component details
+  const table = new Table({
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+      left: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+      right: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+    },
+  });
+
+  // Add header row
+  const headerRow = new TableRow({
+    children: [
+      new TableCell({
+        children: [
+          new Paragraph({
+            text: "Codice",
+            style: "TableHeader",
+          }),
+        ],
+        shading: {
+          fill: "EEEEEE",
+        },
+      }),
+      new TableCell({
+        children: [
+          new Paragraph({
+            text: "Descrizione",
+            style: "TableHeader",
+          }),
+        ],
+        shading: {
+          fill: "EEEEEE",
+        },
+      }),
+      new TableCell({
+        children: [
+          new Paragraph({
+            text: "Quantità",
+            style: "TableHeader",
+          }),
+        ],
+        shading: {
+          fill: "EEEEEE",
+        },
+      }),
+    ],
+  });
+  table.addRow(headerRow);
+
+  // Add component row
+  const dataRow = new TableRow({
+    children: [
+      new TableCell({
+        children: [
+          new Paragraph({
+            text: component.code,
+            style: "Normal",
+          }),
+        ],
+      }),
+      new TableCell({
+        children: [
+          new Paragraph({
+            text: component.description,
+            style: "Normal",
+          }),
+        ],
+      }),
+      new TableCell({
+        children: [
+          new Paragraph({
+            text: String(content.quantity),
+            style: "Normal",
+          }),
+        ],
+      }),
+    ],
+  });
+  table.addRow(dataRow);
+
+  // Add table to document
+  docElements.push(table);
+}

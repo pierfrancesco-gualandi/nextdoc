@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createDocumentVersion } from "@/lib/document-utils";
 
@@ -59,6 +60,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   // Update section mutation
   const updateSectionMutation = useMutation({
     mutationFn: async (data: any) => {
+      if (!selectedSection) return null;
       const res = await apiRequest('PUT', `/api/sections/${selectedSection.id}`, data);
       return await res.json();
     },
@@ -168,6 +170,8 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     if (id === 'new') return;
     
     try {
+      if (!document) return;
+      
       // Get the full document structure
       const documentData = {
         id: Number(id),
@@ -517,8 +521,21 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
           <TabsContent value="history">
             <div className="p-6">
               <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-sm">
-                <div className="px-6 py-4 border-b border-neutral-light">
-                  <h3 className="text-lg font-medium">Confronto Versioni</h3>
+                <div className="px-6 py-4 border-b border-neutral-light flex justify-between items-center">
+                  <h3 className="text-lg font-medium">Cronologia e Versioni</h3>
+                  <div className="flex space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        window.open(`/api/documents/${id}/export/word`, '_blank');
+                      }}
+                      className="flex items-center"
+                    >
+                      <span className="material-icons text-sm mr-1">download</span>
+                      Esporta Word
+                    </Button>
+                  </div>
                 </div>
                 <VersionComparison documentId={id} />
               </div>

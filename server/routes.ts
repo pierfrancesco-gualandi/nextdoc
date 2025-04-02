@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { upload, saveFileInfo, getFileUrl } from "./upload";
+import { createWordDocument } from "./word-export";
 import path from "path";
 import fs from "fs";
 import {
@@ -1791,6 +1792,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).end();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete file" });
+    }
+  });
+
+  // Export routes
+  app.get("/api/documents/:id/export/word", async (req: Request, res: Response) => {
+    try {
+      const documentId = Number(req.params.id);
+      const languageId = req.query.languageId ? Number(req.query.languageId) : undefined;
+      
+      const document = await storage.getDocument(documentId);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      // Generate the Word document
+      const filename = await createWordDocument(documentId, languageId);
+      
+      // Set the path to the generated file
+      const filePath = path.join(__dirname, "../exports", filename);
+      
+      // Send the file as a download
+      res.download(filePath, filename, (err) => {
+        if (err) {
+          console.error("Error sending file:", err);
+          res.status(500).json({ message: "Failed to send file" });
+        }
+      });
+    } catch (error) {
+      console.error("Error exporting document to Word:", error);
+      res.status(500).json({ message: "Failed to export document to Word" });
     }
   });
 
