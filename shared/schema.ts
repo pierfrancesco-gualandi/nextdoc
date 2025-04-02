@@ -19,7 +19,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  role: text("role").notNull().default("viewer"), // viewer, editor, admin
+  role: text("role").notNull().default("reader"), // "admin" (full access), "translator" (translation-only), "reader" (view-only)
   name: text("name").notNull(),
   email: text("email").notNull(),
 });
@@ -78,7 +78,7 @@ export const insertSectionSchema = createInsertSchema(sections).pick({
 export const contentModules = pgTable("content_modules", {
   id: serial("id").primaryKey(),
   sectionId: integer("section_id").notNull(),
-  type: text("type").notNull(), // text, image, video, table, component, checklist, warning, link, pdf
+  type: text("type").notNull(), // text, image, video, video_editor, table, table_editor, component, checklist, warning, link, pdf, 3d_model
   content: jsonb("content").notNull(),
   order: integer("order").notNull(),
 });

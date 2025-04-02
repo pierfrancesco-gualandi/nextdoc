@@ -1490,6 +1490,8 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(bomItems).where(eq(bomItems.id, id));
     return !!result;
   }
+  
+
 
   // Comment operations
   async getComment(id: number): Promise<Comment | undefined> {
