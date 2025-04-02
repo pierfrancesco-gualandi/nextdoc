@@ -8,6 +8,7 @@ import DocumentEditor from "@/pages/document-editor";
 import ModulesLibrary from "@/pages/modules-library";
 import BomManagement from "@/pages/bom-management";
 import Users from "@/pages/users";
+import Translations from "@/pages/translations";
 import Sidebar from "@/components/sidebar";
 import { useState } from "react";
 
@@ -30,6 +31,7 @@ function Router() {
           <Route path="/modules" component={() => <ModulesLibrary toggleSidebar={toggleSidebar} />} />
           <Route path="/components" component={() => <BomManagement toggleSidebar={toggleSidebar} />} />
           <Route path="/users" component={() => <Users toggleSidebar={toggleSidebar} />} />
+          <Route path="/translations" component={() => <Translations toggleSidebar={toggleSidebar} />} />
           <Route component={NotFound} />
         </Switch>
       </div>

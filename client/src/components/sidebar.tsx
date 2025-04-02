@@ -72,6 +72,14 @@ export default function Sidebar({ activePath }: SidebarProps) {
             </Link>
           </li>
           <li>
+            <Link href="/translations">
+              <a className={`flex items-center px-4 py-2 rounded-md ${activePath === '/translations' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}>
+                <span className={`material-icons mr-3 ${activePath === '/translations' ? '' : 'text-neutral-medium'}`}>translate</span>
+                Traduzioni
+              </a>
+            </Link>
+          </li>
+          <li>
             <Link href="/settings">
               <a className={`flex items-center px-4 py-2 rounded-md ${activePath === '/settings' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}>
                 <span className={`material-icons mr-3 ${activePath === '/settings' ? '' : 'text-neutral-medium'}`}>settings</span>
