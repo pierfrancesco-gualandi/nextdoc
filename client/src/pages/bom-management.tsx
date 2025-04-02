@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import BomTreeView from "@/components/BomTreeView";
+import { Switch } from "@/components/ui/switch";
 
 interface BomManagementProps {
   toggleSidebar?: () => void;
@@ -24,20 +26,21 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
   const [newComponentDescription, setNewComponentDescription] = useState("");
   const [selectedBom, setSelectedBom] = useState<any>(null);
   const [selectedComponent, setSelectedComponent] = useState<any>(null);
+  const [showTreeView, setShowTreeView] = useState(true);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
   // Fetch BOMs
-  const { data: boms, isLoading: bomsLoading } = useQuery({
+  const { data: boms = [], isLoading: bomsLoading } = useQuery<any[]>({
     queryKey: ['/api/boms'],
   });
   
   // Fetch Components
-  const { data: components, isLoading: componentsLoading } = useQuery({
-    queryKey: ['/api/components', searchQuery],
+  const { data: components = [], isLoading: componentsLoading } = useQuery<any[]>({
+    queryKey: ['/api/components', searchQuery || ''],
     queryFn: async ({ queryKey }) => {
-      const [_, query] = queryKey;
-      const url = query ? `/api/components?q=${encodeURIComponent(query)}` : '/api/components';
+      const [base, query] = queryKey as [string, string];
+      const url = query ? `${base}?q=${encodeURIComponent(query)}` : base;
       const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch components');
       return await res.json();
@@ -45,7 +48,7 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
   });
   
   // Fetch BOM items when a BOM is selected
-  const { data: bomItems, isLoading: bomItemsLoading } = useQuery({
+  const { data: bomItems = [], isLoading: bomItemsLoading } = useQuery<any[]>({
     queryKey: [`/api/boms/${selectedBom?.id}/items`],
     enabled: !!selectedBom,
   });
@@ -298,7 +301,19 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
                       ) : (
                         <>
                           <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-medium">Componenti</h3>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-medium">Componenti</h3>
+                              <div className="flex items-center ml-6">
+                                <Label htmlFor="view-type" className="mr-2 text-sm">
+                                  Vista Albero
+                                </Label>
+                                <Switch
+                                  id="view-type"
+                                  checked={showTreeView}
+                                  onCheckedChange={setShowTreeView}
+                                />
+                              </div>
+                            </div>
                             <Dialog>
                               <DialogTrigger asChild>
                                 <Button size="sm">
@@ -353,41 +368,55 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
                             </Dialog>
                           </div>
                           
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Codice</TableHead>
-                                <TableHead>Descrizione</TableHead>
-                                <TableHead>Quantità</TableHead>
-                                <TableHead className="w-[100px]">Azioni</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {bomItems && bomItems.length > 0 ? (
-                                bomItems.map((item: any) => (
-                                  <TableRow key={item.id}>
-                                    <TableCell>{item.component?.code}</TableCell>
-                                    <TableCell>{item.component?.description}</TableCell>
-                                    <TableCell>{item.quantity}</TableCell>
-                                    <TableCell>
-                                      <Button variant="ghost" size="sm">
-                                        <span className="material-icons text-sm">edit</span>
-                                      </Button>
-                                      <Button variant="ghost" size="sm">
-                                        <span className="material-icons text-sm">delete</span>
-                                      </Button>
+                          {showTreeView ? (
+                            <BomTreeView 
+                              bomItems={bomItems} 
+                              title="" 
+                              className="border-0 shadow-none" 
+                              onItemClick={(item) => {
+                                toast({
+                                  title: "Componente selezionato",
+                                  description: `${item.code} - ${item.description}`
+                                });
+                              }}
+                            />
+                          ) : (
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Codice</TableHead>
+                                  <TableHead>Descrizione</TableHead>
+                                  <TableHead>Quantità</TableHead>
+                                  <TableHead className="w-[100px]">Azioni</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {bomItems && bomItems.length > 0 ? (
+                                  bomItems.map((item: any) => (
+                                    <TableRow key={item.id}>
+                                      <TableCell>{item.component?.code}</TableCell>
+                                      <TableCell>{item.component?.description}</TableCell>
+                                      <TableCell>{item.quantity}</TableCell>
+                                      <TableCell>
+                                        <Button variant="ghost" size="sm">
+                                          <span className="material-icons text-sm">edit</span>
+                                        </Button>
+                                        <Button variant="ghost" size="sm">
+                                          <span className="material-icons text-sm">delete</span>
+                                        </Button>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))
+                                ) : (
+                                  <TableRow>
+                                    <TableCell colSpan={4} className="text-center py-4 text-neutral-medium">
+                                      Nessun componente in questa distinta
                                     </TableCell>
                                   </TableRow>
-                                ))
-                              ) : (
-                                <TableRow>
-                                  <TableCell colSpan={4} className="text-center py-4 text-neutral-medium">
-                                    Nessun componente in questa distinta
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                            </TableBody>
-                          </Table>
+                                )}
+                              </TableBody>
+                            </Table>
+                          )}
                         </>
                       )}
                     </CardContent>

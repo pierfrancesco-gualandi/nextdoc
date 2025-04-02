@@ -1,4 +1,4 @@
-import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { QueryClient, QueryFunction, QueryKey } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -29,7 +29,9 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    // Assicuriamoci che il queryKey sia una stringa valida o array con stringa come primo elemento
+    const endpoint = Array.isArray(queryKey) ? queryKey[0] as string : String(queryKey);
+    const res = await fetch(endpoint, {
       credentials: "include",
     });
 
