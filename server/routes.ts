@@ -607,18 +607,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const components = [];
       const bomItemsToCreate = [];
       
-      // Esempio di mapping (da adattare in base alla struttura del file Excel)
-      // Assume che il file Excel contenga colonne come: Codice, Descrizione, Quantità, Livello
+      // Mapping in base alla struttura del file Excel specificata:
+      // Livello, Codice, Descrizione, Quantità, Unità di misura
       for (const row of bomItems) {
+        // Log per debug
+        console.log("Riga Excel:", JSON.stringify(row));
+        
         // Verifica che la riga contenga i dati necessari
-        if (!row.Codice && !row.Code) {
+        if (!row.Codice && !row.Code && !row['Codice']) {
+          console.log("Riga saltata: codice mancante");
           continue;
         }
         
-        const code = row.Codice || row.Code || '';
-        const description = row.Descrizione || row.Description || '';
-        const quantity = row.Quantità || row.Quantity || 1;
-        const level = row.Livello || row.Level || 0;
+        // Recupera i dati dalle colonne con i nomi italiani o inglesi
+        const code = row.Codice || row.Code || row['Codice'] || '';
+        const description = row.Descrizione || row.Description || row['Descrizione'] || '';
+        const quantity = row.Quantità || row.Quantity || row['Quantità'] || row['Quantita'] || 1;
+        const level = row.Livello || row.Level || row['Livello'] || 0;
+        const unitOfMeasure = row["Unità di misura"] || row["Unita di misura"] || row["Unità"] || row.UOM || '';
         
         // Crea il componente se non esiste già
         let component;

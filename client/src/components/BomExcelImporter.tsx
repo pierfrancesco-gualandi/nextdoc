@@ -130,7 +130,7 @@ const BomExcelImporter: React.FC<BomExcelImporterProps> = ({ onImportSuccess }) 
         </CardTitle>
         <CardDescription>
           Carica un file Excel (.xlsx o .xls) contenente la distinta base completa.
-          Il file deve contenere almeno le colonne: "Codice", "Descrizione", "Quantità" e opzionalmente "Livello".
+          Il file deve contenere le colonne: "Livello", "Codice", "Descrizione", "Quantità" e "Unità di misura".
         </CardDescription>
       </CardHeader>
       <CardContent>
