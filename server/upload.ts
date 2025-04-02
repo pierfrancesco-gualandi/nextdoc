@@ -29,10 +29,13 @@ const storage = multer.diskStorage({
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   // Controlla il mime type
   const allowedMimeTypes = [
+    // Immagini
     'image/jpeg', 
     'image/png', 
     'image/gif', 
     'image/svg+xml',
+    
+    // Documenti
     'application/pdf',
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -40,10 +43,22 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'text/plain',
     'application/zip',
+    
+    // Video e audio
     'video/mp4',
     'video/webm',
     'audio/mpeg',
-    'audio/ogg'
+    'audio/ogg',
+    
+    // Modelli 3D
+    'model/gltf-binary',  // GLB
+    'model/gltf+json',    // GLTF
+    'application/octet-stream', // Altri formati binari come STL, OBJ, FBX
+    'application/vnd.ms-3mfdocument', // 3MF
+    'application/sla',    // SLA
+    'model/stl',          // STL
+    'model/obj',          // OBJ
+    'model/fbx'           // FBX
   ];
   
   if (allowedMimeTypes.includes(file.mimetype)) {
@@ -58,7 +73,7 @@ export const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB
+    fileSize: 50 * 1024 * 1024 // 50MB per consentire modelli 3D più grandi
   }
 });
 

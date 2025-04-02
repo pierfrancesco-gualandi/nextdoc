@@ -231,10 +231,34 @@ export type VideoModuleContent = {
   caption?: string;
 };
 
+export type VideoEditorModuleContent = {
+  src: string;
+  caption?: string;
+  clips?: { start: number; end: number; title?: string }[];
+  annotations?: { time: number; text: string; color?: string }[];
+};
+
 export type TableModuleContent = {
   headers: string[];
   rows: string[][];
   caption?: string;
+};
+
+export type TableEditorModuleContent = {
+  headers: string[];
+  rows: string[][];
+  caption?: string;
+  editable: boolean;
+  calculations?: { formula: string; targetCell: { row: number; col: number } }[];
+};
+
+export type Model3DModuleContent = {
+  src: string;
+  format: 'gltf' | 'glb' | 'obj' | 'fbx' | 'stl';
+  caption?: string;
+  initialRotation?: { x: number; y: number; z: number };
+  defaultAnimation?: string;
+  annotations?: { position: { x: number; y: number; z: number }; text: string }[];
 };
 
 export type ComponentModuleContent = {

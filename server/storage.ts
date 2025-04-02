@@ -158,7 +158,7 @@ export interface IStorage {
   
   // File upload operations
   getUploadedFile(id: number): Promise<UploadedFile | undefined>;
-  getUploadedFiles(): Promise<UploadedFile[]>;
+  getUploadedFiles(limit?: number, userId?: number): Promise<UploadedFile[]>;
   createUploadedFile(file: InsertUploadedFile): Promise<UploadedFile>;
   deleteUploadedFile(id: number): Promise<boolean>;
 }
@@ -182,6 +182,7 @@ export class MemStorage implements IStorage {
   private contentModuleTranslations: Map<number, ContentModuleTranslation>;
   private translationImports: Map<number, TranslationImport>;
   private translationAIRequests: Map<number, TranslationAIRequest>;
+  private uploadedFiles: Map<number, UploadedFile>;
 
   private currentUserId: number;
   private currentDocumentId: number;
@@ -201,6 +202,7 @@ export class MemStorage implements IStorage {
   private currentContentModuleTranslationId: number;
   private currentTranslationImportId: number;
   private currentTranslationAIRequestId: number;
+  private currentUploadedFileId: number;
 
   constructor() {
     this.users = new Map();
@@ -221,6 +223,7 @@ export class MemStorage implements IStorage {
     this.contentModuleTranslations = new Map();
     this.translationImports = new Map();
     this.translationAIRequests = new Map();
+    this.uploadedFiles = new Map();
 
     this.currentUserId = 1;
     this.currentDocumentId = 1;
@@ -240,6 +243,7 @@ export class MemStorage implements IStorage {
     this.currentContentModuleTranslationId = 1;
     this.currentTranslationImportId = 1;
     this.currentTranslationAIRequestId = 1;
+    this.currentUploadedFileId = 1;
 
     // Add an initial admin user
     this.createUser({
@@ -1141,8 +1145,23 @@ export class DatabaseStorage implements IStorage {
     return file;
   }
 
-  async getUploadedFiles(): Promise<UploadedFile[]> {
-    return await db.select().from(uploadedFiles);
+  async getUploadedFiles(limit?: number, userId?: number): Promise<UploadedFile[]> {
+    let query = db
+      .select()
+      .from(uploadedFiles)
+      .orderBy(desc(uploadedFiles.uploadedAt));
+    
+    // Filtra per utente se specificato
+    if (userId !== undefined) {
+      query = query.where(eq(uploadedFiles.uploadedById, userId));
+    }
+    
+    // Limita i risultati se specificato
+    if (limit !== undefined) {
+      query = query.limit(limit);
+    }
+    
+    return await query;
   }
 
   async createUploadedFile(file: InsertUploadedFile): Promise<UploadedFile> {

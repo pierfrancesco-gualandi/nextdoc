@@ -1630,6 +1630,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch file information" });
     }
   });
+  
+  // Get recent files - questa route deve venire PRIMA della route con il parametro :id
+  app.get("/api/files/recent", async (req: Request, res: Response) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
+      
+      const files = await storage.getUploadedFiles(limit, userId);
+      
+      // Add URL to each file
+      const filesWithUrls = files.map(file => ({
+        ...file,
+        url: getFileUrl(file.filename)
+      }));
+      
+      res.json(filesWithUrls);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch recent files" });
+    }
+  });
 
   // Delete file
   app.delete("/api/files/:id", async (req: Request, res: Response) => {
