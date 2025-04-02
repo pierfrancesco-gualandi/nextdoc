@@ -19,7 +19,7 @@ import {
   translationAIRequests, TranslationAIRequest, InsertTranslationAIRequest
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, like, or, desc, asc, isNull, count } from "drizzle-orm";
+import { eq, and, like, or, desc, asc, isNull, count, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -1552,10 +1552,40 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getSectionComponentsBySectionId(sectionId: number): Promise<SectionComponent[]> {
-    return db
-      .select()
-      .from(sectionComponents)
-      .where(eq(sectionComponents.sectionId, sectionId));
+    try {
+      // Ottenere i componenti della sezione
+      const sectionComponentsList = await db
+        .select()
+        .from(sectionComponents)
+        .where(eq(sectionComponents.sectionId, sectionId));
+      
+      // Raccogliere gli ID dei componenti
+      const componentIds = sectionComponentsList.map(sc => sc.componentId);
+      
+      if (componentIds.length === 0) {
+        return sectionComponentsList;
+      }
+      
+      // Ottenere i dettagli dei componenti
+      const componentsData = await db
+        .select()
+        .from(components)
+        .where(inArray(components.id, componentIds));
+      
+      // Mappare i componenti ai section components
+      const result = sectionComponentsList.map(sc => {
+        const componentData = componentsData.find(c => c.id === sc.componentId);
+        return {
+          ...sc,
+          component: componentData
+        };
+      });
+      
+      return result;
+    } catch (error) {
+      console.error("Errore nel recupero dei componenti della sezione:", error);
+      throw error;
+    }
   }
 
   async getSectionComponentsByComponentId(componentId: number): Promise<SectionComponent[]> {
@@ -2102,6 +2132,41 @@ export class DatabaseStorage implements IStorage {
         }
       }
     }
+  }
+  
+  // File upload operations
+  async getUploadedFile(id: number): Promise<UploadedFile | undefined> {
+    return this.uploadedFiles.get(id);
+  }
+
+  async getUploadedFiles(limit?: number, userId?: number): Promise<UploadedFile[]> {
+    let files = Array.from(this.uploadedFiles.values());
+    
+    // Filtra per utente se specificato
+    if (userId !== undefined) {
+      files = files.filter(file => file.uploadedById === userId);
+    }
+    
+    // Ordina per data di caricamento (decrescente)
+    files = files.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+    
+    // Limita i risultati se specificato
+    if (limit !== undefined) {
+      files = files.slice(0, limit);
+    }
+    
+    return files;
+  }
+
+  async createUploadedFile(file: InsertUploadedFile): Promise<UploadedFile> {
+    const id = this.currentUploadedFileId++;
+    const newFile: UploadedFile = { ...file, id };
+    this.uploadedFiles.set(id, newFile);
+    return newFile;
+  }
+
+  async deleteUploadedFile(id: number): Promise<boolean> {
+    return this.uploadedFiles.delete(id);
   }
 }
 

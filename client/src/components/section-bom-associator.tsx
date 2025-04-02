@@ -84,8 +84,17 @@ export default function SectionBomAssociator({ sectionId }: SectionBomAssociator
   // Add component to section mutation
   const addComponentMutation = useMutation({
     mutationFn: async (data: any) => {
-      const res = await apiRequest("POST", "/api/section-components", data);
-      return await res.json();
+      try {
+        const res = await apiRequest("POST", "/api/section-components", data);
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Errore durante l'aggiunta del componente");
+        }
+        return await res.json();
+      } catch (error) {
+        console.error("Errore durante l'aggiunta del componente:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/sections/${sectionId}/components`] });
@@ -94,10 +103,11 @@ export default function SectionBomAssociator({ sectionId }: SectionBomAssociator
         description: "Il componente è stato associato con successo alla sezione",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error("Errore nella mutation:", error);
       toast({
         title: "Errore",
-        description: `Si è verificato un errore: ${error}`,
+        description: `Si è verificato un errore: ${error.message || error}`,
         variant: "destructive",
       });
     },
@@ -106,7 +116,17 @@ export default function SectionBomAssociator({ sectionId }: SectionBomAssociator
   // Remove component from section mutation
   const removeComponentMutation = useMutation({
     mutationFn: async (sectionComponentId: number) => {
-      await apiRequest("DELETE", `/api/section-components/${sectionComponentId}`);
+      try {
+        const res = await apiRequest("DELETE", `/api/section-components/${sectionComponentId}`);
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Errore durante la rimozione del componente");
+        }
+        return true;
+      } catch (error) {
+        console.error("Errore durante la rimozione del componente:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/sections/${sectionId}/components`] });
@@ -115,10 +135,11 @@ export default function SectionBomAssociator({ sectionId }: SectionBomAssociator
         description: "Il componente è stato rimosso con successo dalla sezione",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error("Errore nella mutation di rimozione:", error);
       toast({
         title: "Errore",
-        description: `Si è verificato un errore: ${error}`,
+        description: `Si è verificato un errore: ${error.message || error}`,
         variant: "destructive",
       });
     },
@@ -127,8 +148,17 @@ export default function SectionBomAssociator({ sectionId }: SectionBomAssociator
   // Update component quantity mutation
   const updateComponentMutation = useMutation({
     mutationFn: async (data: { id: number; quantity: number }) => {
-      const res = await apiRequest("PUT", `/api/section-components/${data.id}`, { quantity: data.quantity });
-      return await res.json();
+      try {
+        const res = await apiRequest("PUT", `/api/section-components/${data.id}`, { quantity: data.quantity });
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Errore durante l'aggiornamento della quantità");
+        }
+        return await res.json();
+      } catch (error) {
+        console.error("Errore durante l'aggiornamento della quantità:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/sections/${sectionId}/components`] });
@@ -137,10 +167,11 @@ export default function SectionBomAssociator({ sectionId }: SectionBomAssociator
         description: "La quantità del componente è stata aggiornata con successo",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error("Errore nella mutation di aggiornamento:", error);
       toast({
         title: "Errore",
-        description: `Si è verificato un errore: ${error}`,
+        description: `Si è verificato un errore: ${error.message || error}`,
         variant: "destructive",
       });
     },
