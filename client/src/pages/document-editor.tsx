@@ -125,6 +125,22 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
         id: Number(id),
         title: document.title
       });
+      
+      // Forza direttamente anche l'inserimento nel localStorage
+      try {
+        const existingDocs = JSON.parse(localStorage.getItem('openDocuments') || '[]');
+        // Evita duplicati
+        if (!existingDocs.some((doc: any) => doc.id === Number(id))) {
+          existingDocs.push({
+            id: Number(id),
+            title: document.title
+          });
+          localStorage.setItem('openDocuments', JSON.stringify(existingDocs));
+          console.log('Documento aggiunto direttamente al localStorage:', document.title);
+        }
+      } catch (error) {
+        console.error('Errore nel salvare direttamente nel localStorage:', error);
+      }
     }
   }, [document, id, addOpenDocument]);
   
@@ -263,6 +279,17 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   const handleCloseDocument = () => {
     if (id !== 'new') {
       removeOpenDocument(Number(id));
+      
+      // Aggiorna direttamente anche il localStorage
+      try {
+        const savedDocs = localStorage.getItem('openDocuments');
+        const storedDocs = JSON.parse(savedDocs || '[]');
+        const updatedDocs = storedDocs.filter((doc: any) => doc.id !== Number(id));
+        localStorage.setItem('openDocuments', JSON.stringify(updatedDocs));
+        console.log('Documento rimosso direttamente dal localStorage, ID:', id);
+      } catch (error) {
+        console.error('Errore nel rimuovere il documento dal localStorage:', error);
+      }
     }
     navigate('/');
   };

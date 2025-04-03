@@ -48,14 +48,31 @@ export default function Sidebar({ activePath }: SidebarProps) {
               onClick={(e) => {
                 e.preventDefault();
                 // Se c'è almeno un documento aperto, reindirizza all'ultimo documento aperto
-                const lastDoc = getLastOpenDocument();
-                if (lastDoc) {
-                  navigate(`/documents/${lastDoc.id}`);
-                  console.log(`Navigazione a documento aperto: ${lastDoc.id}`);
-                } else {
-                  // Altrimenti, vai alla pagina dei documenti
+                try {
+                  // Recupera i documenti dal localStorage
+                  const savedDocs = localStorage.getItem('openDocuments');
+                  const storedDocs = JSON.parse(savedDocs || '[]');
+                  
+                  if (storedDocs.length > 0) {
+                    // Se ci sono documenti nel localStorage, usa l'ultimo
+                    const lastStoredDoc = storedDocs[storedDocs.length - 1];
+                    navigate(`/documents/${lastStoredDoc.id}`);
+                    console.log(`Navigazione diretta da localStorage: ${lastStoredDoc.id}`);
+                  } else {
+                    // Altrimenti, prova con il contesto
+                    const lastDoc = getLastOpenDocument();
+                    if (lastDoc) {
+                      navigate(`/documents/${lastDoc.id}`);
+                      console.log(`Navigazione a documento aperto: ${lastDoc.id}`);
+                    } else {
+                      // Se non c'è nulla, vai alla pagina dei documenti
+                      navigate('/documents');
+                      console.log('Nessun documento aperto, navigazione a /documents');
+                    }
+                  }
+                } catch (error) {
+                  console.error('Errore nel recuperare documenti dal localStorage:', error);
                   navigate('/documents');
-                  console.log('Nessun documento aperto, navigazione a /documents');
                 }
               }}
               className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/documents' || activePath.startsWith('/documents/') ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}

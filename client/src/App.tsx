@@ -62,6 +62,7 @@ function Router() {
   // Salva i documenti aperti nel localStorage quando cambiano
   useEffect(() => {
     try {
+      // Salva sempre, anche quando l'array è vuoto
       localStorage.setItem('openDocuments', JSON.stringify(openDocuments));
       console.log('Documenti aperti salvati nel localStorage:', openDocuments);
     } catch (error) {
