@@ -67,19 +67,24 @@ export default function BomTreeView({
     
     // Prima processiamo gli elementi per estrarre i livelli
     const processedItems = items.map(item => {
-      // Estrai il livello dai dettagli del componente (se presente) o usa 0 come default
+      // Estrai il livello direttamente o dai dettagli del componente (con fallback a 0)
       let level = 0;
       
-      if (item.component && item.component.details) {
+      // Prima controlla se il livello è definito direttamente sull'item
+      if (item.level !== undefined && !isNaN(parseInt(String(item.level), 10))) {
+        level = parseInt(String(item.level), 10);
+      } 
+      // Altrimenti controlla nei dettagli del componente
+      else if (item.component && item.component.details) {
         try {
           const details = item.component.details;
           if (typeof details === 'string' && details.startsWith('{')) {
             const parsedDetails = JSON.parse(details);
             if (parsedDetails.level !== undefined) {
-              level = parseInt(parsedDetails.level, 10);
+              level = parseInt(String(parsedDetails.level), 10);
             }
           } else if (typeof details === 'object' && details.level !== undefined) {
-            level = parseInt(details.level, 10);
+            level = parseInt(String(details.level), 10);
           }
         } catch (e) {
           console.error("Errore nel parsing dei dettagli del componente:", e);

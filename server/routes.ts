@@ -822,17 +822,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             component = await storage.createComponent({
               code,
               description,
-              details: {}
+              details: {
+                level: level // Salviamo il livello nei dettagli del componente
+              }
             });
             components.push(component);
           }
           
-          // Aggiungi il componente alla BOM
+          // Aggiungi il componente alla BOM con il livello esplicito
           bomItemsToCreate.push({
             bomId: newBom.id,
             componentId: component.id,
             quantity,
-            level
+            level // Questo livello sarà usato per la visualizzazione gerarchica
           });
         } catch (error: any) {
           console.error(`Errore nell'elaborazione della riga:`, error.message || error);

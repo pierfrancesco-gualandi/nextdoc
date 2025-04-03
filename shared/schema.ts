@@ -141,12 +141,14 @@ export const bomItems = pgTable("bom_items", {
   bomId: integer("bom_id").notNull(),
   componentId: integer("component_id").notNull(),
   quantity: integer("quantity").notNull().default(1),
+  level: integer("level").notNull().default(0), // Livello gerarchico, inizia da 0
 });
 
 export const insertBomItemSchema = createInsertSchema(bomItems).pick({
   bomId: true,
   componentId: true,
   quantity: true,
+  level: true,
 });
 
 // Section components (connecting Sections with components)
