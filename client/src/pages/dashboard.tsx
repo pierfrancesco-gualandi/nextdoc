@@ -49,10 +49,22 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
     try {
       const savedDocs = localStorage.getItem('openDocuments');
       console.log('Dashboard - Documenti nel localStorage:', savedDocs);
+      
+      // Se abbiamo documenti nel localStorage ma non nel contesto, aggiungiamoli
+      const storedDocs = JSON.parse(savedDocs || '[]');
+      if (storedDocs.length > 0 && openDocuments.length === 0) {
+        console.log('Ripristino documenti aperti dal localStorage:', storedDocs);
+        storedDocs.forEach((doc: any) => {
+          addOpenDocument({
+            id: doc.id,
+            title: doc.title
+          });
+        });
+      }
     } catch (error) {
       console.error('Errore nel leggere i documenti dal localStorage:', error);
     }
-  }, [openDocuments]);
+  }, []);
   
   const { data: documents, isLoading } = useQuery({
     queryKey: ['/api/documents', searchQuery],

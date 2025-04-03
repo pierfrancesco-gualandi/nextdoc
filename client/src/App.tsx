@@ -78,6 +78,15 @@ function Router() {
       setOpenDocuments(prev => [...prev, doc]);
       setCurrentDocumentId(doc.id);
       console.log(`Documento aggiunto: ${doc.title} (ID: ${doc.id})`);
+      
+      // Aggiorna immediamente il localStorage
+      try {
+        const updatedDocs = [...openDocuments, doc];
+        localStorage.setItem('openDocuments', JSON.stringify(updatedDocs));
+        console.log('Aggiornamento diretto localStorage - Documento aggiunto:', doc.title);
+      } catch (error) {
+        console.error('Errore nel salvare il documento nel localStorage:', error);
+      }
     } else {
       setCurrentDocumentId(doc.id);
     }
@@ -93,6 +102,15 @@ function Router() {
       } else {
         setCurrentDocumentId(null);
       }
+    }
+    
+    // Aggiorna immediatamente il localStorage
+    try {
+      const updatedDocs = openDocuments.filter(doc => doc.id !== id);
+      localStorage.setItem('openDocuments', JSON.stringify(updatedDocs));
+      console.log('Aggiornamento diretto localStorage - Documento rimosso ID:', id);
+    } catch (error) {
+      console.error('Errore nel rimuovere il documento dal localStorage:', error);
     }
   };
 
