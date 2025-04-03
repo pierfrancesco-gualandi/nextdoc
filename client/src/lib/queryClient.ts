@@ -23,6 +23,23 @@ export async function apiRequest(
   return res;
 }
 
+// Funzione specifica per caricare file usando FormData
+export async function apiUploadRequest(
+  method: string,
+  url: string,
+  formData: FormData,
+): Promise<Response> {
+  const res = await fetch(url, {
+    method,
+    // Non specificare Content-Type, il browser lo imposterà automaticamente con il boundary per FormData
+    body: formData,
+    credentials: "include",
+  });
+
+  await throwIfResNotOk(res);
+  return res;
+}
+
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;

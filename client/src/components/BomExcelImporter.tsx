@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { AlertCircle, Upload, FileSpreadsheet, FileDown, Check } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { apiUploadRequest } from '@/lib/queryClient';
 import { Progress } from '@/components/ui/progress';
 import {
   Alert,
@@ -40,7 +40,8 @@ const BomExcelImporter: React.FC<BomExcelImporterProps> = ({ onImportSuccess, sh
       setError(null);
       
       try {
-        const response = await apiRequest('POST', '/api/boms/import', data);
+        // Usa apiUploadRequest invece di apiRequest per gestire i file
+        const response = await apiUploadRequest('POST', '/api/boms/import', data);
         return await response.json();
       } catch (error) {
         if (error instanceof Error) {

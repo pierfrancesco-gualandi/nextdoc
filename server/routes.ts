@@ -561,6 +561,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Endpoint per l'importazione di BOM da file Excel o CSV
   app.post("/api/boms/import", upload.single("file"), async (req: Request, res: Response) => {
+    console.log("Richiesta di importazione BOM ricevuta", req.body);
+    console.log("File ricevuto:", req.file);
     try {
       if (!req.file) {
         return res.status(400).json({ message: "Nessun file caricato" });

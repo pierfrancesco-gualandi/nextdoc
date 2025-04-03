@@ -27,7 +27,23 @@ const storage = multer.diskStorage({
 
 // Filtro per i tipi di file accettati
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  // Controlla il mime type
+  // Estensione del file
+  const fileExt = path.extname(file.originalname).toLowerCase();
+  const allowedExtensions = [
+    // Immagini
+    '.jpg', '.jpeg', '.png', '.gif', '.svg',
+    
+    // Documenti
+    '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.csv', '.txt', '.zip',
+    
+    // Video e audio
+    '.mp4', '.webm', '.mp3', '.ogg',
+    
+    // Modelli 3D
+    '.glb', '.gltf', '.stl', '.obj', '.fbx', '.3mf', '.sla'
+  ];
+  
+  // Controlla il mime type o l'estensione del file
   const allowedMimeTypes = [
     // Immagini
     'image/jpeg', 
@@ -42,6 +58,7 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
     'application/vnd.ms-excel',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'text/plain',
+    'text/csv',
     'application/zip',
     
     // Video e audio
@@ -58,13 +75,30 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
     'application/sla',    // SLA
     'model/stl',          // STL
     'model/obj',          // OBJ
-    'model/fbx'           // FBX
+    'model/fbx',          // FBX
+    
+    // Altri tipi per Excel e documenti
+    'application/excel',
+    'application/xlsx',
+    'application/csv',
+    'application/x-excel',
   ];
   
-  if (allowedMimeTypes.includes(file.mimetype)) {
+  // Per debugging
+  console.log(`File upload - Nome: ${file.originalname}, Estensione: ${fileExt}, Tipo MIME: ${file.mimetype}`);
+  
+  // Accetta il file se il suo tipo MIME è nell'elenco o l'estensione è valida
+  if (allowedMimeTypes.includes(file.mimetype) || allowedExtensions.includes(fileExt)) {
     cb(null, true);
   } else {
-    cb(new Error(`Tipo di file non supportato: ${file.mimetype}`));
+    // Eccezione per file Excel e CSV con MIME type non standard
+    if ((fileExt === '.xlsx' || fileExt === '.xls' || fileExt === '.csv') && 
+        (file.mimetype === 'application/octet-stream' || file.mimetype.includes('sheet') || file.mimetype.includes('excel') || file.mimetype.includes('csv'))) {
+      console.log("Accettando file Excel/CSV con MIME type non standard:", file.mimetype);
+      cb(null, true);
+    } else {
+      cb(new Error(`Tipo di file non supportato: ${file.mimetype} con estensione ${fileExt}`));
+    }
   }
 };
 
