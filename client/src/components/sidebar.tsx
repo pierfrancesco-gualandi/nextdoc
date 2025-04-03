@@ -37,8 +37,8 @@ export default function Sidebar({ activePath }: SidebarProps) {
         <ul className="space-y-1">
           <li>
             <Link href="/">
-              <a className={`flex items-center px-4 py-2 rounded-md ${activePath === '/' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}>
-                <span className={`material-icons mr-3 ${activePath === '/' ? '' : 'text-neutral-medium'}`}>dashboard</span>
+              <a className={`flex items-center px-4 py-2 rounded-md ${activePath === '/' ? 'bg-primary text-white font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}>
+                <span className={`material-icons mr-3 ${activePath === '/' ? 'text-white' : 'text-neutral-medium'}`}>dashboard</span>
                 Dashboard
               </a>
             </Link>
