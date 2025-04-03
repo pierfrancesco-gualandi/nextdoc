@@ -127,6 +127,12 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     enabled: !!selectedSection,
   });
   
+  // Fetch associated BOM components for selected section
+  const { data: sectionComponents, isLoading: sectionComponentsLoading } = useQuery({
+    queryKey: [`/api/sections/${selectedSection?.id}/components`],
+    enabled: !!selectedSection,
+  });
+  
   // Update section mutation
   const updateSectionMutation = useMutation({
     mutationFn: async (data: any) => {
