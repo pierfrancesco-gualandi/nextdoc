@@ -99,14 +99,15 @@ export default function Sidebar({ activePath }: SidebarProps) {
             </button>
           </div>
           
-          <DocumentTreeView documentId={activePath.split('/')[2]} />
+          <SimpleSectionTree documentId={activePath.split('/')[2]} />
         </div>
       )}
     </aside>
   );
 }
 
-function DocumentTreeView({ documentId }: { documentId: string }) {
+// Renamed to avoid conflict with the main DocumentTreeView component
+function SimpleSectionTree({ documentId }: { documentId: string }) {
   const { data: sections, isLoading } = useQuery({
     queryKey: [`/api/documents/${documentId}/sections`],
     enabled: !!documentId && documentId !== 'new',

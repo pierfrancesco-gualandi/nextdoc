@@ -2,8 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
+import { useDrag, useDrop } from "react-dnd";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -67,6 +66,54 @@ type DragItem = {
   originalIndex: number;
 };
 
+// TrashBin component to be used inside DndProvider context
+interface TrashBinProps {
+  showTrashBin: boolean;
+  onDeleteRequest: (id: number) => void;
+}
+
+function TrashBin({ showTrashBin, onDeleteRequest }: TrashBinProps) {
+  const [draggedOverTrash, setDraggedOverTrash] = useState(false);
+
+  // Handle trash drop
+  const [{ isOverTrash }, trashDrop] = useDrop({
+    accept: 'SECTION',
+    drop(item: DragItem) {
+      onDeleteRequest(item.id);
+    },
+    hover() {
+      setDraggedOverTrash(true);
+    },
+    collect: (monitor) => ({
+      isOverTrash: monitor.isOver()
+    })
+  });
+
+  if (!showTrashBin) return null;
+
+  return (
+    <div 
+      ref={trashDrop}
+      className={`
+        fixed bottom-4 right-4 z-50
+        w-14 h-14 flex items-center justify-center 
+        rounded-full shadow-lg
+        transition-all duration-200
+        ${draggedOverTrash || isOverTrash 
+          ? 'bg-red-600 scale-110' 
+          : 'bg-neutral-800'}
+      `}
+    >
+      <Trash2 
+        className={`
+          w-6 h-6
+          ${draggedOverTrash || isOverTrash ? 'text-white' : 'text-white opacity-80'}
+        `}
+      />
+    </div>
+  );
+}
+
 export default function DocumentTreeView({ 
   documentId, 
   onSectionSelect, 
@@ -75,7 +122,6 @@ export default function DocumentTreeView({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showTrashBin, setShowTrashBin] = useState(false);
-  const [draggedOverTrash, setDraggedOverTrash] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState<number | null>(null);
   
   const { data: sections, isLoading } = useQuery<Section[]>({
@@ -179,7 +225,6 @@ export default function DocumentTreeView({
     const handleDragStart = () => setShowTrashBin(true);
     const handleDragEnd = () => {
       setShowTrashBin(false);
-      setDraggedOverTrash(false);
     };
 
     document.addEventListener('dragstart', handleDragStart);
@@ -190,20 +235,6 @@ export default function DocumentTreeView({
       document.removeEventListener('dragend', handleDragEnd);
     };
   }, []);
-
-  // Handle trash drop
-  const [{ isOverTrash }, trashDrop] = useDrop({
-    accept: 'SECTION',
-    drop(item: DragItem) {
-      setSectionToDelete(item.id);
-    },
-    hover() {
-      setDraggedOverTrash(true);
-    },
-    collect: (monitor) => ({
-      isOverTrash: monitor.isOver()
-    })
-  });
 
   const handleDeleteSection = () => {
     if (sectionToDelete) {
@@ -216,96 +247,77 @@ export default function DocumentTreeView({
   }
 
   return (
-    <DndProvider backend={HTML5Backend}>
-      <div className="tree-view pl-1 text-sm">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-medium text-sm text-neutral-dark">STRUTTURA DOCUMENTO</h3>
+    <div className="tree-view pl-1 text-sm">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="font-medium text-sm text-neutral-dark">STRUTTURA DOCUMENTO</h3>
+        <button 
+          className="text-primary hover:text-primary-dark"
+          onClick={() => addNewSection()}
+        >
+          <span className="material-icons text-sm">add</span>
+        </button>
+      </div>
+      
+      <SectionTree 
+        sections={sections} 
+        parentId={null} 
+        level={0} 
+        selectedSectionId={selectedSectionId}
+        onSectionSelect={onSectionSelect}
+        onAddSection={addNewSection}
+        onMoveSection={moveSection}
+        documentId={documentId}
+      />
+      
+      {sections.filter(s => !s.parentId).length === 0 && (
+        <div className="text-sm text-neutral-medium py-2">
+          Nessuna sezione disponibile.
           <button 
-            className="text-primary hover:text-primary-dark"
+            className="block mt-2 text-primary hover:text-primary-dark"
             onClick={() => addNewSection()}
           >
-            <span className="material-icons text-sm">add</span>
+            + Aggiungi sezione
           </button>
         </div>
-        
-        <SectionTree 
-          sections={sections} 
-          parentId={null} 
-          level={0} 
-          selectedSectionId={selectedSectionId}
-          onSectionSelect={onSectionSelect}
-          onAddSection={addNewSection}
-          onMoveSection={moveSection}
-          documentId={documentId}
-        />
-        
-        {sections.filter(s => !s.parentId).length === 0 && (
-          <div className="text-sm text-neutral-medium py-2">
-            Nessuna sezione disponibile.
-            <button 
-              className="block mt-2 text-primary hover:text-primary-dark"
-              onClick={() => addNewSection()}
+      )}
+
+      {/* Trash bin component for deleting sections via drag & drop */}
+      <TrashBin 
+        showTrashBin={showTrashBin} 
+        onDeleteRequest={setSectionToDelete} 
+      />
+
+      {/* Confirmation dialog before deleting */}
+      <AlertDialog open={sectionToDelete !== null} onOpenChange={(open) => !open && setSectionToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare questa sezione?
+              {sections.find(s => s.id === sectionToDelete)?.title && (
+                <strong className="block mt-2">
+                  "{sections.find(s => s.id === sectionToDelete)?.title}"
+                </strong>
+              )}
+              {sections.some(s => s.parentId === sectionToDelete) && (
+                <span className="block mt-1 text-red-500">
+                  Attenzione: eliminando questa sezione verranno eliminate anche tutte le sue sottosezioni!
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-red-500 hover:bg-red-600"
+              onClick={handleDeleteSection}
             >
-              + Aggiungi sezione
-            </button>
-          </div>
-        )}
-
-        {/* Trash bin for deleting sections via drag & drop */}
-        {showTrashBin && (
-          <div 
-            ref={trashDrop}
-            className={`
-              fixed bottom-4 right-4 z-50
-              w-14 h-14 flex items-center justify-center 
-              rounded-full shadow-lg
-              transition-all duration-200
-              ${draggedOverTrash || isOverTrash 
-                ? 'bg-red-600 scale-110' 
-                : 'bg-neutral-800'}
-            `}
-          >
-            <Trash2 
-              className={`
-                w-6 h-6
-                ${draggedOverTrash || isOverTrash ? 'text-white' : 'text-white opacity-80'}
-              `}
-            />
-          </div>
-        )}
-
-        {/* Confirmation dialog before deleting */}
-        <AlertDialog open={sectionToDelete !== null} onOpenChange={(open) => !open && setSectionToDelete(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
-              <AlertDialogDescription>
-                Sei sicuro di voler eliminare questa sezione?
-                {sections.find(s => s.id === sectionToDelete)?.title && (
-                  <strong className="block mt-2">
-                    "{sections.find(s => s.id === sectionToDelete)?.title}"
-                  </strong>
-                )}
-                {sections.some(s => s.parentId === sectionToDelete) && (
-                  <span className="block mt-1 text-red-500">
-                    Attenzione: eliminando questa sezione verranno eliminate anche tutte le sue sottosezioni!
-                  </span>
-                )}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Annulla</AlertDialogCancel>
-              <AlertDialogAction 
-                className="bg-red-500 hover:bg-red-600"
-                onClick={handleDeleteSection}
-              >
-                Elimina
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </DndProvider>
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }
 
@@ -530,9 +542,8 @@ function SectionItem({
       if (item.id === section.id) return;
       
       // When dropping on the child area, make it a child of this section
-      // Find existing children count for proper ordering
-      const childCount = sections.filter(s => s.parentId === section.id).length;
-      onMove(item.id, section.id, childCount);
+      // Just use 0 as the order, it will be placed at the end
+      onMove(item.id, section.id, 0);
     },
     collect: (monitor) => ({
       isOverChild: monitor.isOver(),

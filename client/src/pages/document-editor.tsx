@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 import Header from "@/components/header";
 import DocumentTreeView from "@/components/document-tree-view";
 import ModuleToolbar from "@/components/module-toolbar";
@@ -250,15 +252,16 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
       />
       
       <main className="flex-1 overflow-y-auto bg-neutral-lightest">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-          <TabsList className="px-4 border-b border-neutral-light">
-            <TabsTrigger value="editor">Editor</TabsTrigger>
-            <TabsTrigger value="preview">Anteprima</TabsTrigger>
-            <TabsTrigger value="bom">Distinta Base</TabsTrigger>
-            <TabsTrigger value="bom-section">Associa BOM</TabsTrigger>
-            <TabsTrigger value="permissions">Permessi</TabsTrigger>
-            <TabsTrigger value="history">Cronologia</TabsTrigger>
-          </TabsList>
+        <DndProvider backend={HTML5Backend}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+            <TabsList className="px-4 border-b border-neutral-light">
+              <TabsTrigger value="editor">Editor</TabsTrigger>
+              <TabsTrigger value="preview">Anteprima</TabsTrigger>
+              <TabsTrigger value="bom">Distinta Base</TabsTrigger>
+              <TabsTrigger value="bom-section">Associa BOM</TabsTrigger>
+              <TabsTrigger value="permissions">Permessi</TabsTrigger>
+              <TabsTrigger value="history">Cronologia</TabsTrigger>
+            </TabsList>
           
           <TabsContent value="editor" className="h-full">
             <div className="flex h-full">
@@ -542,6 +545,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
             </div>
           </TabsContent>
         </Tabs>
+        </DndProvider>
       </main>
     </>
   );
