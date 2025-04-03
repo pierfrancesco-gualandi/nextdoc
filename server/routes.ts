@@ -7,6 +7,9 @@ import { upload, saveFileInfo, getFileUrl } from "./upload";
 import { createWordDocument } from "./word-export";
 import path from "path";
 import fs from "fs";
+import * as XLSX from 'xlsx';
+import { parse } from 'csv-parse/sync';
+import type { jsonb } from "drizzle-orm/pg-core";
 import {
   insertUserSchema,
   insertDocumentSchema,
@@ -574,10 +577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verifica il tipo di file e lo elabora di conseguenza
       if (fileExt === 'csv') {
-        // Importazione CSV
-        const fs = require('fs');
-        const { parse } = require('csv-parse/sync');
-        
+        // Importazione CSV        
         const fileContent = fs.readFileSync(filePath, 'utf8');
         const records = parse(fileContent, {
           columns: true,
@@ -609,7 +609,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        const XLSX = require('xlsx');
         const workbook = XLSX.readFile(filePath);
         
         // Assume che il primo foglio del file Excel contenga i dati BOM
@@ -1316,7 +1315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.query.userId ? Number(req.query.userId) : undefined;
       const languageId = req.query.languageId ? Number(req.query.languageId) : undefined;
       
-      let assignments = [];
+      let assignments: any[] = [];
       if (userId) {
         assignments = await storage.getTranslationAssignmentsByUserId(userId);
       } else if (languageId) {
@@ -1811,8 +1810,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             
             // Create a mock translation - in real implementation, this would call an AI service
-            let mockContent = module.content;
-            if (typeof mockContent === "object") {
+            let mockContent: any = module.content;
+            if (typeof mockContent === "object" && mockContent !== null) {
               // Handle different module types
               if ("text" in mockContent) {
                 mockContent = { 
