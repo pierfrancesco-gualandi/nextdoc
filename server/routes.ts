@@ -552,12 +552,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/boms/:id", async (req: Request, res: Response) => {
     try {
       const bomId = Number(req.params.id);
+      
+      // Prima eliminiamo tutti i componenti BOM associati
+      await storage.deleteBomItems(bomId);
+      
+      // Poi eliminiamo la BOM stessa
       const success = await storage.deleteBom(bomId);
       if (!success) {
         return res.status(404).json({ message: "BOM not found" });
       }
+      
+      // Risposta senza body per 204 No Content
       res.status(204).end();
     } catch (error) {
+      console.error("Errore durante l'eliminazione della BOM:", error);
       res.status(500).json({ message: "Failed to delete BOM" });
     }
   });

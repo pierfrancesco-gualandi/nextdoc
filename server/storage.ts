@@ -82,6 +82,7 @@ export interface IStorage {
   createBomItem(item: InsertBomItem): Promise<BomItem>;
   updateBomItem(id: number, item: Partial<InsertBomItem>): Promise<BomItem | undefined>;
   deleteBomItem(id: number): Promise<boolean>;
+  deleteBomItems(bomId: number): Promise<boolean>;
   
   // Section-Component operations
   getSectionComponent(id: number): Promise<SectionComponent | undefined>;
@@ -1522,6 +1523,12 @@ export class DatabaseStorage implements IStorage {
   async deleteBomItem(id: number): Promise<boolean> {
     const result = await db.delete(bomItems).where(eq(bomItems.id, id));
     return !!result;
+  }
+  
+  async deleteBomItems(bomId: number): Promise<boolean> {
+    // Elimina tutti gli elementi BOM di una specifica BOM
+    await db.delete(bomItems).where(eq(bomItems.bomId, bomId));
+    return true;
   }
   
 

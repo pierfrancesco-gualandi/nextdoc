@@ -63,27 +63,20 @@ export default function BomTreeView({
 
   // Funzione per costruire la gerarchia BOM basata sui livelli e relazioni tra componenti
   const buildBomHierarchy = (items: any[]): TreeItem[] => {
-    // Prima passiamo attraverso gli elementi per estrarre i livelli basati sul formato del codice
+    // Prima passiamo attraverso gli elementi per estrarre i livelli
     const processedItems = items.map(item => {
-      // Assumiamo che il livello possa essere derivato dal codice o sia esplicitamente specificato
-      let level = item.level || 0;
-      
-      // Se il livello non è esplicitamente specificato, cerchiamo di derivarlo dal codice
-      // Ad esempio, codici come "1.2.3" possono indicare livelli diversi basati sul numero di segmenti
-      if (typeof level !== 'number' && item.component?.code) {
-        const codeParts = item.component.code.split(/[.-]/);
-        level = codeParts.length - 1;
-      }
+      // Assicuriamoci che il livello sia un numero
+      const level = typeof item.level === 'number' ? item.level : 0;
       
       return {
         id: item.id,
-        componentId: item.componentId,
+        componentId: item.componentId || item.component?.id,
         code: item.component?.code || 'N/A',
         description: item.component?.description || 'Componente sconosciuto',
         quantity: item.quantity,
         parentId: item.parentId || null,
-        level,
-        expanded: true,
+        level: level,
+        expanded: expandedItems[item.id] || false, // Usa lo stato di espansione esistente o default a false
         children: [] as TreeItem[]
       };
     });
@@ -94,53 +87,47 @@ export default function BomTreeView({
       return a.code.localeCompare(b.code);
     });
     
-    // Cerchiamo di costruire la gerarchia basata sui livelli e sui prefissi del codice
+    // Costruiamo la gerarchia basata sui livelli
     const result: TreeItem[] = [];
-    const itemMap: Record<number, TreeItem> = {};
+    const itemsMap = new Map<number, TreeItem>();
     
-    // Populiamo la mappa per accesso veloce
+    // Mappa per accesso veloce
     processedItems.forEach(item => {
-      itemMap[item.id] = item;
+      itemsMap.set(item.id, item);
     });
     
-    // Funzione per trovare il parent basato sul codice e livello
-    const findParentByCode = (item: TreeItem) => {
-      // Per elementi di livello 0, non c'è parent
-      if (item.level === 0) return null;
+    // Struttura per tenere traccia dell'ultimo elemento a ciascun livello
+    const lastAtLevel: Record<number, TreeItem | null> = {};
+    
+    // Prima passiamo attraverso i livelli 0 per stabilire la root
+    processedItems.filter(item => item.level === 0).forEach(item => {
+      result.push(item);
+      lastAtLevel[0] = item;
+    });
+    
+    // Ora processiamo tutti gli elementi con livello > 0 in ordine
+    processedItems.filter(item => item.level > 0).forEach(item => {
+      // Trova il genitore appropriato (l'ultimo elemento al livello precedente)
+      const parentLevel = item.level - 1;
+      const parent = lastAtLevel[parentLevel];
       
-      // Se c'è un parentId esplicito, lo usiamo
-      if (item.parentId && itemMap[item.parentId]) {
-        return itemMap[item.parentId];
+      if (parent) {
+        // Aggiungi come figlio al genitore
+        if (!parent.children) parent.children = [];
+        parent.children.push(item);
+        // Aggiorna il parentId esplicito
+        item.parentId = parent.id;
+      } else {
+        // Se non troviamo un genitore, mettiamo l'elemento alla radice
+        result.push(item);
       }
       
-      // Altrimenti, cerchiamo di abbinare basandoci sul codice
-      // Assumiamo che i codici seguano una struttura gerarchica come "1", "1.1", "1.1.1", ecc.
-      const codeParts = item.code.split(/[.-]/);
-      if (codeParts.length <= 1) return null;
+      // Aggiorna l'ultimo elemento a questo livello
+      lastAtLevel[item.level] = item;
       
-      // Rimuoviamo l'ultimo segmento per ottenere il potenziale codice del parent
-      codeParts.pop();
-      const parentCode = codeParts.join('.');
-      
-      // Cerca un elemento con lo stesso codice
-      const parentItem = processedItems.find(p => 
-        p.code === parentCode && p.level === item.level - 1
-      );
-      
-      return parentItem || null;
-    };
-    
-    // Costruisci la gerarchia
-    processedItems.forEach(item => {
-      const parent = findParentByCode(item);
-      
-      if (!parent) {
-        // Elemento di root
-        result.push(item);
-      } else {
-        // Aggiungi come figlio
-        if (!parent.children) parent.children = [] as TreeItem[];
-        parent.children.push(item as TreeItem);
+      // Azzera tutti i livelli successivi
+      for (let i = item.level + 1; i < 10; i++) {
+        lastAtLevel[i] = null;
       }
     });
     
@@ -154,19 +141,22 @@ export default function BomTreeView({
         const hierarchicalTree = buildBomHierarchy(safeItems);
         setTreeData(hierarchicalTree);
         
-        // Inizializza lo stato di espansione dei nodi
-        const expanded: Record<number, boolean> = {};
-        const initializeExpanded = (items: TreeItem[]) => {
-          items.forEach(item => {
-            expanded[item.id] = true;
-            if (item.children && item.children.length > 0) {
-              initializeExpanded(item.children);
-            }
-          });
-        };
-        
-        initializeExpanded(hierarchicalTree);
-        setExpandedItems(expanded);
+        // Inizializza lo stato di espansione dei nodi se è la prima volta
+        if (Object.keys(expandedItems).length === 0) {
+          const expanded: Record<number, boolean> = {};
+          const initializeExpanded = (items: TreeItem[]) => {
+            items.forEach(item => {
+              // Espande solo i livelli 0 e 1 per default, i livelli più profondi rimangono chiusi
+              expanded[item.id] = item.level <= 1;
+              if (item.children && item.children.length > 0) {
+                initializeExpanded(item.children);
+              }
+            });
+          };
+          
+          initializeExpanded(hierarchicalTree);
+          setExpandedItems(expanded);
+        }
       } catch (error) {
         console.error("Errore nella costruzione della gerarchia BOM:", error);
         
@@ -183,16 +173,18 @@ export default function BomTreeView({
         
         setTreeData(flatTree);
         
-        const expanded: Record<number, boolean> = {};
-        flatTree.forEach(item => {
-          expanded[item.id] = true;
-        });
-        setExpandedItems(expanded);
+        if (Object.keys(expandedItems).length === 0) {
+          const expanded: Record<number, boolean> = {};
+          flatTree.forEach(item => {
+            expanded[item.id] = true;
+          });
+          setExpandedItems(expanded);
+        }
       }
     } else {
       setTreeData([]);
     }
-  }, [safeItems]);
+  }, [safeItems, expandedItems]);
 
   const toggleExpand = (itemId: number, item?: TreeItem) => {
     const newValue = !expandedItems[itemId];
@@ -216,9 +208,6 @@ export default function BomTreeView({
         <div 
           className={`flex items-center py-2 px-2 hover:bg-neutral-100 rounded-md cursor-pointer ${onItemClick ? 'hover:bg-primary-50' : ''}`}
           onClick={() => {
-            if (hasChildren) {
-              toggleExpand(item.id, item);
-            }
             if (onItemClick) {
               onItemClick(item);
             }
@@ -226,7 +215,15 @@ export default function BomTreeView({
         >
           {/* Indentazione in base al livello gerarchico */}
           <div className="flex items-center" style={{ minWidth: `${(item.level * 24) + 24}px` }}>
-            <span className="mr-1 text-neutral-500 w-5">
+            <span 
+              className="mr-1 text-neutral-500 w-5 cursor-pointer" 
+              onClick={(e) => {
+                e.stopPropagation();
+                if (hasChildren) {
+                  toggleExpand(item.id, item);
+                }
+              }}
+            >
               {hasChildren ? (
                 isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
               ) : (
