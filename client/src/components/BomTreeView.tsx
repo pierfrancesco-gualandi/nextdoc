@@ -237,9 +237,19 @@ export default function BomTreeView({
             </Badge>
           </div>
           
-          {/* Codice alfanumerico */}
+          {/* Codice alfanumerico con indicatori di espansione */}
           <div className="flex items-center min-w-[120px]">
-            <span className="font-medium text-neutral-900 whitespace-nowrap">{item.code}</span>
+            <span 
+              className="font-medium text-neutral-900 whitespace-nowrap cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (hasChildren) {
+                  toggleExpand(item.id, item);
+                }
+              }}
+            >
+              {hasChildren ? (isExpanded ? `< ${item.code}` : `> ${item.code}`) : `  ${item.code}`}
+            </span>
           </div>
           
           {/* Quantità */}
@@ -249,8 +259,16 @@ export default function BomTreeView({
             </Badge>
           </div>
           
-          {/* Descrizione */}
-          <div className="ml-3 text-sm text-neutral-700 truncate flex-grow">
+          {/* Descrizione interattiva */}
+          <div 
+            className="ml-3 text-sm text-neutral-700 truncate flex-grow cursor-pointer" 
+            onClick={(e) => {
+              e.stopPropagation();
+              if (hasChildren) {
+                toggleExpand(item.id, item);
+              }
+            }}
+          >
             {item.description}
           </div>
           
