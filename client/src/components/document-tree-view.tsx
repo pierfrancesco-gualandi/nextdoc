@@ -4,6 +4,18 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 
 interface Section {
   id: number;
@@ -62,6 +74,9 @@ export default function DocumentTreeView({
 }: DocumentTreeViewProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [showTrashBin, setShowTrashBin] = useState(false);
+  const [draggedOverTrash, setDraggedOverTrash] = useState(false);
+  const [sectionToDelete, setSectionToDelete] = useState<number | null>(null);
   
   const { data: sections, isLoading } = useQuery<Section[]>({
     queryKey: [`/api/documents/${documentId}/sections`],
@@ -136,6 +151,66 @@ export default function DocumentTreeView({
     });
   };
   
+  // Delete section mutation
+  const deleteSectionMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest('DELETE', `/api/sections/${id}`);
+      return id;
+    },
+    onSuccess: (id) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/documents/${documentId}/sections`] });
+      toast({
+        title: "Successo",
+        description: "Sezione eliminata con successo"
+      });
+      setSectionToDelete(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore",
+        description: `Errore durante l'eliminazione della sezione: ${error}`,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Monitor drag events to show trash bin
+  useEffect(() => {
+    const handleDragStart = () => setShowTrashBin(true);
+    const handleDragEnd = () => {
+      setShowTrashBin(false);
+      setDraggedOverTrash(false);
+    };
+
+    document.addEventListener('dragstart', handleDragStart);
+    document.addEventListener('dragend', handleDragEnd);
+
+    return () => {
+      document.removeEventListener('dragstart', handleDragStart);
+      document.removeEventListener('dragend', handleDragEnd);
+    };
+  }, []);
+
+  // Handle trash drop
+  const [{ isOverTrash }, trashDrop] = useDrop({
+    accept: 'SECTION',
+    drop(item: DragItem) {
+      setSectionToDelete(item.id);
+    },
+    hover() {
+      setDraggedOverTrash(true);
+    },
+    collect: (monitor) => ({
+      isOverTrash: monitor.isOver()
+    })
+  });
+
+  const handleDeleteSection = () => {
+    if (sectionToDelete) {
+      deleteSectionMutation.mutate(sectionToDelete);
+    }
+  };
+
   if (isLoading || !sections) {
     return <div className="p-4 text-sm text-neutral-medium">Caricamento struttura...</div>;
   }
@@ -175,6 +250,60 @@ export default function DocumentTreeView({
             </button>
           </div>
         )}
+
+        {/* Trash bin for deleting sections via drag & drop */}
+        {showTrashBin && (
+          <div 
+            ref={trashDrop}
+            className={`
+              fixed bottom-4 right-4 z-50
+              w-14 h-14 flex items-center justify-center 
+              rounded-full shadow-lg
+              transition-all duration-200
+              ${draggedOverTrash || isOverTrash 
+                ? 'bg-red-600 scale-110' 
+                : 'bg-neutral-800'}
+            `}
+          >
+            <Trash2 
+              className={`
+                w-6 h-6
+                ${draggedOverTrash || isOverTrash ? 'text-white' : 'text-white opacity-80'}
+              `}
+            />
+          </div>
+        )}
+
+        {/* Confirmation dialog before deleting */}
+        <AlertDialog open={sectionToDelete !== null} onOpenChange={(open) => !open && setSectionToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
+              <AlertDialogDescription>
+                Sei sicuro di voler eliminare questa sezione?
+                {sections.find(s => s.id === sectionToDelete)?.title && (
+                  <strong className="block mt-2">
+                    "{sections.find(s => s.id === sectionToDelete)?.title}"
+                  </strong>
+                )}
+                {sections.some(s => s.parentId === sectionToDelete) && (
+                  <span className="block mt-1 text-red-500">
+                    Attenzione: eliminando questa sezione verranno eliminate anche tutte le sue sottosezioni!
+                  </span>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annulla</AlertDialogCancel>
+              <AlertDialogAction 
+                className="bg-red-500 hover:bg-red-600"
+                onClick={handleDeleteSection}
+              >
+                Elimina
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DndProvider>
   );
@@ -401,8 +530,9 @@ function SectionItem({
       if (item.id === section.id) return;
       
       // When dropping on the child area, make it a child of this section
-      const childrenCount = 0; // You would need to calculate this
-      onMove(item.id, section.id, childrenCount);
+      // Find existing children count for proper ordering
+      const childCount = sections.filter(s => s.parentId === section.id).length;
+      onMove(item.id, section.id, childCount);
     },
     collect: (monitor) => ({
       isOverChild: monitor.isOver(),
