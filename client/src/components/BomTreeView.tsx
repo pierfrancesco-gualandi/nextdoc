@@ -184,7 +184,7 @@ export default function BomTreeView({
     } else {
       setTreeData([]);
     }
-  }, [safeItems, expandedItems]);
+  }, [safeItems]);
 
   const toggleExpand = (itemId: number, item?: TreeItem) => {
     const newValue = !expandedItems[itemId];

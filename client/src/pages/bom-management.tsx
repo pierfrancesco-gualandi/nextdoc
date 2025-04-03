@@ -506,6 +506,9 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
                                   description: `${item.code} - ${item.description}`
                                 });
                               }}
+                              onToggleExpand={(item, expanded) => {
+                                console.log(`Componente ${item.code} ${expanded ? 'espanso' : 'compresso'}`);
+                              }}
                               onDeleteItem={(item) => {
                                 deleteBomItemMutation.mutate(item.id);
                               }}
