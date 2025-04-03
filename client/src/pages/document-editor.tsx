@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { DndProvider } from "react-dnd";
+import { DndProvider, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Header from "@/components/header";
 import DocumentTreeView from "@/components/document-tree-view";
@@ -19,10 +19,76 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createDocumentVersion } from "@/lib/document-utils";
+import { Trash2 } from "lucide-react";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface DocumentEditorProps {
   id: string;
   toggleSidebar?: () => void;
+}
+
+// TrashBin component (internal to this file)
+type DragItem = {
+  type: string;
+  id: number;
+  originalParentId: number | null;
+  originalIndex: number;
+};
+
+interface TrashBinProps {
+  showTrashBin: boolean;
+  onDeleteRequest: (id: number) => void;
+}
+
+function TrashBin({ showTrashBin, onDeleteRequest }: TrashBinProps) {
+  const [draggedOverTrash, setDraggedOverTrash] = useState(false);
+
+  // Handle trash drop
+  const [{ isOverTrash }, trashDrop] = useDrop({
+    accept: 'SECTION',
+    drop(item: DragItem) {
+      onDeleteRequest(item.id);
+    },
+    hover() {
+      setDraggedOverTrash(true);
+    },
+    collect: (monitor) => ({
+      isOverTrash: monitor.isOver()
+    })
+  });
+
+  if (!showTrashBin) return null;
+
+  return (
+    <div 
+      ref={trashDrop}
+      className={`
+        fixed bottom-4 right-4 z-50
+        w-14 h-14 flex items-center justify-center 
+        rounded-full shadow-lg
+        transition-all duration-200
+        ${draggedOverTrash || isOverTrash 
+          ? 'bg-red-600 scale-110' 
+          : 'bg-neutral-800'}
+      `}
+    >
+      <Trash2 
+        className={`
+          w-6 h-6
+          ${draggedOverTrash || isOverTrash ? 'text-white' : 'text-white opacity-80'}
+        `}
+      />
+    </div>
+  );
 }
 
 export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProps) {
@@ -33,6 +99,8 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   const [sectionTitle, setSectionTitle] = useState("");
   const [sectionDescription, setSectionDescription] = useState("");
   const dropZoneRef = useRef<HTMLDivElement>(null);
+  const [showTrashBin, setShowTrashBin] = useState(false);
+  const [sectionToDelete, setSectionToDelete] = useState<number | null>(null);
   
   // Fetch document data
   const { data: document, isLoading: documentLoading } = useQuery({
@@ -123,6 +191,34 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
         description: `Errore durante la creazione della versione: ${error}`,
         variant: "destructive"
       });
+    }
+  });
+
+  // Delete section mutation
+  const deleteSectionMutation = useMutation({
+    mutationFn: async (sectionId: number) => {
+      await apiRequest('DELETE', `/api/sections/${sectionId}`, undefined);
+      return sectionId;
+    },
+    onSuccess: (sectionId) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/documents/${id}/sections`] });
+      if (selectedSection?.id === sectionId) {
+        setSelectedSection(null);
+      }
+      toast({
+        title: "Sezione eliminata",
+        description: "La sezione è stata eliminata con successo"
+      });
+      setSectionToDelete(null);
+      setShowTrashBin(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore",
+        description: `Errore durante l'eliminazione della sezione: ${error}`,
+        variant: "destructive"
+      });
+      setSectionToDelete(null);
     }
   });
   
@@ -240,6 +336,25 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     queryClient.invalidateQueries({ queryKey: [`/api/documents/${id}`] });
   };
   
+  // Handle section deletion
+  const handleDeleteSection = (sectionId: number) => {
+    deleteSectionMutation.mutate(sectionId);
+  };
+  
+  // Effect to handle drag events for trash bin
+  useEffect(() => {
+    const handleDragStart = () => setShowTrashBin(true);
+    const handleDragEnd = () => setShowTrashBin(false);
+    
+    window.document.addEventListener('dragstart', handleDragStart);
+    window.document.addEventListener('dragend', handleDragEnd);
+    
+    return () => {
+      window.document.removeEventListener('dragstart', handleDragStart);
+      window.document.removeEventListener('dragend', handleDragEnd);
+    };
+  }, []);
+  
   return (
     <>
       <Header 
@@ -309,7 +424,10 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                             <span className="material-icons">save</span>
                             <span className="tooltip -mt-10">Salva come modulo</span>
                           </button>
-                          <button className="p-1.5 text-neutral-dark hover:bg-neutral-lightest rounded has-tooltip">
+                          <button 
+                            className="p-1.5 text-neutral-dark hover:bg-neutral-lightest rounded has-tooltip"
+                            onClick={() => setSectionToDelete(selectedSection.id)}
+                          >
                             <span className="material-icons">delete</span>
                             <span className="tooltip -mt-10">Elimina sezione</span>
                           </button>
@@ -545,6 +663,36 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
             </div>
           </TabsContent>
         </Tabs>
+          
+          {/* Alert Dialog for section deletion confirmation */}
+          <AlertDialog open={sectionToDelete !== null} onOpenChange={(open) => !open && setSectionToDelete(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Sei sicuro di voler eliminare questa sezione? Questa azione non può essere annullata.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annulla</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={() => {
+                    if (sectionToDelete) {
+                      handleDeleteSection(sectionToDelete);
+                    }
+                  }}
+                >
+                  Elimina
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Trash Bin */}
+          <TrashBin
+            showTrashBin={showTrashBin}
+            onDeleteRequest={(id) => setSectionToDelete(id)}
+          />
         </DndProvider>
       </main>
     </>
