@@ -113,17 +113,20 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   // Fetch document data
   const { data: document, isLoading: documentLoading } = useQuery({
     queryKey: [`/api/documents/${id}`],
-    enabled: id !== 'new',
-    onSuccess: (data) => {
-      if (data && id !== 'new') {
-        // Aggiungi il documento alla lista dei documenti aperti
-        addOpenDocument({
-          id: Number(id),
-          title: data.title
-        });
-      }
-    }
+    enabled: id !== 'new'
   });
+  
+  // Effetto per aggiungere il documento alla lista dei documenti aperti
+  useEffect(() => {
+    if (document && id !== 'new') {
+      console.log('Documento aperto:', document.title);
+      // Aggiungi il documento alla lista dei documenti aperti
+      addOpenDocument({
+        id: Number(id),
+        title: document.title
+      });
+    }
+  }, [document, id, addOpenDocument]);
   
   // Get current user (using admin for now)
   const { data: users } = useQuery({

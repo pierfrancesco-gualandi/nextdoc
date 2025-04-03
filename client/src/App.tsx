@@ -10,7 +10,7 @@ import BomManagement from "@/pages/bom-management";
 import Users from "@/pages/users";
 import Translations from "@/pages/translations";
 import Sidebar from "@/components/sidebar";
-import { useState, createContext, useContext } from "react";
+import { useState, createContext, useContext, useEffect } from "react";
 
 // Creiamo un contesto per gestire i documenti aperti
 export interface OpenDocument {
@@ -38,7 +38,23 @@ export const useOpenDocuments = () => useContext(OpenDocumentsContext);
 function Router() {
   const [location] = useLocation();
   const [showSidebar, setShowSidebar] = useState(true);
-  const [openDocuments, setOpenDocuments] = useState<OpenDocument[]>([]);
+  
+  // Utilizziamo useEffect per recuperare i documenti aperti dal localStorage all'avvio
+  const [openDocuments, setOpenDocuments] = useState<OpenDocument[]>(() => {
+    try {
+      const savedDocuments = localStorage.getItem('openDocuments');
+      return savedDocuments ? JSON.parse(savedDocuments) : [];
+    } catch (error) {
+      console.error('Errore nel caricamento dei documenti aperti:', error);
+      return [];
+    }
+  });
+  
+  // Salviamo i documenti aperti nel localStorage quando cambiano
+  useEffect(() => {
+    localStorage.setItem('openDocuments', JSON.stringify(openDocuments));
+    console.log('Documenti aperti salvati:', openDocuments);
+  }, [openDocuments]);
   
   const toggleSidebar = () => {
     setShowSidebar(prev => !prev);
