@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import Header from "@/components/header";
@@ -32,6 +32,17 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
   
   // Accesso al context per i documenti aperti
   const { openDocuments, addOpenDocument, removeOpenDocument, isDocumentOpen } = useOpenDocuments();
+  
+  // Debug: stampa i documenti aperti nel localStorage
+  useEffect(() => {
+    console.log('Dashboard - Documenti aperti:', openDocuments);
+    try {
+      const savedDocs = localStorage.getItem('openDocuments');
+      console.log('Dashboard - Documenti nel localStorage:', savedDocs);
+    } catch (error) {
+      console.error('Errore nel leggere i documenti dal localStorage:', error);
+    }
+  }, [openDocuments]);
   
   const { data: documents, isLoading } = useQuery({
     queryKey: ['/api/documents', searchQuery],
