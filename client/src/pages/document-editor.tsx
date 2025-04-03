@@ -12,6 +12,7 @@ import DocumentDetails from "@/components/document-details";
 import VersionComparison from "@/components/version-comparison";
 import BomManager from "@/components/bom-manager";
 import SectionBomAssociator from "@/components/section-bom-associator";
+import SectionBomSummary from "@/components/section-bom-summary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -463,12 +464,15 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                         </div>
                         
                         <button 
-                          className="mb-6 bg-primary hover:bg-primary-dark text-white px-4 py-1.5 rounded-md flex items-center text-sm"
+                          className="mb-4 bg-primary hover:bg-primary-dark text-white px-4 py-1.5 rounded-md flex items-center text-sm"
                           onClick={handleSectionUpdate}
                         >
                           <span className="material-icons text-sm mr-1">save</span>
                           Aggiorna sezione
                         </button>
+                        
+                        {/* Componenti BOM associati */}
+                        <SectionBomSummary sectionId={selectedSection.id} />
                         
                         {/* Module toolbar */}
                         <ModuleToolbar 
