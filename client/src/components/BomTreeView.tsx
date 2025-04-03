@@ -8,15 +8,30 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChevronRight, ChevronDown, Info } from "lucide-react";
+import { ChevronRight, ChevronDown, Info, Trash, Edit } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface BomTreeViewProps {
   bomItems: any[] | null | undefined;
   title?: string;
   description?: string | null;
   onItemClick?: (item: any) => void;
+  onToggleExpand?: (item: any, expanded: boolean) => void;
+  onDeleteItem?: (item: any) => void;
   className?: string;
+  editable?: boolean;
 }
 
 interface TreeItem {
@@ -36,7 +51,10 @@ export default function BomTreeView({
   title = "Visualizzazione Distinta Base", 
   description = null,
   onItemClick,
-  className = ""
+  onToggleExpand,
+  onDeleteItem,
+  className = "",
+  editable = false
 }: BomTreeViewProps) {
   // Verifica che bomItems sia un array
   const safeItems = Array.isArray(bomItems) ? bomItems : [];
@@ -176,11 +194,17 @@ export default function BomTreeView({
     }
   }, [safeItems]);
 
-  const toggleExpand = (itemId: number) => {
+  const toggleExpand = (itemId: number, item?: TreeItem) => {
+    const newValue = !expandedItems[itemId];
     setExpandedItems(prev => ({
       ...prev,
-      [itemId]: !prev[itemId]
+      [itemId]: newValue
     }));
+    
+    // Se viene fornita la funzione di callback, la invochiamo
+    if (onToggleExpand && item) {
+      onToggleExpand(item, newValue);
+    }
   };
   
   const renderTreeItem = (item: TreeItem) => {
@@ -193,7 +217,7 @@ export default function BomTreeView({
           className={`flex items-center py-2 px-2 hover:bg-neutral-100 rounded-md cursor-pointer ${onItemClick ? 'hover:bg-primary-50' : ''}`}
           onClick={() => {
             if (hasChildren) {
-              toggleExpand(item.id);
+              toggleExpand(item.id, item);
             }
             if (onItemClick) {
               onItemClick(item);
@@ -233,24 +257,61 @@ export default function BomTreeView({
             {item.description}
           </div>
           
-          {/* Dettagli aggiuntivi in un tooltip */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="ml-auto cursor-help flex-shrink-0">
-                  <Info className="h-4 w-4 text-neutral-400" />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <div className="space-y-1">
-                  <p className="font-medium text-primary">{item.code}</p>
-                  <p><span className="font-medium">Livello:</span> {item.level}</p>
-                  <p><span className="font-medium">Descrizione:</span> {item.description}</p>
-                  <p><span className="font-medium">Quantità:</span> {item.quantity}</p>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          {/* Azioni (visibili solo in modalità modifica) */}
+          <div className="flex gap-1 ml-auto">
+            {editable && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Elimina componente</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {hasChildren 
+                        ? "Sei sicuro di voler eliminare questo componente e tutti i suoi figli dalla distinta base?" 
+                        : "Sei sicuro di voler eliminare questo componente dalla distinta base?"}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annulla</AlertDialogCancel>
+                    <AlertDialogAction 
+                      className="bg-red-500 hover:bg-red-600" 
+                      onClick={() => onDeleteItem && onDeleteItem(item)}
+                    >
+                      Elimina
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            
+            {/* Dettagli aggiuntivi in un tooltip */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="cursor-help flex-shrink-0">
+                    <Info className="h-4 w-4 text-neutral-400" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="space-y-1">
+                    <p className="font-medium text-primary">{item.code}</p>
+                    <p><span className="font-medium">Livello:</span> {item.level}</p>
+                    <p><span className="font-medium">Descrizione:</span> {item.description}</p>
+                    <p><span className="font-medium">Quantità:</span> {item.quantity}</p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
         
         {/* Elementi figli */}

@@ -7,12 +7,24 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import BomTreeView from "@/components/BomTreeView";
 import BomExcelImporter from "@/components/BomExcelImporter";
 import { Switch } from "@/components/ui/switch";
+import { Trash } from "lucide-react";
 
 interface BomManagementProps {
   toggleSidebar?: () => void;
@@ -91,6 +103,51 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
       toast({
         title: "Componente creato",
         description: "Il componente è stato creato con successo"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore",
+        description: `Si è verificato un errore: ${error}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Delete BOM mutation
+  const deleteBomMutation = useMutation({
+    mutationFn: async (bomId: number) => {
+      const res = await apiRequest('DELETE', `/api/boms/${bomId}`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/boms'] });
+      setSelectedBom(null);
+      toast({
+        title: "Distinta eliminata",
+        description: "La distinta base è stata eliminata con successo"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore",
+        description: `Si è verificato un errore: ${error}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Delete BOM item mutation
+  const deleteBomItemMutation = useMutation({
+    mutationFn: async (bomItemId: number) => {
+      const res = await apiRequest('DELETE', `/api/bom-items/${bomItemId}`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/boms/${selectedBom?.id}/items`] });
+      toast({
+        title: "Componente rimosso",
+        description: "Il componente è stato rimosso dalla distinta base"
       });
     },
     onError: (error) => {
@@ -264,10 +321,47 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
                                 className={`cursor-pointer hover:bg-neutral-lightest ${selectedBom?.id === bom.id ? 'border-primary' : ''}`}
                                 onClick={() => setSelectedBom(bom)}
                               >
-                                <CardContent className="p-3">
-                                  <div className="font-medium">{bom.title}</div>
-                                  {bom.description && (
-                                    <div className="text-sm text-neutral-dark">{bom.description}</div>
+                                <CardContent className="p-3 flex justify-between items-start">
+                                  <div>
+                                    <div className="font-medium">{bom.title}</div>
+                                    {bom.description && (
+                                      <div className="text-sm text-neutral-dark">{bom.description}</div>
+                                    )}
+                                  </div>
+                                  {selectedBom?.id === bom.id && (
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="icon"
+                                          className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <Trash className="h-4 w-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Elimina distinta base</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Sei sicuro di voler eliminare questa distinta base e tutti i suoi componenti? 
+                                            Questa azione non può essere annullata.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Annulla</AlertDialogCancel>
+                                          <AlertDialogAction 
+                                            className="bg-red-500 hover:bg-red-600"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              deleteBomMutation.mutate(bom.id);
+                                            }}
+                                          >
+                                            Elimina
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
                                   )}
                                 </CardContent>
                               </Card>
@@ -380,11 +474,15 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
                               bomItems={bomItems} 
                               title="" 
                               className="border-0 shadow-none" 
+                              editable={true}
                               onItemClick={(item) => {
                                 toast({
                                   title: "Componente selezionato",
                                   description: `${item.code} - ${item.description}`
                                 });
+                              }}
+                              onDeleteItem={(item) => {
+                                deleteBomItemMutation.mutate(item.id);
                               }}
                             />
                           ) : (
@@ -405,10 +503,12 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
                                       <TableCell>{item.component?.description}</TableCell>
                                       <TableCell>{item.quantity}</TableCell>
                                       <TableCell>
-                                        <Button variant="ghost" size="sm">
-                                          <span className="material-icons text-sm">edit</span>
-                                        </Button>
-                                        <Button variant="ghost" size="sm">
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm" 
+                                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                          onClick={() => deleteBomItemMutation.mutate(item.id)}
+                                        >
                                           <span className="material-icons text-sm">delete</span>
                                         </Button>
                                       </TableCell>
