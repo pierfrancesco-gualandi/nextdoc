@@ -63,10 +63,28 @@ export default function BomTreeView({
 
   // Funzione per costruire la gerarchia BOM basata sui livelli e relazioni tra componenti
   const buildBomHierarchy = (items: any[]): TreeItem[] => {
-    // Prima passiamo attraverso gli elementi per estrarre i livelli
+    if (!items || items.length === 0) return [];
+    
+    // Prima processiamo gli elementi per estrarre i livelli
     const processedItems = items.map(item => {
-      // Assicuriamoci che il livello sia un numero
-      const level = typeof item.level === 'number' ? item.level : 0;
+      // Estrai il livello dai dettagli del componente (se presente) o usa 0 come default
+      let level = 0;
+      
+      if (item.component && item.component.details) {
+        try {
+          const details = item.component.details;
+          if (typeof details === 'string' && details.startsWith('{')) {
+            const parsedDetails = JSON.parse(details);
+            if (parsedDetails.level !== undefined) {
+              level = parseInt(parsedDetails.level, 10);
+            }
+          } else if (typeof details === 'object' && details.level !== undefined) {
+            level = parseInt(details.level, 10);
+          }
+        } catch (e) {
+          console.error("Errore nel parsing dei dettagli del componente:", e);
+        }
+      }
       
       return {
         id: item.id,
@@ -76,57 +94,51 @@ export default function BomTreeView({
         quantity: item.quantity,
         parentId: item.parentId || null,
         level: level,
-        expanded: expandedItems[item.id] || false, // Usa lo stato di espansione esistente o default a false
+        expanded: expandedItems[item.id] || false,
         children: [] as TreeItem[]
       };
     });
     
-    // Ordina elementi per livello e codice
+    // Ordina elementi per livello e poi per codice
     processedItems.sort((a, b) => {
       if (a.level !== b.level) return a.level - b.level;
       return a.code.localeCompare(b.code);
     });
     
-    // Costruiamo la gerarchia basata sui livelli
-    const result: TreeItem[] = [];
-    const itemsMap = new Map<number, TreeItem>();
-    
-    // Mappa per accesso veloce
-    processedItems.forEach(item => {
-      itemsMap.set(item.id, item);
-    });
-    
-    // Struttura per tenere traccia dell'ultimo elemento a ciascun livello
+    // Mappa per tenere traccia dell'ultimo elemento a ciascun livello
     const lastAtLevel: Record<number, TreeItem | null> = {};
     
-    // Prima passiamo attraverso i livelli 0 per stabilire la root
-    processedItems.filter(item => item.level === 0).forEach(item => {
-      result.push(item);
-      lastAtLevel[0] = item;
-    });
+    // Array risultato per gli elementi di primo livello
+    const result: TreeItem[] = [];
     
-    // Ora processiamo tutti gli elementi con livello > 0 in ordine
-    processedItems.filter(item => item.level > 0).forEach(item => {
-      // Trova il genitore appropriato (l'ultimo elemento al livello precedente)
-      const parentLevel = item.level - 1;
-      const parent = lastAtLevel[parentLevel];
-      
-      if (parent) {
-        // Aggiungi come figlio al genitore
-        if (!parent.children) parent.children = [];
-        parent.children.push(item);
-        // Aggiorna il parentId esplicito
-        item.parentId = parent.id;
-      } else {
-        // Se non troviamo un genitore, mettiamo l'elemento alla radice
+    // Elabora gli elementi in ordine
+    processedItems.forEach(item => {
+      if (item.level === 0) {
+        // Gli elementi di livello 0 vanno alla radice
         result.push(item);
+        lastAtLevel[0] = item;
+      } else {
+        // Per gli elementi di livello > 0, trova il genitore appropriato
+        const parentLevel = item.level - 1;
+        const parent = lastAtLevel[parentLevel];
+        
+        if (parent) {
+          // Aggiungi l'elemento come figlio dell'ultimo elemento del livello precedente
+          parent.children = parent.children || [];
+          parent.children.push(item);
+          item.parentId = parent.id; // Imposta il parentId esplicito
+        } else {
+          // Se non troviamo un genitore appropriato, mettiamo l'elemento alla radice
+          result.push(item);
+        }
       }
       
       // Aggiorna l'ultimo elemento a questo livello
       lastAtLevel[item.level] = item;
       
-      // Azzera tutti i livelli successivi
-      for (let i = item.level + 1; i < 10; i++) {
+      // Azzera tutti i livelli successivi quando cambia il livello corrente
+      // Questo assicura che i figli siano collegati al genitore più recente
+      for (let i = item.level + 1; i < 20; i++) {
         lastAtLevel[i] = null;
       }
     });
@@ -206,17 +218,23 @@ export default function BomTreeView({
     return (
       <div key={item.id} className="tree-item">
         <div 
-          className={`flex items-center py-2 px-2 hover:bg-neutral-100 rounded-md cursor-pointer ${onItemClick ? 'hover:bg-primary-50' : ''}`}
+          className={`flex items-start py-2 px-2 hover:bg-neutral-100 rounded-md cursor-pointer ${onItemClick ? 'hover:bg-primary-50' : ''}`}
           onClick={() => {
             if (onItemClick) {
               onItemClick(item);
             }
           }}
         >
-          {/* Indentazione in base al livello gerarchico */}
-          <div className="flex items-center" style={{ minWidth: `${(item.level * 24) + 24}px` }}>
-            <span 
-              className="mr-1 text-neutral-500 w-5 cursor-pointer" 
+          {/* Indentazione gerarchica basata sui livelli */}
+          <div style={{ 
+            paddingLeft: `${item.level * 20}px`, 
+            display: 'flex',
+            alignItems: 'center',
+            minWidth: '150px'
+          }}>
+            {/* Simbolo di espansione: > o < */}
+            <span
+              className="mr-2 text-neutral-700 cursor-pointer font-bold select-none"
               onClick={(e) => {
                 e.stopPropagation();
                 if (hasChildren) {
@@ -224,21 +242,15 @@ export default function BomTreeView({
                 }
               }}
             >
-              {hasChildren ? (
-                isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
-              ) : (
-                <span className="w-4"></span>
-              )}
+              {hasChildren ? (isExpanded ? "< " : "> ") : "  "}
             </span>
             
-            {/* Livello (mostra il livello come Badge prima del codice) */}
+            {/* Badge del livello */}
             <Badge variant="secondary" className="mr-2 text-xs min-w-[24px] flex justify-center">
               L{item.level}
             </Badge>
-          </div>
-          
-          {/* Codice alfanumerico con indicatori di espansione */}
-          <div className="flex items-center min-w-[120px]">
+            
+            {/* Codice alfanumerico */}
             <span 
               className="font-medium text-neutral-900 whitespace-nowrap cursor-pointer"
               onClick={(e) => {
@@ -248,7 +260,7 @@ export default function BomTreeView({
                 }
               }}
             >
-              {hasChildren ? (isExpanded ? `< ${item.code}` : `> ${item.code}`) : `  ${item.code}`}
+              {item.code}
             </span>
           </div>
           
