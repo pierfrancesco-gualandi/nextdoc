@@ -1,11 +1,15 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useOpenDocuments } from "@/App";
 
 interface SidebarProps {
   activePath: string;
 }
 
 export default function Sidebar({ activePath }: SidebarProps) {
+  const [, navigate] = useLocation();
+  const { openDocuments } = useOpenDocuments();
+  
   const { data: documents } = useQuery({
     queryKey: ['/api/documents'],
     staleTime: 10000, // 10 seconds
@@ -40,20 +44,43 @@ export default function Sidebar({ activePath }: SidebarProps) {
             </Link>
           </li>
           <li>
-            <Link href="/documents">
-              <a className={`flex items-center px-4 py-2 rounded-md ${activePath === '/documents' || activePath.startsWith('/documents/') ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}>
-                <span className={`material-icons mr-3 ${activePath === '/documents' || activePath.startsWith('/documents/') ? '' : 'text-neutral-medium'}`}>description</span>
-                Documenti
-              </a>
-            </Link>
+            {/* Reindirizza al documento aperto se c'è un documento aperto, altrimenti alla dashboard */}
+            <a 
+              onClick={(e) => {
+                e.preventDefault();
+                // Se c'è almeno un documento aperto, reindirizza all'ultimo documento aperto
+                if (openDocuments.length > 0) {
+                  const lastDocument = openDocuments[openDocuments.length - 1];
+                  navigate(`/documents/${lastDocument.id}`);
+                } else {
+                  // Altrimenti, vai alla pagina dei documenti
+                  navigate('/documents');
+                }
+              }}
+              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/documents' || activePath.startsWith('/documents/') ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
+            >
+              <span className={`material-icons mr-3 ${activePath === '/documents' || activePath.startsWith('/documents/') ? '' : 'text-neutral-medium'}`}>description</span>
+              Documenti
+            </a>
           </li>
           <li>
-            <Link href="/components">
-              <a className={`flex items-center px-4 py-2 rounded-md ${activePath === '/components' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}>
-                <span className={`material-icons mr-3 ${activePath === '/components' ? '' : 'text-neutral-medium'}`}>category</span>
-                Distinte Base
-              </a>
-            </Link>
+            <a 
+              onClick={(e) => {
+                e.preventDefault();
+                // Se siamo in un documento e c'è almeno un documento aperto, memorizza il documento corrente
+                if (activePath.startsWith('/documents/') && activePath !== '/documents/new') {
+                  // Naviga alle distinte
+                  navigate('/components');
+                } else {
+                  // Vai semplicemente alle distinte
+                  navigate('/components');
+                }
+              }}
+              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/components' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
+            >
+              <span className={`material-icons mr-3 ${activePath === '/components' ? '' : 'text-neutral-medium'}`}>category</span>
+              Distinte Base
+            </a>
           </li>
           <li>
             <Link href="/modules">

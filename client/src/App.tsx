@@ -52,8 +52,14 @@ function Router() {
   
   // Salviamo i documenti aperti nel localStorage quando cambiano
   useEffect(() => {
-    localStorage.setItem('openDocuments', JSON.stringify(openDocuments));
-    console.log('Documenti aperti salvati:', openDocuments);
+    try {
+      if (openDocuments.length > 0) {
+        localStorage.setItem('openDocuments', JSON.stringify(openDocuments));
+        console.log('Documenti aperti salvati:', openDocuments);
+      }
+    } catch (error) {
+      console.error('Errore nel salvare i documenti nel localStorage:', error);
+    }
   }, [openDocuments]);
   
   const toggleSidebar = () => {
