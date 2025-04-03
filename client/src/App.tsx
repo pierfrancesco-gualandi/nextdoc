@@ -12,7 +12,7 @@ import Translations from "@/pages/translations";
 import Sidebar from "@/components/sidebar";
 import { useState, createContext, useContext, useEffect } from "react";
 
-// Creiamo un contesto per gestire i documenti aperti
+// Definizione delle interfacce per i documenti aperti
 export interface OpenDocument {
   id: number;
   title: string;
@@ -23,6 +23,9 @@ interface OpenDocumentsContextType {
   addOpenDocument: (doc: OpenDocument) => void;
   removeOpenDocument: (id: number) => void;
   isDocumentOpen: (id: number) => boolean;
+  currentDocumentId: number | null;
+  setCurrentDocumentId: (id: number | null) => void;
+  getLastOpenDocument: () => OpenDocument | null;
 }
 
 const OpenDocumentsContext = createContext<OpenDocumentsContextType>({
@@ -30,6 +33,9 @@ const OpenDocumentsContext = createContext<OpenDocumentsContextType>({
   addOpenDocument: () => {},
   removeOpenDocument: () => {},
   isDocumentOpen: () => false,
+  currentDocumentId: null,
+  setCurrentDocumentId: () => {},
+  getLastOpenDocument: () => null
 });
 
 // Hook per usare il contesto dei documenti aperti
@@ -38,25 +44,26 @@ export const useOpenDocuments = () => useContext(OpenDocumentsContext);
 function Router() {
   const [location] = useLocation();
   const [showSidebar, setShowSidebar] = useState(true);
+  const [currentDocumentId, setCurrentDocumentId] = useState<number | null>(null);
   
-  // Utilizziamo useEffect per recuperare i documenti aperti dal localStorage all'avvio
+  // Recupera documenti aperti dal localStorage all'avvio
   const [openDocuments, setOpenDocuments] = useState<OpenDocument[]>(() => {
     try {
       const savedDocuments = localStorage.getItem('openDocuments');
-      return savedDocuments ? JSON.parse(savedDocuments) : [];
+      const parsed = savedDocuments ? JSON.parse(savedDocuments) : [];
+      console.log('Documenti aperti caricati:', parsed);
+      return parsed;
     } catch (error) {
       console.error('Errore nel caricamento dei documenti aperti:', error);
       return [];
     }
   });
   
-  // Salviamo i documenti aperti nel localStorage quando cambiano
+  // Salva i documenti aperti nel localStorage quando cambiano
   useEffect(() => {
     try {
-      if (openDocuments.length > 0) {
-        localStorage.setItem('openDocuments', JSON.stringify(openDocuments));
-        console.log('Documenti aperti salvati:', openDocuments);
-      }
+      localStorage.setItem('openDocuments', JSON.stringify(openDocuments));
+      console.log('Documenti aperti salvati nel localStorage:', openDocuments);
     } catch (error) {
       console.error('Errore nel salvare i documenti nel localStorage:', error);
     }
@@ -67,24 +74,53 @@ function Router() {
   };
 
   const addOpenDocument = (doc: OpenDocument) => {
-    if (!openDocuments.some(d => d.id === doc.id)) {
+    if (!isDocumentOpen(doc.id)) {
       setOpenDocuments(prev => [...prev, doc]);
+      setCurrentDocumentId(doc.id);
+      console.log(`Documento aggiunto: ${doc.title} (ID: ${doc.id})`);
+    } else {
+      setCurrentDocumentId(doc.id);
     }
   };
 
   const removeOpenDocument = (id: number) => {
     setOpenDocuments(prev => prev.filter(doc => doc.id !== id));
+    if (currentDocumentId === id) {
+      const remaining = openDocuments.filter(doc => doc.id !== id);
+      if (remaining.length > 0) {
+        // Se ci sono altri documenti aperti, vai all'ultimo
+        setCurrentDocumentId(remaining[remaining.length - 1].id);
+      } else {
+        setCurrentDocumentId(null);
+      }
+    }
   };
 
   const isDocumentOpen = (id: number) => {
     return openDocuments.some(doc => doc.id === id);
   };
   
+  const getLastOpenDocument = (): OpenDocument | null => {
+    if (openDocuments.length === 0) return null;
+    
+    // Se c'è un documento corrente, restituisci quello
+    if (currentDocumentId) {
+      const current = openDocuments.find(doc => doc.id === currentDocumentId);
+      if (current) return current;
+    }
+    
+    // Altrimenti, restituisci l'ultimo documento dell'array
+    return openDocuments[openDocuments.length - 1];
+  };
+  
   const openDocumentsValue = {
     openDocuments,
     addOpenDocument,
     removeOpenDocument,
-    isDocumentOpen
+    isDocumentOpen,
+    currentDocumentId,
+    setCurrentDocumentId,
+    getLastOpenDocument
   };
   
   return (

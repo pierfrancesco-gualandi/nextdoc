@@ -31,7 +31,17 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
   const { toast } = useToast();
   
   // Accesso al context per i documenti aperti
-  const { openDocuments, addOpenDocument, removeOpenDocument, isDocumentOpen } = useOpenDocuments();
+  const { openDocuments, addOpenDocument, removeOpenDocument, isDocumentOpen, getLastOpenDocument } = useOpenDocuments();
+  
+  // Al caricamento della dashboard, controlla se ci sono documenti aperti
+  useEffect(() => {
+    const lastOpenDocument = getLastOpenDocument();
+    // Se c'è un documento aperto e siamo alla root o a /documents, naviga al documento
+    if (lastOpenDocument && (window.location.pathname === '/' || window.location.pathname === '/documents')) {
+      navigate(`/documents/${lastOpenDocument.id}`);
+      console.log(`Navigazione automatica al documento aperto: ${lastOpenDocument.id}`);
+    }
+  }, []);
   
   // Debug: stampa i documenti aperti nel localStorage
   useEffect(() => {

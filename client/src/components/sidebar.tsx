@@ -8,7 +8,7 @@ interface SidebarProps {
 
 export default function Sidebar({ activePath }: SidebarProps) {
   const [, navigate] = useLocation();
-  const { openDocuments } = useOpenDocuments();
+  const { openDocuments, getLastOpenDocument } = useOpenDocuments();
   
   const { data: documents } = useQuery({
     queryKey: ['/api/documents'],
@@ -44,75 +44,86 @@ export default function Sidebar({ activePath }: SidebarProps) {
             </Link>
           </li>
           <li>
-            {/* Reindirizza al documento aperto se c'è un documento aperto, altrimenti alla dashboard */}
-            <a 
+            <div 
               onClick={(e) => {
                 e.preventDefault();
                 // Se c'è almeno un documento aperto, reindirizza all'ultimo documento aperto
-                if (openDocuments.length > 0) {
-                  const lastDocument = openDocuments[openDocuments.length - 1];
-                  navigate(`/documents/${lastDocument.id}`);
+                const lastDoc = getLastOpenDocument();
+                if (lastDoc) {
+                  navigate(`/documents/${lastDoc.id}`);
+                  console.log(`Navigazione a documento aperto: ${lastDoc.id}`);
                 } else {
                   // Altrimenti, vai alla pagina dei documenti
                   navigate('/documents');
+                  console.log('Nessun documento aperto, navigazione a /documents');
                 }
               }}
               className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/documents' || activePath.startsWith('/documents/') ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
             >
               <span className={`material-icons mr-3 ${activePath === '/documents' || activePath.startsWith('/documents/') ? '' : 'text-neutral-medium'}`}>description</span>
               Documenti
-            </a>
+            </div>
           </li>
           <li>
-            <a 
+            <div 
               onClick={(e) => {
                 e.preventDefault();
-                // Se siamo in un documento e c'è almeno un documento aperto, memorizza il documento corrente
-                if (activePath.startsWith('/documents/') && activePath !== '/documents/new') {
-                  // Naviga alle distinte
-                  navigate('/components');
-                } else {
-                  // Vai semplicemente alle distinte
-                  navigate('/components');
-                }
+                // Naviga alle distinte
+                navigate('/components');
               }}
               className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/components' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
             >
               <span className={`material-icons mr-3 ${activePath === '/components' ? '' : 'text-neutral-medium'}`}>category</span>
               Distinte Base
-            </a>
+            </div>
           </li>
           <li>
-            <Link href="/modules">
-              <a className={`flex items-center px-4 py-2 rounded-md ${activePath === '/modules' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}>
-                <span className={`material-icons mr-3 ${activePath === '/modules' ? '' : 'text-neutral-medium'}`}>view_module</span>
-                Libreria Moduli
-              </a>
-            </Link>
+            <div 
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/modules');
+              }}
+              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/modules' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
+            >
+              <span className={`material-icons mr-3 ${activePath === '/modules' ? '' : 'text-neutral-medium'}`}>view_module</span>
+              Libreria Moduli
+            </div>
           </li>
           <li>
-            <Link href="/users">
-              <a className={`flex items-center px-4 py-2 rounded-md ${activePath === '/users' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}>
-                <span className={`material-icons mr-3 ${activePath === '/users' ? '' : 'text-neutral-medium'}`}>people</span>
-                Utenti
-              </a>
-            </Link>
+            <div 
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/users');
+              }}
+              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/users' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
+            >
+              <span className={`material-icons mr-3 ${activePath === '/users' ? '' : 'text-neutral-medium'}`}>people</span>
+              Utenti
+            </div>
           </li>
           <li>
-            <Link href="/translations">
-              <a className={`flex items-center px-4 py-2 rounded-md ${activePath === '/translations' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}>
-                <span className={`material-icons mr-3 ${activePath === '/translations' ? '' : 'text-neutral-medium'}`}>translate</span>
-                Traduzioni
-              </a>
-            </Link>
+            <div 
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/translations');
+              }}
+              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/translations' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
+            >
+              <span className={`material-icons mr-3 ${activePath === '/translations' ? '' : 'text-neutral-medium'}`}>translate</span>
+              Traduzioni
+            </div>
           </li>
           <li>
-            <Link href="/settings">
-              <a className={`flex items-center px-4 py-2 rounded-md ${activePath === '/settings' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}>
-                <span className={`material-icons mr-3 ${activePath === '/settings' ? '' : 'text-neutral-medium'}`}>settings</span>
-                Impostazioni
-              </a>
-            </Link>
+            <div 
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/settings');
+              }}
+              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/settings' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
+            >
+              <span className={`material-icons mr-3 ${activePath === '/settings' ? '' : 'text-neutral-medium'}`}>settings</span>
+              Impostazioni
+            </div>
           </li>
         </ul>
       </nav>

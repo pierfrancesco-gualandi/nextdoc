@@ -29,7 +29,7 @@ export default function Header({
   const { toast } = useToast();
   
   const { data: documentVersions } = useQuery({
-    queryKey: documentId ? [`/api/documents/${documentId}/versions`] : null,
+    queryKey: documentId ? [`/api/documents/${documentId}/versions`] : ["no-versions"],
     enabled: !!documentId && documentId !== 'new',
   });
 
