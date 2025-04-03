@@ -11,6 +11,7 @@ interface HeaderProps {
   status?: string;
   showTabs?: boolean;
   onSave?: () => void;
+  onClose?: () => void;
   toggleSidebar?: () => void;
 }
 
@@ -20,6 +21,7 @@ export default function Header({
   status = "draft",
   showTabs = false,
   onSave,
+  onClose,
   toggleSidebar
 }: HeaderProps) {
   const [, navigate] = useLocation();
@@ -148,6 +150,17 @@ export default function Header({
               <span className="material-icons text-sm mr-1">save</span>
               Salva
             </Button>
+            
+            {onClose && (
+              <Button 
+                variant="outline"
+                className="px-4 py-1.5 rounded-md flex items-center text-sm"
+                onClick={onClose}
+              >
+                <span className="material-icons text-sm mr-1">close</span>
+                Chiudi
+              </Button>
+            )}
             
             <ExportDropdown documentId={documentId} />
           </div>

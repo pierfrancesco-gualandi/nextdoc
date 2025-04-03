@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { DndProvider, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import { useLocation } from "wouter";
 import Header from "@/components/header";
 import DocumentTreeView from "@/components/document-tree-view";
 import ModuleToolbar from "@/components/module-toolbar";
@@ -20,7 +21,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createDocumentVersion } from "@/lib/document-utils";
-import { Trash2 } from "lucide-react";
+import { Trash2, X } from "lucide-react";
+import { useOpenDocuments } from "@/App";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -95,6 +97,10 @@ function TrashBin({ showTrashBin, onDeleteRequest }: TrashBinProps) {
 export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
+  
+  // Accedi al contesto dei documenti aperti
+  const { addOpenDocument, removeOpenDocument } = useOpenDocuments();
 
   const [selectedSection, setSelectedSection] = useState<any>(null);
   const [sectionTitle, setSectionTitle] = useState("");
@@ -108,6 +114,15 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   const { data: document, isLoading: documentLoading } = useQuery({
     queryKey: [`/api/documents/${id}`],
     enabled: id !== 'new',
+    onSuccess: (data) => {
+      if (data && id !== 'new') {
+        // Aggiungi il documento alla lista dei documenti aperti
+        addOpenDocument({
+          id: Number(id),
+          title: data.title
+        });
+      }
+    }
   });
   
   // Get current user (using admin for now)
@@ -241,6 +256,14 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     }
   }, [selectedSection]);
   
+  // Handle document close
+  const handleCloseDocument = () => {
+    if (id !== 'new') {
+      removeOpenDocument(Number(id));
+    }
+    navigate('/');
+  };
+  
   // Handle section selection
   const handleSectionSelect = (section: any) => {
     setSelectedSection(section);
@@ -371,6 +394,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
         status={document?.status}
         showTabs={true}
         onSave={handleSaveDocument}
+        onClose={handleCloseDocument}
         toggleSidebar={toggleSidebar}
       />
       
