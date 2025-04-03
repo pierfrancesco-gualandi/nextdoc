@@ -118,7 +118,16 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
   const deleteBomMutation = useMutation({
     mutationFn: async (bomId: number) => {
       const res = await apiRequest('DELETE', `/api/boms/${bomId}`);
-      return await res.json();
+      // La risposta è 204 No Content, quindi non c'è contenuto da analizzare
+      if (res.status === 204) {
+        return { success: true };
+      }
+      // Per altre risposte, prova a parsificare il JSON
+      try {
+        return await res.json();
+      } catch (e) {
+        return { success: false };
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/boms'] });
@@ -141,7 +150,16 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
   const deleteBomItemMutation = useMutation({
     mutationFn: async (bomItemId: number) => {
       const res = await apiRequest('DELETE', `/api/bom-items/${bomItemId}`);
-      return await res.json();
+      // La risposta è 204 No Content, quindi non c'è contenuto da analizzare
+      if (res.status === 204) {
+        return { success: true };
+      }
+      // Per altre risposte, prova a parsificare il JSON
+      try {
+        return await res.json();
+      } catch (e) {
+        return { success: false };
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/boms/${selectedBom?.id}/items`] });
@@ -163,7 +181,14 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
   const addComponentToBomMutation = useMutation({
     mutationFn: async (data: any) => {
       const res = await apiRequest('POST', '/api/bom-items', data);
-      return await res.json();
+      try {
+        return await res.json();
+      } catch (e) {
+        if (res.status === 201) {
+          return { success: true };
+        }
+        throw new Error("Errore durante l'aggiunta del componente");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/boms/${selectedBom?.id}/items`] });
