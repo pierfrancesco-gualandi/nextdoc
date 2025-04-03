@@ -645,7 +645,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const columnHeaders = Object.keys(firstRow);
       
       // Mappa delle colonne
-      const columnMap = {
+      const columnMap: { 
+        level: string | null; 
+        code: string | null; 
+        description: string | null; 
+        quantity: string | null; 
+        uom: string | null; 
+      } = {
         level: null,
         code: null,
         description: null,
@@ -653,76 +659,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
         uom: null
       };
       
-      // Rileva i nomi delle colonne cercando corrispondenze
+      // Rileva i nomi delle colonne cercando corrispondenze (più priorità ai match esatti)
       columnHeaders.forEach(header => {
-        const lowerHeader = header.toLowerCase();
+        const lowerHeader = header.toLowerCase().trim();
         
-        if (lowerHeader.includes('liv') || lowerHeader === 'level' || lowerHeader === 'livello') {
+        // Priorità ai match esatti per livello
+        if (lowerHeader === 'livello' || lowerHeader === 'level' || lowerHeader === 'liv') {
           columnMap.level = header;
         }
-        else if (lowerHeader.includes('cod') || lowerHeader === 'code' || lowerHeader === 'codice') {
+        // Match parziali per livello se non c'è un match esatto
+        else if (!columnMap.level && (lowerHeader.includes('liv') || lowerHeader.includes('lev'))) {
+          columnMap.level = header;
+        }
+        
+        // Priorità ai match esatti per codice
+        if (lowerHeader === 'codice' || lowerHeader === 'code' || lowerHeader === 'cod') {
           columnMap.code = header;
         }
-        else if (lowerHeader.includes('desc') || lowerHeader === 'description' || lowerHeader === 'descrizione') {
+        // Match parziali per codice se non c'è un match esatto
+        else if (!columnMap.code && (lowerHeader.includes('cod') || lowerHeader.includes('part'))) {
+          columnMap.code = header;
+        }
+        
+        // Priorità ai match esatti per descrizione
+        if (lowerHeader === 'descrizione' || lowerHeader === 'description' || lowerHeader === 'desc') {
           columnMap.description = header;
         }
-        else if (lowerHeader.includes('quant') || lowerHeader === 'quantity' || lowerHeader === 'quantità' || lowerHeader === 'quantita') {
+        // Match parziali per descrizione se non c'è un match esatto
+        else if (!columnMap.description && (lowerHeader.includes('desc') || lowerHeader.includes('nome'))) {
+          columnMap.description = header;
+        }
+        
+        // Opzionali: priorità ai match esatti per quantità
+        if (lowerHeader === 'quantità' || lowerHeader === 'quantita' || lowerHeader === 'quantity' || lowerHeader === 'qty') {
           columnMap.quantity = header;
         }
-        else if (lowerHeader.includes('unità') || lowerHeader.includes('unita') || lowerHeader === 'uom' || lowerHeader === 'unit') {
+        // Match parziali per quantità se non c'è un match esatto
+        else if (!columnMap.quantity && (lowerHeader.includes('quant') || lowerHeader.includes('qty'))) {
+          columnMap.quantity = header;
+        }
+        
+        // Opzionali: priorità ai match esatti per unità di misura
+        if (lowerHeader === 'unità di misura' || lowerHeader === 'unita di misura' || lowerHeader === 'uom' || lowerHeader === 'u.m.') {
+          columnMap.uom = header;
+        }
+        // Match parziali per unità di misura se non c'è un match esatto
+        else if (!columnMap.uom && (lowerHeader.includes('unità') || lowerHeader.includes('unita') || lowerHeader.includes('unit') || lowerHeader.includes('u.m'))) {
           columnMap.uom = header;
         }
       });
       
       console.log("Mappa delle colonne rilevata:", columnMap);
       
+      // Controllo se abbiamo almeno le colonne essenziali
+      if (!columnMap.level && !columnMap.code) {
+        console.error("Colonne obbligatorie mancanti:", columnMap);
+        return res.status(400).json({ 
+          message: "Il file non contiene le colonne obbligatorie. Assicurarsi che il file contenga almeno le colonne 'Livello' e 'Codice' (o equivalenti)."
+        });
+      }
+      
+      // Log delle intestazioni rilevate
+      console.log("Intestazioni colonne rilevate:", columnMap);
+      
       // Elabora ogni riga del file
       for (const row of bomItems) {
-        // Recupera i dati dalle colonne mappate o usa colonne standard
-        let code = '';
-        if (columnMap.code) {
-          code = row[columnMap.code];
-        } else {
-          code = row.Codice || row.Code || row['Codice'] || '';
-        }
-        
-        // Salta le righe senza codice
-        if (!code) {
-          console.log("Riga saltata: codice mancante", row);
-          continue;
-        }
-        
-        let description = '';
-        if (columnMap.description) {
-          description = row[columnMap.description];
-        } else {
-          description = row.Descrizione || row.Description || row['Descrizione'] || '';
-        }
-        
-        let quantity = 1;
-        if (columnMap.quantity) {
-          quantity = parseFloat(row[columnMap.quantity]) || 1;
-        } else {
-          quantity = parseFloat(row.Quantità || row.Quantity || row['Quantità'] || row['Quantita'] || 1);
-        }
-        
-        let level = 0;
-        if (columnMap.level) {
-          level = parseInt(row[columnMap.level], 10) || 0;
-        } else {
-          level = parseInt(row.Livello || row.Level || row['Livello'] || 0, 10);
-        }
-        
-        let unitOfMeasure = '';
-        if (columnMap.uom) {
-          unitOfMeasure = row[columnMap.uom] || '';
-        } else {
-          unitOfMeasure = row["Unità di misura"] || row["Unita di misura"] || row["Unità"] || row.UOM || '';
-        }
-        
-        // Crea il componente se non esiste già
-        let component;
         try {
+          // Recupera i dati dalle colonne mappate o usa colonne standard
+          
+          // Estrazione del livello (obbligatorio)
+          let level = 0;
+          if (columnMap.level) {
+            // Converte in numero e utilizza 0 come default se non è un numero valido
+            const levelValue = row[columnMap.level];
+            if (levelValue !== undefined && levelValue !== null && levelValue !== '') {
+              // Gestisce sia stringhe che numeri
+              level = typeof levelValue === 'number' ? levelValue : parseInt(String(levelValue).trim(), 10);
+              if (isNaN(level)) level = 0; // Fallback se il parsing fallisce
+            }
+          } else {
+            // Fallback se la colonna del livello non è stata identificata
+            level = parseInt(String(row.Livello || row.Level || row['Livello'] || '0').trim(), 10) || 0;
+          }
+          
+          // Estrazione del codice componente (obbligatorio)
+          let code = '';
+          if (columnMap.code) {
+            const codeValue = row[columnMap.code];
+            if (codeValue !== undefined && codeValue !== null) {
+              code = String(codeValue).trim();
+            }
+          } else {
+            code = String(row.Codice || row.Code || row['Codice'] || '').trim();
+          }
+          
+          // Salta le righe senza codice
+          if (!code) {
+            console.log("Riga saltata: codice mancante", row);
+            continue;
+          }
+          
+          // Estrazione della descrizione (opzionale ma importante)
+          let description = '';
+          if (columnMap.description) {
+            const descValue = row[columnMap.description];
+            if (descValue !== undefined && descValue !== null) {
+              description = String(descValue).trim();
+            }
+          } else {
+            description = String(row.Descrizione || row.Description || row['Descrizione'] || '').trim();
+          }
+          
+          // Estrazione della quantità (opzionale, default = 1)
+          let quantity = 1;
+          if (columnMap.quantity) {
+            const qtyValue = row[columnMap.quantity];
+            if (qtyValue !== undefined && qtyValue !== null && qtyValue !== '') {
+              // Gestisce sia stringhe che numeri
+              const parsedQty = typeof qtyValue === 'number' ? qtyValue : parseFloat(String(qtyValue).replace(',', '.').trim());
+              if (!isNaN(parsedQty) && parsedQty > 0) {
+                quantity = parsedQty;
+              }
+            }
+          } else {
+            const qtyFallback = row.Quantità || row.Quantity || row['Quantità'] || row['Quantita'];
+            if (qtyFallback !== undefined && qtyFallback !== null && qtyFallback !== '') {
+              const parsedQty = typeof qtyFallback === 'number' ? qtyFallback : parseFloat(String(qtyFallback).replace(',', '.').trim());
+              if (!isNaN(parsedQty) && parsedQty > 0) {
+                quantity = parsedQty;
+              }
+            }
+          }
+          
+          // Estrazione dell'unità di misura (opzionale)
+          let unitOfMeasure = '';
+          if (columnMap.uom) {
+            const uomValue = row[columnMap.uom];
+            if (uomValue !== undefined && uomValue !== null) {
+              unitOfMeasure = String(uomValue).trim();
+            }
+          } else {
+            unitOfMeasure = String(row["Unità di misura"] || row["Unita di misura"] || row["Unità"] || row.UOM || '').trim();
+          }
+          
+          // Crea il componente se non esiste già
+          let component;
+          
           // Prima cerca se il componente con lo stesso codice esiste già
           const existingComponent = await storage.getComponentByCode(code);
           if (existingComponent) {
@@ -743,34 +825,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
             quantity,
             level
           });
-        } catch (error) {
-          console.error(`Errore nell'elaborazione del componente ${code}:`, error);
+        } catch (error: any) {
+          console.error(`Errore nell'elaborazione della riga:`, error.message || error);
         }
       }
       
-      // Crea gli elementi BOM
-      const createdBomItems = [];
-      for (const item of bomItemsToCreate) {
-        try {
-          const bomItem = await storage.createBomItem(item);
-          createdBomItems.push(bomItem);
-        } catch (error) {
-          console.error(`Errore nella creazione del BOM item:`, error);
+      try {
+        // Crea gli elementi BOM
+        const createdBomItems = [];
+        for (const item of bomItemsToCreate) {
+          try {
+            const bomItem = await storage.createBomItem(item);
+            createdBomItems.push(bomItem);
+          } catch (err: any) {
+            console.error(`Errore nella creazione del BOM item:`, err.message || err);
+          }
         }
+        
+        // Elimina il file temporaneo
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+        
+        res.status(201).json({
+          bom: newBom,
+          components: components.length,
+          bomItems: createdBomItems.length,
+          message: `BOM importata con successo. ${createdBomItems.length} componenti importati.`
+        });
+      } catch (err: any) {
+        console.error("Errore nella fase finale dell'importazione BOM:", err.message || err);
+        res.status(500).json({ message: `Errore nella fase finale dell'importazione: ${err.message || 'Errore sconosciuto'}` });
       }
-      
-      // Elimina il file temporaneo
-      fs.unlinkSync(filePath);
-      
-      res.status(201).json({
-        bom: newBom,
-        components: components.length,
-        bomItems: createdBomItems.length,
-        message: `BOM importata con successo. ${createdBomItems.length} componenti importati.`
-      });
-    } catch (error) {
-      console.error("Errore nell'importazione della BOM:", error);
-      res.status(500).json({ message: `Errore nell'importazione: ${error.message}` });
+    } catch (error: any) {
+      console.error("Errore nell'importazione della BOM:", error.message || error);
+      res.status(500).json({ message: `Errore nell'importazione: ${error.message || 'Errore sconosciuto'}` });
     }
   });
 
