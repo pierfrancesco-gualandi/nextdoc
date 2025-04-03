@@ -343,6 +343,7 @@ function SectionTree({
   documentId
 }: SectionTreeProps) {
   const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({});
+  const dropAreaRef = useRef<HTMLDivElement>(null);
   
   // Handle component links
   const { data: sectionComponents } = useQuery<SectionComponentLink[]>({
@@ -379,6 +380,19 @@ function SectionTree({
     );
   };
 
+  // Add a drop area for root level in empty areas
+  const [{ isOverEmptyArea }, dropEmptyArea] = useDrop({
+    accept: 'SECTION',
+    drop(item: DragItem) {
+      // Calculate the new order - position it at the end of current level sections
+      const newOrder = currentLevelSections.length;
+      onMoveSection(item.id, parentId, newOrder);
+    },
+    collect: (monitor) => ({
+      isOverEmptyArea: monitor.isOver(),
+    }),
+  });
+
   return (
     <div className={level > 0 ? "pl-4" : ""}>
       {currentLevelSections.map((section, index) => (
@@ -411,6 +425,28 @@ function SectionTree({
           )}
         </SectionItem>
       ))}
+      
+      {/* Aggiungi un'area di drop vuota dopo tutte le sezioni */}
+      {level === 0 && (
+        <div 
+          ref={dropEmptyArea}
+          className={`
+            min-h-20 mt-2 rounded-md border-2
+            ${isOverEmptyArea 
+              ? 'border-primary border-dashed bg-primary/10' 
+              : 'border-transparent'}
+            ${currentLevelSections.length === 0 ? 'h-32' : 'h-20'}
+            transition-colors duration-200 flex items-center justify-center
+          `}
+        >
+          {isOverEmptyArea && (
+            <div className="text-sm text-neutral-dark flex flex-col items-center">
+              <span className="material-icons mb-1">arrow_downward</span>
+              Trascina qui per portare la sezione al primo livello
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
