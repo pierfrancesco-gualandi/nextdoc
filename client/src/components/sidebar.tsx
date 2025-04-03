@@ -75,9 +75,9 @@ export default function Sidebar({ activePath }: SidebarProps) {
                   navigate('/documents');
                 }
               }}
-              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/documents' || activePath.startsWith('/documents/') ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
+              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/documents' || activePath.startsWith('/documents/') ? 'bg-primary text-white font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
             >
-              <span className={`material-icons mr-3 ${activePath === '/documents' || activePath.startsWith('/documents/') ? '' : 'text-neutral-medium'}`}>description</span>
+              <span className={`material-icons mr-3 ${activePath === '/documents' || activePath.startsWith('/documents/') ? 'text-white' : 'text-neutral-medium'}`}>description</span>
               Documenti
             </div>
           </li>
@@ -88,9 +88,9 @@ export default function Sidebar({ activePath }: SidebarProps) {
                 // Naviga alle distinte
                 navigate('/components');
               }}
-              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/components' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
+              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/components' ? 'bg-primary text-white font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
             >
-              <span className={`material-icons mr-3 ${activePath === '/components' ? '' : 'text-neutral-medium'}`}>category</span>
+              <span className={`material-icons mr-3 ${activePath === '/components' ? 'text-white' : 'text-neutral-medium'}`}>category</span>
               Distinte Base
             </div>
           </li>
@@ -100,9 +100,9 @@ export default function Sidebar({ activePath }: SidebarProps) {
                 e.preventDefault();
                 navigate('/modules');
               }}
-              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/modules' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
+              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/modules' ? 'bg-primary text-white font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
             >
-              <span className={`material-icons mr-3 ${activePath === '/modules' ? '' : 'text-neutral-medium'}`}>view_module</span>
+              <span className={`material-icons mr-3 ${activePath === '/modules' ? 'text-white' : 'text-neutral-medium'}`}>view_module</span>
               Libreria Moduli
             </div>
           </li>
@@ -112,9 +112,9 @@ export default function Sidebar({ activePath }: SidebarProps) {
                 e.preventDefault();
                 navigate('/users');
               }}
-              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/users' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
+              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/users' ? 'bg-primary text-white font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
             >
-              <span className={`material-icons mr-3 ${activePath === '/users' ? '' : 'text-neutral-medium'}`}>people</span>
+              <span className={`material-icons mr-3 ${activePath === '/users' ? 'text-white' : 'text-neutral-medium'}`}>people</span>
               Utenti
             </div>
           </li>
@@ -124,9 +124,9 @@ export default function Sidebar({ activePath }: SidebarProps) {
                 e.preventDefault();
                 navigate('/translations');
               }}
-              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/translations' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
+              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/translations' ? 'bg-primary text-white font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
             >
-              <span className={`material-icons mr-3 ${activePath === '/translations' ? '' : 'text-neutral-medium'}`}>translate</span>
+              <span className={`material-icons mr-3 ${activePath === '/translations' ? 'text-white' : 'text-neutral-medium'}`}>translate</span>
               Traduzioni
             </div>
           </li>
@@ -136,9 +136,9 @@ export default function Sidebar({ activePath }: SidebarProps) {
                 e.preventDefault();
                 navigate('/settings');
               }}
-              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/settings' ? 'bg-primary bg-opacity-10 text-primary font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
+              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/settings' ? 'bg-primary text-white font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
             >
-              <span className={`material-icons mr-3 ${activePath === '/settings' ? '' : 'text-neutral-medium'}`}>settings</span>
+              <span className={`material-icons mr-3 ${activePath === '/settings' ? 'text-white' : 'text-neutral-medium'}`}>settings</span>
               Impostazioni
             </div>
           </li>
