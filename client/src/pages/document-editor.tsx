@@ -95,13 +95,14 @@ function TrashBin({ showTrashBin, onDeleteRequest }: TrashBinProps) {
 export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("editor");
+
   const [selectedSection, setSelectedSection] = useState<any>(null);
   const [sectionTitle, setSectionTitle] = useState("");
   const [sectionDescription, setSectionDescription] = useState("");
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const [showTrashBin, setShowTrashBin] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("editor");
   
   // Fetch document data
   const { data: document, isLoading: documentLoading } = useQuery({
@@ -472,7 +473,10 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                         </button>
                         
                         {/* Componenti BOM associati */}
-                        <SectionBomSummary sectionId={selectedSection.id} />
+                        <SectionBomSummary 
+                          sectionId={selectedSection.id} 
+                          onSwitchTab={(tab) => setActiveTab(tab)} 
+                        />
                         
                         {/* Module toolbar */}
                         <ModuleToolbar 

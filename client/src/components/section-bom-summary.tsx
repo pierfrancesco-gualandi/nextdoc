@@ -6,19 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
-
-interface SectionBomSummaryProps {
-  sectionId: number;
-}
 
 interface Component {
   id: number;
@@ -36,10 +23,14 @@ interface SectionComponent {
   component?: Component;
 }
 
-export default function SectionBomSummary({ sectionId }: SectionBomSummaryProps) {
+interface SectionBomSummaryProps {
+  sectionId: number;
+  onSwitchTab?: (tab: string) => void;
+}
+
+export default function SectionBomSummary({ sectionId, onSwitchTab }: SectionBomSummaryProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isManageDialogOpen, setIsManageDialogOpen] = useState(false);
 
   // Fetch existing section components
   const { data: sectionComponents, isLoading: sectionComponentsLoading } = useQuery({
@@ -104,32 +95,15 @@ export default function SectionBomSummary({ sectionId }: SectionBomSummaryProps)
     <div className="mt-4 border-t border-neutral-light pt-4">
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-md font-medium text-neutral-darkest">Componenti BOM associati</h3>
-        <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="flex items-center gap-1">
-              <span className="material-icons text-sm">settings</span>
-              <span>Gestisci associazioni</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[650px]">
-            <DialogHeader>
-              <DialogTitle>Gestisci associazioni BOM</DialogTitle>
-              <DialogDescription>
-                Gestisci i componenti BOM associati a questa sezione
-              </DialogDescription>
-            </DialogHeader>
-            <div className="max-h-[70vh] overflow-y-auto">
-              <iframe
-                src={`/document-editor/${sectionId}#bom-section`}
-                className="w-full h-[60vh] border-0"
-                title="Gestione BOM"
-              />
-            </div>
-            <DialogFooter>
-              <Button onClick={() => setIsManageDialogOpen(false)}>Chiudi</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="flex items-center gap-1"
+          onClick={() => onSwitchTab && onSwitchTab("bom-section")}
+        >
+          <span className="material-icons text-sm">settings</span>
+          <span>Gestisci associazioni</span>
+        </Button>
       </div>
       
       {sectionComponentsLoading ? (
@@ -198,7 +172,7 @@ export default function SectionBomSummary({ sectionId }: SectionBomSummaryProps)
             variant="outline" 
             size="sm" 
             className="mt-2"
-            onClick={() => setIsManageDialogOpen(true)}
+            onClick={() => onSwitchTab && onSwitchTab("bom-section")}
           >
             Associa componenti
           </Button>
