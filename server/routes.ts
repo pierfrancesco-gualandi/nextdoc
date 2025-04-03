@@ -7,7 +7,7 @@ import { upload, saveFileInfo, getFileUrl } from "./upload";
 import { createWordDocument } from "./word-export";
 import path from "path";
 import fs from "fs";
-import * as XLSX from 'xlsx';
+import { read, utils } from 'xlsx';
 import { parse } from 'csv-parse/sync';
 import type { jsonb } from "drizzle-orm/pg-core";
 import {
@@ -609,14 +609,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        const workbook = XLSX.readFile(filePath);
+        const workbook = read(fs.readFileSync(filePath));
         
         // Assume che il primo foglio del file Excel contenga i dati BOM
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
         // Converte i dati del foglio in un array di oggetti
-        bomItems = XLSX.utils.sheet_to_json(worksheet);
+        bomItems = utils.sheet_to_json(worksheet);
         console.log("Dati Excel importati:", JSON.stringify(bomItems.slice(0, 2)));
       } else {
         return res.status(400).json({
