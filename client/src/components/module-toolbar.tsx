@@ -20,8 +20,11 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
   const [uploadType, setUploadType] = useState<"image" | "video" | "pdf" | "3d-model">("image");
   const [uploadingFile, setUploadingFile] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFolderFiles, setSelectedFolderFiles] = useState<FileList | null>(null);
   const [fileDescription, setFileDescription] = useState('');
+  const [showFolderUpload, setShowFolderUpload] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderFilesInputRef = useRef<HTMLInputElement>(null);
   
   const moduleTypes = [
     { id: "text", icon: "text_fields", label: "Testo" },
@@ -94,6 +97,7 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
             if (fileName.endsWith('.gltf')) format = "gltf";
             else if (fileName.endsWith('.obj')) format = "obj";
             else if (fileName.endsWith('.stl')) format = "stl";
+            else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) format = "html";
           }
           
           moduleContent = { 
@@ -102,6 +106,15 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
             format: format,
             controls: { rotate: true, zoom: true, pan: true }
           };
+          
+          // Se è un file HTML, aggiungi il percorso della cartella (nome del file senza estensione)
+          if (format === "html" && selectedFile) {
+            const folderName = selectedFile.name.split('.')[0];
+            moduleContent = {
+              ...moduleContent,
+              folderPath: folderName
+            };
+          }
           break;
       }
       
@@ -114,14 +127,62 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
       
       // Reset state
       setSelectedFile(null);
+      setSelectedFolderFiles(null);
       setFileDescription('');
       setShowFileUpload(false);
+      setShowFolderUpload(false);
       setUploadingFile(false);
     },
     onError: (error) => {
       setUploadingFile(false);
       toast({
         title: "Errore durante il caricamento",
+        description: `Errore: ${error}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Mutazione per il caricamento di una cartella di file (solo per modelli 3D HTML/WebGL)
+  const uploadFolderMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const res = await apiUploadRequest('POST', '/api/upload-folder', formData);
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      // Dopo l'upload, crea il modulo con i file caricati
+      const moduleContent = {
+        src: data.url,
+        title: fileDescription || data.originalName,
+        format: 'html', // Per cartelle intere, assumiamo sempre HTML/WebGL
+        folderPath: data.folderName,
+        controls: { rotate: true, zoom: true, pan: true }
+      };
+      
+      createModuleMutation.mutate({
+        sectionId,
+        type: uploadType,
+        content: moduleContent,
+        order: 999 // Will be reordered after creation
+      });
+      
+      // Reset state
+      setSelectedFile(null);
+      setSelectedFolderFiles(null);
+      setFileDescription('');
+      setShowFileUpload(false);
+      setShowFolderUpload(false);
+      setUploadingFile(false);
+      
+      toast({
+        title: "Cartella caricata con successo",
+        description: `${data.totalFiles} file caricati per il modello WebGL`,
+      });
+    },
+    onError: (error) => {
+      setUploadingFile(false);
+      toast({
+        title: "Errore durante il caricamento della cartella",
         description: `Errore: ${error}`,
         variant: "destructive"
       });
@@ -235,10 +296,50 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
       case "pdf":
         return "application/pdf,.pdf";
       case "3d-model":
-        return ".glb,.gltf,.obj,.stl";
+        return ".glb,.gltf,.obj,.stl,.html,.htm";
       default:
         return "*/*";
     }
+  };
+  
+  // Gestisce la selezione di file aggiuntivi per i modelli HTML
+  const handleFolderFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFolderFiles(e.target.files);
+      toast({
+        title: "File aggiuntivi selezionati",
+        description: `${e.target.files.length} file selezionati per il modello WebGL`,
+      });
+    }
+  };
+  
+  // Gestisce il caricamento di una cartella intera
+  const uploadFolder = () => {
+    if (!selectedFile || !selectedFolderFiles || selectedFolderFiles.length === 0) {
+      toast({
+        title: "Errore",
+        description: "Seleziona un file HTML principale e i file aggiuntivi",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setUploadingFile(true);
+    
+    const formData = new FormData();
+    formData.append('folderName', selectedFile.name.split('.')[0]); // Nome cartella basato sul file HTML
+    
+    // Aggiungi il file principale come primo file
+    formData.append('files', selectedFile);
+    
+    // Aggiungi tutti i file aggiuntivi
+    Array.from(selectedFolderFiles).forEach(file => {
+      formData.append('files', file);
+    });
+    
+    formData.append('userId', '1'); // Default all'admin
+    
+    uploadFolderMutation.mutate(formData);
   };
   
   // Renderizza il contenuto del file selezionato
@@ -343,6 +444,51 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
                 onChange={(e) => setFileDescription(e.target.value)}
               />
             </div>
+            
+            {/* Sezione speciale per i file HTML WebGL - consente di caricare file aggiuntivi */}
+            {uploadType === "3d-model" && selectedFile && (selectedFile.name.endsWith('.html') || selectedFile.name.endsWith('.htm')) && (
+              <div className="mt-4 space-y-4 border border-blue-200 bg-blue-50 p-4 rounded-md">
+                <div className="font-medium text-blue-600 flex items-center">
+                  <span className="material-icons text-sm mr-1">info</span>
+                  File HTML WebGL rilevato
+                </div>
+                
+                <div className="text-sm text-gray-700">
+                  Questo modello WebGL potrebbe richiedere file aggiuntivi. È possibile caricare tutti i file necessari insieme.
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="folder-files" className="font-medium">File aggiuntivi (js, css, texture, ecc.)</Label>
+                  <Input
+                    id="folder-files"
+                    type="file"
+                    multiple
+                    ref={folderFilesInputRef}
+                    onChange={handleFolderFilesChange}
+                  />
+                  <p className="text-xs text-gray-500">
+                    Seleziona tutti i file di supporto necessari per il modello WebGL
+                  </p>
+                  
+                  {selectedFolderFiles && selectedFolderFiles.length > 0 && (
+                    <div className="text-sm text-blue-600 mt-2 flex items-center">
+                      <span className="material-icons text-sm mr-1">check_circle</span>
+                      {selectedFolderFiles.length} file aggiuntivi selezionati
+                    </div>
+                  )}
+                </div>
+                
+                <Button 
+                  type="button"
+                  variant="secondary" 
+                  className="w-full"
+                  onClick={uploadFolder}
+                  disabled={!selectedFolderFiles || selectedFolderFiles.length === 0 || uploadingFile}
+                >
+                  {uploadingFile ? 'Caricamento in corso...' : 'Carica modello con i file aggiuntivi'}
+                </Button>
+              </div>
+            )}
           </div>
           
           <DialogFooter className="flex justify-between">
