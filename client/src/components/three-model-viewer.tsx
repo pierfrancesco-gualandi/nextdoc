@@ -231,14 +231,33 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
             // per passare il percorso della cartella con i file aggiuntivi
             try {
               const iframe = e.currentTarget;
-              if (iframe.contentWindow && modelData.folderPath) {
-                iframe.contentWindow.postMessage({
-                  type: 'model-folder-path',
-                  folderPath: modelData.folderPath
-                }, '*');
+              // Ottieni le informazioni sulla cartella del modello per passarle all'iframe
+              const modelInfo = {
+                type: 'model-folder-info',
+                folderPath: modelData.folderPath || '',
+                folderName: modelData.folderName || '',
+                fileStructure: modelData.fileStructure || {},
+                // Passa anche gli URL a tutti i file nella cartella
+                allFiles: modelData.allFiles || []
+              };
+              
+              console.log('Invio informazioni sul modello all\'iframe:', modelInfo);
+              
+              // Invia le informazioni all'iframe quando è caricato
+              if (iframe.contentWindow) {
+                // Invia immediatamente
+                iframe.contentWindow.postMessage(modelInfo, '*');
+                
+                // Riprova ad inviare dopo un breve ritardo per assicurarsi che
+                // l'iframe abbia avuto tempo di impostare gli event listener
+                setTimeout(() => {
+                  if (iframe.contentWindow) {
+                    iframe.contentWindow.postMessage(modelInfo, '*');
+                  }
+                }, 500);
               }
             } catch (error) {
-              console.error('Errore nel passare il percorso cartella all\'iframe:', error);
+              console.error('Errore nel passare le informazioni sulla cartella all\'iframe:', error);
             }
           }}
         />

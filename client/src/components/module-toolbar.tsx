@@ -156,8 +156,17 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
         title: fileDescription || data.originalName,
         format: 'html', // Per cartelle intere, assumiamo sempre HTML/WebGL
         folderPath: data.folderName,
+        folderName: data.folderName,
+        fileStructure: data.fileStructure || {},
+        allFiles: data.allFiles || [],
         controls: { rotate: true, zoom: true, pan: true }
       };
+      
+      console.log("Creazione modulo 3D con struttura cartella:", {
+        folderName: data.folderName,
+        totalFiles: data.totalFiles,
+        structureKeys: Object.keys(data.fileStructure || {}).length
+      });
       
       createModuleMutation.mutate({
         sectionId,
@@ -306,10 +315,63 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
   const handleFolderFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setSelectedFolderFiles(e.target.files);
-      toast({
-        title: "File aggiuntivi selezionati",
-        description: `${e.target.files.length} file selezionati per il modello WebGL`,
-      });
+      
+      // Debug per vedere da dove provengono i file (cartella diretta o selezione multipla)
+      const files = Array.from(e.target.files);
+      
+      // Controlla se abbiamo un input webkitdirectory (i file avranno webkitRelativePath)
+      // @ts-ignore - webkitRelativePath è una proprietà specifica per gli input di tipo 'directory'
+      const isDirectoryUpload = files.some(file => file.webkitRelativePath && file.webkitRelativePath.includes('/'));
+      
+      if (isDirectoryUpload) {
+        // Analizza la struttura della cartella principale
+        const rootFolders = new Set<string>();
+        const filesByRoot: Record<string, number> = {};
+        
+        files.forEach(file => {
+          // @ts-ignore - webkitRelativePath è una proprietà specifica per input directory
+          const relativePath = file.webkitRelativePath || '';
+          if (relativePath) {
+            const pathParts = relativePath.split('/');
+            if (pathParts.length > 1) {
+              const rootFolder = pathParts[0];
+              rootFolders.add(rootFolder);
+              
+              // Conta i file per ogni cartella principale
+              if (!filesByRoot[rootFolder]) {
+                filesByRoot[rootFolder] = 0;
+              }
+              filesByRoot[rootFolder]++;
+            }
+          }
+        });
+        
+        // Descrizione più dettagliata con la struttura della cartella
+        let folderStructureMessage = '';
+        if (rootFolders.size > 0) {
+          const foldersList = Array.from(rootFolders).map(folder => 
+            `${folder} (${filesByRoot[folder]} file)`
+          ).join(', ');
+          
+          folderStructureMessage = `Struttura: ${foldersList}`;
+        }
+        
+        console.log("Caricamento cartella rilevato:", folderStructureMessage);
+        files.forEach(file => {
+          // @ts-ignore
+          console.log(`File nella cartella: ${file.name}, Percorso: ${file.webkitRelativePath}`);
+        });
+        
+        toast({
+          title: "Cartella selezionata",
+          description: `${e.target.files.length} file dalla cartella selezionata per il modello WebGL. ${folderStructureMessage}`,
+        });
+      } else {
+        toast({
+          title: "File aggiuntivi selezionati",
+          description: `${e.target.files.length} file selezionati per il modello WebGL`,
+        });
+      }
     }
   };
   
@@ -327,18 +389,84 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
     setUploadingFile(true);
     
     const formData = new FormData();
-    formData.append('folderName', selectedFile.name.split('.')[0]); // Nome cartella basato sul file HTML
+    
+    // Detección del tipo de carga y análisis de la estructura de la carpeta
+    const files = Array.from(selectedFolderFiles);
+    // @ts-ignore - webkitRelativePath è una proprietà specifica per gli input di tipo 'directory'
+    const isDirectoryUpload = files.some(file => file.webkitRelativePath && file.webkitRelativePath.includes('/'));
+    
+    // Determina il nome della cartella
+    let folderName = '';
+    
+    if (isDirectoryUpload) {
+      // Se è un caricamento di cartella, trova la cartella principale
+      const rootFolders = new Set<string>();
+      files.forEach(file => {
+        // @ts-ignore
+        const relativePath = file.webkitRelativePath || '';
+        if (relativePath) {
+          const pathParts = relativePath.split('/');
+          if (pathParts.length > 0) {
+            rootFolders.add(pathParts[0]);
+          }
+        }
+      });
+      
+      // Usa il nome della prima cartella principale (se c'è)
+      if (rootFolders.size > 0) {
+        folderName = Array.from(rootFolders)[0];
+      } else {
+        // Fallback al nome del file HTML senza estensione
+        folderName = selectedFile.name.split('.')[0];
+      }
+    } else {
+      // Fallback al nome del file HTML senza estensione
+      folderName = selectedFile.name.split('.')[0];
+    }
+    
+    formData.append('folderName', folderName);
     
     // Aggiungi il file principale come primo file
     formData.append('files', selectedFile);
     
-    // Aggiungi tutti i file aggiuntivi
-    Array.from(selectedFolderFiles).forEach(file => {
+    // Elenco dei file da console per debug
+    console.log(`Caricamento cartella '${folderName}' con ${selectedFolderFiles.length} file aggiuntivi`);
+    
+    // Raccolta dei percorsi relativi dai file (per file selezionati da cartella con webkitdirectory)
+    const fileStructure: Record<string, string> = {};
+    
+    // Aggiungi tutti i file aggiuntivi e costruisci la struttura
+    files.forEach(file => {
       formData.append('files', file);
+      
+      // Mantieni traccia della struttura delle cartelle (per webkitdirectory)
+      // @ts-ignore - webkitRelativePath è una proprietà specifica per gli input di tipo 'directory'
+      const relativePath = file.webkitRelativePath || '';
+      
+      if (relativePath) {
+        console.log(`File nella cartella: ${relativePath}`);
+        
+        // Salva i percorsi relativi per la ricostruzione della struttura
+        // Usa il nome originale come chiave per evitare conflitti
+        fileStructure[file.name] = relativePath;
+        
+        // Se non è un caricamento di directory ma stiamo usando la selezione multipla,
+        // crea un percorso relativo virtuale nel formato "folderName/filename"
+        if (!isDirectoryUpload && !relativePath.includes('/')) {
+          fileStructure[file.name] = `${folderName}/${file.name}`;
+        }
+      }
     });
+    
+    // Se abbiamo informazioni sulla struttura delle cartelle, le passiamo al server
+    if (Object.keys(fileStructure).length > 0) {
+      formData.append('fileStructure', JSON.stringify(fileStructure));
+      console.log("Struttura cartelle inviata:", fileStructure);
+    }
     
     formData.append('userId', '1'); // Default all'admin
     
+    // Invia al server
     uploadFolderMutation.mutate(formData);
   };
   
@@ -459,16 +587,36 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
                 
                 <div className="grid gap-2">
                   <Label htmlFor="folder-files" className="font-medium">File aggiuntivi (js, css, texture, ecc.)</Label>
-                  <Input
-                    id="folder-files"
-                    type="file"
-                    multiple
-                    ref={folderFilesInputRef}
-                    onChange={handleFolderFilesChange}
-                  />
-                  <p className="text-xs text-gray-500">
-                    Seleziona tutti i file di supporto necessari per il modello WebGL
-                  </p>
+                  <div className="space-y-2">
+                    <Input
+                      id="folder-files"
+                      type="file"
+                      multiple
+                      ref={folderFilesInputRef}
+                      onChange={handleFolderFilesChange}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Seleziona tutti i file di supporto necessari per il modello WebGL
+                    </p>
+                  </div>
+                  
+                  {/* Input per selezionare una cartella intera */}
+                  <div className="mt-3 border-t pt-3 border-blue-200">
+                    <Label htmlFor="directory-input" className="font-medium">OPPURE seleziona una cartella intera</Label>
+                    <div className="relative mt-1">
+                      <Input
+                        id="directory-input"
+                        type="file"
+                        // @ts-ignore
+                        webkitdirectory="true"
+                        directory="true"
+                        onChange={handleFolderFilesChange}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Seleziona la cartella contenente tutti i file del modello WebGL
+                    </p>
+                  </div>
                   
                   {selectedFolderFiles && selectedFolderFiles.length > 0 && (
                     <div className="text-sm text-blue-600 mt-2 flex items-center">

@@ -1925,7 +1925,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ...req.uploadedFile,
       url: getFileUrl(req.uploadedFile.filename),
       folderName: req.folderName,
-      totalFiles: req.uploadedFiles.length
+      totalFiles: req.uploadedFiles.length,
+      // Include informazioni sulla struttura delle cartelle per il frontend
+      fileStructure: req.fileStructure || {},
+      // Aggiungi un array di tutti i file caricati con URL
+      allFiles: req.uploadedFiles.map(file => ({
+        id: file.id,
+        filename: file.filename, 
+        originalName: file.originalName,
+        url: getFileUrl(file.filename),
+        mimeType: file.mimeType
+      }))
     };
     
     res.status(201).json(fileInfo);

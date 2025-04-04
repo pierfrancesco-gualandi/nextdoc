@@ -184,10 +184,64 @@ export const saveFileInfo = async (req: Request, res: Response, next: NextFuncti
         file.originalName.endsWith('.html') || file.originalName.endsWith('.htm')
       );
       
+      // Controlla se è stato passato un oggetto fileStructure
+      let fileStructureData: Record<string, string> = {};
+      if (req.body.fileStructure) {
+        try {
+          fileStructureData = JSON.parse(req.body.fileStructure) as Record<string, string>;
+          console.log("Struttura cartelle ricevuta:", fileStructureData);
+        } catch (e) {
+          console.error("Errore nel parsing di fileStructure:", e);
+        }
+      }
+      
+      // Crea sottocartelle se necessario per i file con percorsi relativi
+      if (Object.keys(fileStructureData).length > 0) {
+        const folderBasePath = path.join(uploadsDir, folderName);
+        if (!fs.existsSync(folderBasePath)) {
+          fs.mkdirSync(folderBasePath, { recursive: true });
+        }
+        
+        // Sposta i file nelle sottocartelle appropriate
+        for (const file of savedFiles) {
+          const relativePath = fileStructureData[file.originalName];
+          if (relativePath) {
+            // Estrae il percorso della cartella dal percorso relativo
+            const dirPath = path.dirname(relativePath);
+            if (dirPath && dirPath !== '.') {
+              const targetDir = path.join(folderBasePath, dirPath);
+              if (!fs.existsSync(targetDir)) {
+                fs.mkdirSync(targetDir, { recursive: true });
+              }
+              
+              // Sposta il file nella sottocartella
+              const currentPath = path.join(uploadsDir, file.filename);
+              const newFileName = path.basename(relativePath);
+              const newPath = path.join(targetDir, newFileName);
+              
+              try {
+                // Copia il file nella sottocartella
+                fs.copyFileSync(currentPath, newPath);
+                console.log(`File spostato in: ${newPath}`);
+                
+                // Aggiorna il percorso nel database
+                file.path = newPath;
+                file.filename = path.join(folderName, dirPath, newFileName);
+                
+                // Non eliminare l'originale, potrebbe essere necessario per riferimenti diretti
+              } catch (e) {
+                console.error(`Errore nello spostamento del file ${file.originalName}:`, e);
+              }
+            }
+          }
+        }
+      }
+      
       // Aggiunge le informazioni dei file alla request
       req.uploadedFiles = savedFiles;
       req.uploadedFile = htmlFile || savedFiles[0]; // Usa il file HTML o il primo file
       req.folderName = folderName;
+      req.fileStructure = fileStructureData;
       
       next();
     } else {
@@ -224,6 +278,7 @@ declare global {
       uploadedFile?: any;
       uploadedFiles?: any[];
       folderName?: string;
+      fileStructure?: Record<string, string>;
     }
   }
 }
