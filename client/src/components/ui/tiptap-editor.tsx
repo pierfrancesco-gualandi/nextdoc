@@ -17,7 +17,8 @@ import {
   Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, Image as ImageIcon, 
   Link as LinkIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Table as TableIcon, Heading1, Heading2, Heading3, Type, Package,
-  Upload, FileText, Palette, ArrowUpFromLine, Square
+  Upload, FileText, Palette, ArrowUpFromLine, Square, ChevronsUpDown, 
+  TextCursorInput, Wand2, PaintBucket, Baseline
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
@@ -104,6 +105,10 @@ export function TiptapEditor({
   const [editorHeight, setEditorHeight] = useState(200);
   // Stato per colore di sfondo
   const [backgroundColor, setBackgroundColor] = useState('transparent');
+  // Stato per interlinea
+  const [lineHeight, setLineHeight] = useState(1.5);
+  // Stato per dimensione del testo
+  const [fontSize, setFontSize] = useState(16);
   
   const editor = useEditor({
     extensions: [
@@ -262,6 +267,7 @@ export function TiptapEditor({
             size="sm" 
             onClick={() => editor.chain().focus().toggleBold().run()}
             className={editor.isActive('bold') ? 'bg-neutral-light/50' : ''}
+            title="Grassetto"
           >
             <Bold className="h-4 w-4" />
           </Button>
@@ -270,6 +276,7 @@ export function TiptapEditor({
             size="sm" 
             onClick={() => editor.chain().focus().toggleItalic().run()}
             className={editor.isActive('italic') ? 'bg-neutral-light/50' : ''}
+            title="Corsivo"
           >
             <Italic className="h-4 w-4" />
           </Button>
@@ -278,6 +285,7 @@ export function TiptapEditor({
             size="sm" 
             onClick={() => editor.chain().focus().toggleUnderline().run()}
             className={editor.isActive('underline') ? 'bg-neutral-light/50' : ''}
+            title="Sottolineato"
           >
             <UnderlineIcon className="h-4 w-4" />
           </Button>
@@ -287,7 +295,7 @@ export function TiptapEditor({
           {/* Color picker */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className="relative">
+              <Button variant="ghost" size="sm" className="relative" title="Colore testo">
                 <Palette className="h-4 w-4" />
                 <span 
                   className="absolute bottom-0 right-0 rounded-full w-2 h-2 border border-white"
@@ -307,6 +315,36 @@ export function TiptapEditor({
                     className="w-6 h-6 rounded-full border border-neutral-light"
                     style={{ backgroundColor: color }}
                     onClick={() => setTextColor(color)}
+                    title={color}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+          
+          {/* Line color picker */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" title="Colora riga corrente">
+                <Baseline className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+              <div className="grid grid-cols-5 gap-2">
+                {['#f8f9fa', '#e9ecef', '#fff3cd', '#d1e7dd', '#cfe2ff', 
+                '#f8d7da', '#e0cffc', '#ffd6a5', '#caffbf', 'transparent'].map(color => (
+                  <button
+                    key={color}
+                    type="button"
+                    className="w-6 h-6 rounded-full border border-neutral-light"
+                    style={{ backgroundColor: color }}
+                    onClick={() => {
+                      if (!editor) return;
+                      editor.commands.updateAttributes('paragraph', { 
+                        style: `background-color: ${color};` 
+                      });
+                    }}
+                    title={color === 'transparent' ? 'Rimuovi colore' : color}
                   />
                 ))}
               </div>
@@ -316,7 +354,7 @@ export function TiptapEditor({
           {/* Background color picker */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" title="Colore sfondo testo">
                 <Square className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
@@ -330,6 +368,7 @@ export function TiptapEditor({
                     className="w-6 h-6 rounded-full border border-neutral-light"
                     style={{ backgroundColor: color }}
                     onClick={() => setBackgroundColor(color)}
+                    title={color === 'transparent' ? 'Trasparente' : color}
                   />
                 ))}
               </div>
@@ -339,7 +378,7 @@ export function TiptapEditor({
           {/* Height adjustment */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" title="Altezza editor">
                 <ArrowUpFromLine className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
@@ -359,11 +398,58 @@ export function TiptapEditor({
             </PopoverContent>
           </Popover>
           
+          {/* Line height adjustment */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" title="Interlinea">
+                <ChevronsUpDown className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3">
+              <Label className="mb-2 block">Interlinea</Label>
+              <div className="flex items-center gap-3">
+                <Slider
+                  value={[lineHeight * 10]}
+                  min={10}
+                  max={30}
+                  step={1}
+                  onValueChange={(values) => setLineHeight(values[0] / 10)}
+                  className="flex-1"
+                />
+                <span className="text-sm font-medium w-12 text-right">{lineHeight.toFixed(1)}</span>
+              </div>
+            </PopoverContent>
+          </Popover>
+          
+          {/* Font size adjustment */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" title="Dimensione testo">
+                <TextCursorInput className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3">
+              <Label className="mb-2 block">Dimensione testo</Label>
+              <div className="flex items-center gap-3">
+                <Slider
+                  value={[fontSize]}
+                  min={1}
+                  max={50}
+                  step={1}
+                  onValueChange={(values) => setFontSize(values[0])}
+                  className="flex-1"
+                />
+                <span className="text-sm font-medium w-12 text-right">{fontSize}px</span>
+              </div>
+            </PopoverContent>
+          </Popover>
+          
           {/* Text import */}
           <Button 
             variant="ghost" 
             size="sm"
             onClick={() => fileInputRef.current?.click()}
+            title="Importa testo da file .txt"
           >
             <FileText className="h-4 w-4" />
             <input
@@ -483,13 +569,13 @@ export function TiptapEditor({
           
           <span className="w-px h-6 mx-1 bg-neutral-light"></span>
           
-          <Button variant="ghost" size="sm" onClick={setLink}>
+          <Button variant="ghost" size="sm" onClick={setLink} title="Inserisci o modifica link">
             <LinkIcon className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={addImage}>
+          <Button variant="ghost" size="sm" onClick={addImage} title="Inserisci immagine">
             <ImageIcon className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={addTable}>
+          <Button variant="ghost" size="sm" onClick={addTable} title="Inserisci tabella">
             <TableIcon className="h-4 w-4" />
           </Button>
         </div>
@@ -500,7 +586,9 @@ export function TiptapEditor({
           className={`p-4 prose max-w-none focus:outline-none ${editable ? 'resizable-editor' : ''}`}
           style={{ 
             minHeight: `${editorHeight}px`, 
-            backgroundColor: backgroundColor 
+            backgroundColor: backgroundColor,
+            lineHeight: lineHeight,
+            fontSize: `${fontSize}px`
           }}
         />
         
