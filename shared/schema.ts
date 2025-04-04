@@ -232,6 +232,13 @@ export type ImageModuleContent = {
 export type VideoModuleContent = {
   src: string;
   caption?: string;
+  title?: string;
+  format?: string;
+  poster?: string; // Immagine di anteprima
+  autoplay?: boolean;
+  controls?: boolean;
+  loop?: boolean;
+  muted?: boolean;
 };
 
 export type VideoEditorModuleContent = {

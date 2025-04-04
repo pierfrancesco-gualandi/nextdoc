@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
 import ThreeModelViewer from "./three-model-viewer";
 import ThreeModelEditor from "./three-model-editor";
+import VideoPlayer from "./video-player";
 
 interface ContentModuleProps {
   module: any;
@@ -168,6 +169,26 @@ export default function ContentModule({
               height="400px" 
             />
             {content.title && <div className="mt-2 text-sm text-neutral-dark">{content.title}</div>}
+          </div>
+        );
+
+      case "video":
+        return (
+          <div className="flex flex-col items-center">
+            <VideoPlayer 
+              src={content.src}
+              title={content.title}
+              caption={content.caption}
+              poster={content.poster}
+              format={content.format}
+              width="100%" 
+              height="400px"
+              autoplay={content.autoplay}
+              controls={content.controls !== false}
+              loop={content.loop}
+              muted={content.muted}
+              className="rounded-md overflow-hidden"
+            />
           </div>
         );
         
@@ -351,6 +372,78 @@ export default function ContentModule({
               initialValue={content}
               onSave={(updatedContent) => setContent(updatedContent)}
             />
+          </div>
+        );
+        
+      case "video":
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="video-src">URL del video</Label>
+              <Input 
+                id="video-src" 
+                value={content.src || ""} 
+                onChange={(e) => setContent({ ...content, src: e.target.value })} 
+              />
+            </div>
+            <div>
+              <Label htmlFor="video-title">Titolo</Label>
+              <Input 
+                id="video-title" 
+                value={content.title || ""} 
+                onChange={(e) => setContent({ ...content, title: e.target.value })} 
+              />
+            </div>
+            <div>
+              <Label htmlFor="video-caption">Didascalia</Label>
+              <Input 
+                id="video-caption" 
+                value={content.caption || ""} 
+                onChange={(e) => setContent({ ...content, caption: e.target.value })} 
+              />
+            </div>
+            <div>
+              <Label htmlFor="video-poster">URL immagine anteprima (poster)</Label>
+              <Input 
+                id="video-poster" 
+                value={content.poster || ""} 
+                onChange={(e) => setContent({ ...content, poster: e.target.value })} 
+              />
+            </div>
+            <div className="flex flex-wrap gap-4 mt-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="video-controls" 
+                  checked={content.controls !== false}
+                  onCheckedChange={(checked) => setContent({ ...content, controls: checked === true })}
+                />
+                <Label htmlFor="video-controls">Controlli visibili</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="video-autoplay" 
+                  checked={content.autoplay === true}
+                  onCheckedChange={(checked) => setContent({ ...content, autoplay: checked === true })}
+                />
+                <Label htmlFor="video-autoplay">Autoplay</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="video-loop" 
+                  checked={content.loop === true}
+                  onCheckedChange={(checked) => setContent({ ...content, loop: checked === true })}
+                />
+                <Label htmlFor="video-loop">Loop</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="video-muted" 
+                  checked={content.muted === true}
+                  onCheckedChange={(checked) => setContent({ ...content, muted: checked === true })}
+                />
+                <Label htmlFor="video-muted">Muto</Label>
+              </div>
+            </div>
           </div>
         );
         

@@ -78,9 +78,25 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
           };
           break;
         case "video":
+          // Determina il formato del video dal nome del file 
+          let videoFormat = "mp4";
+          if (selectedFile) {
+            const fileName = selectedFile.name.toLowerCase();
+            if (fileName.endsWith('.webm')) videoFormat = "webm";
+            else if (fileName.endsWith('.mov')) videoFormat = "mov";
+            else if (fileName.endsWith('.avi')) videoFormat = "avi";
+            else if (fileName.endsWith('.mkv')) videoFormat = "mkv";
+          }
+          
           moduleContent = { 
             src: data.url, 
-            caption: fileDescription 
+            title: fileDescription || data.originalName,
+            caption: fileDescription,
+            format: videoFormat,
+            controls: true,
+            autoplay: false,
+            loop: false,
+            muted: false
           };
           break;
         case "pdf":
@@ -253,7 +269,17 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
         defaultContent = { src: "", alt: "", caption: "" };
         break;
       case "video":
-        defaultContent = { src: "", caption: "" };
+        defaultContent = { 
+          src: "", 
+          title: "",
+          caption: "",
+          poster: "",
+          format: "mp4",
+          controls: true,
+          autoplay: false,
+          loop: false,
+          muted: false
+        };
         break;
       case "table":
         defaultContent = { headers: ["Intestazione 1", "Intestazione 2"], rows: [["", ""]], caption: "" };
