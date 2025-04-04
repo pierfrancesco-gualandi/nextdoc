@@ -300,7 +300,8 @@ export type BomModuleContent = {
 export type ThreeDModelModuleContent = {
   src: string;
   title?: string;
-  format: '3d' | 'glb' | 'gltf';
+  format: '3d' | 'glb' | 'gltf' | 'html' | 'webgl';
+  folderPath?: string;  // Percorso alla cartella contenente tutti i file necessari
   controls?: {
     rotate: boolean;
     zoom: boolean;

@@ -65,17 +65,27 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       
-      // Verifica che il file sia di tipo GLB o GLTF
-      if (file.name.endsWith('.glb') || file.name.endsWith('.gltf')) {
+      // Verifica che il file sia di tipo supportato
+      if (file.name.endsWith('.glb') || file.name.endsWith('.gltf') || 
+          file.name.endsWith('.html') || file.name.endsWith('.htm')) {
         setSelectedFile(file);
         
         // Imposta il formato in base all'estensione del file
-        const format = file.name.endsWith('.glb') ? 'glb' : 'gltf';
-        setValue('format', format as '3d' | 'glb' | 'gltf');
+        let format: 'glb' | 'gltf' | 'html' | 'webgl' = 'glb';
+        
+        if (file.name.endsWith('.glb')) {
+          format = 'glb';
+        } else if (file.name.endsWith('.gltf')) {
+          format = 'gltf';
+        } else if (file.name.endsWith('.html') || file.name.endsWith('.htm')) {
+          format = 'html';
+        }
+        
+        setValue('format', format);
       } else {
         toast({
           title: "Formato file non supportato",
-          description: "Per favore seleziona un file .glb o .gltf",
+          description: "Per favore seleziona un file .glb, .gltf o .html",
           variant: "destructive",
         });
       }
@@ -186,6 +196,8 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                       <SelectContent>
                         <SelectItem value="glb">GLB</SelectItem>
                         <SelectItem value="gltf">GLTF</SelectItem>
+                        <SelectItem value="html">HTML (WebGL)</SelectItem>
+                        <SelectItem value="webgl">WebGL</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
@@ -225,11 +237,11 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                           <Input
                             id="model-file"
                             type="file"
-                            accept=".glb,.gltf"
+                            accept=".glb,.gltf,.html,.htm"
                             onChange={handleFileChange}
                           />
                           <p className="text-sm text-gray-500">
-                            Formati supportati: .glb, .gltf
+                            Formati supportati: .glb, .gltf, .html (WebGL)
                           </p>
                         </div>
                         
@@ -264,6 +276,26 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                   <p className="text-red-500 text-sm mt-1">L'URL del modello è obbligatorio</p>
                 )}
               </div>
+              
+              {(currentValues.format === 'html' || currentValues.format === 'webgl') && (
+                <div className="pt-2">
+                  <Label htmlFor="folderPath">Percorso cartella (opzionale)</Label>
+                  <Controller
+                    name="folderPath"
+                    control={control}
+                    render={({ field }) => (
+                      <Input 
+                        id="folderPath" 
+                        placeholder="Percorso alla cartella contenente i file necessari" 
+                        {...field} 
+                      />
+                    )}
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Specifica solo se il modello WebGL richiede file aggiuntivi in una cartella
+                  </p>
+                </div>
+              )}
             </TabsContent>
             
             <TabsContent value="options" className="space-y-4">

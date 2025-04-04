@@ -126,6 +126,12 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
 
   // Function to load the 3D model
   const loadModel = (src: string, format: string) => {
+    if (format === 'html' || format === 'webgl') {
+      // For HTML/WebGL content, la visualizzazione avviene tramite iframe,
+      // quindi non abbiamo bisogno di caricare nulla qui
+      return;
+    }
+    
     if (!sceneRef.current) return;
     
     // Clear existing model
@@ -166,15 +172,65 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
           // Loading progress
           console.log(`${(xhr.loaded / xhr.total) * 100}% loaded`);
         },
-        (error: Error) => {
+        (error: unknown) => {
           console.error('Error loading model:', error);
         }
       );
-    } else {
+    } else if (format !== 'html' && format !== 'webgl') {
       console.error('Unsupported 3D model format:', format);
     }
   };
 
+  // Rendering diverso in base al formato
+  if (modelData.format === 'html' || modelData.format === 'webgl') {
+    return (
+      <div
+        style={{
+          width: width,
+          height: height,
+          position: 'relative',
+          overflow: 'hidden',
+          borderRadius: '8px',
+          border: '1px solid #ccc',
+        }}
+      >
+        {modelData.title && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              padding: '8px 12px',
+              background: 'rgba(0, 0, 0, 0.5)',
+              color: 'white',
+              fontSize: '14px',
+              zIndex: 2,
+            }}
+          >
+            {modelData.title}
+          </div>
+        )}
+        <iframe 
+          src={modelData.src}
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            zIndex: 1,
+          }}
+          title={modelData.title || 'WebGL 3D Model'}
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          allow="accelerometer; autoplay; camera; encrypted-media; gyroscope; picture-in-picture"
+        />
+      </div>
+    );
+  }
+
+  // Three.js renderer per GLB/GLTF
   return (
     <div
       ref={containerRef}
