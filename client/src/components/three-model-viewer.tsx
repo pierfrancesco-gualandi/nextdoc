@@ -194,23 +194,42 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
           border: '1px solid #ccc',
         }}
       >
-        {modelData.title && (
-          <div
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            padding: '8px 12px',
+            background: 'rgba(0, 0, 0, 0.5)',
+            color: 'white',
+            fontSize: '14px',
+            zIndex: 2,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}
+        >
+          <div>{modelData.title || 'Modello 3D WebGL'}</div>
+          <a 
+            href={modelData.src} 
+            target="_blank" 
+            rel="noopener noreferrer"
             style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              padding: '8px 12px',
-              background: 'rgba(0, 0, 0, 0.5)',
               color: 'white',
-              fontSize: '14px',
-              zIndex: 2,
+              textDecoration: 'none',
+              border: '1px solid white',
+              padding: '2px 6px',
+              borderRadius: '3px',
+              fontSize: '12px'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
             }}
           >
-            {modelData.title}
-          </div>
-        )}
+            Apri in nuova finestra
+          </a>
+        </div>
         <iframe 
           src={modelData.src}
           style={{
@@ -409,23 +428,42 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
         border: '1px solid #ccc',
       }}
     >
-      {modelData.title && (
-        <div
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          padding: '8px 12px',
+          background: 'rgba(0, 0, 0, 0.5)',
+          color: 'white',
+          fontSize: '14px',
+          zIndex: 1,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}
+      >
+        <div>{modelData.title || 'Modello 3D'}</div>
+        <a 
+          href={modelData.src} 
+          target="_blank" 
+          rel="noopener noreferrer"
           style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            padding: '8px 12px',
-            background: 'rgba(0, 0, 0, 0.5)',
             color: 'white',
-            fontSize: '14px',
-            zIndex: 1,
+            textDecoration: 'none',
+            border: '1px solid white',
+            padding: '2px 6px',
+            borderRadius: '3px',
+            fontSize: '12px'
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
           }}
         >
-          {modelData.title}
-        </div>
-      )}
+          Apri in nuova finestra
+        </a>
+      </div>
     </div>
   );
 };

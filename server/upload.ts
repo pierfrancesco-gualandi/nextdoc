@@ -40,7 +40,7 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
     '.mp4', '.webm', '.mp3', '.ogg',
     
     // Modelli 3D
-    '.glb', '.gltf', '.stl', '.obj', '.fbx', '.3mf', '.sla',
+    '.glb', '.gltf', '.stl', '.obj', '.fbx', '.3mf', '.sla', '.jt',
     
     // WebGL e HTML
     '.html', '.htm'
@@ -107,6 +107,11 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
     else if ((fileExt === '.xlsx' || fileExt === '.xls' || fileExt === '.csv') && 
         (file.mimetype === 'application/octet-stream' || file.mimetype.includes('sheet') || file.mimetype.includes('excel') || file.mimetype.includes('csv'))) {
       console.log("Accettando file Excel/CSV con MIME type non standard:", file.mimetype);
+      cb(null, true);
+    } 
+    // Eccezione per file 3D JT con MIME type non standard
+    else if (fileExt === '.jt' && file.mimetype === 'application/octet-stream') {
+      console.log("Accettando file JT (CAD) con MIME type non standard:", file.mimetype);
       cb(null, true);
     } else {
       cb(new Error(`Tipo di file non supportato: ${file.mimetype} con estensione ${fileExt}`));

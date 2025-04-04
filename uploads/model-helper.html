@@ -5,146 +5,252 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Helper per Modelli 3D WebGL</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        body, html {
             margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        
+        #container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        #error-message {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(240, 240, 240, 0.9);
+            color: #e74c3c;
+            font-size: 14px;
+            text-align: center;
             padding: 20px;
-            background-color: #f5f5f5;
+            z-index: 10;
+            display: none;
         }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        
+        #loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(245, 245, 245, 0.7);
+            z-index: 5;
         }
-        pre {
-            background-color: #f0f0f0;
-            padding: 10px;
-            border-radius: 3px;
-            overflow-x: auto;
-        }
-        h2 {
-            color: #333;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 10px;
-        }
-        .file-list {
+        
+        #progress-container {
+            width: 200px;
+            height: 4px;
+            background-color: #ddd;
+            border-radius: 2px;
+            overflow: hidden;
             margin-top: 10px;
         }
-        .file-item {
-            padding: 5px;
-            border-bottom: 1px solid #eee;
+        
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #3498db;
+            transition: width 0.3s ease;
         }
-        .file-item:hover {
-            background-color: #f5f5f5;
+        
+        #progress-text {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+        }
+        
+        #info-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 8px 12px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 12px;
+            text-align: center;
+            z-index: 2;
+            display: none;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Helper per Modelli 3D WebGL</h1>
-        <p>Questo strumento aiuta a diagnosticare e correggere problemi con i modelli 3D WebGL caricati.</p>
-        
-        <h2>Informazioni modello ricevute</h2>
-        <pre id="model-info">In attesa di dati dal modello 3D...</pre>
-        
-        <h2>File disponibili</h2>
-        <div id="file-list" class="file-list">Nessun file trovato</div>
-        
-        <h2>Test di accesso ai file</h2>
-        <div id="test-results">
-            <p>Clicca su un file dalla lista per testare l'accesso.</p>
+    <div id="container">
+        <div id="loading">
+            <div>Caricamento modello...</div>
+            <div id="progress-container">
+                <div id="progress-bar"></div>
+            </div>
+            <div id="progress-text">0%</div>
         </div>
+        
+        <div id="error-message"></div>
+        
+        <div id="info-panel"></div>
+        
+        <div id="canvas-container"></div>
     </div>
 
     <script>
-        // Memorizza le informazioni ricevute
-        let modelInfo = null;
+        // Elementi DOM
+        const loadingElement = document.getElementById('loading');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const errorElement = document.getElementById('error-message');
+        const canvasContainer = document.getElementById('canvas-container');
+        const infoPanel = document.getElementById('info-panel');
         
-        // Ricevi messaggi dal genitore con informazioni sul modello
-        window.addEventListener('message', function(event) {
-            // Ricevi soltanto messaggi dal tuo dominio per sicurezza
-            if (event.origin !== window.location.origin) return;
+        // Stato del modello
+        let modelInfo = null;
+        let modelLoaded = false;
+        let forceError = false;
+        
+        // Funzione per aggiornare la barra di progresso
+        function updateProgress(percent) {
+            progressBar.style.width = `${percent}%`;
+            progressText.textContent = `${percent}%`;
+        }
+        
+        // Funzione per mostrare messaggi di errore
+        function showError(message) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'flex';
+            loadingElement.style.display = 'none';
+        }
+        
+        // Funzione per nascondere il caricamento quando il modello è pronto
+        function hideLoading() {
+            loadingElement.style.display = 'none';
+            modelLoaded = true;
+        }
+        
+        // Funzione per mostrare informazioni nel pannello
+        function showInfo(message) {
+            infoPanel.textContent = message;
+            infoPanel.style.display = 'block';
             
+            // Nascondi dopo 5 secondi
+            setTimeout(() => {
+                infoPanel.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Listener per ricevere messaggi dalla finestra principale
+        window.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'model-folder-info') {
+                console.log('Ricevute informazioni sul modello:', event.data);
                 modelInfo = event.data;
                 
-                // Aggiorna l'interfaccia con le informazioni ricevute
-                document.getElementById('model-info').textContent = JSON.stringify(modelInfo, null, 2);
+                // Mostra alcune informazioni
+                if (modelInfo.folderName) {
+                    showInfo(`Cartella modello: ${modelInfo.folderName}`);
+                }
                 
-                // Popola la lista dei file
-                const fileList = document.getElementById('file-list');
-                fileList.innerHTML = '';
-                
-                if (modelInfo.allFiles && modelInfo.allFiles.length > 0) {
-                    modelInfo.allFiles.forEach(file => {
-                        const fileItem = document.createElement('div');
-                        fileItem.className = 'file-item';
-                        fileItem.textContent = `${file.originalName} (${file.relativePath || 'nessun percorso relativo'})`;
-                        fileItem.onclick = function() {
-                            testFileAccess(file.url, file.originalName);
-                        };
-                        fileList.appendChild(fileItem);
-                    });
-                } else if (modelInfo.fileMap && Object.keys(modelInfo.fileMap).length > 0) {
-                    for (const [path, url] of Object.entries(modelInfo.fileMap)) {
-                        const fileItem = document.createElement('div');
-                        fileItem.className = 'file-item';
-                        fileItem.textContent = path;
-                        fileItem.onclick = function() {
-                            testFileAccess(url, path);
-                        };
-                        fileList.appendChild(fileItem);
-                    }
-                } else {
-                    fileList.innerHTML = 'Nessun file trovato nella struttura del modello';
+                // Se sono richieste risorse aggiuntive, puoi risolvere i percorsi
+                // usando le informazioni ricevute
+                if (modelInfo.fileMap) {
+                    console.log('Mappa file disponibili:', modelInfo.fileMap);
                 }
             }
         });
         
-        // Invia una richiesta al genitore per ottenere informazioni sul modello
+        // Richiedi le informazioni sulla cartella all'applicazione principale
         function requestModelInfo() {
-            window.parent.postMessage({
-                type: 'request-model-folder-info'
-            }, '*');
-        }
-        
-        // Testa l'accesso a un file
-        function testFileAccess(url, filename) {
-            const resultsDiv = document.getElementById('test-results');
-            resultsDiv.innerHTML = `<p>Testing accesso a: ${filename}</p>`;
-            
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Errore HTTP: ${response.status}`);
+            if (!modelInfo) {
+                window.parent.postMessage({ type: 'request-model-folder-info' }, '*');
+                console.log('Richieste informazioni sulla cartella del modello');
+                
+                // Riprova dopo un breve timeout se non è ancora arrivata
+                setTimeout(() => {
+                    if (!modelInfo) {
+                        window.parent.postMessage({ type: 'request-model-folder-info' }, '*');
+                        console.log('Richieste informazioni sulla cartella del modello (retry)');
                     }
-                    return response.text();
-                })
-                .then(data => {
-                    const firstChars = data.substring(0, 100) + (data.length > 100 ? '...' : '');
-                    resultsDiv.innerHTML += `
-                        <p style="color: green">✓ File accessibile correttamente</p>
-                        <p>Preview: <pre>${firstChars}</pre></p>
-                        <p><a href="${url}" target="_blank">Apri file in una nuova scheda</a></p>
-                    `;
-                })
-                .catch(error => {
-                    resultsDiv.innerHTML += `
-                        <p style="color: red">✗ Errore nell'accesso al file: ${error.message}</p>
-                    `;
-                });
+                }, 1000);
+            }
         }
         
-        // Richiedi informazioni sul modello all'avvio
-        window.onload = function() {
-            // Richiedi informazioni al caricamento della pagina
-            requestModelInfo();
+        // Funzione per gestire il completamento del caricamento
+        function handleModelLoaded() {
+            if (!forceError) {
+                hideLoading();
+                console.log('Modello 3D caricato con successo');
+            }
+        }
+        
+        // Funzione per caricare risorse esterne usando le informazioni ricevute
+        function resolveResourceUrl(resourceName) {
+            if (modelInfo && modelInfo.fileMap && modelInfo.fileMap[resourceName]) {
+                return modelInfo.fileMap[resourceName];
+            }
             
-            // Richiedi nuovamente dopo un breve ritardo (per assicurarsi che il genitore sia pronto)
-            setTimeout(requestModelInfo, 1000);
+            // Se non troviamo il percorso, prova a costruirlo se conosciamo la cartella
+            if (modelInfo && modelInfo.folderPath) {
+                const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+                return `${baseUrl}${modelInfo.folderPath}/${resourceName}`;
+            }
+            
+            // Fallback: usa direttamente il nome risorsa (potrebbe non funzionare)
+            return resourceName;
+        }
+        
+        // Simula il caricamento del modello
+        let progress = 0;
+        let progressInterval = setInterval(() => {
+            progress += 5;
+            if (progress > 95) {
+                clearInterval(progressInterval);
+                
+                // Simula il completamento del caricamento dopo un breve ritardo
+                setTimeout(() => {
+                    progress = 100;
+                    updateProgress(progress);
+                    handleModelLoaded();
+                }, 500);
+            } else {
+                updateProgress(progress);
+            }
+        }, 200);
+        
+        // Richiedi le informazioni sul modello
+        requestModelInfo();
+        
+        // Simula caricamento risorsa fallito se necessario
+        window.addEventListener('error', (event) => {
+            if (event.target.tagName === 'IMG' || event.target.tagName === 'SCRIPT') {
+                console.error(`Errore nel caricamento della risorsa: ${event.target.src}`);
+                forceError = true;
+                showError('Errore nel caricamento delle risorse necessarie per il modello 3D.');
+            }
+        }, true);
+        
+        // Funzione per esporre API globali ai modelli 3D HTML
+        window.getModelInfo = function() {
+            return modelInfo;
+        };
+        
+        window.resolveModelResource = function(resourceName) {
+            return resolveResourceUrl(resourceName);
         };
     </script>
 </body>
