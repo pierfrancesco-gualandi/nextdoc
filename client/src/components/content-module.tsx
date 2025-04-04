@@ -541,36 +541,52 @@ export default function ContentModule({
             <div>
               <Label>Righe e celle</Label>
               <div className="space-y-2 mt-2 border border-neutral-light rounded-md p-2">
-                {content.rows && content.rows.map((row: string[], rowIndex: number) => (
-                  <div key={rowIndex} className="flex flex-wrap items-start gap-2 py-2 border-b border-neutral-light">
-                    {row.map((cell: string, cellIndex: number) => (
-                      <div key={cellIndex} className="flex-1 min-w-[150px]">
-                        <Input
-                          value={cell}
-                          onChange={(e) => {
-                            const newRows = [...content.rows];
-                            newRows[rowIndex][cellIndex] = e.target.value;
-                            setContent({ ...content, rows: newRows });
-                          }}
-                        />
-                        {cellIndex === 0 && (
-                          <div className="mt-1 flex justify-end">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                const newRows = content.rows.filter((_: string[], i: number) => i !== rowIndex);
-                                setContent({ ...content, rows: newRows });
-                              }}
-                            >
-                              <span className="material-icons text-xs">delete_row</span>
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ))}
+                {content.rows && content.rows.map((row: string[], rowIndex: number) => {
+                  // Assicurati che ogni riga abbia esattamente tante celle quante sono le intestazioni
+                  const rowWithCorrectCells = [...row];
+                  if (content.headers && rowWithCorrectCells.length < content.headers.length) {
+                    while (rowWithCorrectCells.length < content.headers.length) {
+                      rowWithCorrectCells.push("");
+                    }
+                  }
+
+                  return (
+                    <div key={rowIndex} className="grid gap-2 py-2 border-b border-neutral-light" 
+                      style={{ 
+                        gridTemplateColumns: `repeat(${content.headers?.length || 1}, minmax(150px, 1fr))`,
+                        position: 'relative'
+                      }}
+                    >
+                      {content.headers && content.headers.map((header: string, cellIndex: number) => (
+                        <div key={cellIndex} className="relative">
+                          <Input
+                            value={rowWithCorrectCells[cellIndex] || ""}
+                            placeholder={header} // Usa l'intestazione come placeholder
+                            onChange={(e) => {
+                              const newRows = [...content.rows];
+                              if (!newRows[rowIndex]) newRows[rowIndex] = [];
+                              newRows[rowIndex][cellIndex] = e.target.value;
+                              setContent({ ...content, rows: newRows });
+                            }}
+                          />
+                        </div>
+                      ))}
+                      
+                      {/* Bottone elimina riga - posizionato a destra della riga */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute -right-10 top-1/2 transform -translate-y-1/2"
+                        onClick={() => {
+                          const newRows = content.rows.filter((_: string[], i: number) => i !== rowIndex);
+                          setContent({ ...content, rows: newRows });
+                        }}
+                      >
+                        <span className="material-icons text-sm">delete</span>
+                      </Button>
+                    </div>
+                  );
+                })}
                 <Button
                   variant="outline"
                   size="sm"
