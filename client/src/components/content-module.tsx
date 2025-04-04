@@ -192,6 +192,37 @@ export default function ContentModule({
           </div>
         );
         
+      case "table":
+        return (
+          <div className="flex flex-col items-center">
+            <div className="w-full overflow-x-auto">
+              <Table className="w-full border-collapse">
+                <TableHeader>
+                  <TableRow className="bg-neutral-lightest">
+                    {content.headers && content.headers.map((header: string, index: number) => (
+                      <TableHead key={index} className="text-neutral-dark font-medium p-2 border border-neutral-light text-left">
+                        {header}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {content.rows && content.rows.map((row: string[], rowIndex: number) => (
+                    <TableRow key={rowIndex} className="hover:bg-neutral-lightest">
+                      {row.map((cell: string, cellIndex: number) => (
+                        <TableCell key={cellIndex} className="p-2 border border-neutral-light">
+                          {cell}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            {content.caption && <div className="mt-2 text-sm text-neutral-dark italic">{content.caption}</div>}
+          </div>
+        );
+        
       default:
         return <div>Tipo di modulo non supportato: {module.type}</div>;
     }
@@ -442,6 +473,115 @@ export default function ContentModule({
                   onCheckedChange={(checked) => setContent({ ...content, muted: checked === true })}
                 />
                 <Label htmlFor="video-muted">Muto</Label>
+              </div>
+            </div>
+          </div>
+        );
+        
+      case "table":
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="table-caption">Didascalia della tabella</Label>
+              <Input
+                id="table-caption"
+                value={content.caption || ""}
+                onChange={(e) => setContent({ ...content, caption: e.target.value })}
+              />
+            </div>
+            
+            {/* Headers editor */}
+            <div>
+              <Label>Intestazioni delle colonne</Label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {content.headers && content.headers.map((header: string, index: number) => (
+                  <div key={index} className="flex items-center">
+                    <Input
+                      value={header}
+                      onChange={(e) => {
+                        const newHeaders = [...content.headers];
+                        newHeaders[index] = e.target.value;
+                        setContent({ ...content, headers: newHeaders });
+                      }}
+                      className="min-w-[150px]"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        // Rimuovi l'intestazione e la colonna corrispondente da tutte le righe
+                        const newHeaders = content.headers.filter((_, i) => i !== index);
+                        const newRows = content.rows.map(row => row.filter((_, i) => i !== index));
+                        setContent({ ...content, headers: newHeaders, rows: newRows });
+                      }}
+                    >
+                      <span className="material-icons text-sm">close</span>
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newHeaders = [...(content.headers || []), ""];
+                    // Aggiungi una cella vuota a ogni riga
+                    const newRows = content.rows.map(row => [...row, ""]);
+                    setContent({ ...content, headers: newHeaders, rows: newRows });
+                  }}
+                >
+                  <span className="material-icons text-sm mr-1">add</span>
+                  Aggiungi colonna
+                </Button>
+              </div>
+            </div>
+            
+            {/* Rows editor */}
+            <div>
+              <Label>Righe e celle</Label>
+              <div className="space-y-2 mt-2 border border-neutral-light rounded-md p-2">
+                {content.rows && content.rows.map((row: string[], rowIndex: number) => (
+                  <div key={rowIndex} className="flex flex-wrap items-start gap-2 py-2 border-b border-neutral-light">
+                    {row.map((cell: string, cellIndex: number) => (
+                      <div key={cellIndex} className="flex-1 min-w-[150px]">
+                        <Input
+                          value={cell}
+                          onChange={(e) => {
+                            const newRows = [...content.rows];
+                            newRows[rowIndex][cellIndex] = e.target.value;
+                            setContent({ ...content, rows: newRows });
+                          }}
+                        />
+                        {cellIndex === 0 && (
+                          <div className="mt-1 flex justify-end">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const newRows = content.rows.filter((_, i) => i !== rowIndex);
+                                setContent({ ...content, rows: newRows });
+                              }}
+                            >
+                              <span className="material-icons text-xs">delete_row</span>
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Crea una nuova riga con celle vuote in base al numero di colonne
+                    const newRow = Array(content.headers.length).fill("");
+                    const newRows = [...(content.rows || []), newRow];
+                    setContent({ ...content, rows: newRows });
+                  }}
+                >
+                  <span className="material-icons text-sm mr-1">add</span>
+                  Aggiungi riga
+                </Button>
               </div>
             </div>
           </div>
