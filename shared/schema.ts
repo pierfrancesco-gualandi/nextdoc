@@ -297,6 +297,17 @@ export type BomModuleContent = {
   filter?: string;
 };
 
+export type ThreeDModelModuleContent = {
+  src: string;
+  title?: string;
+  format: '3d' | 'glb' | 'gltf';
+  controls?: {
+    rotate: boolean;
+    zoom: boolean;
+    pan: boolean;
+  };
+};
+
 // Languages schema
 export const languages = pgTable("languages", {
   id: serial("id").primaryKey(),

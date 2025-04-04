@@ -17,7 +17,7 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
   const { toast } = useToast();
   const [isDragging, setIsDragging] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
-  const [uploadType, setUploadType] = useState<"image" | "video" | "pdf">("image");
+  const [uploadType, setUploadType] = useState<"image" | "video" | "pdf" | "3d-model">("image");
   const [uploadingFile, setUploadingFile] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileDescription, setFileDescription] = useState('');
@@ -32,7 +32,8 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
     { id: "warning", icon: "warning", label: "Avviso" },
     { id: "link", icon: "link", label: "Link" },
     { id: "pdf", icon: "picture_as_pdf", label: "PDF" },
-    { id: "component", icon: "category", label: "Componente" }
+    { id: "component", icon: "category", label: "Componente" },
+    { id: "3d-model", icon: "view_in_ar", label: "Modello 3D" }
   ];
   
   const createModuleMutation = useMutation({
@@ -85,6 +86,23 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
             title: fileDescription || data.originalName 
           };
           break;
+        case "3d-model":
+          // Determina il formato del file dal nome del file
+          let format = "glb";
+          if (selectedFile) {
+            const fileName = selectedFile.name.toLowerCase();
+            if (fileName.endsWith('.gltf')) format = "gltf";
+            else if (fileName.endsWith('.obj')) format = "obj";
+            else if (fileName.endsWith('.stl')) format = "stl";
+          }
+          
+          moduleContent = { 
+            src: data.url, 
+            title: fileDescription || data.originalName,
+            format: format,
+            controls: { rotate: true, zoom: true, pan: true }
+          };
+          break;
       }
       
       createModuleMutation.mutate({
@@ -112,8 +130,8 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
 
   const handleAddModule = (type: string) => {
     // Per i tipi che supportano l'upload, mostra il dialog di upload
-    if (type === "image" || type === "video" || type === "pdf") {
-      setUploadType(type as "image" | "video" | "pdf");
+    if (type === "image" || type === "video" || type === "pdf" || type === "3d-model") {
+      setUploadType(type as "image" | "video" | "pdf" | "3d-model");
       setShowFileUpload(true);
       return;
     }
@@ -148,6 +166,14 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
         break;
       case "component":
         defaultContent = { componentId: null, quantity: 1 };
+        break;
+      case "3d-model":
+        defaultContent = { 
+          src: "", 
+          title: "Modello 3D", 
+          format: "glb",
+          controls: { rotate: true, zoom: true, pan: true } 
+        };
         break;
     }
     
@@ -208,6 +234,8 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
         return "video/*,.mp4,.webm";
       case "pdf":
         return "application/pdf,.pdf";
+      case "3d-model":
+        return ".glb,.gltf,.obj,.stl";
       default:
         return "*/*";
     }
@@ -237,6 +265,7 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
           <div className="text-xs text-muted-foreground">
             {uploadType === "image" ? "Immagini (.jpg, .png, .gif, .svg)" :
              uploadType === "video" ? "Video (.mp4, .webm)" :
+             uploadType === "3d-model" ? "Modelli 3D (.glb, .gltf, .obj, .stl)" :
              "Documenti PDF (.pdf)"}
           </div>
         </div>
@@ -273,7 +302,9 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
           <DialogHeader>
             <DialogTitle>
               Carica {uploadType === "image" ? "immagine" : 
-                       uploadType === "video" ? "video" : "PDF"}
+                       uploadType === "video" ? "video" : 
+                       uploadType === "3d-model" ? "modello 3D" : 
+                       "PDF"}
             </DialogTitle>
           </DialogHeader>
           
@@ -298,12 +329,15 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
             <div className="grid gap-2">
               <Label htmlFor="description">
                 {uploadType === "image" ? "Didascalia immagine" : 
-                 uploadType === "video" ? "Descrizione video" : "Titolo documento"}
+                 uploadType === "video" ? "Descrizione video" : 
+                 uploadType === "3d-model" ? "Titolo modello 3D" :
+                 "Titolo documento"}
               </Label>
               <Input
                 id="description"
                 placeholder={uploadType === "image" ? "Inserisci una didascalia per l'immagine" : 
                              uploadType === "video" ? "Inserisci una descrizione per il video" : 
+                             uploadType === "3d-model" ? "Inserisci un titolo per il modello 3D" :
                              "Inserisci un titolo per il documento"}
                 value={fileDescription}
                 onChange={(e) => setFileDescription(e.target.value)}

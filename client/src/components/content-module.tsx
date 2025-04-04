@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
+import ThreeModelViewer from "./three-model-viewer";
+import ThreeModelEditor from "./three-model-editor";
 
 interface ContentModuleProps {
   module: any;
@@ -72,6 +74,7 @@ export default function ContentModule({
       case "link": return "link";
       case "pdf": return "picture_as_pdf";
       case "component": return "category";
+      case "3d-model": return "view_in_ar";
       default: return "edit_note";
     }
   };
@@ -88,6 +91,7 @@ export default function ContentModule({
       case "link": return "Link";
       case "pdf": return "PDF";
       case "component": return "Componenti";
+      case "3d-model": return "Modello 3D";
       default: return type;
     }
   };
@@ -151,6 +155,18 @@ export default function ContentModule({
         return (
           <div className="flex flex-col items-center">
             <iframe src={content.src} title={content.title} className="w-full h-96 border border-neutral-light rounded"></iframe>
+            {content.title && <div className="mt-2 text-sm text-neutral-dark">{content.title}</div>}
+          </div>
+        );
+      
+      case "3d-model":
+        return (
+          <div className="flex flex-col items-center">
+            <ThreeModelViewer 
+              modelData={content} 
+              width="100%" 
+              height="400px" 
+            />
             {content.title && <div className="mt-2 text-sm text-neutral-dark">{content.title}</div>}
           </div>
         );
@@ -327,6 +343,16 @@ export default function ContentModule({
             </div>
           </div>
         );
+      
+      case "3d-model":
+        return (
+          <div className="space-y-4">
+            <ThreeModelEditor
+              initialValue={content}
+              onSave={(updatedContent) => setContent(updatedContent)}
+            />
+          </div>
+        );
         
       default:
         return <div>Editor non disponibile per questo tipo di modulo</div>;
@@ -387,7 +413,7 @@ function ComponentListContent({ documentId }: { documentId: string }) {
     staleTime: 30000,
   });
 
-  if (!components) {
+  if (!components || !Array.isArray(components) || components.length === 0) {
     return <div>Caricamento componenti...</div>;
   }
 
