@@ -8,6 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
 import ThreeModelViewer from "./three-model-viewer";
 import ThreeModelEditor from "./three-model-editor";
@@ -18,13 +25,15 @@ interface ContentModuleProps {
   onDelete: (id: number) => void;
   onUpdate: (id: number, data: any) => void;
   documentId: string;
+  isPreview?: boolean;
 }
 
 export default function ContentModule({ 
   module, 
   onDelete, 
   onUpdate,
-  documentId
+  documentId,
+  isPreview = false
 }: ContentModuleProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();

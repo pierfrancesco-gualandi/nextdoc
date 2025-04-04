@@ -14,6 +14,7 @@ import VersionComparison from "@/components/version-comparison";
 import BomManager from "@/components/bom-manager";
 import SectionBomAssociator from "@/components/section-bom-associator";
 import SectionBomSummary from "@/components/section-bom-summary";
+import DocumentSectionPreview from "@/components/DocumentSectionPreview";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -604,20 +605,22 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                       <h1 className="text-2xl font-bold mb-2">{document?.title}</h1>
                       <p className="text-neutral-dark mb-6">{document?.description}</p>
                       
-                      {/* We would render a preview of all sections and modules here */}
+                      {/* Render documento completo con tutte le sezioni e moduli */}
                       {sections && sections.length > 0 ? (
-                        sections.map((section: any) => (
-                          <div key={section.id} className="mb-8">
-                            <h2 className="text-xl font-semibold mb-3 pb-1 border-b border-neutral-light">{section.title}</h2>
-                            <p className="mb-4">{section.description}</p>
-                            
-                            {/* Content modules would be rendered here */}
-                            <div className="pl-4 border-l-2 border-neutral-light">
-                              {/* This would be populated with actual content */}
-                              <p className="text-neutral-medium">[Contenuto moduli]</p>
-                            </div>
-                          </div>
-                        ))
+                        <div className="document-preview">
+                          {sections
+                            .filter((section: any) => !section.parentId) // Solo sezioni di primo livello
+                            .sort((a: any, b: any) => a.order - b.order)
+                            .map((section: any) => (
+                              <DocumentSectionPreview 
+                                key={section.id} 
+                                section={section} 
+                                allSections={sections}
+                                documentId={id}
+                                level={0}
+                              />
+                            ))}
+                        </div>
                       ) : (
                         <div className="text-center py-8">
                           <p>Questo documento non ha ancora sezioni.</p>
