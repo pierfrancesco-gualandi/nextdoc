@@ -40,7 +40,10 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
     '.mp4', '.webm', '.mp3', '.ogg',
     
     // Modelli 3D
-    '.glb', '.gltf', '.stl', '.obj', '.fbx', '.3mf', '.sla'
+    '.glb', '.gltf', '.stl', '.obj', '.fbx', '.3mf', '.sla',
+    
+    // WebGL e HTML
+    '.html', '.htm'
   ];
   
   // Controlla il mime type o l'estensione del file
@@ -77,6 +80,10 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
     'model/obj',          // OBJ
     'model/fbx',          // FBX
     
+    // HTML e WebGL
+    'text/html',
+    'application/xhtml+xml',
+    
     // Altri tipi per Excel e documenti
     'application/excel',
     'application/xlsx',
@@ -91,8 +98,13 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
   if (allowedMimeTypes.includes(file.mimetype) || allowedExtensions.includes(fileExt)) {
     cb(null, true);
   } else {
+    // Eccezione per file HTML con MIME type non standard
+    if ((fileExt === '.html' || fileExt === '.htm')) {
+      console.log("Accettando file HTML con MIME type non standard:", file.mimetype);
+      cb(null, true);
+    } 
     // Eccezione per file Excel e CSV con MIME type non standard
-    if ((fileExt === '.xlsx' || fileExt === '.xls' || fileExt === '.csv') && 
+    else if ((fileExt === '.xlsx' || fileExt === '.xls' || fileExt === '.csv') && 
         (file.mimetype === 'application/octet-stream' || file.mimetype.includes('sheet') || file.mimetype.includes('excel') || file.mimetype.includes('csv'))) {
       console.log("Accettando file Excel/CSV con MIME type non standard:", file.mimetype);
       cb(null, true);

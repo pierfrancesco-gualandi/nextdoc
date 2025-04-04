@@ -22,6 +22,7 @@ const defaultModelContent: ThreeDModelModuleContent = {
   src: '',
   title: '',
   format: 'glb',
+  folderPath: '',
   controls: {
     rotate: true,
     zoom: true,
@@ -249,6 +250,21 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                           <div className="text-sm">
                             <p>File selezionato: {selectedFile.name}</p>
                             <p>Dimensione: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                          </div>
+                        )}
+                        
+                        {selectedFile && (selectedFile.name.endsWith('.html') || selectedFile.name.endsWith('.htm')) && (
+                          <div className="mt-4">
+                            <Label htmlFor="dialog-folder-path">Percorso cartella (opzionale)</Label>
+                            <Input 
+                              id="dialog-folder-path" 
+                              placeholder="Percorso alla cartella contenente i file necessari"
+                              value={currentValues.folderPath || ''}
+                              onChange={(e) => setValue('folderPath', e.target.value)}
+                            />
+                            <p className="text-sm text-gray-500 mt-1">
+                              Specifica solo se il modello WebGL richiede file aggiuntivi in una cartella
+                            </p>
                           </div>
                         )}
                         
