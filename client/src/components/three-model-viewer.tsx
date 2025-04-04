@@ -22,6 +22,31 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
   const controlsRef = useRef<OrbitControls | null>(null);
   const frameIdRef = useRef<number | null>(null);
 
+  // Ref per gestire i timer
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Ref per memorizzare gli handler dei messaggi
+  const messageHandlersRef = useRef<Function[]>([]);
+  
+  // Cleanup function per i timer e gli event listeners
+  useEffect(() => {
+    return () => {
+      // Pulizia dei timer
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      
+      // Pulizia degli event listeners
+      messageHandlersRef.current.forEach(handler => {
+        if (typeof handler === 'function') {
+          window.removeEventListener('message', handler as EventListener);
+        }
+      });
+      messageHandlersRef.current = [];
+    };
+  }, []);
+  
   // Setup the scene, camera, renderer, and controls
   useEffect(() => {
     if (!containerRef.current) return;
@@ -372,6 +397,7 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
             try {
               // Salva il timer per eventuale cancel
               (e.currentTarget as any)._errorTimer = iframeErrorTimer;
+              timerRef.current = iframeErrorTimer; // Salva anche nel timerRef per pulizia globale
               const iframe = e.currentTarget;
               // Estraiamo il nome della cartella dal percorso se non è esplicitamente fornito
               let folderName = modelData.folderName || '';
@@ -519,8 +545,8 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
                 });
               }
               
-              // Aggiungi un message listener per comunicare con l'iframe
-              window.addEventListener('message', (event) => {
+              // Definizione della funzione per gestire i messaggi
+              const handleMessage = (event: MessageEvent) => {
                 // Verifica se il messaggio è una richiesta di informazioni sulla cartella
                 if (event.data && event.data.type === 'request-model-folder-info') {
                   console.log('Ricevuta richiesta di informazioni sulla cartella dal modello:', event.data);
@@ -528,16 +554,19 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
                     iframe.contentWindow.postMessage(modelInfo, '*');
                   }
                 }
-              });
-              
-              // Pulizia quando il componente viene smontato
-              return () => {
-                const iframe = e.currentTarget;
-                const timer = (iframe as any)._errorTimer;
-                if (timer) {
-                  clearTimeout(timer);
-                }
               };
+              
+              // Aggiungi un message listener per comunicare con l'iframe
+              window.addEventListener('message', handleMessage);
+              
+              // Memorizza la funzione nel listener per poterla rimuovere più tardi
+              (iframe as any)._messageHandler = handleMessage;
+              
+              // Aggiungi l'handler all'array per la pulizia
+              messageHandlersRef.current.push(handleMessage);
+              
+              // Non c'è bisogno di un return qui - è dentro un evento onLoad
+              // Pulizia del timer aggiunta direttamente nel componente
             } catch (error) {
               console.error('Errore nel passare le informazioni sulla cartella all\'iframe:', error);
             }
