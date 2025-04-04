@@ -183,6 +183,9 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
 
   // Rendering diverso in base al formato
   if (modelData.format === 'html' || modelData.format === 'webgl') {
+    // URL per il fallback
+    const fallbackUrl = `/uploads/fallback-model-viewer.html?modelUrl=${encodeURIComponent(modelData.src)}&title=${encodeURIComponent(modelData.title || 'Modello 3D')}`;
+    
     return (
       <div
         style={{
@@ -194,6 +197,7 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
           border: '1px solid #ccc',
         }}
       >
+        {/* Overlay superiore con titolo e pulsanti */}
         <div
           style={{
             position: 'absolute',
@@ -201,35 +205,126 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
             left: 0,
             right: 0,
             padding: '8px 12px',
-            background: 'rgba(0, 0, 0, 0.5)',
+            background: 'rgba(0, 0, 0, 0.7)',
             color: 'white',
             fontSize: '14px',
-            zIndex: 2,
+            zIndex: 10, // Aumentato z-index per essere sopra tutto
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center'
           }}
         >
-          <div>{modelData.title || 'Modello 3D WebGL'}</div>
-          <a 
-            href={modelData.src} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            style={{
-              color: 'white',
-              textDecoration: 'none',
-              border: '1px solid white',
-              padding: '2px 6px',
-              borderRadius: '3px',
-              fontSize: '12px'
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            Apri in nuova finestra
-          </a>
+          <div style={{ fontWeight: 'bold' }}>{modelData.title || 'Modello 3D WebGL'}</div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {/* Pulsante per visualizzare in modalità alternativa */}
+            <a 
+              href={fallbackUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{
+                color: 'white',
+                textDecoration: 'none',
+                border: '1px solid white',
+                padding: '3px 8px',
+                borderRadius: '3px',
+                fontSize: '12px',
+                backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              <span>🔍</span> Modalità alternativa
+            </a>
+            
+            {/* Pulsante per aprire direttamente */}
+            <a 
+              href={modelData.src} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{
+                color: 'white',
+                textDecoration: 'none',
+                border: '1px solid white',
+                padding: '3px 8px',
+                borderRadius: '3px',
+                fontSize: '12px',
+                backgroundColor: 'rgba(46, 204, 113, 0.7)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              <span>↗️</span> Apri direttamente
+            </a>
+          </div>
         </div>
+        
+        {/* Messaggio overlay che si posiziona sopra l'iframe quando c'è un problema */}
+        <div
+          id={`iframe-error-${modelData.src.replace(/[^a-z0-9]/gi, '-')}`}
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            padding: '20px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            maxWidth: '80%',
+            textAlign: 'center',
+            zIndex: 5,
+            display: 'none', // Inizialmente nascosto
+          }}
+        >
+          <div style={{ marginBottom: '15px', fontWeight: 'bold', color: '#e74c3c' }}>
+            Il modello non può essere visualizzato correttamente
+          </div>
+          <div style={{ marginBottom: '15px' }}>
+            Prova ad utilizzare uno dei seguenti metodi:
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+            <a 
+              href={fallbackUrl}
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{
+                backgroundColor: '#3498db',
+                color: 'white',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                textDecoration: 'none',
+                fontWeight: 'bold'
+              }}
+            >
+              Visualizzatore alternativo
+            </a>
+            <a 
+              href={modelData.src}
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{
+                backgroundColor: '#2ecc71',
+                color: 'white',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                textDecoration: 'none',
+                fontWeight: 'bold'
+              }}
+            >
+              Apri originale
+            </a>
+          </div>
+        </div>
+        
+        {/* Iframe con il contenuto del modello */}
         <iframe 
           src={modelData.src}
           style={{
@@ -245,10 +340,38 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
           sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           allow="accelerometer; autoplay; camera; encrypted-media; gyroscope; picture-in-picture"
           data-folder-path={modelData.folderPath || ''}
+          onError={() => {
+            // Mostra il messaggio di errore se l'iframe non riesce a caricare
+            const errorDiv = document.getElementById(`iframe-error-${modelData.src.replace(/[^a-z0-9]/gi, '-')}`);
+            if (errorDiv) {
+              errorDiv.style.display = 'block';
+            }
+          }}
           onLoad={(e) => {
+            // Impostare un timer per mostrare l'errore se dopo 5 secondi l'iframe è vuoto o ha errori
+            const iframeErrorTimer = setTimeout(() => {
+              try {
+                const iframe = e.currentTarget;
+                // Controlla se l'iframe è vuoto o ha errori
+                if (!iframe.contentWindow || !iframe.contentDocument || 
+                    !iframe.contentDocument.body || 
+                    iframe.contentDocument.body.innerHTML.trim() === '') {
+                  // Mostra il messaggio di errore
+                  const errorDiv = document.getElementById(`iframe-error-${modelData.src.replace(/[^a-z0-9]/gi, '-')}`);
+                  if (errorDiv) {
+                    errorDiv.style.display = 'block';
+                  }
+                }
+              } catch (err) {
+                console.error("Errore nel controllo dell'iframe:", err);
+              }
+            }, 5000);
+            
             // Dopo il caricamento dell'iframe, tentiamo di comunicare con il suo contenuto
             // per passare il percorso della cartella con i file aggiuntivi
             try {
+              // Salva il timer per eventuale cancel
+              (e.currentTarget as any)._errorTimer = iframeErrorTimer;
               const iframe = e.currentTarget;
               // Estraiamo il nome della cartella dal percorso se non è esplicitamente fornito
               let folderName = modelData.folderName || '';
@@ -406,6 +529,15 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
                   }
                 }
               });
+              
+              // Pulizia quando il componente viene smontato
+              return () => {
+                const iframe = e.currentTarget;
+                const timer = (iframe as any)._errorTimer;
+                if (timer) {
+                  clearTimeout(timer);
+                }
+              };
             } catch (error) {
               console.error('Errore nel passare le informazioni sulla cartella all\'iframe:', error);
             }
