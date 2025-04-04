@@ -9,6 +9,7 @@ import ModulesLibrary from "@/pages/modules-library";
 import BomManagement from "@/pages/bom-management";
 import Users from "@/pages/users";
 import Translations from "@/pages/translations";
+import ModuleTranslation from "@/pages/module-translation";
 import Sidebar from "@/components/sidebar";
 import { useState, createContext, useContext, useEffect } from "react";
 
@@ -155,6 +156,7 @@ function Router() {
             <Route path="/components" component={() => <BomManagement toggleSidebar={toggleSidebar} />} />
             <Route path="/users" component={() => <Users toggleSidebar={toggleSidebar} />} />
             <Route path="/translations" component={() => <Translations toggleSidebar={toggleSidebar} />} />
+            <Route path="/module-translation/:id" component={({ params }) => <ModuleTranslation toggleSidebar={toggleSidebar} />} />
             <Route component={NotFound} />
           </Switch>
         </div>

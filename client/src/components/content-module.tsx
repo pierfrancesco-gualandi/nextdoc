@@ -686,21 +686,32 @@ export default function ContentModule({
           <span className="text-sm font-medium text-neutral-dark">{getModuleLabel(module.type)}</span>
         </div>
         <div className="flex items-center space-x-1">
-          <button className="p-1 text-neutral-medium hover:text-neutral-dark rounded cursor-grab">
-            <span className="material-icons text-sm">drag_indicator</span>
-          </button>
-          <button 
-            className="p-1 text-neutral-medium hover:text-neutral-dark rounded"
-            onClick={() => setIsEditing(!isEditing)}
-          >
-            <span className="material-icons text-sm">{isEditing ? 'visibility' : 'edit'}</span>
-          </button>
-          <button 
-            className="p-1 text-neutral-medium hover:text-neutral-dark rounded"
-            onClick={handleDeleteModule}
-          >
-            <span className="material-icons text-sm">delete</span>
-          </button>
+          {!isPreview && (
+            <>
+              <button className="p-1 text-neutral-medium hover:text-neutral-dark rounded cursor-grab">
+                <span className="material-icons text-sm">drag_indicator</span>
+              </button>
+              <a 
+                href={`/module-translation/${module.id}`}
+                className="p-1 text-neutral-medium hover:text-primary rounded"
+                title="Traduci modulo"
+              >
+                <span className="material-icons text-sm">translate</span>
+              </a>
+              <button 
+                className="p-1 text-neutral-medium hover:text-neutral-dark rounded"
+                onClick={() => setIsEditing(!isEditing)}
+              >
+                <span className="material-icons text-sm">{isEditing ? 'visibility' : 'edit'}</span>
+              </button>
+              <button 
+                className="p-1 text-neutral-medium hover:text-neutral-dark rounded"
+                onClick={handleDeleteModule}
+              >
+                <span className="material-icons text-sm">delete</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
       <div className="p-4">
