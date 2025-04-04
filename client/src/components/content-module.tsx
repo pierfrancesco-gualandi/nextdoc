@@ -510,8 +510,8 @@ export default function ContentModule({
                       size="sm"
                       onClick={() => {
                         // Rimuovi l'intestazione e la colonna corrispondente da tutte le righe
-                        const newHeaders = content.headers.filter((_, i) => i !== index);
-                        const newRows = content.rows.map(row => row.filter((_, i) => i !== index));
+                        const newHeaders = content.headers.filter((_: string, i: number) => i !== index);
+                        const newRows = content.rows.map((row: string[]) => row.filter((_: string, i: number) => i !== index));
                         setContent({ ...content, headers: newHeaders, rows: newRows });
                       }}
                     >
@@ -524,8 +524,10 @@ export default function ContentModule({
                   size="sm"
                   onClick={() => {
                     const newHeaders = [...(content.headers || []), ""];
-                    // Aggiungi una cella vuota a ogni riga
-                    const newRows = content.rows.map(row => [...row, ""]);
+                    // Aggiungi una cella vuota a ogni riga, assicurandosi che esistano righe
+                    const newRows = Array.isArray(content.rows) && content.rows.length > 0 
+                      ? content.rows.map((row: string[]) => [...row, ""]) 
+                      : [Array(newHeaders.length).fill("")];
                     setContent({ ...content, headers: newHeaders, rows: newRows });
                   }}
                 >
@@ -557,7 +559,7 @@ export default function ContentModule({
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                const newRows = content.rows.filter((_, i) => i !== rowIndex);
+                                const newRows = content.rows.filter((_: string[], i: number) => i !== rowIndex);
                                 setContent({ ...content, rows: newRows });
                               }}
                             >
