@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Helper per Modelli 3D WebGL</title>
+    <title>Visualizzatore 3D - Modello WebGL</title>
     <style>
-        body, html {
+        html, body {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
             overflow: hidden;
-            font-family: Arial, sans-serif;
         }
         
         #container {
@@ -20,238 +19,202 @@
             position: relative;
         }
         
-        #error-message {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background-color: rgba(240, 240, 240, 0.9);
-            color: #e74c3c;
-            font-size: 14px;
-            text-align: center;
-            padding: 20px;
-            z-index: 10;
-            display: none;
-        }
-        
-        #loading {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background-color: rgba(245, 245, 245, 0.7);
-            z-index: 5;
-        }
-        
-        #progress-container {
-            width: 200px;
-            height: 4px;
-            background-color: #ddd;
-            border-radius: 2px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-        
-        #progress-bar {
-            width: 0%;
-            height: 100%;
-            background-color: #3498db;
-            transition: width 0.3s ease;
-        }
-        
-        #progress-text {
-            font-size: 12px;
-            margin-top: 5px;
-        }
-        
-        #canvas-container {
+        #model-iframe {
             width: 100%;
             height: 100%;
+            border: none;
         }
         
-        #info-panel {
+        .loading {
             position: absolute;
-            bottom: 0;
+            top: 0;
             left: 0;
-            right: 0;
-            padding: 8px 12px;
-            background-color: rgba(0, 0, 0, 0.5);
-            color: white;
-            font-size: 12px;
-            text-align: center;
-            z-index: 2;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        .error-message {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
             display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 110;
+            text-align: center;
+            color: #e74c3c;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .error-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .error-detail {
+            margin-bottom: 20px;
+            max-width: 600px;
+        }
+        
+        .button-container {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+        }
+        
+        .btn-success {
+            background-color: #2ecc71;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <div id="container">
-        <div id="loading">
-            <div>Caricamento modello...</div>
-            <div id="progress-container">
-                <div id="progress-bar"></div>
-            </div>
-            <div id="progress-text">0%</div>
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>Caricamento del modello in corso...</div>
         </div>
         
-        <div id="error-message"></div>
+        <div class="error-message" id="error-message">
+            <div class="error-title">Impossibile visualizzare il modello</div>
+            <div class="error-detail">
+                Si è verificato un problema durante il caricamento del modello 3D. 
+                Prova a utilizzare una delle seguenti opzioni:
+            </div>
+            <div class="button-container">
+                <a href="#" class="btn btn-primary" id="retry-button">Riprova caricamento</a>
+                <a href="#" class="btn btn-success" id="open-original">Apri file originale</a>
+            </div>
+        </div>
         
-        <div id="info-panel"></div>
-        
-        <div id="canvas-container"></div>
+        <iframe id="model-iframe" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
     </div>
-
+    
     <script>
-        // Elementi DOM
-        const loadingElement = document.getElementById('loading');
-        const progressBar = document.getElementById('progress-bar');
-        const progressText = document.getElementById('progress-text');
-        const errorElement = document.getElementById('error-message');
-        const canvasContainer = document.getElementById('canvas-container');
-        const infoPanel = document.getElementById('info-panel');
-        
-        // Stato del modello
-        let modelInfo = null;
-        let modelLoaded = false;
-        let forceError = false;
-        
-        // Funzione per aggiornare la barra di progresso
-        function updateProgress(percent) {
-            progressBar.style.width = `${percent}%`;
-            progressText.textContent = `${percent}%`;
-        }
-        
-        // Funzione per mostrare messaggi di errore
-        function showError(message) {
-            errorElement.textContent = message;
-            errorElement.style.display = 'flex';
-            loadingElement.style.display = 'none';
-        }
-        
-        // Funzione per nascondere il caricamento quando il modello è pronto
-        function hideLoading() {
-            loadingElement.style.display = 'none';
-            modelLoaded = true;
-        }
-        
-        // Funzione per mostrare informazioni nel pannello
-        function showInfo(message) {
-            infoPanel.textContent = message;
-            infoPanel.style.display = 'block';
+        document.addEventListener('DOMContentLoaded', function() {
+            // Recupera i parametri dall'URL
+            const params = new URLSearchParams(window.location.search);
+            const modelUrl = params.get('modelUrl');
+            const title = params.get('title') || 'Modello 3D';
             
-            // Nascondi dopo 5 secondi
-            setTimeout(() => {
-                infoPanel.style.display = 'none';
-            }, 5000);
-        }
-        
-        // Listener per ricevere messaggi dalla finestra principale
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'model-folder-info') {
-                console.log('Ricevute informazioni sul modello:', event.data);
-                modelInfo = event.data;
-                
-                // Mostra alcune informazioni
-                if (modelInfo.folderName) {
-                    showInfo(`Cartella modello: ${modelInfo.folderName}`);
-                }
-                
-                // Se sono richieste risorse aggiuntive, puoi risolvere i percorsi
-                // usando le informazioni ricevute
-                if (modelInfo.fileMap) {
-                    console.log('Mappa file disponibili:', modelInfo.fileMap);
-                }
+            // Elementi UI
+            const iframe = document.getElementById('model-iframe');
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('error-message');
+            const retryButton = document.getElementById('retry-button');
+            const openOriginal = document.getElementById('open-original');
+            
+            // Imposta il titolo della pagina
+            document.title = title + ' - Visualizzatore 3D';
+            
+            // Funzione per mostrare errore
+            function showError() {
+                loading.style.display = 'none';
+                errorMessage.style.display = 'flex';
             }
-        });
-        
-        // Richiedi le informazioni sulla cartella all'applicazione principale
-        function requestModelInfo() {
-            if (!modelInfo) {
-                window.parent.postMessage({ type: 'request-model-folder-info' }, '*');
-                console.log('Richieste informazioni sulla cartella del modello');
+            
+            // Funzione per caricare il modello
+            function loadModel() {
+                // Reset UI
+                loading.style.display = 'flex';
+                errorMessage.style.display = 'none';
                 
-                // Riprova dopo un breve timeout se non è ancora arrivata
-                setTimeout(() => {
-                    if (!modelInfo) {
-                        window.parent.postMessage({ type: 'request-model-folder-info' }, '*');
-                        console.log('Richieste informazioni sulla cartella del modello (retry)');
+                // Verifica se abbiamo un URL valido
+                if (!modelUrl) {
+                    showError();
+                    return;
+                }
+                
+                // Imposta l'URL per aprire l'originale
+                openOriginal.href = modelUrl;
+                
+                // Imposta l'iframe con l'URL del modello
+                iframe.src = modelUrl;
+                
+                // Gestisci errori di caricamento
+                iframe.onerror = function() {
+                    console.error('Errore di caricamento iframe');
+                    showError();
+                };
+                
+                // Gestisci caricamento completato
+                iframe.onload = function() {
+                    // Nascondi il loading dopo un breve ritardo
+                    setTimeout(function() {
+                        loading.style.display = 'none';
+                    }, 1000);
+                    
+                    // Verifica se il contenuto è caricato o se c'è stato un errore
+                    try {
+                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        if (!iframeDoc || !iframeDoc.body || iframeDoc.body.innerHTML.trim() === '') {
+                            showError();
+                        }
+                    } catch (e) {
+                        // Se non possiamo accedere al contenuto per motivi di CORS, 
+                        // dobbiamo assumere che sia stato caricato correttamente
+                        console.log('Impossibile verificare il contenuto per restrizioni CORS');
                     }
-                }, 1000);
-            }
-        }
-        
-        // Funzione per gestire il completamento del caricamento
-        function handleModelLoaded() {
-            if (!forceError) {
-                hideLoading();
-                console.log('Modello 3D caricato con successo');
-            }
-        }
-        
-        // Funzione per caricare risorse esterne usando le informazioni ricevute
-        function resolveResourceUrl(resourceName) {
-            if (modelInfo && modelInfo.fileMap && modelInfo.fileMap[resourceName]) {
-                return modelInfo.fileMap[resourceName];
-            }
-            
-            // Se non troviamo il percorso, prova a costruirlo se conosciamo la cartella
-            if (modelInfo && modelInfo.folderPath) {
-                const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-                return `${baseUrl}${modelInfo.folderPath}/${resourceName}`;
-            }
-            
-            // Fallback: usa direttamente il nome risorsa (potrebbe non funzionare)
-            return resourceName;
-        }
-        
-        // Simula il caricamento del modello
-        let progress = 0;
-        let progressInterval = setInterval(() => {
-            progress += 5;
-            if (progress > 95) {
-                clearInterval(progressInterval);
+                };
                 
-                // Simula il completamento del caricamento dopo un breve ritardo
-                setTimeout(() => {
-                    progress = 100;
-                    updateProgress(progress);
-                    handleModelLoaded();
-                }, 500);
-            } else {
-                updateProgress(progress);
+                // Timeout di sicurezza
+                setTimeout(function() {
+                    // Se dopo 15 secondi è ancora in caricamento, mostra l'errore
+                    if (loading.style.display !== 'none') {
+                        showError();
+                    }
+                }, 15000);
             }
-        }, 200);
-        
-        // Richiedi le informazioni sul modello
-        requestModelInfo();
-        
-        // Simula caricamento risorsa fallito se necessario
-        window.addEventListener('error', (event) => {
-            if (event.target.tagName === 'IMG' || event.target.tagName === 'SCRIPT') {
-                console.error(`Errore nel caricamento della risorsa: ${event.target.src}`);
-                forceError = true;
-                showError('Errore nel caricamento delle risorse necessarie per il modello 3D.');
-            }
-        }, true);
-        
-        // Funzione per esporre API globali ai modelli 3D HTML
-        window.getModelInfo = function() {
-            return modelInfo;
-        };
-        
-        window.resolveModelResource = function(resourceName) {
-            return resolveResourceUrl(resourceName);
-        };
+            
+            // Pulsante per riprovare
+            retryButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                loadModel();
+            });
+            
+            // Carica il modello
+            loadModel();
+        });
     </script>
 </body>
 </html>

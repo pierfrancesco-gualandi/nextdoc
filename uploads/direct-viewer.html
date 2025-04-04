@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizzatore Diretto WebGL</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        #redirect-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        
+        p {
+            margin-bottom: 30px;
+            max-width: 600px;
+            line-height: 1.5;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="redirect-container">
+        <div class="spinner"></div>
+        <h1>Apertura Modello 3D</h1>
+        <p>
+            Stiamo aprendo il tuo modello 3D WebGL. 
+            Per una visualizzazione ottimale, verrai reindirizzato direttamente al file originale,
+            che offre la migliore compatibilità e prestazioni.
+        </p>
+        <p>
+            Se il reindirizzamento non avviene automaticamente dopo 5 secondi, 
+            clicca sul pulsante qui sotto.
+        </p>
+        <a href="#" id="redirect-button" class="button">Apri Modello</a>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Recupera i parametri dall'URL
+            const params = new URLSearchParams(window.location.search);
+            const modelUrl = params.get('modelUrl');
+            
+            if (modelUrl) {
+                // Imposta il link del pulsante
+                document.getElementById('redirect-button').href = modelUrl;
+                
+                // Reindirizza automaticamente dopo un breve ritardo
+                setTimeout(function() {
+                    window.location.href = modelUrl;
+                }, 2000); // 2 secondi
+            } else {
+                // Se non c'è un URL, mostra un messaggio di errore
+                document.getElementById('redirect-container').innerHTML = `
+                    <h1>Errore</h1>
+                    <p>URL del modello non specificato.</p>
+                    <a href="javascript:history.back()" class="button">Torna indietro</a>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
