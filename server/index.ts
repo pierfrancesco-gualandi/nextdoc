@@ -4,10 +4,12 @@ import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
 import path from "path";
 import fs from "fs";
+import { corsMiddleware } from "./middleware/cors-middleware";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(corsMiddleware);
 
 // Make sure uploads directory exists
 const uploadsDir = path.join(process.cwd(), 'uploads');
@@ -52,7 +54,7 @@ app.use((req, res, next) => {
     await storage.seedInitialData();
     log("Initial data seeded successfully");
   } catch (error) {
-    log("Error seeding initial data:", error);
+    log("Error seeding initial data:", String(error));
   }
 
   const server = await registerRoutes(app);

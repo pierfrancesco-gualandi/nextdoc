@@ -208,6 +208,9 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
 
   // Rendering diverso in base al formato
   if (modelData.format === 'html' || modelData.format === 'webgl') {
+    // URL per il visualizzatore WebGL
+    const webglRendererUrl = `/uploads/webgl-renderer.html?modelUrl=${encodeURIComponent(modelData.src)}&title=${encodeURIComponent(modelData.title || 'Modello 3D')}`;
+    
     // URL per il fallback
     const fallbackUrl = `/uploads/fallback-model-viewer.html?modelUrl=${encodeURIComponent(modelData.src)}&title=${encodeURIComponent(modelData.title || 'Modello 3D')}`;
     
@@ -243,7 +246,7 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
           <div style={{ display: 'flex', gap: '8px' }}>
             {/* Pulsante per visualizzare in modalità alternativa */}
             <a 
-              href={fallbackUrl} 
+              href={webglRendererUrl} 
               target="_blank" 
               rel="noopener noreferrer"
               style={{
@@ -317,7 +320,7 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
             <a 
-              href={fallbackUrl}
+              href={webglRendererUrl}
               target="_blank" 
               rel="noopener noreferrer"
               style={{
@@ -329,7 +332,7 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
                 fontWeight: 'bold'
               }}
             >
-              Visualizzatore alternativo
+              Visualizzatore WebGL
             </a>
             <a 
               href={modelData.src}
@@ -349,9 +352,9 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
           </div>
         </div>
         
-        {/* Iframe con il contenuto del modello */}
+        {/* Invece di usare un iframe diretto, utilizziamo il renderer WebGL per garantire che funzioni */}
         <iframe 
-          src={modelData.src}
+          src={webglRendererUrl}
           style={{
             width: '100%',
             height: '100%',
@@ -373,7 +376,7 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
             }
           }}
           onLoad={(e) => {
-            // Impostare un timer per mostrare l'errore se dopo 5 secondi l'iframe è vuoto o ha errori
+            // Impostare un timer più lungo per il renderer WebGL
             const iframeErrorTimer = setTimeout(() => {
               try {
                 const iframe = e.currentTarget;
@@ -390,7 +393,7 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
               } catch (err) {
                 console.error("Errore nel controllo dell'iframe:", err);
               }
-            }, 5000);
+            }, 10000);
             
             // Dopo il caricamento dell'iframe, tentiamo di comunicare con il suo contenuto
             // per passare il percorso della cartella con i file aggiuntivi

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGL Renderer</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        #container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        #error-message {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(240, 240, 240, 0.9);
+            color: #e74c3c;
+            font-size: 16px;
+            text-align: center;
+            padding: 20px;
+            z-index: 100;
+            display: none;
+        }
+        #iframe-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        #loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(245, 245, 245, 0.9);
+            z-index: 50;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #3498db;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+        .load-text {
+            color: #333;
+            font-size: 14px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .btn-container {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #3498db;
+        }
+        .btn-success {
+            background-color: #2ecc71;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="loading">
+            <div class="spinner"></div>
+            <div class="load-text">Caricamento...</div>
+        </div>
+        
+        <div id="error-message">
+            <div style="font-weight: bold; margin-bottom: 15px; font-size: 18px;">Errore di caricamento</div>
+            <div style="margin-bottom: 15px;">Impossibile caricare il modello 3D WebGL</div>
+            <div class="btn-container">
+                <a href="#" id="retry-btn" class="btn btn-primary">Riprova</a>
+                <a href="#" id="original-btn" class="btn btn-success">Apri originale</a>
+            </div>
+        </div>
+        
+        <div id="iframe-container"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const modelUrl = urlParams.get('modelUrl');
+            
+            if (!modelUrl) {
+                showError('URL del modello mancante');
+                return;
+            }
+            
+            const iframeContainer = document.getElementById('iframe-container');
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('error-message');
+            const retryBtn = document.getElementById('retry-btn');
+            const originalBtn = document.getElementById('original-btn');
+            
+            // Imposta il pulsante per aprire l'originale
+            originalBtn.href = modelUrl;
+            
+            // Imposta il pulsante per riprovare
+            retryBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                errorMessage.style.display = 'none';
+                loading.style.display = 'flex';
+                loadIframe();
+            });
+            
+            function showError(message) {
+                if (message) {
+                    const errorDiv = errorMessage.querySelector('div:nth-child(2)');
+                    if (errorDiv) {
+                        errorDiv.textContent = message;
+                    }
+                }
+                loading.style.display = 'none';
+                errorMessage.style.display = 'flex';
+            }
+            
+            function loadIframe() {
+                // Rimuovi iframe esistenti
+                while (iframeContainer.firstChild) {
+                    iframeContainer.removeChild(iframeContainer.firstChild);
+                }
+                
+                // Crea e configura un nuovo iframe
+                const iframe = document.createElement('iframe');
+                iframe.src = modelUrl;
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                iframe.allowFullscreen = true;
+                iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+                iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-forms');
+                
+                // Gestisci gli errori di caricamento
+                iframe.onerror = function() {
+                    showError('Impossibile caricare il modello 3D');
+                };
+                
+                // Imposta un timeout per il caricamento
+                const loadTimeout = setTimeout(function() {
+                    showError('Timeout caricamento modello');
+                }, 20000); // 20 secondi di timeout
+                
+                // Quando l'iframe è caricato
+                iframe.onload = function() {
+                    clearTimeout(loadTimeout);
+                    
+                    // Verifica se il contenuto è caricato correttamente
+                    setTimeout(function() {
+                        try {
+                            // Se possiamo accedere ai contenuti, è caricato correttamente
+                            const iframeContent = iframe.contentDocument || iframe.contentWindow.document;
+                            if (iframeContent && iframeContent.body) {
+                                loading.style.display = 'none';
+                            } else {
+                                showError('Contenuto iframe vuoto');
+                            }
+                        } catch (e) {
+                            // Se non possiamo accedere a causa di Same-Origin Policy, assumiamo che sia caricato
+                            loading.style.display = 'none';
+                        }
+                    }, 3000);
+                };
+                
+                // Aggiungi l'iframe alla pagina
+                iframeContainer.appendChild(iframe);
+            }
+            
+            // Inizia il caricamento
+            loadIframe();
+        });
+    </script>
+</body>
+</html>
