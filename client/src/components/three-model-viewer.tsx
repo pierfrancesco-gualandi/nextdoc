@@ -231,18 +231,84 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
             // per passare il percorso della cartella con i file aggiuntivi
             try {
               const iframe = e.currentTarget;
+              // Estraiamo il nome della cartella dal percorso se non è esplicitamente fornito
+              let folderName = modelData.folderName || '';
+              let folderPath = modelData.folderPath || '';
+              
+              // Se abbiamo folderPath ma non folderName, estraiamo il nome dalla path
+              if (folderPath && !folderName) {
+                // Rimuovi eventuali slash iniziali o finali
+                folderPath = folderPath.replace(/^\/+|\/+$/g, '');
+                
+                // Prendi solo l'ultimo segmento del percorso come nome cartella
+                if (folderPath.includes('/')) {
+                  folderName = folderPath.split('/').pop() || '';
+                } else {
+                  folderName = folderPath;
+                }
+              }
+              
               console.log("ThreeModelViewer - File principale:", modelData.src);
-              console.log("ThreeModelViewer - Folder path:", modelData.folderPath);
-              console.log("ThreeModelViewer - Folder name:", modelData.folderName);
+              console.log("ThreeModelViewer - Folder path:", folderPath);
+              console.log("ThreeModelViewer - Folder name:", folderName);
               console.log("ThreeModelViewer - All files:", modelData.allFiles?.length || 0);
               console.log("ThreeModelViewer - File structure keys:", Object.keys(modelData.fileStructure || {}).length);
+              
+              // Se non abbiamo allFiles ma abbiamo un folderName, creiamo una mappatura dummy di base
+              let allFiles = modelData.allFiles || [];
+              if (allFiles.length === 0 && folderName) {
+                // Creiamo una struttura minima con il file HTML principale
+                const mainFileName = modelData.src.split('/').pop() || '';
+                
+                // Estrai l'URL base per i file nella cartella
+                const baseUrl = modelData.src.substring(0, modelData.src.lastIndexOf('/') + 1);
+                
+                // Aggiungi il file principale
+                allFiles = [{
+                  id: 1,
+                  filename: mainFileName,
+                  originalName: mainFileName,
+                  url: modelData.src,
+                  mimeType: 'text/html',
+                  relativePath: `${folderName}/${mainFileName}`
+                }];
+                
+                // Aggiungi anche alcune risorse comuni che potrebbero essere necessarie
+                const commonResources = [
+                  { filename: 'index.html', mimeType: 'text/html' },
+                  { filename: 'style.css', mimeType: 'text/css' },
+                  { filename: 'script.js', mimeType: 'application/javascript' },
+                  { filename: 'res/style.css', mimeType: 'text/css' },
+                  { filename: 'res/script.js', mimeType: 'application/javascript' }
+                ];
+                
+                commonResources.forEach((resource, index) => {
+                  const url = `${baseUrl}${resource.filename}`;
+                  allFiles.push({
+                    id: index + 2,
+                    filename: resource.filename,
+                    originalName: resource.filename,
+                    url: url,
+                    mimeType: resource.mimeType,
+                    relativePath: `${folderName}/${resource.filename}`
+                  });
+                });
+              }
               
               // Prima crea una mappa di percorsi relativi per facilitare l'accesso dall'HTML
               const fileMap: Record<string, string> = {};
               
+              // Aggiungiamo sempre il file principale
+              const mainFileName = modelData.src.split('/').pop() || '';
+              fileMap[mainFileName] = modelData.src;
+              
+              // Aggiugiamo i percorsi agli helper generati
+              const helperUrl = '/uploads/model-helper.html';
+              fileMap['model-helper.html'] = helperUrl;
+              
               // Se abbiamo la lista dei file con URL, crea una mappa per l'HTML
-              if (modelData.allFiles && modelData.allFiles.length > 0) {
-                modelData.allFiles.forEach(file => {
+              if (allFiles.length > 0) {
+                allFiles.forEach(file => {
                   // Estrai il nome del file dal percorso relativo per facilitare l'accesso dall'HTML
                   const relativePath = file.relativePath || '';
                   let key = file.originalName;
@@ -264,13 +330,31 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
                 });
               }
               
+              // Crea una struttura file minima se non ne abbiamo una
+              let fileStructure = modelData.fileStructure || {};
+              if (Object.keys(fileStructure).length === 0 && folderName) {
+                fileStructure = {};
+                
+                // Aggiungi il file principale
+                fileStructure[mainFileName] = `${folderName}/${mainFileName}`;
+                
+                // Aggiungi anche le risorse comuni
+                allFiles.forEach(file => {
+                  if (file.relativePath) {
+                    fileStructure[file.originalName] = file.relativePath;
+                  } else {
+                    fileStructure[file.originalName] = `${folderName}/${file.originalName}`;
+                  }
+                });
+              }
+              
               // Ottieni le informazioni sulla cartella del modello per passarle all'iframe
               const modelInfo = {
                 type: 'model-folder-info',
-                folderPath: modelData.folderPath || '',
-                folderName: modelData.folderName || '',
-                fileStructure: modelData.fileStructure || {},
-                allFiles: modelData.allFiles || [],
+                folderPath: folderPath,
+                folderName: folderName,
+                fileStructure: fileStructure,
+                allFiles: allFiles,
                 // Aggiungi la mappa dei file
                 fileMap: fileMap
               };

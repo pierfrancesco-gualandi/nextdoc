@@ -151,12 +151,27 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
     },
     onSuccess: (data) => {
       // Dopo l'upload, crea il modulo con i file caricati
+      // Assicuriamoci di avere sempre un folderName/folderPath valido
+      let folderName = data.folderName;
+      
+      // Se non abbiamo un folderName ma abbiamo un fileName, usa il nome del file senza estensione
+      if (!folderName && data.originalName) {
+        folderName = data.originalName.split('.')[0];
+        console.log("Usando il nome del file come nome cartella:", folderName);
+      }
+      
+      // Se ancora non abbiamo un folderName, usa un ID univoco
+      if (!folderName) {
+        folderName = `folder_${Date.now()}`;
+        console.log("Generato nome cartella predefinito:", folderName);
+      }
+      
       const moduleContent = {
         src: data.url,
         title: fileDescription || data.originalName,
         format: 'html', // Per cartelle intere, assumiamo sempre HTML/WebGL
-        folderPath: data.folderName,
-        folderName: data.folderName,
+        folderPath: folderName,
+        folderName: folderName,
         fileStructure: data.fileStructure || {},
         allFiles: data.allFiles || [],
         controls: { rotate: true, zoom: true, pan: true }
