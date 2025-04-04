@@ -1,198 +1,247 @@
-import JSZip from 'jszip';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
+import AdmZip from 'adm-zip';
 import { Request, Response, NextFunction } from 'express';
 import { db } from './db';
 import { uploadedFiles, type InsertUploadedFile } from '@shared/schema';
 
-// Cartella per i file estratti
+// Directory dove vengono estratti i file ZIP
 const uploadsDir = path.join(process.cwd(), 'uploads');
+const extractsBaseDir = path.join(uploadsDir, 'extracts');
 
-/**
- * Estrae un file ZIP e salva i file estratti nel database
- * @param zipFilePath Percorso del file ZIP da estrarre
- * @param userId ID dell'utente che ha caricato il file
- * @returns Informazioni sui file estratti
- */
-export async function extractZipFile(zipFilePath: string, userId: number = 1) {
-  if (!fs.existsSync(zipFilePath)) {
-    throw new Error(`Il file ZIP non esiste: ${zipFilePath}`);
-  }
-
-  try {
-    // Leggi il file ZIP
-    const zipData = fs.readFileSync(zipFilePath);
-    const zip = new JSZip();
-    
-    // Carica il file ZIP
-    const zipContents = await zip.loadAsync(zipData);
-    
-    // Crea una cartella basata sul nome del file ZIP
-    const zipFileName = path.basename(zipFilePath, '.zip');
-    const extractFolder = `${zipFileName}_${Date.now()}`;
-    const extractPath = path.join(uploadsDir, extractFolder);
-    
-    // Crea la cartella se non esiste
-    if (!fs.existsSync(extractPath)) {
-      fs.mkdirSync(extractPath, { recursive: true });
-    }
-    
-    // Array per memorizzare le informazioni sui file estratti
-    const extractedFiles: any[] = [];
-    const insertFileData: InsertUploadedFile[] = [];
-    
-    // Struttura dei file per mappare i percorsi originali
-    const fileStructure: Record<string, string> = {};
-    
-    // Estrai tutti i file
-    const filePromises = [];
-    
-    // Itera su tutti i file nel ZIP
-    for (const [filename, zipEntry] of Object.entries(zipContents.files)) {
-      // Salta le cartelle
-      if (zipEntry.dir) continue;
-      
-      // Costruisci il percorso di destinazione
-      const entryPath = path.join(extractPath, filename);
-      const entryDir = path.dirname(entryPath);
-      
-      // Crea le sottocartelle necessarie
-      if (!fs.existsSync(entryDir)) {
-        fs.mkdirSync(entryDir, { recursive: true });
-      }
-      
-      // Estrai il file
-      const promise = zipEntry.async('nodebuffer').then(content => {
-        // Scrivi il file sul disco
-        fs.writeFileSync(entryPath, content);
-        
-        // Determina il MIME type
-        let mimeType = 'application/octet-stream'; // Default
-        const ext = path.extname(filename).toLowerCase();
-        
-        // Mappa delle estensioni comuni ai MIME type
-        const mimeMap: Record<string, string> = {
-          '.html': 'text/html',
-          '.htm': 'text/html',
-          '.css': 'text/css',
-          '.js': 'application/javascript',
-          '.jpg': 'image/jpeg',
-          '.jpeg': 'image/jpeg',
-          '.png': 'image/png',
-          '.gif': 'image/gif',
-          '.svg': 'image/svg+xml',
-          '.json': 'application/json',
-          '.glb': 'model/gltf-binary',
-          '.gltf': 'model/gltf+json',
-          '.jt': 'application/octet-stream', // JT files
-          '.iv3d': 'application/octet-stream', // iv3d files
-        };
-        
-        if (mimeMap[ext]) {
-          mimeType = mimeMap[ext];
-        }
-        
-        // Genera un nome file univoco per evitare collisioni
-        const uniqueFilename = `${Date.now()}_${path.basename(filename).replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-        
-        // Percorso relativo alla cartella di estrazione
-        const relativePath = path.join(extractFolder, filename);
-        
-        // Informazioni sul file estratto
-        const fileInfo = {
-          filename: uniqueFilename,
-          originalName: path.basename(filename),
-          path: entryPath,
-          mimetype: mimeType,
-          size: content.length,
-          uploadedById: userId,
-          folderName: extractFolder,
-          relativePath: relativePath
-        };
-        
-        // Aggiungi il file alla lista
-        extractedFiles.push(fileInfo);
-        
-        // Prepara i dati per l'inserimento nel database
-        insertFileData.push({
-          filename: uniqueFilename,
-          originalName: path.basename(filename),
-          path: entryPath,
-          mimetype: mimeType,
-          size: content.length,
-          uploadedById: userId,
-          folderName: extractFolder
-        });
-        
-        // Aggiungi alla struttura dei file
-        fileStructure[path.basename(filename)] = relativePath;
-        
-        console.log(`File estratto: ${filename} → ${entryPath}`);
-      });
-      
-      filePromises.push(promise);
-    }
-    
-    // Attendi che tutti i file siano estratti
-    await Promise.all(filePromises);
-    
-    // Salva le informazioni dei file nel database
-    const savedFiles = await db.insert(uploadedFiles).values(insertFileData).returning();
-    
-    // Trova il file HTML principale
-    const mainHtmlFile = savedFiles.find(file => 
-      file.originalName.toLowerCase().endsWith('.html') || 
-      file.originalName.toLowerCase().endsWith('.htm')
-    );
-    
-    // Se non c'è un file HTML, verifica se c'è un file .JT o .GLB come principale
-    const mainFile = mainHtmlFile || 
-      savedFiles.find(file => file.originalName.toLowerCase().endsWith('.jt')) ||
-      savedFiles.find(file => file.originalName.toLowerCase().endsWith('.glb')) ||
-      savedFiles.find(file => file.originalName.toLowerCase().endsWith('.gltf')) ||
-      savedFiles[0]; // Altrimenti usa il primo file
-    
-    // Restituisci le informazioni necessarie
-    return {
-      extractFolder,
-      extractPath,
-      mainFile,
-      files: savedFiles,
-      fileStructure
-    };
-  } catch (error) {
-    console.error('Errore nell\'estrazione del file ZIP:', error);
-    throw error;
-  }
+// Assicuriamoci che la directory esista
+if (!fs.existsSync(extractsBaseDir)) {
+  fs.mkdirSync(extractsBaseDir, { recursive: true });
 }
 
 /**
- * Middleware per gestire il caricamento dei file ZIP
+ * Estrae un file ZIP e crea una struttura di cartelle nel filesystem
+ * @param zipFilePath Percorso del file ZIP
+ * @param destinationDir Cartella di destinazione dove estrarre i file
+ */
+export const extractZip = (zipFilePath: string, destinationDir: string): Promise<string[]> => {
+  return new Promise((resolve, reject) => {
+    try {
+      // Verifica l'esistenza del file ZIP
+      if (!fs.existsSync(zipFilePath)) {
+        return reject(new Error(`Il file ZIP non esiste: ${zipFilePath}`));
+      }
+
+      // Crea la directory di destinazione se non esiste
+      if (!fs.existsSync(destinationDir)) {
+        fs.mkdirSync(destinationDir, { recursive: true });
+      }
+
+      // Estrai il file zip
+      const zip = new AdmZip(zipFilePath);
+      const zipEntries = zip.getEntries();
+
+      // Tieni traccia dei file estratti
+      const extractedFiles: string[] = [];
+      
+      console.log(`Estrazione di ${zipEntries.length} file da ${zipFilePath} in ${destinationDir}`);
+
+      // Estrai i file
+      zip.extractAllTo(destinationDir, true);
+      
+      // Registra i file estratti
+      zipEntries.forEach(entry => {
+        if (!entry.isDirectory) {
+          extractedFiles.push(path.join(destinationDir, entry.entryName));
+        }
+      });
+
+      resolve(extractedFiles);
+    } catch (err) {
+      console.error('Errore durante l\'estrazione del file ZIP:', err);
+      reject(err);
+    }
+  });
+};
+
+/**
+ * Middleware per gestire l'estrazione e il tracciamento dei file ZIP
  */
 export const handleZipUpload = async (req: Request, res: Response, next: NextFunction) => {
-  if (!req.file || !req.file.path || !req.file.originalname.toLowerCase().endsWith('.zip')) {
-    return next(); // Non è un file ZIP, passa al middleware successivo
+  // Verifica se è stato caricato un file e se è un file ZIP
+  if (!req.file || !req.file.originalname.toLowerCase().endsWith('.zip')) {
+    return next();
   }
 
   try {
-    const userId = req.body.userId || 1; // Default all'admin se non specificato
-    const zipPath = req.file.path;
-    
-    console.log(`Elaborazione file ZIP: ${req.file.originalname}`);
-    
+    const zipFilePath = req.file.path;
+    const zipFileName = req.file.filename;
+    const folderName = path.basename(zipFileName, '.zip');
+    const extractDir = path.join(extractsBaseDir, folderName);
+
     // Estrai il file ZIP
-    const extractResult = await extractZipFile(zipPath, userId);
+    const extractedFiles = await extractZip(zipFilePath, extractDir);
     
-    // Aggiungi le informazioni alla richiesta
-    req.uploadedFile = extractResult.mainFile;
-    req.uploadedFiles = extractResult.files;
-    req.folderName = extractResult.extractFolder;
-    req.fileStructure = extractResult.fileStructure;
+    console.log(`File estratti (${extractedFiles.length}):`, extractedFiles);
+
+    // Trova i file HTML nella directory estratta
+    const htmlFiles = extractedFiles.filter(file => 
+      file.toLowerCase().endsWith('.html') || file.toLowerCase().endsWith('.htm')
+    );
+
+    // Se non ci sono file HTML, continua normalmente
+    if (htmlFiles.length === 0) {
+      return next();
+    }
+
+    // Aggiungiamo il percorso di estrazione alla request
+    req.extractedZipDir = extractDir;
+    req.extractedZipFiles = extractedFiles;
+    req.mainHtmlFile = htmlFiles[0]; // Prendiamo il primo file HTML come principale
+
+    // Aggiorna le informazioni sul file
+    const userId = req.body.userId || 1;
     
-    // Continua con il middleware successivo
+    // Registro i dettagli dell'estrazione nel database
+    const fileEntries: InsertUploadedFile[] = [];
+    
+    // Aggiungi l'entry per il file ZIP originale
+    fileEntries.push({
+      filename: zipFileName,
+      originalName: req.file.originalname,
+      path: zipFilePath,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      uploadedById: userId,
+      folderName: folderName
+    });
+    
+    // Ottieni i percorsi relativi per i file estratti
+    const relativeFiles: Record<string, string> = {};
+    extractedFiles.forEach(fullPath => {
+      const relativePath = path.relative(extractDir, fullPath);
+      relativeFiles[path.basename(fullPath)] = relativePath;
+    });
+    
+    // Imposta i dati da passare alle fasi successive
+    req.uploadedFile = {
+      filename: htmlFiles[0].replace(extractsBaseDir, '').replace(/^\/+/, ''),
+      originalName: path.basename(htmlFiles[0]),
+      path: htmlFiles[0],
+      isExtracted: true,
+      folderName: folderName,
+    };
+    
+    req.folderName = folderName;
+    req.folderPath = extractDir;
+    req.fileStructure = relativeFiles;
+    
+    // Aggiungi l'URL del visualizzatore
+    const mainHtmlFilename = path.basename(htmlFiles[0]);
+    const viewerUrl = `/uploads/viewer/index.html?modelUrl=${encodeURIComponent('/uploads/extracts/' + folderName + '/' + mainHtmlFilename)}&title=${encodeURIComponent(path.basename(folderName))}`;
+    req.viewerUrl = viewerUrl;
+    
+    console.log(`URL Visualizzatore: ${viewerUrl}`);
+    console.log(`File HTML principale: ${htmlFiles[0]}`);
+
     next();
-  } catch (error) {
-    console.error('Errore nell\'elaborazione del file ZIP:', error);
-    res.status(500).json({ message: 'Errore nell\'elaborazione del file ZIP', error });
+  } catch (err) {
+    console.error('Errore nella gestione del file ZIP:', err);
+    
+    // In caso di errore, elimina il file ZIP e passa l'errore
+    if (req.file?.path && fs.existsSync(req.file.path)) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (e) {
+        console.error('Errore nella cancellazione del file ZIP:', e);
+      }
+    }
+    
+    // Passa l'errore
+    res.status(500).json({ 
+      message: 'Errore nell\'elaborazione del file ZIP',
+      error: err instanceof Error ? err.message : String(err)
+    });
   }
 };
+
+/**
+ * Middleware per gestire l'estrazione di ZIP come parte di un caricamento multiplo
+ */
+export const handleMultiZipUpload = async (req: Request, res: Response, next: NextFunction) => {
+  // Verifica se ci sono file caricati
+  if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+    return next();
+  }
+  
+  // Filtra i file ZIP
+  const zipFiles = (req.files as Express.Multer.File[]).filter(file => 
+    file.originalname.toLowerCase().endsWith('.zip')
+  );
+  
+  // Se non ci sono file ZIP, continua normalmente
+  if (zipFiles.length === 0) {
+    return next();
+  }
+  
+  try {
+    // Elabora tutti i file ZIP
+    for (const zipFile of zipFiles) {
+      const zipFilePath = zipFile.path;
+      const zipFileName = zipFile.filename;
+      const folderName = path.basename(zipFileName, '.zip');
+      const extractDir = path.join(extractsBaseDir, folderName);
+      
+      // Estrai il file ZIP
+      const extractedFiles = await extractZip(zipFilePath, extractDir);
+      console.log(`File estratti da ${zipFileName} (${extractedFiles.length}):`, extractedFiles);
+      
+      // Memorizza le informazioni sull'estrazione
+      if (!req.zipExtractions) {
+        req.zipExtractions = [];
+      }
+      
+      req.zipExtractions.push({
+        zipFile,
+        extractDir,
+        extractedFiles,
+        folderName
+      });
+    }
+    
+    next();
+  } catch (err) {
+    console.error('Errore nella gestione dei file ZIP multipli:', err);
+    
+    // In caso di errore, elimina i file ZIP e passa l'errore
+    for (const zipFile of zipFiles) {
+      if (zipFile.path && fs.existsSync(zipFile.path)) {
+        try {
+          fs.unlinkSync(zipFile.path);
+        } catch (e) {
+          console.error(`Errore nella cancellazione del file ZIP ${zipFile.originalname}:`, e);
+        }
+      }
+    }
+    
+    // Passa l'errore
+    res.status(500).json({ 
+      message: 'Errore nell\'elaborazione dei file ZIP',
+      error: err instanceof Error ? err.message : String(err)
+    });
+  }
+};
+
+// Estendi l'interfaccia Request di Express
+declare global {
+  namespace Express {
+    interface Request {
+      extractedZipDir?: string;
+      extractedZipFiles?: string[];
+      mainHtmlFile?: string;
+      folderPath?: string;
+      viewerUrl?: string;
+      zipExtractions?: Array<{
+        zipFile: Express.Multer.File;
+        extractDir: string;
+        extractedFiles: string[];
+        folderName: string;
+      }>;
+    }
+  }
+}

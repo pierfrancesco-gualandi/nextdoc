@@ -3,105 +3,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizzatore Diretto WebGL</title>
+    <title>Visualizzatore Diretto 3D</title>
     <style>
         body, html {
             margin: 0;
             padding: 0;
-            width: 100%;
             height: 100%;
             overflow: hidden;
+            font-family: Arial, sans-serif;
         }
-        
-        #redirect-container {
+        #header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #header h1 {
+            margin: 0;
+            font-size: 18px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 60%;
+        }
+        #header button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        #header button:hover {
+            background-color: #2980b9;
+        }
+        #header .button-group {
+            display: flex;
+            align-items: center;
+        }
+        #content-frame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        #loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100%;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-            box-sizing: border-box;
+            color: white;
+            z-index: 50;
         }
-        
-        h1 {
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-        
-        p {
-            margin-bottom: 30px;
-            max-width: 600px;
-            line-height: 1.5;
-        }
-        
-        .spinner {
+        #loading .spinner {
             width: 50px;
             height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
+            border: 5px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
             margin-bottom: 20px;
         }
-        
-        .button {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #3498db;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-            margin: 10px;
-        }
-        
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
+        }
+        #error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(231, 76, 60, 0.9);
+            padding: 20px;
+            border-radius: 5px;
+            color: white;
+            z-index: 150;
+            max-width: 80%;
+            text-align: center;
+            display: none;
         }
     </style>
 </head>
 <body>
-    <div id="redirect-container">
-        <div class="spinner"></div>
-        <h1>Apertura Modello 3D</h1>
-        <p>
-            Stiamo aprendo il tuo modello 3D WebGL. 
-            Per una visualizzazione ottimale, verrai reindirizzato direttamente al file originale,
-            che offre la migliore compatibilità e prestazioni.
-        </p>
-        <p>
-            Se il reindirizzamento non avviene automaticamente dopo 5 secondi, 
-            clicca sul pulsante qui sotto.
-        </p>
-        <a href="#" id="redirect-button" class="button">Apri Modello</a>
+    <div id="header">
+        <h1 id="model-title">Caricamento modello...</h1>
+        <div class="button-group">
+            <button id="fullscreen-btn">Schermo intero</button>
+            <button id="close-btn">Chiudi</button>
+        </div>
     </div>
     
+    <iframe id="content-frame" allowfullscreen></iframe>
+    
+    <div id="loading">
+        <div class="spinner"></div>
+        <div>Caricamento modello 3D...</div>
+    </div>
+    
+    <div id="error">
+        <h3>Errore di caricamento</h3>
+        <p id="error-message">Non è stato possibile caricare il modello 3D.</p>
+        <button id="retry-btn">Riprova</button>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Recupera i parametri dall'URL
+            // Parametri URL
             const params = new URLSearchParams(window.location.search);
             const modelUrl = params.get('modelUrl');
+            const title = params.get('title') || 'Modello 3D';
             
-            if (modelUrl) {
-                // Imposta il link del pulsante
-                document.getElementById('redirect-button').href = modelUrl;
+            // Elementi DOM
+            const modelTitle = document.getElementById('model-title');
+            const contentFrame = document.getElementById('content-frame');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const errorMessage = document.getElementById('error-message');
+            const retryBtn = document.getElementById('retry-btn');
+            const fullscreenBtn = document.getElementById('fullscreen-btn');
+            const closeBtn = document.getElementById('close-btn');
+            
+            // Imposta titolo
+            document.title = title;
+            modelTitle.textContent = title;
+            
+            // Funzione per caricare il modello
+            function loadModel() {
+                if (!modelUrl) {
+                    showError('URL del modello non specificato');
+                    return;
+                }
                 
-                // Reindirizza automaticamente dopo un breve ritardo
+                // Nascondi errore e mostra loading
+                error.style.display = 'none';
+                loading.style.display = 'flex';
+                
+                // Carica il modello
+                contentFrame.src = modelUrl;
+                
+                // Gestione eventi
+                contentFrame.onload = function() {
+                    loading.style.display = 'none';
+                };
+                
+                contentFrame.onerror = function() {
+                    showError('Errore durante il caricamento del modello');
+                };
+                
+                // Timeout per modelli lenti
                 setTimeout(function() {
-                    window.location.href = modelUrl;
-                }, 2000); // 2 secondi
-            } else {
-                // Se non c'è un URL, mostra un messaggio di errore
-                document.getElementById('redirect-container').innerHTML = `
-                    <h1>Errore</h1>
-                    <p>URL del modello non specificato.</p>
-                    <a href="javascript:history.back()" class="button">Torna indietro</a>
-                `;
+                    if (loading.style.display !== 'none') {
+                        const loadingText = loading.querySelector('div:last-child');
+                        if (loadingText) {
+                            loadingText.textContent = 'Caricamento lento. Attendi o riprova...';
+                        }
+                    }
+                }, 15000);
             }
+            
+            // Funzione per mostrare errori
+            function showError(message) {
+                loading.style.display = 'none';
+                errorMessage.textContent = message;
+                error.style.display = 'block';
+            }
+            
+            // Gestione pulsanti
+            retryBtn.addEventListener('click', function() {
+                loadModel();
+            });
+            
+            fullscreenBtn.addEventListener('click', function() {
+                if (contentFrame.requestFullscreen) {
+                    contentFrame.requestFullscreen();
+                } else if (contentFrame.webkitRequestFullscreen) {
+                    contentFrame.webkitRequestFullscreen();
+                } else if (contentFrame.msRequestFullscreen) {
+                    contentFrame.msRequestFullscreen();
+                }
+            });
+            
+            closeBtn.addEventListener('click', function() {
+                window.close();
+                setTimeout(function() {
+                    window.history.back();
+                }, 100);
+            });
+            
+            // Avvia caricamento
+            loadModel();
         });
     </script>
 </body>

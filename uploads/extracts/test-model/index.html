@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modello di Test 3D</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background-color: #222;
+            color: white;
+        }
+        #container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .demo-box {
+            width: 100px;
+            height: 100px;
+            background-color: #3498db;
+            margin: 20px;
+            animation: rotate 5s infinite linear;
+        }
+        @keyframes rotate {
+            from { transform: rotate(0deg) translateX(50px) rotate(0deg); }
+            to { transform: rotate(360deg) translateX(50px) rotate(-360deg); }
+        }
+        .description {
+            max-width: 600px;
+            text-align: center;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .success {
+            color: #2ecc71;
+            font-weight: bold;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>Modello 3D WebGL di Test</h1>
+        
+        <div class="demo-box"></div>
+        
+        <p class="success">✓ Il contenuto HTML è stato caricato correttamente!</p>
+        
+        <div class="description">
+            Questo è un file HTML di test che simula un modello 3D WebGL. 
+            In un'implementazione reale, questo file conterrebbe i riferimenti agli script
+            JavaScript e alle risorse necessarie per visualizzare un vero modello 3D.
+            <br><br>
+            Il caricamento corretto di questa pagina dimostra che l'estrazione e
+            la gestione del file ZIP funzionano correttamente.
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Modello di test caricato correttamente');
+            
+            // Invia un messaggio al genitore (se in iframe)
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage('model-loaded', '*');
+            }
+        });
+    </script>
+</body>
+</html>

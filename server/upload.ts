@@ -5,6 +5,8 @@ import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 import { db } from './db';
 import { uploadedFiles, insertUploadedFileSchema, type InsertUploadedFile } from '@shared/schema';
+import { exec } from 'child_process';
+import AdmZip from 'adm-zip';
 
 // Creazione della cartella uploads se non esiste
 const uploadsDir = path.join(process.cwd(), 'uploads');

@@ -3,19 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizzatore 3D - Modello WebGL</title>
+    <title>Helper Visualizzazione Modello 3D</title>
     <style>
-        html, body {
+        body, html {
             margin: 0;
             padding: 0;
-            width: 100%;
             height: 100%;
             overflow: hidden;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
         }
         
         #container {
-            width: 100%;
+            display: flex;
+            flex-direction: column;
             height: 100%;
+        }
+        
+        #header {
+            padding: 15px;
+            background-color: #2c3e50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        #header h1 {
+            margin: 0;
+            font-size: 20px;
+        }
+        
+        #controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        #content {
+            flex: 1;
+            display: flex;
+            padding: 15px;
+            gap: 15px;
+            overflow: hidden;
+        }
+        
+        #viewer {
+            flex: 3;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #viewer-header {
+            padding: 10px 15px;
+            background-color: #34495e;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        #viewer-header h2 {
+            margin: 0;
+            font-size: 16px;
+        }
+        
+        #viewer-content {
+            flex: 1;
             position: relative;
         }
         
@@ -25,194 +99,335 @@
             border: none;
         }
         
-        .loading {
+        #sidebar {
+            flex: 1;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            max-width: 300px;
+        }
+        
+        #sidebar h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        
+        #model-info {
+            margin-bottom: 20px;
+        }
+        
+        .info-item {
+            margin-bottom: 10px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #7f8c8d;
+            margin-bottom: 3px;
+            font-size: 12px;
+        }
+        
+        .info-value {
+            color: #34495e;
+            word-break: break-word;
+        }
+        
+        #alternative-links {
+            margin-top: auto;
+        }
+        
+        #alternative-links h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .link-button {
+            display: block;
+            margin-bottom: 10px;
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            text-decoration: none;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            transition: background-color 0.2s;
+        }
+        
+        .link-button:hover {
+            background-color: #d5dbdb;
+        }
+        
+        #loading {
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.8);
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 100;
+            z-index: 1000;
+            color: white;
         }
         
         .spinner {
             width: 50px;
             height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
+            border: 5px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-        
-        .error-message {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.9);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 110;
-            text-align: center;
-            color: #e74c3c;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        
-        .error-title {
-            font-size: 24px;
-            font-weight: bold;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
             margin-bottom: 15px;
         }
         
-        .error-detail {
-            margin-bottom: 20px;
-            max-width: 600px;
-        }
-        
-        .button-container {
-            display: flex;
-            gap: 15px;
-        }
-        
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #3498db;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        
-        .btn-primary {
-            background-color: #3498db;
-        }
-        
-        .btn-success {
-            background-color: #2ecc71;
-        }
-        
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        #error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(231, 76, 60, 0.9);
+            padding: 20px;
+            border-radius: 5px;
+            color: white;
+            z-index: 1001;
+            max-width: 80%;
+            text-align: center;
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            #content {
+                flex-direction: column;
+            }
+            
+            #sidebar {
+                max-width: none;
+                order: 2;
+            }
+            
+            #viewer {
+                order: 1;
+                min-height: 60vh;
+            }
         }
     </style>
 </head>
 <body>
     <div id="container">
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <div>Caricamento del modello in corso...</div>
-        </div>
-        
-        <div class="error-message" id="error-message">
-            <div class="error-title">Impossibile visualizzare il modello</div>
-            <div class="error-detail">
-                Si è verificato un problema durante il caricamento del modello 3D. 
-                Prova a utilizzare una delle seguenti opzioni:
-            </div>
-            <div class="button-container">
-                <a href="#" class="btn btn-primary" id="retry-button">Riprova caricamento</a>
-                <a href="#" class="btn btn-success" id="open-original">Apri file originale</a>
+        <div id="header">
+            <h1>Visualizzatore Modello 3D</h1>
+            <div id="controls">
+                <button id="back-btn">Torna indietro</button>
+                <button id="close-btn">Chiudi</button>
             </div>
         </div>
         
-        <iframe id="model-iframe" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+        <div id="content">
+            <div id="viewer">
+                <div id="viewer-header">
+                    <h2 id="model-title">Modello 3D</h2>
+                    <button id="fullscreen-btn">Schermo intero</button>
+                </div>
+                <div id="viewer-content">
+                    <iframe id="model-iframe" allowfullscreen></iframe>
+                    
+                    <div id="loading">
+                        <div class="spinner"></div>
+                        <div>Caricamento modello 3D...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="sidebar">
+                <h2>Informazioni</h2>
+                
+                <div id="model-info">
+                    <div class="info-item">
+                        <div class="info-label">NOME</div>
+                        <div id="info-name" class="info-value">-</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">FORMATO</div>
+                        <div id="info-format" class="info-value">-</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">URL</div>
+                        <div id="info-url" class="info-value">-</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">STATO</div>
+                        <div id="info-status" class="info-value">Caricamento...</div>
+                    </div>
+                </div>
+                
+                <div id="alternative-links">
+                    <h3>Visualizzazioni Alternative</h3>
+                    <a id="open-direct" href="#" class="link-button" target="_blank">Apri contenuto direttamente</a>
+                    <a id="open-source" href="#" class="link-button" target="_blank">Visualizza URL sorgente</a>
+                </div>
+            </div>
+        </div>
     </div>
     
+    <div id="error">
+        <h3>Errore di caricamento</h3>
+        <p id="error-message">Non è stato possibile caricare il modello 3D.</p>
+        <button id="retry-btn">Riprova</button>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Recupera i parametri dall'URL
+            // Parametri URL
             const params = new URLSearchParams(window.location.search);
             const modelUrl = params.get('modelUrl');
             const title = params.get('title') || 'Modello 3D';
             
-            // Elementi UI
-            const iframe = document.getElementById('model-iframe');
+            // Elementi DOM
+            const modelTitle = document.getElementById('model-title');
+            const modelIframe = document.getElementById('model-iframe');
             const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
             const errorMessage = document.getElementById('error-message');
-            const retryButton = document.getElementById('retry-button');
-            const openOriginal = document.getElementById('open-original');
+            const retryBtn = document.getElementById('retry-btn');
+            const fullscreenBtn = document.getElementById('fullscreen-btn');
+            const backBtn = document.getElementById('back-btn');
+            const closeBtn = document.getElementById('close-btn');
+            const openDirect = document.getElementById('open-direct');
+            const openSource = document.getElementById('open-source');
             
-            // Imposta il titolo della pagina
+            // Elementi info
+            const infoName = document.getElementById('info-name');
+            const infoFormat = document.getElementById('info-format');
+            const infoUrl = document.getElementById('info-url');
+            const infoStatus = document.getElementById('info-status');
+            
+            // Imposta titolo
             document.title = title + ' - Visualizzatore 3D';
+            modelTitle.textContent = title;
+            infoName.textContent = title;
             
-            // Funzione per mostrare errore
-            function showError() {
-                loading.style.display = 'none';
-                errorMessage.style.display = 'flex';
+            // Determina formato
+            const ext = modelUrl ? modelUrl.split('.').pop().toLowerCase() : 'sconosciuto';
+            let format = 'Sconosciuto';
+            
+            if (['html', 'htm'].includes(ext)) {
+                format = 'HTML/WebGL';
+            } else if (ext === 'glb') {
+                format = 'GLB (binario)';
+            } else if (ext === 'gltf') {
+                format = 'GLTF (JSON)';
+            } else if (ext === 'obj') {
+                format = 'OBJ (Wavefront)';
+            } else if (ext === 'stl') {
+                format = 'STL';
+            }
+            
+            infoFormat.textContent = format;
+            
+            // Mostra URL troncato
+            if (modelUrl) {
+                const shortUrl = modelUrl.length > 40 ? 
+                    modelUrl.substring(0, 37) + '...' : 
+                    modelUrl;
+                infoUrl.textContent = shortUrl;
+                infoUrl.title = modelUrl; // Mostra URL completo al passaggio del mouse
+            } else {
+                infoUrl.textContent = 'Non specificato';
             }
             
             // Funzione per caricare il modello
             function loadModel() {
-                // Reset UI
-                loading.style.display = 'flex';
-                errorMessage.style.display = 'none';
-                
-                // Verifica se abbiamo un URL valido
                 if (!modelUrl) {
-                    showError();
+                    showError('URL del modello non specificato');
                     return;
                 }
                 
-                // Imposta l'URL per aprire l'originale
-                openOriginal.href = modelUrl;
+                // Aggiorna link alternativi
+                openDirect.href = modelUrl;
+                openSource.href = modelUrl;
                 
-                // Imposta l'iframe con l'URL del modello
-                iframe.src = modelUrl;
+                // Nascondi errore e mostra loading
+                error.style.display = 'none';
+                loading.style.display = 'flex';
+                infoStatus.textContent = 'Caricamento...';
                 
-                // Gestisci errori di caricamento
-                iframe.onerror = function() {
-                    console.error('Errore di caricamento iframe');
-                    showError();
+                // Carica il modello
+                modelIframe.src = modelUrl;
+                
+                // Gestione eventi
+                modelIframe.onload = function() {
+                    loading.style.display = 'none';
+                    infoStatus.textContent = 'Caricato';
+                    infoStatus.style.color = '#27ae60';
                 };
                 
-                // Gestisci caricamento completato
-                iframe.onload = function() {
-                    // Nascondi il loading dopo un breve ritardo
-                    setTimeout(function() {
-                        loading.style.display = 'none';
-                    }, 1000);
-                    
-                    // Verifica se il contenuto è caricato o se c'è stato un errore
-                    try {
-                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                        if (!iframeDoc || !iframeDoc.body || iframeDoc.body.innerHTML.trim() === '') {
-                            showError();
-                        }
-                    } catch (e) {
-                        // Se non possiamo accedere al contenuto per motivi di CORS, 
-                        // dobbiamo assumere che sia stato caricato correttamente
-                        console.log('Impossibile verificare il contenuto per restrizioni CORS');
-                    }
+                modelIframe.onerror = function() {
+                    showError('Errore durante il caricamento del modello');
+                    infoStatus.textContent = 'Errore';
+                    infoStatus.style.color = '#e74c3c';
                 };
                 
-                // Timeout di sicurezza
+                // Timeout per modelli lenti
                 setTimeout(function() {
-                    // Se dopo 15 secondi è ancora in caricamento, mostra l'errore
                     if (loading.style.display !== 'none') {
-                        showError();
+                        const loadingText = loading.querySelector('div:last-child');
+                        if (loadingText) {
+                            loadingText.textContent = 'Caricamento lento. Attendi o riprova...';
+                        }
+                        infoStatus.textContent = 'Caricamento lento';
+                        infoStatus.style.color = '#f39c12';
                     }
                 }, 15000);
             }
             
-            // Pulsante per riprovare
-            retryButton.addEventListener('click', function(e) {
-                e.preventDefault();
+            // Funzione per mostrare errori
+            function showError(message) {
+                loading.style.display = 'none';
+                errorMessage.textContent = message;
+                error.style.display = 'block';
+            }
+            
+            // Gestione pulsanti
+            retryBtn.addEventListener('click', function() {
                 loadModel();
             });
             
-            // Carica il modello
+            fullscreenBtn.addEventListener('click', function() {
+                if (modelIframe.requestFullscreen) {
+                    modelIframe.requestFullscreen();
+                } else if (modelIframe.webkitRequestFullscreen) {
+                    modelIframe.webkitRequestFullscreen();
+                } else if (modelIframe.msRequestFullscreen) {
+                    modelIframe.msRequestFullscreen();
+                }
+            });
+            
+            backBtn.addEventListener('click', function() {
+                window.history.back();
+            });
+            
+            closeBtn.addEventListener('click', function() {
+                window.close();
+                setTimeout(function() {
+                    window.history.back();
+                }, 100);
+            });
+            
+            // Avvia caricamento
             loadModel();
         });
     </script>

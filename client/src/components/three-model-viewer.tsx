@@ -11,6 +11,7 @@ interface ThreeModelViewerProps {
     title?: string;
     folderPath?: string;
     folderName?: string;
+    viewerUrl?: string; // URL specifico per il visualizzatore fornito dal backend
     allFiles?: Array<{
       id: number;
       filename: string;
@@ -297,7 +298,9 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
   // Rendering diverso in base al formato
   if (modelData.format === 'html' || modelData.format === 'webgl') {
     // URL per i visualizzatori
-    const helperUrl = `/uploads/model-helper.html?modelUrl=${encodeURIComponent(modelData.src)}&title=${encodeURIComponent(modelData.title || 'Modello 3D')}`;
+    // Se il backend ci ha fornito un URL del visualizzatore specifico, usalo
+    const viewerUrl = modelData.viewerUrl;
+    const helperUrl = viewerUrl || `/uploads/model-helper.html?modelUrl=${encodeURIComponent(modelData.src)}&title=${encodeURIComponent(modelData.title || 'Modello 3D')}`;
     const directViewerUrl = `/uploads/direct-viewer.html?modelUrl=${encodeURIComponent(modelData.src)}&title=${encodeURIComponent(modelData.title || 'Modello 3D')}`;
     
     // Usa un approccio più semplice per i modelli HTML WebGL
