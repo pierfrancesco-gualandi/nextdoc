@@ -11,6 +11,7 @@ export const uploadedFiles = pgTable("uploaded_files", {
   mimetype: text("mimetype").notNull(),
   size: integer("size").notNull(),
   uploadedById: integer("uploaded_by_id").notNull(),
+  folderName: text("folder_name"),
   uploadedAt: timestamp("uploaded_at").notNull().defaultNow(),
 });
 
@@ -455,6 +456,7 @@ export const insertUploadedFileSchema = createInsertSchema(uploadedFiles).pick({
   mimetype: true,
   size: true,
   uploadedById: true,
+  folderName: true,
 });
 
 export type UploadedFile = typeof uploadedFiles.$inferSelect;

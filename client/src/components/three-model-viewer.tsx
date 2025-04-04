@@ -225,6 +225,22 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
           title={modelData.title || 'WebGL 3D Model'}
           sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           allow="accelerometer; autoplay; camera; encrypted-media; gyroscope; picture-in-picture"
+          data-folder-path={modelData.folderPath || ''}
+          onLoad={(e) => {
+            // Dopo il caricamento dell'iframe, tentiamo di comunicare con il suo contenuto
+            // per passare il percorso della cartella con i file aggiuntivi
+            try {
+              const iframe = e.currentTarget;
+              if (iframe.contentWindow && modelData.folderPath) {
+                iframe.contentWindow.postMessage({
+                  type: 'model-folder-path',
+                  folderPath: modelData.folderPath
+                }, '*');
+              }
+            } catch (error) {
+              console.error('Errore nel passare il percorso cartella all\'iframe:', error);
+            }
+          }}
         />
       </div>
     );

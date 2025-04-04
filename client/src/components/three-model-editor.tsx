@@ -36,6 +36,7 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
   onCancel,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFolderFiles, setSelectedFolderFiles] = useState<FileList | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
@@ -92,6 +93,75 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
       }
     }
   };
+  
+  // Gestisce la selezione dei file della cartella (per modelli HTML/WebGL)
+  const handleFolderFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFolderFiles(e.target.files);
+      
+      toast({
+        title: "File aggiuntivi selezionati",
+        description: `${e.target.files.length} file selezionati per il modello WebGL`,
+      });
+    }
+  };
+
+  // Funzione per caricare i file della cartella selezionata (solo per HTML/WebGL)
+  const uploadFolder = async (folderFiles: FileList) => {
+    if (!folderFiles.length) return null;
+    
+    setIsUploading(true);
+    
+    try {
+      // Crea un FormData con tutti i file
+      const formData = new FormData();
+      
+      // Usa il nome della cartella basata sul nome del file principale
+      const folderName = selectedFile?.name.split('.')[0] || `folder_${Date.now()}`;
+      formData.append('folderName', folderName);
+      
+      // Aggiungi tutti i file al formData
+      Array.from(folderFiles).forEach((file) => {
+        formData.append('files', file);
+      });
+      
+      // Carica i file come cartella
+      const response = await fetch('/api/upload-folder', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Errore durante il caricamento della cartella');
+      }
+      
+      const data = await response.json();
+      
+      // Imposta i campi del form
+      setValue('src', `/uploads/${data.filename}`);
+      setValue('folderPath', data.folderName);
+      
+      toast({
+        title: "Cartella caricata con successo",
+        description: `${data.totalFiles} file caricati correttamente`,
+      });
+      
+      return {
+        src: `/uploads/${data.filename}`,
+        folderPath: data.folderName
+      };
+    } catch (error) {
+      console.error('Errore di upload cartella:', error);
+      toast({
+        title: "Errore di caricamento",
+        description: "Errore durante il caricamento della cartella",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const uploadFile = async () => {
     if (!selectedFile) return null;
@@ -99,6 +169,15 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
     setIsUploading(true);
     
     try {
+      // Se è un file HTML e abbiamo i file di supporto, carica come cartella
+      if ((selectedFile.name.endsWith('.html') || selectedFile.name.endsWith('.htm')) && 
+          selectedFolderFiles && selectedFolderFiles.length > 0) {
+        const result = await uploadFolder(selectedFolderFiles);
+        setIsUploadDialogOpen(false);
+        return result;
+      }
+      
+      // Caricamento normale di un singolo file
       const formData = new FormData();
       formData.append('file', selectedFile);
       
@@ -115,6 +194,23 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
       
       // Imposta l'URL del file caricato
       setValue('src', `/uploads/${data.filename}`);
+      
+      // Se è un file HTML senza file di supporto, imposta il folderPath come il nome del file senza estensione
+      if (selectedFile.name.endsWith('.html') || selectedFile.name.endsWith('.htm')) {
+        const folderName = selectedFile.name.split('.')[0];
+        setValue('folderPath', folderName);
+        
+        toast({
+          title: "File HTML caricato con successo",
+          description: "Il modello WebGL è stato caricato correttamente",
+        });
+        
+        setIsUploadDialogOpen(false);
+        return {
+          src: `/uploads/${data.filename}`,
+          folderPath: folderName
+        };
+      }
       
       toast({
         title: "File caricato con successo",
@@ -139,9 +235,16 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
   const onSubmit = async (data: ThreeDModelModuleContent) => {
     // Se c'è un file selezionato ma non ancora caricato, caricalo
     if (selectedFile && !data.src) {
-      const uploadedUrl = await uploadFile();
-      if (uploadedUrl) {
-        data.src = uploadedUrl;
+      const result = await uploadFile();
+      if (result) {
+        // Se il risultato è un oggetto (dal caricamento cartella)
+        if (typeof result === 'object') {
+          data.src = result.src;
+          data.folderPath = result.folderPath;
+        } else {
+          // Altrimenti è una stringa URL
+          data.src = result;
+        }
       } else {
         return; // Interrompi se l'upload non è riuscito
       }
@@ -254,17 +357,38 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                         )}
                         
                         {selectedFile && (selectedFile.name.endsWith('.html') || selectedFile.name.endsWith('.htm')) && (
-                          <div className="mt-4">
-                            <Label htmlFor="dialog-folder-path">Percorso cartella (opzionale)</Label>
-                            <Input 
-                              id="dialog-folder-path" 
-                              placeholder="Percorso alla cartella contenente i file necessari"
-                              value={currentValues.folderPath || ''}
-                              onChange={(e) => setValue('folderPath', e.target.value)}
-                            />
-                            <p className="text-sm text-gray-500 mt-1">
-                              Specifica solo se il modello WebGL richiede file aggiuntivi in una cartella
-                            </p>
+                          <div className="mt-4 space-y-4">
+                            <div>
+                              <Label htmlFor="dialog-folder-path">Percorso cartella (opzionale)</Label>
+                              <Input 
+                                id="dialog-folder-path" 
+                                placeholder="Percorso alla cartella contenente i file necessari"
+                                value={currentValues.folderPath || ''}
+                                onChange={(e) => setValue('folderPath', e.target.value)}
+                              />
+                              <p className="text-sm text-gray-500 mt-1">
+                                Specifica solo se il modello WebGL richiede file aggiuntivi in una cartella
+                              </p>
+                            </div>
+                            
+                            <div>
+                              <Label htmlFor="folder-files">File aggiuntivi per il modello</Label>
+                              <Input
+                                id="folder-files"
+                                type="file"
+                                multiple
+                                onChange={handleFolderFilesChange}
+                              />
+                              <p className="text-sm text-gray-500 mt-1">
+                                Seleziona tutti i file aggiuntivi necessari al modello HTML
+                              </p>
+                              
+                              {selectedFolderFiles && (
+                                <p className="text-sm text-blue-500 mt-2">
+                                  {selectedFolderFiles.length} file aggiuntivi selezionati
+                                </p>
+                              )}
+                            </div>
                           </div>
                         )}
                         

@@ -125,33 +125,86 @@ export const upload = multer({
 
 // Middleware per salvare le informazioni del file nel database
 export const saveFileInfo = async (req: Request, res: Response, next: NextFunction) => {
-  if (!req.file) {
+  if (!req.file && (!req.files || Object.keys(req.files || {}).length === 0)) {
     return res.status(400).json({ message: 'Nessun file caricato' });
   }
 
   try {
     const userId = req.body.userId || 1; // Default all'admin se non specificato
     
-    const fileData: InsertUploadedFile = {
-      filename: req.file.filename,
-      originalName: req.file.originalname,
-      path: req.file.path,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      uploadedById: userId
-    };
+    // Gestisce un singolo file
+    if (req.file) {
+      const fileData: InsertUploadedFile = {
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        path: req.file.path,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        uploadedById: userId,
+        folderName: req.body.folderName || null
+      };
 
-    // Salva le informazioni nel database
-    const [newFile] = await db.insert(uploadedFiles).values(fileData).returning();
-    
-    // Aggiunge le informazioni del file alla request
-    req.uploadedFile = newFile;
-    
-    next();
+      // Salva le informazioni nel database
+      const [newFile] = await db.insert(uploadedFiles).values(fileData).returning();
+      
+      // Aggiunge le informazioni del file alla request
+      req.uploadedFile = newFile;
+      
+      next();
+    } 
+    // Gestisce array di file
+    else if (req.files && Array.isArray(req.files)) {
+      const fileInfos: InsertUploadedFile[] = [];
+      const savedFiles = [];
+      
+      // Crea un nome di cartella basato sul timestamp se non è fornito
+      const folderName = req.body.folderName || `folder_${Date.now()}`;
+      
+      for (const file of req.files as Express.Multer.File[]) {
+        const fileData: InsertUploadedFile = {
+          filename: file.filename,
+          originalName: file.originalname,
+          path: file.path,
+          mimetype: file.mimetype,
+          size: file.size,
+          uploadedById: userId,
+          folderName: folderName
+        };
+        
+        fileInfos.push(fileData);
+      }
+      
+      // Salva tutte le informazioni nel database
+      if (fileInfos.length > 0) {
+        savedFiles.push(...await db.insert(uploadedFiles).values(fileInfos).returning());
+      }
+      
+      // Se c'è un file HTML, memorizzalo come file principale
+      const htmlFile = savedFiles.find(file => 
+        file.originalName.endsWith('.html') || file.originalName.endsWith('.htm')
+      );
+      
+      // Aggiunge le informazioni dei file alla request
+      req.uploadedFiles = savedFiles;
+      req.uploadedFile = htmlFile || savedFiles[0]; // Usa il file HTML o il primo file
+      req.folderName = folderName;
+      
+      next();
+    } else {
+      next();
+    }
   } catch (error) {
     // In caso di errore nel salvataggio sul database, elimina il file
     if (req.file?.path && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
+    }
+    // Elimina più file se necessario
+    else if (req.files && Array.isArray(req.files)) {
+      for (const file of req.files as Express.Multer.File[]) {
+        if (file.path && fs.existsSync(file.path)) {
+          fs.unlinkSync(file.path);
+        }
+      }
     }
     
     console.error('Errore nel salvataggio del file:', error);
@@ -169,6 +222,8 @@ declare global {
   namespace Express {
     interface Request {
       uploadedFile?: any;
+      uploadedFiles?: any[];
+      folderName?: string;
     }
   }
 }

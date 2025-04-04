@@ -1913,6 +1913,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     res.status(201).json(fileInfo);
   });
+  
+  // Route per caricare una cartella di file (per modelli 3D con HTML)
+  app.post("/api/upload-folder", upload.array("files", 50), saveFileInfo, (req: Request, res: Response) => {
+    if (!req.uploadedFile || !req.uploadedFiles) {
+      return res.status(400).json({ message: "Upload failed, no files information available" });
+    }
+    
+    // Restituisci informazioni sul file principale (HTML) e informazioni sulla cartella
+    const fileInfo = {
+      ...req.uploadedFile,
+      url: getFileUrl(req.uploadedFile.filename),
+      folderName: req.folderName,
+      totalFiles: req.uploadedFiles.length
+    };
+    
+    res.status(201).json(fileInfo);
+  });
 
   // Route to serve uploaded files
   app.use("/uploads", (req: Request, res: Response, next: NextFunction) => {
