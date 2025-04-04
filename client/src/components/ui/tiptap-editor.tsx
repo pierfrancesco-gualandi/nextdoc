@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef, ChangeEvent } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -9,13 +9,22 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
+import TextStyle from '@tiptap/extension-text-style';
+import Color from '@tiptap/extension-color';
+import Underline from '@tiptap/extension-underline';
 import { Button } from '@/components/ui/button';
 import { 
-  Bold, Italic, Underline, List, ListOrdered, Image as ImageIcon, 
+  Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, Image as ImageIcon, 
   Link as LinkIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  Table as TableIcon, Heading1, Heading2, Heading3, Type, Package
+  Table as TableIcon, Heading1, Heading2, Heading3, Type, Package,
+  Upload, FileText, Palette, ArrowUpFromLine, Square
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Slider } from '@/components/ui/slider';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface TiptapEditorProps {
   content: string;
@@ -89,6 +98,13 @@ export function TiptapEditor({
     }
   }, [sectionComponents]);
   
+  // File input reference per importazione testo
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Stato per altezza editor
+  const [editorHeight, setEditorHeight] = useState(200);
+  // Stato per colore di sfondo
+  const [backgroundColor, setBackgroundColor] = useState('transparent');
+  
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -108,6 +124,9 @@ export function TiptapEditor({
       Placeholder.configure({
         placeholder,
       }),
+      TextStyle,
+      Color,
+      Underline,
     ],
     content,
     editable,
@@ -115,6 +134,77 @@ export function TiptapEditor({
       onChange(editor.getHTML());
     },
   });
+  
+  // Funzione per importare testo da file txt
+  const handleImportText = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    if (!editor || !event.target.files || event.target.files.length === 0) return;
+    
+    const file = event.target.files[0];
+    if (file.type !== 'text/plain') {
+      alert('Per favore, seleziona un file di testo (.txt)');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      editor.commands.setContent(content);
+    };
+    reader.readAsText(file);
+    
+    // Reset del campo file
+    if (event.target) {
+      event.target.value = '';
+    }
+  }, [editor]);
+  
+  // Funzione per cambiare colore del testo
+  const setTextColor = useCallback((color: string) => {
+    if (!editor) return;
+    
+    editor.chain().focus().setColor(color).run();
+  }, [editor]);
+  
+  // Funzione per applicare uno stile predefinito
+  const applyTextStyle = useCallback((style: string) => {
+    if (!editor) return;
+    
+    switch(style) {
+      case 'title':
+        editor.chain().focus().toggleBold().setColor('#000').run();
+        editor.commands.updateAttributes('paragraph', { 
+          style: 'font-size: 24px; font-weight: bold;' 
+        });
+        break;
+      case 'subtitle':
+        editor.chain().focus().toggleBold().setColor('#444').run();
+        editor.commands.updateAttributes('paragraph', { 
+          style: 'font-size: 18px;' 
+        });
+        break;
+      case 'warning':
+        editor.chain().focus().toggleBold().setColor('#e74c3c').run();
+        editor.commands.updateAttributes('paragraph', { 
+          style: 'font-size: 16px;' 
+        });
+        break;
+      case 'info':
+        editor.chain().focus().setColor('#3498db').run();
+        editor.commands.updateAttributes('paragraph', { 
+          style: 'font-size: 16px;' 
+        });
+        break;
+      case 'note':
+        editor.chain().focus().toggleItalic().setColor('#7f8c8d').run();
+        editor.commands.updateAttributes('paragraph', { 
+          style: 'font-size: 14px;' 
+        });
+        break;
+      default:
+        editor.chain().focus().unsetColor().run();
+        editor.commands.updateAttributes('paragraph', { style: '' });
+    }
+  }, [editor]);
 
   useEffect(() => {
     if (editor && editor.getHTML() !== content) {
@@ -189,8 +279,118 @@ export function TiptapEditor({
             onClick={() => editor.chain().focus().toggleUnderline().run()}
             className={editor.isActive('underline') ? 'bg-neutral-light/50' : ''}
           >
-            <Underline className="h-4 w-4" />
+            <UnderlineIcon className="h-4 w-4" />
           </Button>
+          
+          <span className="w-px h-6 mx-1 bg-neutral-light"></span>
+          
+          {/* Color picker */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="relative">
+                <Palette className="h-4 w-4" />
+                <span 
+                  className="absolute bottom-0 right-0 rounded-full w-2 h-2 border border-white"
+                  style={{ 
+                    backgroundColor: editor.getAttributes('textStyle').color || '#000000',
+                  }}
+                />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+              <div className="grid grid-cols-5 gap-2">
+                {['#000000', '#e74c3c', '#3498db', '#2ecc71', '#f1c40f', 
+                '#9b59b6', '#1abc9c', '#34495e', '#e67e22', '#7f8c8d'].map(color => (
+                  <button
+                    key={color}
+                    type="button"
+                    className="w-6 h-6 rounded-full border border-neutral-light"
+                    style={{ backgroundColor: color }}
+                    onClick={() => setTextColor(color)}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+          
+          {/* Background color picker */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <Square className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+              <div className="grid grid-cols-5 gap-2 mb-2">
+                {['transparent', '#f8f9fa', '#e9ecef', '#fff3cd', '#d1e7dd', 
+                '#cfe2ff', '#f8d7da', '#e0cffc', '#ffd6a5', '#caffbf'].map(color => (
+                  <button
+                    key={color}
+                    type="button"
+                    className="w-6 h-6 rounded-full border border-neutral-light"
+                    style={{ backgroundColor: color }}
+                    onClick={() => setBackgroundColor(color)}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+          
+          {/* Height adjustment */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <ArrowUpFromLine className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3">
+              <Label className="mb-2 block">Altezza dell'editor</Label>
+              <div className="flex items-center gap-3">
+                <Slider
+                  value={[editorHeight]}
+                  min={100}
+                  max={500}
+                  step={10}
+                  onValueChange={(values) => setEditorHeight(values[0])}
+                  className="flex-1"
+                />
+                <span className="text-sm font-medium w-12 text-right">{editorHeight}px</span>
+              </div>
+            </PopoverContent>
+          </Popover>
+          
+          {/* Text import */}
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <FileText className="h-4 w-4" />
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImportText}
+              accept=".txt"
+              className="hidden"
+            />
+          </Button>
+          
+          <span className="w-px h-6 mx-1 bg-neutral-light"></span>
+          
+          {/* Text styling presets */}
+          <Select onValueChange={applyTextStyle}>
+            <SelectTrigger className="h-8 w-36">
+              <SelectValue placeholder="Stile di testo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="normal">Normale</SelectItem>
+              <SelectItem value="title">Titolo</SelectItem>
+              <SelectItem value="subtitle">Sottotitolo</SelectItem>
+              <SelectItem value="warning">Avviso</SelectItem>
+              <SelectItem value="info">Informazione</SelectItem>
+              <SelectItem value="note">Nota</SelectItem>
+            </SelectContent>
+          </Select>
           
           <span className="w-px h-6 mx-1 bg-neutral-light"></span>
           
@@ -297,7 +497,11 @@ export function TiptapEditor({
       <div>
         <EditorContent 
           editor={editor} 
-          className={`p-4 prose max-w-none focus:outline-none min-h-[200px] ${editable ? 'resizable-editor' : ''}`}
+          className={`p-4 prose max-w-none focus:outline-none ${editable ? 'resizable-editor' : ''}`}
+          style={{ 
+            minHeight: `${editorHeight}px`, 
+            backgroundColor: backgroundColor 
+          }}
         />
         
         {/* Visualizzazione dei componenti BOM associati alla sezione */}
