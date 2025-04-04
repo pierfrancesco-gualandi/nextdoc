@@ -231,14 +231,48 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
             // per passare il percorso della cartella con i file aggiuntivi
             try {
               const iframe = e.currentTarget;
+              console.log("ThreeModelViewer - File principale:", modelData.src);
+              console.log("ThreeModelViewer - Folder path:", modelData.folderPath);
+              console.log("ThreeModelViewer - Folder name:", modelData.folderName);
+              console.log("ThreeModelViewer - All files:", modelData.allFiles?.length || 0);
+              console.log("ThreeModelViewer - File structure keys:", Object.keys(modelData.fileStructure || {}).length);
+              
+              // Prima crea una mappa di percorsi relativi per facilitare l'accesso dall'HTML
+              const fileMap: Record<string, string> = {};
+              
+              // Se abbiamo la lista dei file con URL, crea una mappa per l'HTML
+              if (modelData.allFiles && modelData.allFiles.length > 0) {
+                modelData.allFiles.forEach(file => {
+                  // Estrai il nome del file dal percorso relativo per facilitare l'accesso dall'HTML
+                  const relativePath = file.relativePath || '';
+                  let key = file.originalName;
+                  
+                  // Prendi solo il nome del file per facilitare l'accesso dall'HTML
+                  if (relativePath.includes('/')) {
+                    const parts = relativePath.split('/');
+                    const fileName = parts[parts.length - 1];
+                    // Aggiungi anche una chiave con solo il nome del file
+                    fileMap[fileName] = file.url;
+                  }
+                  
+                  // Aggiungi sempre il percorso completo
+                  fileMap[file.originalName] = file.url;
+                  // E aggiungi anche il percorso relativo se disponibile
+                  if (relativePath) {
+                    fileMap[relativePath] = file.url;
+                  }
+                });
+              }
+              
               // Ottieni le informazioni sulla cartella del modello per passarle all'iframe
               const modelInfo = {
                 type: 'model-folder-info',
                 folderPath: modelData.folderPath || '',
                 folderName: modelData.folderName || '',
                 fileStructure: modelData.fileStructure || {},
-                // Passa anche gli URL a tutti i file nella cartella
-                allFiles: modelData.allFiles || []
+                allFiles: modelData.allFiles || [],
+                // Aggiungi la mappa dei file
+                fileMap: fileMap
               };
               
               console.log('Invio informazioni sul modello all\'iframe:', modelInfo);
@@ -248,14 +282,27 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
                 // Invia immediatamente
                 iframe.contentWindow.postMessage(modelInfo, '*');
                 
-                // Riprova ad inviare dopo un breve ritardo per assicurarsi che
+                // Riprova ad inviare più volte per assicurarsi che
                 // l'iframe abbia avuto tempo di impostare gli event listener
-                setTimeout(() => {
+                [500, 1000, 2000].forEach(delay => {
+                  setTimeout(() => {
+                    if (iframe.contentWindow) {
+                      iframe.contentWindow.postMessage(modelInfo, '*');
+                    }
+                  }, delay);
+                });
+              }
+              
+              // Aggiungi un message listener per comunicare con l'iframe
+              window.addEventListener('message', (event) => {
+                // Verifica se il messaggio è una richiesta di informazioni sulla cartella
+                if (event.data && event.data.type === 'request-model-folder-info') {
+                  console.log('Ricevuta richiesta di informazioni sulla cartella dal modello:', event.data);
                   if (iframe.contentWindow) {
                     iframe.contentWindow.postMessage(modelInfo, '*');
                   }
-                }, 500);
-              }
+                }
+              });
             } catch (error) {
               console.error('Errore nel passare le informazioni sulla cartella all\'iframe:', error);
             }

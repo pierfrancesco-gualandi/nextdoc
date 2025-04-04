@@ -1920,6 +1920,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ message: "Upload failed, no files information available" });
     }
     
+    console.log("--------- CARICAMENTO CARTELLA 3D -----------");
+    console.log("File principale:", req.uploadedFile.originalName);
+    console.log("Totale file caricati:", req.uploadedFiles.length);
+    console.log("Nome cartella:", req.folderName);
+    console.log("Struttura cartelle:", req.fileStructure ? Object.keys(req.fileStructure).length : 0, "elementi");
+    
+    // Per ogni file nella cartella, genera un URL corretto
+    const allFilesWithUrls = req.uploadedFiles.map(file => {
+      // Genera l'URL corretto per il file, considerando sottocartelle
+      let fileUrl = getFileUrl(file.filename);
+      
+      // Se è un file in una sottocartella del modello 3D, crea un URL che rispecchia la stessa struttura
+      if (req.fileStructure && req.fileStructure[file.originalName]) {
+        // Ottieni il percorso relativo del file dalla struttura
+        const relativePath = req.fileStructure[file.originalName];
+        console.log(`File ${file.originalName} - percorso relativo: ${relativePath}`);
+      }
+      
+      return {
+        id: file.id,
+        filename: file.filename, 
+        originalName: file.originalName,
+        url: fileUrl,
+        mimeType: file.mimeType,
+        relativePath: req.fileStructure ? req.fileStructure[file.originalName] || '' : ''
+      };
+    });
+    
     // Restituisci informazioni sul file principale (HTML) e informazioni sulla cartella
     const fileInfo = {
       ...req.uploadedFile,
@@ -1929,14 +1957,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Include informazioni sulla struttura delle cartelle per il frontend
       fileStructure: req.fileStructure || {},
       // Aggiungi un array di tutti i file caricati con URL
-      allFiles: req.uploadedFiles.map(file => ({
-        id: file.id,
-        filename: file.filename, 
-        originalName: file.originalName,
-        url: getFileUrl(file.filename),
-        mimeType: file.mimeType
-      }))
+      allFiles: allFilesWithUrls
     };
+    
+    console.log("URL file principale:", fileInfo.url);
+    console.log("File totali restituiti:", fileInfo.allFiles.length);
+    console.log("----------------------------------------");
     
     res.status(201).json(fileInfo);
   });
@@ -1948,9 +1974,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (err) {
         return res.status(404).json({ message: "File not found" });
       }
+      
+      // Configura MIME types aggiuntivi per file 3D e supporto WebGL
+      const ext = path.extname(filePath).toLowerCase();
+      if (ext === '.gltf') {
+        res.setHeader('Content-Type', 'model/gltf+json');
+      } else if (ext === '.glb') {
+        res.setHeader('Content-Type', 'model/gltf-binary');
+      } else if (ext === '.html' || ext === '.htm') {
+        res.setHeader('Content-Type', 'text/html');
+      } else if (ext === '.js') {
+        res.setHeader('Content-Type', 'application/javascript');
+      } else if (ext === '.css') {
+        res.setHeader('Content-Type', 'text/css');
+      } else if (ext === '.obj') {
+        res.setHeader('Content-Type', 'text/plain');
+      } else if (ext === '.stl') {
+        // STL può essere binario o ASCII, ma usiamo application/octet-stream per sicurezza
+        res.setHeader('Content-Type', 'application/octet-stream');
+      }
+      
+      // Configurazione CORS per consentire l'accesso da iframe
+      res.setHeader('Access-Control-Allow-Origin', '*');
       next();
     });
-  }, express.static(path.join(process.cwd(), "uploads")));
+  }, express.static(path.join(process.cwd(), "uploads"), {
+    // Opzioni aggiuntive per express.static
+    setHeaders: (res, filePath) => {
+      // Aggiungi cache control per migliorare le prestazioni
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      
+      // Assicurati che tutti i file HTML e JS possano essere caricati in un iframe
+      const ext = path.extname(filePath).toLowerCase();
+      if (ext === '.html' || ext === '.htm' || ext === '.js') {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+      }
+    }
+  }));
 
   // Get file information
   app.get("/api/files/:id", async (req: Request, res: Response) => {

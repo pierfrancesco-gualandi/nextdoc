@@ -311,6 +311,7 @@ export type ThreeDModelModuleContent = {
     originalName: string;
     url: string;
     mimeType: string;
+    relativePath?: string;  // Percorso relativo all'interno della cartella
   }>;
   controls?: {
     rotate: boolean;

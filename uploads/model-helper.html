@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Helper per Modelli 3D WebGL</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        pre {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+        h2 {
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .file-list {
+            margin-top: 10px;
+        }
+        .file-item {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .file-item:hover {
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Helper per Modelli 3D WebGL</h1>
+        <p>Questo strumento aiuta a diagnosticare e correggere problemi con i modelli 3D WebGL caricati.</p>
+        
+        <h2>Informazioni modello ricevute</h2>
+        <pre id="model-info">In attesa di dati dal modello 3D...</pre>
+        
+        <h2>File disponibili</h2>
+        <div id="file-list" class="file-list">Nessun file trovato</div>
+        
+        <h2>Test di accesso ai file</h2>
+        <div id="test-results">
+            <p>Clicca su un file dalla lista per testare l'accesso.</p>
+        </div>
+    </div>
+
+    <script>
+        // Memorizza le informazioni ricevute
+        let modelInfo = null;
+        
+        // Ricevi messaggi dal genitore con informazioni sul modello
+        window.addEventListener('message', function(event) {
+            // Ricevi soltanto messaggi dal tuo dominio per sicurezza
+            if (event.origin !== window.location.origin) return;
+            
+            if (event.data && event.data.type === 'model-folder-info') {
+                modelInfo = event.data;
+                
+                // Aggiorna l'interfaccia con le informazioni ricevute
+                document.getElementById('model-info').textContent = JSON.stringify(modelInfo, null, 2);
+                
+                // Popola la lista dei file
+                const fileList = document.getElementById('file-list');
+                fileList.innerHTML = '';
+                
+                if (modelInfo.allFiles && modelInfo.allFiles.length > 0) {
+                    modelInfo.allFiles.forEach(file => {
+                        const fileItem = document.createElement('div');
+                        fileItem.className = 'file-item';
+                        fileItem.textContent = `${file.originalName} (${file.relativePath || 'nessun percorso relativo'})`;
+                        fileItem.onclick = function() {
+                            testFileAccess(file.url, file.originalName);
+                        };
+                        fileList.appendChild(fileItem);
+                    });
+                } else if (modelInfo.fileMap && Object.keys(modelInfo.fileMap).length > 0) {
+                    for (const [path, url] of Object.entries(modelInfo.fileMap)) {
+                        const fileItem = document.createElement('div');
+                        fileItem.className = 'file-item';
+                        fileItem.textContent = path;
+                        fileItem.onclick = function() {
+                            testFileAccess(url, path);
+                        };
+                        fileList.appendChild(fileItem);
+                    }
+                } else {
+                    fileList.innerHTML = 'Nessun file trovato nella struttura del modello';
+                }
+            }
+        });
+        
+        // Invia una richiesta al genitore per ottenere informazioni sul modello
+        function requestModelInfo() {
+            window.parent.postMessage({
+                type: 'request-model-folder-info'
+            }, '*');
+        }
+        
+        // Testa l'accesso a un file
+        function testFileAccess(url, filename) {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = `<p>Testing accesso a: ${filename}</p>`;
+            
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Errore HTTP: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    const firstChars = data.substring(0, 100) + (data.length > 100 ? '...' : '');
+                    resultsDiv.innerHTML += `
+                        <p style="color: green">✓ File accessibile correttamente</p>
+                        <p>Preview: <pre>${firstChars}</pre></p>
+                        <p><a href="${url}" target="_blank">Apri file in una nuova scheda</a></p>
+                    `;
+                })
+                .catch(error => {
+                    resultsDiv.innerHTML += `
+                        <p style="color: red">✗ Errore nell'accesso al file: ${error.message}</p>
+                    `;
+                });
+        }
+        
+        // Richiedi informazioni sul modello all'avvio
+        window.onload = function() {
+            // Richiedi informazioni al caricamento della pagina
+            requestModelInfo();
+            
+            // Richiedi nuovamente dopo un breve ritardo (per assicurarsi che il genitore sia pronto)
+            setTimeout(requestModelInfo, 1000);
+        };
+    </script>
+</body>
+</html>

@@ -435,27 +435,30 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
     // Raccolta dei percorsi relativi dai file (per file selezionati da cartella con webkitdirectory)
     const fileStructure: Record<string, string> = {};
     
+    console.log("Preparazione caricamento cartella:", folderName);
+    
     // Aggiungi tutti i file aggiuntivi e costruisci la struttura
     files.forEach(file => {
       formData.append('files', file);
       
       // Mantieni traccia della struttura delle cartelle (per webkitdirectory)
       // @ts-ignore - webkitRelativePath è una proprietà specifica per gli input di tipo 'directory'
-      const relativePath = file.webkitRelativePath || '';
+      let relativePath = file.webkitRelativePath || '';
       
-      if (relativePath) {
-        console.log(`File nella cartella: ${relativePath}`);
-        
-        // Salva i percorsi relativi per la ricostruzione della struttura
-        // Usa il nome originale come chiave per evitare conflitti
-        fileStructure[file.name] = relativePath;
-        
-        // Se non è un caricamento di directory ma stiamo usando la selezione multipla,
-        // crea un percorso relativo virtuale nel formato "folderName/filename"
-        if (!isDirectoryUpload && !relativePath.includes('/')) {
-          fileStructure[file.name] = `${folderName}/${file.name}`;
-        }
+      // Per il file principale, crea un percorso relativo se non esiste
+      if (file === selectedFile && !relativePath) {
+        relativePath = `${folderName}/${file.name}`;
       }
+      
+      // Per i file selezionati individualmente o in multi-selezione
+      if (!relativePath && !isDirectoryUpload) {
+        relativePath = `${folderName}/${file.name}`;
+      }
+      
+      console.log(`File ${file.name}: percorso relativo = ${relativePath}`);
+      
+      // Salva SEMPRE il percorso relativo, anche per file senza sottocartelle
+      fileStructure[file.name] = relativePath;
     });
     
     // Se abbiamo informazioni sulla struttura delle cartelle, le passiamo al server
