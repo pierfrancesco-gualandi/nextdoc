@@ -102,9 +102,17 @@ export default function ContentModule({
       return renderModuleEditor();
     }
     
+    // Prima di renderizzare, assicuriamoci che l'oggetto content esista
+    if (!content) {
+      return <div className="p-2 text-neutral-dark">Contenuto non disponibile</div>;
+    }
+
     switch (module.type) {
       case "text":
-        return <div dangerouslySetInnerHTML={{ __html: content.text }} />;
+        // Assicuriamoci che il testo esista prima di renderizzarlo
+        return content.text 
+          ? <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: content.text }} /> 
+          : <div className="text-neutral-medium italic">Testo vuoto</div>;
         
       case "image":
         return (
@@ -115,13 +123,35 @@ export default function ContentModule({
         );
         
       case "warning":
+        // Verifica se il modulo di avviso ha il contenuto necessario
+        if (!content.title || !content.message) {
+          return <div className="text-neutral-medium italic">Avviso configurato in modo incompleto</div>;
+        }
+        
+        let bgColor = "bg-warning";
+        let borderColor = "border-warning";
+        let textColor = "text-warning";
+        let icon = "warning";
+        
+        if (content.level === "info") {
+          bgColor = "bg-info";
+          borderColor = "border-info";
+          textColor = "text-info";
+          icon = "info";
+        } else if (content.level === "error") {
+          bgColor = "bg-error";
+          borderColor = "border-error";
+          textColor = "text-error";
+          icon = "error";
+        }
+        
         return (
-          <div className="p-4 bg-warning bg-opacity-5 border-l-4 border-warning">
+          <div className={`p-4 ${bgColor} bg-opacity-5 border-l-4 ${borderColor}`}>
             <div className="flex">
-              <span className="material-icons text-warning mr-2">warning</span>
+              <span className={`material-icons ${textColor} mr-2`}>{icon}</span>
               <div>
                 <p className="text-neutral-darkest font-medium mb-1">{content.title}</p>
-                <p className="text-neutral-dark">{content.message}</p>
+                <p className="text-neutral-dark whitespace-pre-wrap">{content.message}</p>
               </div>
             </div>
           </div>
@@ -193,13 +223,18 @@ export default function ContentModule({
         );
         
       case "table":
+        // Verifica se la tabella ha intestazioni e righe
+        if (!content.headers || !content.rows || content.headers.length === 0) {
+          return <div className="text-neutral-medium italic">Tabella vuota o non configurata correttamente</div>;
+        }
+        
         return (
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center w-full">
             <div className="w-full overflow-x-auto">
               <Table className="w-full border-collapse">
                 <TableHeader>
                   <TableRow className="bg-neutral-lightest">
-                    {content.headers && content.headers.map((header: string, index: number) => (
+                    {content.headers.map((header: string, index: number) => (
                       <TableHead key={index} className="text-neutral-dark font-medium p-2 border border-neutral-light text-left">
                         {header}
                       </TableHead>
@@ -207,15 +242,23 @@ export default function ContentModule({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {content.rows && content.rows.map((row: string[], rowIndex: number) => (
-                    <TableRow key={rowIndex} className="hover:bg-neutral-lightest">
-                      {row.map((cell: string, cellIndex: number) => (
-                        <TableCell key={cellIndex} className="p-2 border border-neutral-light">
-                          {cell}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
+                  {content.rows.map((row: string[], rowIndex: number) => {
+                    // Assicurati che ogni riga abbia lo stesso numero di celle delle intestazioni
+                    const displayRow = [...row];
+                    while (displayRow.length < content.headers.length) {
+                      displayRow.push(""); // Aggiungi celle vuote se mancanti
+                    }
+                    
+                    return (
+                      <TableRow key={rowIndex} className="hover:bg-neutral-lightest">
+                        {displayRow.slice(0, content.headers.length).map((cell: string, cellIndex: number) => (
+                          <TableCell key={cellIndex} className="p-2 border border-neutral-light">
+                            {cell || ""}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -290,6 +333,22 @@ export default function ContentModule({
                 onChange={(e) => setContent({ ...content, message: e.target.value })} 
                 rows={3}
               />
+            </div>
+            <div>
+              <Label htmlFor="warning-level">Livello di importanza</Label>
+              <Select
+                value={content.level || "warning"}
+                onValueChange={(value) => setContent({ ...content, level: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleziona un livello" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="info">Informazione</SelectItem>
+                  <SelectItem value="warning">Avviso</SelectItem>
+                  <SelectItem value="error">Errore</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         );
