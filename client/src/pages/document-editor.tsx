@@ -15,6 +15,8 @@ import BomManager from "@/components/bom-manager";
 import SectionBomAssociator from "@/components/section-bom-associator";
 import SectionBomSummary from "@/components/section-bom-summary";
 import DocumentSectionPreview from "@/components/DocumentSectionPreview";
+import TranslatedDocumentSectionPreview from "@/components/TranslatedDocumentSectionPreview";
+import LanguageSelector from "@/components/language-selector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -110,6 +112,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   const [showTrashBin, setShowTrashBin] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<string>("editor");
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("0"); // Lingua predefinita (originale)
   
   // Fetch document data
   const { data: document, isLoading: documentLoading } = useQuery({
@@ -592,8 +595,16 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
           <TabsContent value="preview">
             <div className="p-6">
               <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-sm">
-                <div className="px-6 py-4 border-b border-neutral-light">
+                <div className="px-6 py-4 border-b border-neutral-light flex justify-between items-center">
                   <h3 className="text-lg font-medium">Anteprima documento</h3>
+                  
+                  {/* Selettore lingua per traduzione */}
+                  {sections && sections.length > 0 && (
+                    <LanguageSelector 
+                      documentId={id} 
+                      onLanguageChange={setSelectedLanguage} 
+                    />
+                  )}
                 </div>
                 <div className="p-6">
                   {id === 'new' ? (
@@ -612,13 +623,24 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                             .filter((section: any) => !section.parentId) // Solo sezioni di primo livello
                             .sort((a: any, b: any) => a.order - b.order)
                             .map((section: any) => (
-                              <DocumentSectionPreview 
-                                key={section.id} 
-                                section={section} 
-                                allSections={sections}
-                                documentId={id}
-                                level={0}
-                              />
+                              selectedLanguage && selectedLanguage !== '0' ? (
+                                <TranslatedDocumentSectionPreview 
+                                  key={section.id} 
+                                  section={section} 
+                                  allSections={sections}
+                                  documentId={id}
+                                  level={0}
+                                  languageId={selectedLanguage}
+                                />
+                              ) : (
+                                <DocumentSectionPreview 
+                                  key={section.id} 
+                                  section={section} 
+                                  allSections={sections}
+                                  documentId={id}
+                                  level={0}
+                                />
+                              )
                             ))}
                         </div>
                       ) : (
