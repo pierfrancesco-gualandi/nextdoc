@@ -98,8 +98,11 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
             else if (fileName.endsWith('.obj')) format = "obj";
             else if (fileName.endsWith('.stl')) format = "stl";
             else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) format = "html";
+            else if (fileName.endsWith('.zip')) format = "html"; // Consideriamo i ZIP come HTML (WebGL)
+            else if (fileName.endsWith('.jt')) format = "jt"; // Supporto per JT files
           }
           
+          // Crea il modulo con le informazioni di base
           moduleContent = { 
             src: data.url, 
             title: fileDescription || data.originalName,
@@ -107,13 +110,31 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
             controls: { rotate: true, zoom: true, pan: true }
           };
           
-          // Se è un file HTML, aggiungi il percorso della cartella (nome del file senza estensione)
-          if (format === "html" && selectedFile) {
-            const folderName = selectedFile.name.split('.')[0];
-            moduleContent = {
-              ...moduleContent,
-              folderPath: folderName
-            };
+          // Se è un file HTML o un file ZIP estratto, aggiungi le informazioni aggiuntive
+          if ((format === "html" || data.isZipExtract) && selectedFile) {
+            let folderName = selectedFile.name.split('.')[0];
+            
+            // Se è un file ZIP estratto, usa le informazioni dal server
+            if (data.isZipExtract) {
+              console.log("File ZIP estratto con successo:", data);
+              format = "html"; // Forza il formato HTML per ZIP estratti
+              
+              // Aggiungi tutte le informazioni della cartella estratta
+              moduleContent = {
+                ...moduleContent,
+                format: format,
+                folderName: data.folderName,
+                folderPath: data.folderName,
+                fileStructure: data.fileStructure || {},
+                allFiles: data.allFiles || []
+              };
+            } else {
+              // Per file HTML standard
+              moduleContent = {
+                ...moduleContent,
+                folderPath: folderName
+              };
+            }
           }
           break;
       }
@@ -320,7 +341,7 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
       case "pdf":
         return "application/pdf,.pdf";
       case "3d-model":
-        return ".glb,.gltf,.obj,.stl,.html,.htm";
+        return ".glb,.gltf,.obj,.stl,.html,.htm,.zip,.jt";
       default:
         return "*/*";
     }
@@ -512,7 +533,7 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
           <div className="text-xs text-muted-foreground">
             {uploadType === "image" ? "Immagini (.jpg, .png, .gif, .svg)" :
              uploadType === "video" ? "Video (.mp4, .webm)" :
-             uploadType === "3d-model" ? "Modelli 3D (.glb, .gltf, .obj, .stl)" :
+             uploadType === "3d-model" ? "Modelli 3D (.glb, .gltf, .obj, .stl, .html, .zip, .jt)" :
              "Documenti PDF (.pdf)"}
           </div>
         </div>
@@ -591,68 +612,86 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
               />
             </div>
             
-            {/* Sezione speciale per i file HTML WebGL - consente di caricare file aggiuntivi */}
-            {uploadType === "3d-model" && selectedFile && (selectedFile.name.endsWith('.html') || selectedFile.name.endsWith('.htm')) && (
+            {/* Sezione speciale per i file HTML WebGL o ZIP - consente di caricare file aggiuntivi */}
+            {uploadType === "3d-model" && selectedFile && (
+              selectedFile.name.toLowerCase().endsWith('.html') || 
+              selectedFile.name.toLowerCase().endsWith('.htm') || 
+              selectedFile.name.toLowerCase().endsWith('.zip')
+            ) && (
               <div className="mt-4 space-y-4 border border-blue-200 bg-blue-50 p-4 rounded-md">
                 <div className="font-medium text-blue-600 flex items-center">
                   <span className="material-icons text-sm mr-1">info</span>
-                  File HTML WebGL rilevato
+                  {selectedFile?.name.toLowerCase().endsWith('.zip') ? 
+                    'File ZIP (WebGL) rilevato' : 
+                    'File HTML WebGL rilevato'}
                 </div>
                 
                 <div className="text-sm text-gray-700">
-                  Questo modello WebGL potrebbe richiedere file aggiuntivi. È possibile caricare tutti i file necessari insieme.
+                  {selectedFile?.name.toLowerCase().endsWith('.zip') ? 
+                    'I file ZIP contengono già tutti i file necessari e verranno estratti automaticamente sul server.' :
+                    'Questo modello WebGL potrebbe richiedere file aggiuntivi. È possibile caricare tutti i file necessari insieme.'}
                 </div>
                 
-                <div className="grid gap-2">
-                  <Label htmlFor="folder-files" className="font-medium">File aggiuntivi (js, css, texture, ecc.)</Label>
-                  <div className="space-y-2">
-                    <Input
-                      id="folder-files"
-                      type="file"
-                      multiple
-                      ref={folderFilesInputRef}
-                      onChange={handleFolderFilesChange}
-                    />
-                    <p className="text-xs text-gray-500">
-                      Seleziona tutti i file di supporto necessari per il modello WebGL
-                    </p>
+                {selectedFile?.name.toLowerCase().endsWith('.zip') && (
+                  <div className="mt-2 p-2 bg-green-100 border border-green-200 rounded-md text-sm text-green-700">
+                    <strong>Consiglio:</strong> Il file ZIP verrà estratto automaticamente e tutti i file al suo interno saranno disponibili per il modello WebGL.
                   </div>
-                  
-                  {/* Input per selezionare una cartella intera */}
-                  <div className="mt-3 border-t pt-3 border-blue-200">
-                    <Label htmlFor="directory-input" className="font-medium">OPPURE seleziona una cartella intera</Label>
-                    <div className="relative mt-1">
-                      <Input
-                        id="directory-input"
-                        type="file"
-                        // @ts-ignore
-                        webkitdirectory="true"
-                        directory="true"
-                        onChange={handleFolderFilesChange}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Seleziona la cartella contenente tutti i file del modello WebGL
-                    </p>
-                  </div>
-                  
-                  {selectedFolderFiles && selectedFolderFiles.length > 0 && (
-                    <div className="text-sm text-blue-600 mt-2 flex items-center">
-                      <span className="material-icons text-sm mr-1">check_circle</span>
-                      {selectedFolderFiles.length} file aggiuntivi selezionati
-                    </div>
-                  )}
-                </div>
+                )}
                 
-                <Button 
-                  type="button"
-                  variant="secondary" 
-                  className="w-full"
-                  onClick={uploadFolder}
-                  disabled={!selectedFolderFiles || selectedFolderFiles.length === 0 || uploadingFile}
-                >
-                  {uploadingFile ? 'Caricamento in corso...' : 'Carica modello con i file aggiuntivi'}
-                </Button>
+                {!selectedFile?.name.toLowerCase().endsWith('.zip') && (
+                  <>
+                    <div className="grid gap-2">
+                      <Label htmlFor="folder-files" className="font-medium">File aggiuntivi (js, css, texture, ecc.)</Label>
+                      <div className="space-y-2">
+                        <Input
+                          id="folder-files"
+                          type="file"
+                          multiple
+                          ref={folderFilesInputRef}
+                          onChange={handleFolderFilesChange}
+                        />
+                        <p className="text-xs text-gray-500">
+                          Seleziona tutti i file di supporto necessari per il modello WebGL
+                        </p>
+                      </div>
+                      
+                      {/* Input per selezionare una cartella intera */}
+                      <div className="mt-3 border-t pt-3 border-blue-200">
+                        <Label htmlFor="directory-input" className="font-medium">OPPURE seleziona una cartella intera</Label>
+                        <div className="relative mt-1">
+                          <Input
+                            id="directory-input"
+                            type="file"
+                            // @ts-ignore
+                            webkitdirectory="true"
+                            directory="true"
+                            onChange={handleFolderFilesChange}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Seleziona la cartella contenente tutti i file del modello WebGL
+                        </p>
+                      </div>
+                      
+                      {selectedFolderFiles && selectedFolderFiles.length > 0 && (
+                        <div className="text-sm text-blue-600 mt-2 flex items-center">
+                          <span className="material-icons text-sm mr-1">check_circle</span>
+                          {selectedFolderFiles.length} file aggiuntivi selezionati
+                        </div>
+                      )}
+                    </div>
+                    
+                    <Button 
+                      type="button"
+                      variant="secondary" 
+                      className="w-full"
+                      onClick={uploadFolder}
+                      disabled={!selectedFolderFiles || selectedFolderFiles.length === 0 || uploadingFile}
+                    >
+                      {uploadingFile ? 'Caricamento in corso...' : 'Carica modello con i file aggiuntivi'}
+                    </Button>
+                  </>
+                )}
               </div>
             )}
           </div>
