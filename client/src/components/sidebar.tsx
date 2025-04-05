@@ -98,6 +98,19 @@ export default function Sidebar({ activePath }: SidebarProps) {
             <div 
               onClick={(e) => {
                 e.preventDefault();
+                // Naviga al confronto distinte
+                navigate('/bom-comparison');
+              }}
+              className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/bom-comparison' ? 'bg-primary text-white font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
+            >
+              <span className={`material-icons mr-3 ${activePath === '/bom-comparison' ? 'text-white' : 'text-neutral-medium'}`}>compare_arrows</span>
+              Confronto Distinte
+            </div>
+          </li>
+          <li>
+            <div 
+              onClick={(e) => {
+                e.preventDefault();
                 navigate('/modules');
               }}
               className={`flex items-center px-4 py-2 rounded-md cursor-pointer ${activePath === '/modules' ? 'bg-primary text-white font-medium' : 'text-neutral-dark hover:bg-neutral-lightest transition'}`}
@@ -162,8 +175,19 @@ export default function Sidebar({ activePath }: SidebarProps) {
 }
 
 // Renamed to avoid conflict with the main DocumentTreeView component
+// Define section type outside the component
+interface Section {
+  id: number;
+  title: string;
+  parentId: number | null;
+  documentId: number;
+  order: number;
+  description: string | null;
+  isModule: boolean | null;
+}
+
 function SimpleSectionTree({ documentId }: { documentId: string }) {
-  const { data: sections, isLoading } = useQuery({
+  const { data: sections, isLoading } = useQuery<Section[]>({
     queryKey: [`/api/documents/${documentId}/sections`],
     enabled: !!documentId && documentId !== 'new',
   });
@@ -172,11 +196,13 @@ function SimpleSectionTree({ documentId }: { documentId: string }) {
     return <div className="text-sm text-neutral-medium py-2">Caricamento...</div>;
   }
 
-  // Organize sections into a hierarchical structure
-  const rootSections = sections.filter(section => !section.parentId);
-  const childSections = sections.filter(section => section.parentId);
+  // Use the Section interface defined above
 
-  const renderSection = (section: any, level = 0) => {
+  // Organize sections into a hierarchical structure
+  const rootSections = (sections as Section[]).filter(section => !section.parentId);
+  const childSections = (sections as Section[]).filter(section => section.parentId);
+
+  const renderSection = (section: Section, level = 0) => {
     const children = childSections.filter(child => child.parentId === section.id);
     const isFolder = children.length > 0;
     const isActive = false; // Set based on current section
@@ -192,7 +218,7 @@ function SimpleSectionTree({ documentId }: { documentId: string }) {
         
         {children.length > 0 && (
           <div className={`pl-4`}>
-            {children.map(child => (
+            {children.map((child: Section) => (
               <div key={child.id} className="tree-item px-2 py-1 rounded-sm my-1 flex items-center">
                 <span className="material-icons text-sm mr-1 text-neutral-medium">label</span>
                 <span>{child.title}</span>
@@ -206,7 +232,7 @@ function SimpleSectionTree({ documentId }: { documentId: string }) {
 
   return (
     <div className="tree-view pl-1 text-sm">
-      {rootSections.map(section => renderSection(section))}
+      {rootSections.map((section: Section) => renderSection(section))}
       
       {rootSections.length === 0 && (
         <div className="text-sm text-neutral-medium py-2">Nessuna sezione disponibile</div>

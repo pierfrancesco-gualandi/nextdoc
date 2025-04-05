@@ -505,6 +505,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get BOMs associated with a document
+  app.get("/api/documents/:documentId/boms", async (req: Request, res: Response) => {
+    try {
+      const documentId = Number(req.params.documentId);
+      
+      // Get all sections in the document
+      const sections = await storage.getSectionsByDocumentId(documentId);
+      
+      // Get content modules for each section
+      const bomModules = [];
+      for (const section of sections) {
+        const modules = await storage.getContentModulesBySectionId(section.id);
+        
+        // Filter for BOM modules
+        const sectionBomModules = modules.filter(module => {
+          if (module.type !== 'bom') return false;
+          
+          // Parse content to get BOM ID
+          try {
+            let content;
+            if (typeof module.content === 'string') {
+              content = JSON.parse(module.content);
+            } else {
+              content = module.content;
+            }
+            
+            return content && content.bomId;
+          } catch (e) {
+            return false;
+          }
+        });
+        
+        bomModules.push(...sectionBomModules);
+      }
+      
+      // Extract unique BOM IDs
+      const bomIds = new Set();
+      bomModules.forEach(module => {
+        try {
+          let content;
+          if (typeof module.content === 'string') {
+            content = JSON.parse(module.content);
+          } else {
+            content = module.content;
+          }
+          
+          if (content && content.bomId) {
+            bomIds.add(content.bomId);
+          }
+        } catch (e) {
+          // Skip invalid content
+        }
+      });
+      
+      // Get BOM details for each ID
+      const boms = [];
+      const bomIdsArray = Array.from(bomIds);
+      for (let i = 0; i < bomIdsArray.length; i++) {
+        const bomId = bomIdsArray[i];
+        const bom = await storage.getBom(Number(bomId));
+        if (bom) {
+          boms.push(bom);
+        }
+      }
+      
+      res.json(boms);
+    } catch (error) {
+      console.error("Error fetching document BOMs:", error);
+      res.status(500).json({ message: "Failed to fetch document BOMs" });
+    }
+  });
+
   app.get("/api/boms/:id", async (req: Request, res: Response) => {
     try {
       const bom = await storage.getBom(Number(req.params.id));

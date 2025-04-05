@@ -7,6 +7,7 @@ import Dashboard from "@/pages/dashboard";
 import DocumentEditor from "@/pages/document-editor";
 import ModulesLibrary from "@/pages/modules-library";
 import BomManagement from "@/pages/bom-management";
+import BomComparison from "@/pages/bom-comparison";
 import Users from "@/pages/users";
 import Translations from "@/pages/translations";
 import ModuleTranslation from "@/pages/module-translation";
@@ -154,6 +155,7 @@ function Router() {
             <Route path="/documents/:id" component={({ params }) => <DocumentEditor id={params.id} toggleSidebar={toggleSidebar} />} />
             <Route path="/modules" component={() => <ModulesLibrary toggleSidebar={toggleSidebar} />} />
             <Route path="/components" component={() => <BomManagement toggleSidebar={toggleSidebar} />} />
+            <Route path="/bom-comparison" component={() => <BomComparison toggleSidebar={toggleSidebar} />} />
             <Route path="/users" component={() => <Users toggleSidebar={toggleSidebar} />} />
             <Route path="/translations" component={() => <Translations toggleSidebar={toggleSidebar} />} />
             <Route path="/module-translation/:id" component={({ params }) => <ModuleTranslation toggleSidebar={toggleSidebar} />} />

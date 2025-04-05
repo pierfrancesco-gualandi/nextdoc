@@ -75,6 +75,11 @@ export interface IStorage {
   createBom(bom: InsertBom): Promise<Bom>;
   updateBom(id: number, bom: Partial<InsertBom>): Promise<Bom | undefined>;
   deleteBom(id: number): Promise<boolean>;
+  compareBoms(bomId1: number, bomId2: number): Promise<{
+    common: Array<{ component: Component, item1: BomItem, item2: BomItem }>,
+    onlyInFirst: Array<{ component: Component, item: BomItem }>,
+    onlyInSecond: Array<{ component: Component, item: BomItem }>
+  }>;
   
   // BOM item operations
   getBomItem(id: number): Promise<BomItem | undefined>;
@@ -648,6 +653,82 @@ export class MemStorage implements IStorage {
   async deleteBomItem(id: number): Promise<boolean> {
     return this.bomItems.delete(id);
   }
+  
+  async deleteBomItems(bomId: number): Promise<boolean> {
+    try {
+      const bomItems = await this.getBomItemsByBomId(bomId);
+      bomItems.forEach(item => this.bomItems.delete(item.id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting BOM items:", error);
+      return false;
+    }
+  }
+  
+  async compareBoms(bomId1: number, bomId2: number): Promise<{
+    common: Array<{ component: Component, item1: BomItem, item2: BomItem }>,
+    onlyInFirst: Array<{ component: Component, item: BomItem }>,
+    onlyInSecond: Array<{ component: Component, item: BomItem }>
+  }> {
+    const items1 = await this.getBomItemsByBomId(bomId1);
+    const items2 = await this.getBomItemsByBomId(bomId2);
+    
+    const result: {
+      common: Array<{ component: Component, item1: BomItem, item2: BomItem }>,
+      onlyInFirst: Array<{ component: Component, item: BomItem }>,
+      onlyInSecond: Array<{ component: Component, item: BomItem }>
+    } = {
+      common: [],
+      onlyInFirst: [],
+      onlyInSecond: []
+    };
+    
+    // Crea mappe per velocizzare i confronti
+    const itemMap1 = new Map<number, BomItem>();
+    items1.forEach(item => itemMap1.set(item.componentId, item));
+    
+    const itemMap2 = new Map<number, BomItem>();
+    items2.forEach(item => itemMap2.set(item.componentId, item));
+    
+    // Trova componenti comuni
+    const itemMap1Keys = Array.from(itemMap1.keys());
+    for (let i = 0; i < itemMap1Keys.length; i++) {
+      const componentId = itemMap1Keys[i];
+      const item1 = itemMap1.get(componentId);
+      const item2 = itemMap2.get(componentId);
+      
+      if (item1 && item2) {
+        // Il componente esiste in entrambe le BOM
+        const component = await this.getComponent(componentId);
+        if (component) {
+          result.common.push({ component, item1, item2 });
+        }
+      } else if (item1) {
+        // Il componente esiste solo nella prima BOM
+        const component = await this.getComponent(componentId);
+        if (component) {
+          result.onlyInFirst.push({ component, item: item1 });
+        }
+      }
+    }
+    
+    // Trova componenti solo nella seconda BOM
+    const itemMap2Keys = Array.from(itemMap2.keys());
+    for (let i = 0; i < itemMap2Keys.length; i++) {
+      const componentId = itemMap2Keys[i];
+      if (!itemMap1.has(componentId)) {
+        const item2 = itemMap2.get(componentId);
+        if (item2) {
+          const component = await this.getComponent(componentId);
+          if (component) {
+            result.onlyInSecond.push({ component, item: item2 });
+          }
+        }
+      }
+    }
+    
+    return result;
+  }
 
   // Section-Component operations
   async getSectionComponent(id: number): Promise<SectionComponent | undefined> {
@@ -1147,6 +1228,77 @@ export class MemStorage implements IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // BOM comparison
+  async compareBoms(bomId1: number, bomId2: number): Promise<{
+    common: Array<{ component: Component, item1: BomItem, item2: BomItem }>,
+    onlyInFirst: Array<{ component: Component, item: BomItem }>,
+    onlyInSecond: Array<{ component: Component, item: BomItem }>
+  }> {
+    // Retrieve BOM items
+    const items1 = await this.getBomItemsByBomId(bomId1);
+    const items2 = await this.getBomItemsByBomId(bomId2);
+    
+    const result: {
+      common: Array<{ component: Component, item1: BomItem, item2: BomItem }>,
+      onlyInFirst: Array<{ component: Component, item: BomItem }>,
+      onlyInSecond: Array<{ component: Component, item: BomItem }>
+    } = {
+      common: [],
+      onlyInFirst: [],
+      onlyInSecond: []
+    };
+    
+    // Create maps to speed up comparisons
+    const itemMap1 = new Map<number, BomItem>();
+    for (const item of items1) {
+      itemMap1.set(item.componentId, item);
+    }
+    
+    const itemMap2 = new Map<number, BomItem>();
+    for (const item of items2) {
+      itemMap2.set(item.componentId, item);
+    }
+    
+    // Find common components
+    const itemMap1Keys = Array.from(itemMap1.keys());
+    for (let i = 0; i < itemMap1Keys.length; i++) {
+      const componentId = itemMap1Keys[i];
+      const item1 = itemMap1.get(componentId);
+      const item2 = itemMap2.get(componentId);
+      
+      if (item1 && item2) {
+        // Component exists in both BOMs
+        const component = await this.getComponent(componentId);
+        if (component) {
+          result.common.push({ component, item1, item2 });
+        }
+      } else if (item1) {
+        // Component exists only in the first BOM
+        const component = await this.getComponent(componentId);
+        if (component) {
+          result.onlyInFirst.push({ component, item: item1 });
+        }
+      }
+    }
+    
+    // Find components only in the second BOM
+    const itemMap2Keys = Array.from(itemMap2.keys());
+    for (let i = 0; i < itemMap2Keys.length; i++) {
+      const componentId = itemMap2Keys[i];
+      if (!itemMap1.has(componentId)) {
+        const item2 = itemMap2.get(componentId);
+        if (item2) {
+          const component = await this.getComponent(componentId);
+          if (component) {
+            result.onlyInSecond.push({ component, item: item2 });
+          }
+        }
+      }
+    }
+    
+    return result;
+  }
+  
   // File upload operations
   async getUploadedFile(id: number): Promise<UploadedFile | undefined> {
     const [file] = await db.select().from(uploadedFiles).where(eq(uploadedFiles.id, id));
