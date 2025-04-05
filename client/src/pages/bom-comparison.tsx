@@ -399,7 +399,16 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
       totalTargetCodes,
       commonCodesCount: commonCodes.length,
       uniqueCodesCount: uniqueTargetCodes.length,
-      matchPercentage
+      matchPercentage,
+      // Aggiungi elenco di codici non associati per una migliore visualizzazione
+      nonAssociatedCodes: targetItems
+        .filter((item: any) => !commonCodes.includes(item.code))
+        .map((item: any) => ({
+          code: item.code,
+          description: item.description,
+          level: item.level,
+          quantity: item.quantity
+        }))
     };
   };
   
@@ -516,23 +525,57 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
                     
                     <CardContent>
                       {summary && (
-                        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                          <div className="p-4 bg-neutral-lightest rounded-lg border border-neutral-light">
-                            <p className="text-sm text-neutral-medium">Codici Totali (Target)</p>
-                            <p className="text-2xl font-semibold">{summary.totalTargetCodes}</p>
+                        <div className="space-y-6">
+                          <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="p-4 bg-neutral-lightest rounded-lg border border-neutral-light">
+                              <p className="text-sm text-neutral-medium">Codici Totali (Target)</p>
+                              <p className="text-2xl font-semibold">{summary.totalTargetCodes}</p>
+                            </div>
+                            <div className="p-4 bg-neutral-lightest rounded-lg border border-neutral-light">
+                              <p className="text-sm text-neutral-medium">Codici Comuni</p>
+                              <p className="text-2xl font-semibold">{summary.commonCodesCount}</p>
+                            </div>
+                            <div className="p-4 bg-neutral-lightest rounded-lg border border-neutral-light">
+                              <p className="text-sm text-neutral-medium">Codici Non Associati</p>
+                              <p className="text-2xl font-semibold text-amber-700">{summary.uniqueCodesCount}</p>
+                            </div>
+                            <div className="p-4 bg-neutral-lightest rounded-lg border border-neutral-light">
+                              <p className="text-sm text-neutral-medium">Percentuale di Corrispondenza</p>
+                              <p className="text-2xl font-semibold">{summary.matchPercentage}%</p>
+                            </div>
                           </div>
-                          <div className="p-4 bg-neutral-lightest rounded-lg border border-neutral-light">
-                            <p className="text-sm text-neutral-medium">Codici Comuni</p>
-                            <p className="text-2xl font-semibold">{summary.commonCodesCount}</p>
-                          </div>
-                          <div className="p-4 bg-neutral-lightest rounded-lg border border-neutral-light">
-                            <p className="text-sm text-neutral-medium">Codici Non Associati</p>
-                            <p className="text-2xl font-semibold">{summary.uniqueCodesCount}</p>
-                          </div>
-                          <div className="p-4 bg-neutral-lightest rounded-lg border border-neutral-light">
-                            <p className="text-sm text-neutral-medium">Percentuale di Corrispondenza</p>
-                            <p className="text-2xl font-semibold">{summary.matchPercentage}%</p>
-                          </div>
+                          
+                          {summary.uniqueCodesCount > 0 && (
+                            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg mb-4">
+                              <div className="flex items-start space-x-2">
+                                <span className="text-amber-500 mt-1">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-alert-triangle">
+                                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                                    <path d="M12 9v4"></path><path d="M12 17h.01"></path>
+                                  </svg>
+                                </span>
+                                <div>
+                                  <h4 className="text-amber-800 font-medium text-sm">Componenti Non Associati</h4>
+                                  <p className="text-amber-700 text-sm mt-1">
+                                    I seguenti {summary.uniqueCodesCount} componenti sono presenti solo nella nuova distinta base
+                                    e non hanno associazioni nella distinta originale:
+                                  </p>
+                                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                                    {summary.nonAssociatedCodes?.slice(0, 9).map((item: any, index: number) => (
+                                      <div key={index} className="px-3 py-2 bg-white border border-amber-200 rounded text-xs">
+                                        <span className="font-medium">{item.code}</span>: {item.description}
+                                      </div>
+                                    ))}
+                                    {summary.nonAssociatedCodes?.length > 9 && (
+                                      <div className="px-3 py-2 bg-white border border-amber-200 rounded text-xs flex items-center justify-center">
+                                        <span className="font-medium">+{summary.nonAssociatedCodes.length - 9} altri</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                       
@@ -555,19 +598,29 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
                               return (
                                 <TableRow 
                                   key={item.id} 
-                                  className={isCommon ? "" : "bg-yellow-50 hover:bg-yellow-100"}
+                                  className={isCommon ? "" : "bg-amber-100 hover:bg-amber-200 font-medium"}
                                 >
-                                  <TableCell>{item.code}</TableCell>
-                                  <TableCell>{item.description}</TableCell>
-                                  <TableCell>{item.level}</TableCell>
-                                  <TableCell>{item.quantity}</TableCell>
+                                  <TableCell className={isCommon ? "" : "text-amber-700 font-medium"}>
+                                    {item.code}
+                                    {!isCommon && (
+                                      <span className="inline-block ml-2 text-amber-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-alert-triangle">
+                                          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                                          <path d="M12 9v4"></path><path d="M12 17h.01"></path>
+                                        </svg>
+                                      </span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className={isCommon ? "" : "text-amber-700 font-medium"}>{item.description}</TableCell>
+                                  <TableCell className={isCommon ? "" : "text-amber-700 font-medium"}>{item.level}</TableCell>
+                                  <TableCell className={isCommon ? "" : "text-amber-700 font-medium"}>{item.quantity}</TableCell>
                                   <TableCell>
                                     {isCommon ? (
                                       <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
                                         Associato
                                       </span>
                                     ) : (
-                                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-200 text-amber-800 border border-amber-400">
                                         Non Associato
                                       </span>
                                     )}
@@ -609,8 +662,9 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
                               <AlertTitle>Informazioni</AlertTitle>
                               <AlertDescription>
                                 Il nuovo documento conterrà tutte le sezioni e i moduli associati ai codici
-                                comuni tra le due distinte base. I codici non associati saranno evidenziati
-                                nella nuova distinta base.
+                                comuni tra le due distinte base. I codici non associati saranno chiaramente
+                                evidenziati in arancione nella nuova distinta base, per permettere una facile
+                                identificazione dei componenti che richiedono attenzione.
                               </AlertDescription>
                             </Alert>
                           </div>
