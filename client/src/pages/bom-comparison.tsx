@@ -3,6 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import Header from "@/components/header";
+import { DownloadGuideButton } from "@/components/download-guide-button";
 import { 
   Card, 
   CardContent, 
@@ -428,11 +429,14 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
             
             <TabsContent value="compare">
               <Card>
-                <CardHeader>
-                  <CardTitle>Seleziona le Distinte Base da Confrontare</CardTitle>
-                  <CardDescription>
-                    Seleziona un documento e le distinte base per il confronto
-                  </CardDescription>
+                <CardHeader className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>Seleziona le Distinte Base da Confrontare</CardTitle>
+                    <CardDescription>
+                      Seleziona un documento e le distinte base per il confronto
+                    </CardDescription>
+                  </div>
+                  <DownloadGuideButton className="ml-4" />
                 </CardHeader>
                 
                 <CardContent className="space-y-6">
@@ -516,11 +520,14 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
               {comparisonResult && (
                 <div className="space-y-6">
                   <Card>
-                    <CardHeader>
-                      <CardTitle>Risultato del Confronto</CardTitle>
-                      <CardDescription>
-                        Confronto tra la distinta base originale e la nuova distinta base
-                      </CardDescription>
+                    <CardHeader className="flex justify-between items-start">
+                      <div>
+                        <CardTitle>Risultato del Confronto</CardTitle>
+                        <CardDescription>
+                          Confronto tra la distinta base originale e la nuova distinta base
+                        </CardDescription>
+                      </div>
+                      <DownloadGuideButton className="ml-4" />
                     </CardHeader>
                     
                     <CardContent>
