@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -50,7 +50,7 @@ const BomSelector = ({ bomId, onChange }: { bomId: number, onChange: (bomId: num
   );
 };
 
-const BomViewContent = ({ bomId }: { bomId: number }) => {
+const BomViewContent = ({ bomId, filter, levelFilter, useFilters = false }: { bomId: number, filter?: string, levelFilter?: number, useFilters?: boolean }) => {
   const { data: bom = {} as any } = useQuery({
     queryKey: ['/api/boms', bomId],
     enabled: !!bomId,
@@ -62,6 +62,34 @@ const BomViewContent = ({ bomId }: { bomId: number }) => {
     enabled: !!bomId,
     staleTime: 30000,
   });
+
+  const [localFilter, setLocalFilter] = useState(filter || '');
+  const [localLevelFilter, setLocalLevelFilter] = useState<number | undefined>(levelFilter);
+  const [enableFiltering, setEnableFiltering] = useState(useFilters);
+
+  // Trova i livelli unici disponibili nella distinta base
+  const uniqueLevels = useMemo(() => {
+    if (!Array.isArray(bomItems)) return [];
+    return Array.from(new Set(bomItems.map((item: any) => item.level))).sort((a, b) => a - b);
+  }, [bomItems]);
+
+  // Filtra gli elementi in base ai criteri selezionati
+  const filteredItems = useMemo(() => {
+    if (!Array.isArray(bomItems)) return [];
+    if (!enableFiltering) return bomItems;
+
+    return bomItems.filter((item: any) => {
+      // Applica il filtro di testo (codice o descrizione)
+      const textMatch = !localFilter || 
+        item.component.code.toLowerCase().includes(localFilter.toLowerCase()) || 
+        item.component.description.toLowerCase().includes(localFilter.toLowerCase());
+      
+      // Applica il filtro per livello
+      const levelMatch = localLevelFilter === undefined || item.level === localLevelFilter;
+      
+      return textMatch && levelMatch;
+    });
+  }, [bomItems, localFilter, localLevelFilter, enableFiltering]);
 
   if (!bomId) {
     return <div className="text-neutral-medium italic">Nessuna distinta base selezionata</div>;
@@ -75,7 +103,56 @@ const BomViewContent = ({ bomId }: { bomId: number }) => {
   return (
     <div className="flex flex-col">
       <h3 className="text-lg font-medium mb-2">{bom && bom.title ? bom.title : 'Distinta Base'}</h3>
-      {Array.isArray(bomItems) && bomItems.length > 0 ? (
+      
+      {/* Filtri */}
+      <div className="mb-4 border border-gray-200 rounded-md p-3 bg-gray-50">
+        <div className="flex items-center mb-2">
+          <Checkbox 
+            id="enable-filters"
+            checked={enableFiltering}
+            onCheckedChange={(checked) => setEnableFiltering(!!checked)}
+          />
+          <label htmlFor="enable-filters" className="ml-2 text-sm font-medium">Attiva filtri</label>
+        </div>
+        
+        {enableFiltering && (
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="text-filter" className="text-xs mb-1">Filtro per codice o descrizione</Label>
+              <Input 
+                id="text-filter" 
+                value={localFilter}
+                onChange={e => setLocalFilter(e.target.value)}
+                placeholder="Inserisci codice o descrizione"
+                className="h-8 text-sm"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="level-filter" className="text-xs mb-1">Filtro per livello</Label>
+              <Select
+                value={localLevelFilter !== undefined ? localLevelFilter.toString() : ''}
+                onValueChange={(value) => setLocalLevelFilter(value ? parseInt(value) : undefined)}
+              >
+                <SelectTrigger id="level-filter" className="h-8 text-sm">
+                  <SelectValue placeholder="Tutti i livelli" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Tutti i livelli</SelectItem>
+                  {uniqueLevels.map((level: number) => (
+                    <SelectItem key={level} value={level.toString()}>
+                      Livello {level}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {/* Tabella */}
+      {Array.isArray(filteredItems) && filteredItems.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="min-w-full border-collapse">
             <thead>
@@ -87,11 +164,11 @@ const BomViewContent = ({ bomId }: { bomId: number }) => {
               </tr>
             </thead>
             <tbody>
-              {bomItems.map((item: any) => (
+              {filteredItems.map((item: any) => (
                 <tr key={item.id} className="border-b border-neutral-light hover:bg-neutral-lightest">
                   <td className="py-2 px-3 text-sm">{item.level}</td>
-                  <td className="py-2 px-3 text-sm font-medium">{item.code}</td>
-                  <td className="py-2 px-3 text-sm">{item.description}</td>
+                  <td className="py-2 px-3 text-sm font-medium">{item.component.code}</td>
+                  <td className="py-2 px-3 text-sm">{item.component.description}</td>
                   <td className="py-2 px-3 text-sm">{item.quantity}</td>
                 </tr>
               ))}
@@ -99,7 +176,11 @@ const BomViewContent = ({ bomId }: { bomId: number }) => {
           </table>
         </div>
       ) : (
-        <div className="text-neutral-medium italic">Nessun componente nella distinta base</div>
+        <div className="text-neutral-medium italic">
+          {enableFiltering 
+            ? "Nessun componente corrisponde ai filtri selezionati" 
+            : "Nessun componente nella distinta base"}
+        </div>
       )}
     </div>
   );
@@ -365,7 +446,12 @@ export default function ContentModule({
 
       case "bom":
         return (
-          <BomViewContent bomId={content.bomId} />
+          <BomViewContent
+            bomId={content.bomId}
+            filter={content.filter}
+            levelFilter={content.levelFilter}
+            useFilters={content.useFilters}
+          />
         );
         
       default:
@@ -577,14 +663,52 @@ export default function ContentModule({
                 onChange={(bomId) => setContent({ ...content, bomId })}
               />
             </div>
-            <div>
-              <Label htmlFor="bom-filter">Filtro (opzionale)</Label>
-              <Input 
-                id="bom-filter" 
-                value={content.filter || ""} 
-                onChange={(e) => setContent({ ...content, filter: e.target.value })}
-                placeholder="Filtro per codice o descrizione"
-              />
+            
+            <div className="border border-gray-200 rounded-md p-3 bg-gray-50">
+              <div className="flex items-center mb-3">
+                <Checkbox 
+                  id="enable-filters-edit"
+                  checked={content.useFilters || false}
+                  onCheckedChange={(checked) => setContent({ ...content, useFilters: !!checked })}
+                />
+                <label htmlFor="enable-filters-edit" className="ml-2 text-sm font-medium">Attiva filtri</label>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="bom-filter">Filtro per codice o descrizione</Label>
+                  <Input 
+                    id="bom-filter" 
+                    value={content.filter || ""} 
+                    onChange={(e) => setContent({ ...content, filter: e.target.value })}
+                    placeholder="Filtro per codice o descrizione"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="level-filter-edit">Filtro per livello</Label>
+                  <Select
+                    value={content.levelFilter !== undefined ? content.levelFilter.toString() : ''}
+                    onValueChange={(value) => setContent({ 
+                      ...content, 
+                      levelFilter: value ? parseInt(value) : undefined 
+                    })}
+                  >
+                    <SelectTrigger id="level-filter-edit">
+                      <SelectValue placeholder="Tutti i livelli" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tutti i livelli</SelectItem>
+                      {/* I livelli vengono popolati dinamicamente quando si visualizza */}
+                      {[0, 1, 2, 3, 4, 5].map((level) => (
+                        <SelectItem key={level} value={level.toString()}>
+                          Livello {level}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
           </div>
         );
