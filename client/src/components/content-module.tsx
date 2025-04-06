@@ -357,14 +357,17 @@ export default function ContentModule({
             filterSettings={content.filterSettings}
             onFilterUpdate={(filterSettings: BomFilterSettings) => {
               // Aggiorna silenziosamente il contenuto del modulo con le impostazioni di filtro correnti
-              if (!isEditing) {
+              if (!isEditing && JSON.stringify(filterSettings) !== JSON.stringify(content.filterSettings)) {
                 const updatedContent = { ...content, filterSettings };
-                const updateRequest = {
-                  content: updatedContent
-                };
+                setContent(updatedContent); // Aggiorna lo stato locale
                 
-                // Aggiorna il modulo senza mostrare toast o UI di caricamento
-                updateModuleMutation.mutate({ id: module.id, module: updateRequest });
+                // Aggiorna il modulo sul server ma senza rendere di nuovo
+                const updateRequest = { content: updatedContent };
+                
+                // Usa setTimeout per evitare il ciclo di render
+                setTimeout(() => {
+                  updateModuleMutation.mutate({ id: module.id, module: updateRequest });
+                }, 0);
               }
             }}
           />
