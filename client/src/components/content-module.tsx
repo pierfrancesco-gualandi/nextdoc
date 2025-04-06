@@ -216,13 +216,8 @@ const BomViewContent = ({ bomId, filter, levelFilter: initialLevelFilter, useFil
         levelMatch = item.level === Number(levelFilter);
       }
       
-      // Quando è presente un filtro per codice con logica gerarchica, 
-      // ignora il filtro per livello
-      if (codeFilter && childCodes.length > 0) {
-        return codeMatch && descriptionMatch;
-      }
-      
-      // Altrimenti tutte le condizioni devono essere soddisfatte
+      // Tutte le condizioni devono essere soddisfatte
+      // Se è attiva la logica gerarchica, applica comunque il filtro per livello
       return codeMatch && descriptionMatch && levelMatch;
     });
   }, [
