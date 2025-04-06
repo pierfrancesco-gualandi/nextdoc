@@ -328,8 +328,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/modules/:id", async (req: Request, res: Response) => {
     try {
       const moduleId = Number(req.params.id);
-      const { data, error } = validateBody(insertContentModuleSchema.partial(), req.body);
+      
+      // Gestione speciale per il formato del content
+      let moduleData = req.body;
+      
+      // Se il contenuto è una stringa, proviamo a convertirlo in oggetto
+      if (req.body.module && typeof req.body.module.content === 'string') {
+        try {
+          const parsedContent = JSON.parse(req.body.module.content);
+          moduleData = {
+            ...req.body.module,
+            content: parsedContent
+          };
+        } catch (parseError) {
+          console.error("Errore nel parsing del content:", parseError);
+          // Mantieni il content così com'è se non può essere analizzato
+        }
+      }
+      
+      const { data, error } = validateBody(insertContentModuleSchema.partial(), moduleData);
       if (error) {
+        console.error("Errore di validazione:", error);
         return res.status(400).json({ message: error });
       }
       
@@ -340,6 +359,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(module);
     } catch (error) {
+      console.error("Errore nell'aggiornamento del modulo:", error);
       res.status(500).json({ message: "Failed to update content module" });
     }
   });
