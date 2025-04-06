@@ -63,9 +63,15 @@ const BomViewContent = ({ bomId, filter, levelFilter, useFilters = false }: { bo
     staleTime: 30000,
   });
 
-  const [localFilter, setLocalFilter] = useState(filter || '');
+  const [localCodeFilter, setLocalCodeFilter] = useState('');
+  const [localDescriptionFilter, setLocalDescriptionFilter] = useState('');
   const [localLevelFilter, setLocalLevelFilter] = useState<number | undefined>(levelFilter);
   const [enableFiltering, setEnableFiltering] = useState(useFilters);
+  
+  // Nuovi flag per i filtri individuali
+  const [enableCodeFilter, setEnableCodeFilter] = useState(false);
+  const [enableDescriptionFilter, setEnableDescriptionFilter] = useState(false);
+  const [enableLevelFilter, setEnableLevelFilter] = useState(false);
 
   // Trova i livelli unici disponibili nella distinta base
   const uniqueLevels = useMemo(() => {
@@ -96,19 +102,31 @@ const BomViewContent = ({ bomId, filter, levelFilter, useFilters = false }: { bo
       const code = item.component.code || '';
       const description = item.component.description || '';
       
-      // Applica il filtro di testo (codice o descrizione)
-      const textMatch = !localFilter || 
-        code.toLowerCase().includes(localFilter.toLowerCase()) || 
-        description.toLowerCase().includes(localFilter.toLowerCase());
+      // Applica il filtro per codice se attivo
+      const codeMatch = !enableCodeFilter || 
+        code.toLowerCase().includes(localCodeFilter.toLowerCase());
       
-      // Applica il filtro per livello
-      const levelMatch = localLevelFilter === undefined || localLevelFilter === null || 
+      // Applica il filtro per descrizione se attivo
+      const descriptionMatch = !enableDescriptionFilter || 
+        description.toLowerCase().includes(localDescriptionFilter.toLowerCase());
+      
+      // Applica il filtro per livello se attivo
+      const levelMatch = !enableLevelFilter || 
+        localLevelFilter === undefined || 
+        localLevelFilter === null || 
         (typeof localLevelFilter === "string" && localLevelFilter === "all") || 
         item.level === localLevelFilter;
       
-      return textMatch && levelMatch;
+      // Tutte le condizioni devono essere soddisfatte
+      return codeMatch && descriptionMatch && levelMatch;
     });
-  }, [bomItems, localFilter, localLevelFilter, enableFiltering]);
+  }, [
+    bomItems, 
+    enableFiltering, 
+    enableCodeFilter, localCodeFilter, 
+    enableDescriptionFilter, localDescriptionFilter, 
+    enableLevelFilter, localLevelFilter
+  ]);
 
   if (!bomId) {
     return <div className="text-neutral-medium italic">Nessuna distinta base selezionata</div>;
@@ -136,35 +154,76 @@ const BomViewContent = ({ bomId, filter, levelFilter, useFilters = false }: { bo
         
         {enableFiltering && (
           <div className="space-y-3">
-            <div>
-              <Label htmlFor="text-filter" className="text-xs mb-1">Filtro per codice o descrizione</Label>
-              <Input 
-                id="text-filter" 
-                value={localFilter}
-                onChange={e => setLocalFilter(e.target.value)}
-                placeholder="Inserisci codice o descrizione"
-                className="h-8 text-sm"
-              />
+            {/* Filtro per codice */}
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <Checkbox 
+                  id="enable-code-filter"
+                  checked={enableCodeFilter}
+                  onCheckedChange={(checked) => setEnableCodeFilter(!!checked)}
+                />
+                <Label htmlFor="enable-code-filter" className="ml-2 text-xs font-medium">Filtro per codice</Label>
+              </div>
+              {enableCodeFilter && (
+                <Input 
+                  id="code-filter" 
+                  value={localCodeFilter}
+                  onChange={e => setLocalCodeFilter(e.target.value)}
+                  placeholder="Inserisci codice"
+                  className="h-8 text-sm"
+                />
+              )}
             </div>
             
-            <div>
-              <Label htmlFor="level-filter" className="text-xs mb-1">Filtro per livello</Label>
-              <Select
-                value={localLevelFilter !== undefined ? (typeof localLevelFilter === "number" ? localLevelFilter.toString() : "all") : "all"}
-                onValueChange={(value) => setLocalLevelFilter(value === "all" ? undefined : parseInt(value))}
-              >
-                <SelectTrigger id="level-filter" className="h-8 text-sm">
-                  <SelectValue placeholder="Tutti i livelli" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tutti i livelli</SelectItem>
-                  {uniqueLevels.map((level: number) => (
-                    <SelectItem key={level} value={level.toString()}>
-                      Livello {level}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Filtro per descrizione */}
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <Checkbox 
+                  id="enable-description-filter"
+                  checked={enableDescriptionFilter}
+                  onCheckedChange={(checked) => setEnableDescriptionFilter(!!checked)}
+                />
+                <Label htmlFor="enable-description-filter" className="ml-2 text-xs font-medium">Filtro per descrizione</Label>
+              </div>
+              {enableDescriptionFilter && (
+                <Input 
+                  id="description-filter" 
+                  value={localDescriptionFilter}
+                  onChange={e => setLocalDescriptionFilter(e.target.value)}
+                  placeholder="Inserisci descrizione"
+                  className="h-8 text-sm"
+                />
+              )}
+            </div>
+            
+            {/* Filtro per livello */}
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <Checkbox 
+                  id="enable-level-filter"
+                  checked={enableLevelFilter}
+                  onCheckedChange={(checked) => setEnableLevelFilter(!!checked)}
+                />
+                <Label htmlFor="enable-level-filter" className="ml-2 text-xs font-medium">Filtro per livello</Label>
+              </div>
+              {enableLevelFilter && (
+                <Select
+                  value={localLevelFilter !== undefined ? (typeof localLevelFilter === "number" ? localLevelFilter.toString() : "all") : "all"}
+                  onValueChange={(value) => setLocalLevelFilter(value === "all" ? undefined : parseInt(value))}
+                >
+                  <SelectTrigger id="level-filter" className="h-8 text-sm">
+                    <SelectValue placeholder="Tutti i livelli" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tutti i livelli</SelectItem>
+                    {uniqueLevels.map((level: number) => (
+                      <SelectItem key={level} value={level.toString()}>
+                        Livello {level}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
         )}
