@@ -65,9 +65,12 @@ const BomViewContent = ({ bomId, filter, levelFilter: initialLevelFilter, useFil
   });
 
   const [codeFilter, setCodeFilter] = useState('');
+  const [codeFilterType, setCodeFilterType] = useState<'contains' | 'startsWith' | 'equals'>('contains');
   const [descriptionFilter, setDescriptionFilter] = useState('');
+  const [descriptionFilterType, setDescriptionFilterType] = useState<'contains' | 'startsWith' | 'equals'>('contains');
   const [levelFilter, setLevelFilter] = useState<number | undefined>(initialLevelFilter);
   const [enableFiltering, setEnableFiltering] = useState(useFilters);
+  const [filtersApplied, setFiltersApplied] = useState(false);
 
   // Trova i livelli unici disponibili nella distinta base
   const uniqueLevels = useMemo(() => {
@@ -98,28 +101,71 @@ const BomViewContent = ({ bomId, filter, levelFilter: initialLevelFilter, useFil
       const code = item.component.code || '';
       const description = item.component.description || '';
       
-      // Applica il filtro per codice
-      const codeMatch = codeFilter === '' ||
-        code.toLowerCase().includes(codeFilter.toLowerCase());
+      // Applica il filtro per codice in base al tipo di filtro selezionato
+      let codeMatch = false;
+      if (!codeFilter) {
+        codeMatch = true;
+      } else {
+        switch (codeFilterType) {
+          case 'equals':
+            codeMatch = code.toLowerCase() === codeFilter.toLowerCase();
+            break;
+          case 'startsWith':
+            codeMatch = code.toLowerCase().startsWith(codeFilter.toLowerCase());
+            break;
+          case 'contains':
+          default:
+            codeMatch = code.toLowerCase().includes(codeFilter.toLowerCase());
+            break;
+        }
+      }
       
-      // Applica il filtro per descrizione
-      const descriptionMatch = descriptionFilter === '' || 
-        description.toLowerCase().includes(descriptionFilter.toLowerCase());
+      // Applica il filtro per descrizione in base al tipo di filtro selezionato
+      let descriptionMatch = false;
+      if (!descriptionFilter) {
+        descriptionMatch = true;
+      } else {
+        switch (descriptionFilterType) {
+          case 'equals':
+            descriptionMatch = description.toLowerCase() === descriptionFilter.toLowerCase();
+            break;
+          case 'startsWith':
+            descriptionMatch = description.toLowerCase().startsWith(descriptionFilter.toLowerCase());
+            break;
+          case 'contains':
+          default:
+            descriptionMatch = description.toLowerCase().includes(descriptionFilter.toLowerCase());
+            break;
+        }
+      }
       
-      // Applica il filtro per livello
+      // Applica il filtro per livello - se un livello è selezionato, mostra tutti gli elementi di quel livello
       const levelMatch = levelFilter === undefined || 
         levelFilter === null || 
         (typeof levelFilter === "string" && levelFilter === "all") || 
         item.level === levelFilter;
       
+      // Filtra i codici padre e tutti i componenti appartenenti a quel codice
+      let parentCodeMatch = false;
+      if (codeFilter && enableFiltering) {
+        // Verifica se è selezionato un codice padre
+        if (item.parentCode === codeFilter || code === codeFilter) {
+          parentCodeMatch = true;
+        }
+      } else {
+        parentCodeMatch = true;
+      }
+      
       // Tutte le condizioni devono essere soddisfatte
-      return codeMatch && descriptionMatch && levelMatch;
+      return (codeMatch || parentCodeMatch) && descriptionMatch && levelMatch;
     });
   }, [
     bomItems, 
     enableFiltering, 
-    codeFilter, 
-    descriptionFilter, 
+    codeFilter,
+    codeFilterType, 
+    descriptionFilter,
+    descriptionFilterType, 
     levelFilter
   ]);
 
@@ -152,25 +198,63 @@ const BomViewContent = ({ bomId, filter, levelFilter: initialLevelFilter, useFil
             {/* Filtro per codice */}
             <div className="space-y-2">
               <Label htmlFor="code-filter" className="text-xs font-medium">Filtro per codice</Label>
-              <Input 
-                id="code-filter" 
-                value={codeFilter}
-                onChange={e => setCodeFilter(e.target.value)}
-                placeholder="Inserisci codice"
-                className="h-8 text-sm"
-              />
+              <div className="flex gap-2">
+                <div className="flex-grow">
+                  <Input 
+                    id="code-filter" 
+                    value={codeFilter}
+                    onChange={e => setCodeFilter(e.target.value)}
+                    placeholder="Inserisci codice"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="w-36">
+                  <Select
+                    value={codeFilterType}
+                    onValueChange={(value) => setCodeFilterType(value as 'contains' | 'startsWith' | 'equals')}
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue placeholder="Contiene" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="contains">Contiene</SelectItem>
+                      <SelectItem value="startsWith">Inizia con</SelectItem>
+                      <SelectItem value="equals">Uguale a</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
             
             {/* Filtro per descrizione */}
             <div className="space-y-2">
               <Label htmlFor="description-filter" className="text-xs font-medium">Filtro per descrizione</Label>
-              <Input 
-                id="description-filter" 
-                value={descriptionFilter}
-                onChange={e => setDescriptionFilter(e.target.value)}
-                placeholder="Inserisci descrizione"
-                className="h-8 text-sm"
-              />
+              <div className="flex gap-2">
+                <div className="flex-grow">
+                  <Input 
+                    id="description-filter" 
+                    value={descriptionFilter}
+                    onChange={e => setDescriptionFilter(e.target.value)}
+                    placeholder="Inserisci descrizione"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="w-36">
+                  <Select
+                    value={descriptionFilterType}
+                    onValueChange={(value) => setDescriptionFilterType(value as 'contains' | 'startsWith' | 'equals')}
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue placeholder="Contiene" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="contains">Contiene</SelectItem>
+                      <SelectItem value="startsWith">Inizia con</SelectItem>
+                      <SelectItem value="equals">Uguale a</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
             
             {/* Filtro per livello */}
@@ -192,6 +276,17 @@ const BomViewContent = ({ bomId, filter, levelFilter: initialLevelFilter, useFil
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            
+            {/* Pulsante per applicare i filtri */}
+            <div className="pt-2">
+              <Button 
+                size="sm" 
+                onClick={() => setFiltersApplied(true)}
+                className="w-full"
+              >
+                Applica filtri
+              </Button>
             </div>
           </div>
         )}
