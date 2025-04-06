@@ -60,6 +60,15 @@ const BomViewContent = ({ bomId, filter, levelFilter: initialLevelFilter, useFil
 
   const { data: bomItems = [] as any[] } = useQuery({
     queryKey: ['/api/boms', bomId, 'items'],
+    queryFn: async () => {
+      const response = await fetch(`/api/boms/${bomId}/items`);
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento della distinta');
+      }
+      const data = await response.json();
+      console.log(`API ha restituito ${data.length} elementi nella distinta ${bomId}`);
+      return data;
+    },
     enabled: !!bomId,
     staleTime: 30000,
   });
