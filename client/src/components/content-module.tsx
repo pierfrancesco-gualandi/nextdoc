@@ -30,7 +30,7 @@ const BomSelector = ({ bomId, onChange }: { bomId: number, onChange: (bomId: num
   });
 
   if (!boms || !Array.isArray(boms) || boms.length === 0) {
-    return <div className="text-neutral-medium">Nessuna distinta base disponibile</div>;
+    return <div className="text-neutral-medium">Nessun elenco componenti disponibile</div>;
   }
 
   return (
@@ -39,7 +39,7 @@ const BomSelector = ({ bomId, onChange }: { bomId: number, onChange: (bomId: num
       onValueChange={(value) => onChange(parseInt(value))}
     >
       <SelectTrigger>
-        <SelectValue placeholder="Seleziona una distinta base" />
+        <SelectValue placeholder="Seleziona un elenco componenti" />
       </SelectTrigger>
       <SelectContent>
         {boms.map((bom: any) => (
@@ -140,7 +140,7 @@ export default function ContentModule({
       case "warning": return "Avviso";
       case "checklist": return "Lista di controllo";
       case "component": return "Componente";
-      case "bom": return "Distinta Base";
+      case "bom": return "Elenco Componenti";
       case "link": return "Link";
       case "pdf": return "PDF";
       case "3d-model": return "Modello 3D";
@@ -356,38 +356,46 @@ export default function ContentModule({
         );
         
       case "bom":
+        // Mostra la descrizione traducibile se disponibile
         return (
-          <BomViewContent
-            bomId={content.bomId}
-            filter={content.filter}
-            levelFilter={content.levelFilter}
-            useFilters={isPreview ? false : content.useFilters}  // In anteprima, non mostrare i controlli di filtro
-            filterSettings={content.filterSettings}
-            onFilterUpdate={(filterSettings: BomFilterSettings) => {
-              // Aggiorna silenziosamente il contenuto del modulo con le impostazioni di filtro correnti
-              if (!isEditing && JSON.stringify(filterSettings) !== JSON.stringify(content.filterSettings)) {
-                const updatedContent = { ...content, filterSettings };
-                setContent(updatedContent); // Aggiorna lo stato locale
-                
-                try {
-                  // Usa setTimeout per evitare il ciclo di render
-                  setTimeout(() => {
-                    // Assicurati che il modulo da salvare contenga tutti i campi necessari
-                    updateModuleMutation.mutate({ 
-                      id: module.id, 
-                      module: {
-                        content: JSON.stringify(updatedContent),  // Converti l'oggetto in stringa JSON
-                        type: module.type,
-                        sectionId: module.sectionId
-                      }
-                    });
-                  }, 0);
-                } catch (error) {
-                  console.error("Errore nell'aggiornamento dei filtri:", error);
+          <div>
+            {content.description && !isEditing && (
+              <div className="mb-4 text-neutral-medium">
+                {content.description}
+              </div>
+            )}
+            <BomViewContent
+              bomId={content.bomId}
+              filter={content.filter}
+              levelFilter={content.levelFilter}
+              useFilters={isPreview ? false : content.useFilters}  // In anteprima, non mostrare i controlli di filtro
+              filterSettings={content.filterSettings}
+              onFilterUpdate={(filterSettings: BomFilterSettings) => {
+                // Aggiorna silenziosamente il contenuto del modulo con le impostazioni di filtro correnti
+                if (!isEditing && JSON.stringify(filterSettings) !== JSON.stringify(content.filterSettings)) {
+                  const updatedContent = { ...content, filterSettings };
+                  setContent(updatedContent); // Aggiorna lo stato locale
+                  
+                  try {
+                    // Usa setTimeout per evitare il ciclo di render
+                    setTimeout(() => {
+                      // Assicurati che il modulo da salvare contenga tutti i campi necessari
+                      updateModuleMutation.mutate({ 
+                        id: module.id, 
+                        module: {
+                          content: JSON.stringify(updatedContent),  // Converti l'oggetto in stringa JSON
+                          type: module.type,
+                          sectionId: module.sectionId
+                        }
+                      });
+                    }, 0);
+                  } catch (error) {
+                    console.error("Errore nell'aggiornamento dei filtri:", error);
+                  }
                 }
-              }
-            }}
-          />
+              }}
+            />
+          </div>
         );
         
       default:
@@ -575,10 +583,19 @@ export default function ContentModule({
         return (
           <div className="space-y-4">
             <div>
-              <Label htmlFor="bom-id">Distinta Base</Label>
+              <Label htmlFor="bom-id">Elenco Componenti</Label>
               <BomSelector
                 bomId={content.bomId || 0}
                 onChange={(bomId) => setContent({ ...content, bomId })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="bom-description">Descrizione (traducibile)</Label>
+              <Input
+                id="bom-description"
+                value={content.description || ""}
+                onChange={(e) => setContent({ ...content, description: e.target.value })}
+                placeholder="Inserisci una descrizione per questo elenco componenti"
               />
             </div>
             <div className="flex items-center space-x-2">
@@ -721,50 +738,211 @@ export default function ContentModule({
                         setContent({ ...content, filterSettings });
                       }}
                     />
-                    <Label htmlFor="filter-enabled">Attiva filtri all'apertura</Label>
+                    <Label htmlFor="filter-enabled">Abilita filtri predefiniti</Label>
                   </div>
                 </div>
               </div>
             )}
           </div>
         );
-
+        
+      case "checklist":
+        if (!content.items || !Array.isArray(content.items)) {
+          content.items = [{ text: "", checked: false }];
+        }
+        
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              {content.items.map((item: any, index: number) => (
+                <div key={index} className="flex items-start">
+                  <div className="mr-2 mt-1">
+                    <Checkbox 
+                      id={`checklist-item-edit-${module.id}-${index}`} 
+                      checked={item.checked} 
+                      onCheckedChange={(checked) => {
+                        const newItems = [...content.items];
+                        newItems[index] = { ...newItems[index], checked: !!checked };
+                        setContent({ ...content, items: newItems });
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Input 
+                      value={item.text}
+                      onChange={(e) => {
+                        const newItems = [...content.items];
+                        newItems[index] = { ...newItems[index], text: e.target.value };
+                        setContent({ ...content, items: newItems });
+                      }}
+                      placeholder="Elemento della lista"
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      const newItems = [...content.items];
+                      newItems.splice(index, 1);
+                      if (newItems.length === 0) {
+                        newItems.push({ text: "", checked: false });
+                      }
+                      setContent({ ...content, items: newItems });
+                    }}
+                    className="ml-2"
+                  >
+                    <span className="material-icons">delete</span>
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const newItems = [...content.items, { text: "", checked: false }];
+                setContent({ ...content, items: newItems });
+              }}
+              className="w-full"
+            >
+              <span className="material-icons mr-2">add</span>
+              Aggiungi elemento
+            </Button>
+          </div>
+        );
+        
+      case "component":
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="component-id">Componente</Label>
+              <Select
+                value={content.componentId ? content.componentId.toString() : ""}
+                onValueChange={(value) => {
+                  const componentId = parseInt(value);
+                  // Recupera le informazioni del componente se necessario
+                  setContent({ ...content, componentId });
+                }}
+              >
+                <SelectTrigger id="component-id">
+                  <SelectValue placeholder="Seleziona un componente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {/* Da implementare: lista dei componenti disponibili */}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="component-quantity">Quantità</Label>
+              <Input 
+                id="component-quantity" 
+                type="number" 
+                min="1"
+                value={content.quantity || 1} 
+                onChange={(e) => setContent({ ...content, quantity: parseInt(e.target.value) || 1 })} 
+              />
+            </div>
+            <div>
+              <Label htmlFor="component-notes">Note</Label>
+              <Textarea 
+                id="component-notes" 
+                value={content.notes || ""} 
+                onChange={(e) => setContent({ ...content, notes: e.target.value })} 
+              />
+            </div>
+          </div>
+        );
+        
+      case "link":
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="link-url">URL</Label>
+              <Input 
+                id="link-url" 
+                value={content.url || ""} 
+                onChange={(e) => setContent({ ...content, url: e.target.value })} 
+                placeholder="https://esempio.com"
+              />
+            </div>
+            <div>
+              <Label htmlFor="link-text">Testo del link</Label>
+              <Input 
+                id="link-text" 
+                value={content.text || ""} 
+                onChange={(e) => setContent({ ...content, text: e.target.value })} 
+                placeholder="Clicca qui"
+              />
+            </div>
+            <div>
+              <Label htmlFor="link-description">Descrizione (opzionale)</Label>
+              <Input 
+                id="link-description" 
+                value={content.description || ""} 
+                onChange={(e) => setContent({ ...content, description: e.target.value })} 
+                placeholder="Breve descrizione del link"
+              />
+            </div>
+          </div>
+        );
+        
+      case "pdf":
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="pdf-src">URL del PDF</Label>
+              <Input 
+                id="pdf-src" 
+                value={content.src || ""} 
+                onChange={(e) => setContent({ ...content, src: e.target.value })} 
+                placeholder="https://esempio.com/documento.pdf"
+              />
+            </div>
+            <div>
+              <Label htmlFor="pdf-title">Titolo del documento</Label>
+              <Input 
+                id="pdf-title" 
+                value={content.title || ""} 
+                onChange={(e) => setContent({ ...content, title: e.target.value })} 
+                placeholder="Manuale di istruzioni"
+              />
+            </div>
+          </div>
+        );
+        
       default:
-        return <div>Tipo di modulo non supportato: {module.type}</div>;
+        return <div>Editor non disponibile per questo tipo di modulo</div>;
     }
   };
   
   const renderModuleControls = () => {
-    if (isPreview) return null;
-    
     return (
-      <div className="flex items-center justify-end space-x-2 p-2">
+      <div className="flex justify-end space-x-2 mt-2">
         {isEditing ? (
           <>
-            <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>
+            <Button variant="outline" onClick={() => setIsEditing(false)}>
               Annulla
             </Button>
-            <Button size="sm" variant="default" onClick={saveChanges}>
+            <Button onClick={saveChanges}>
               Salva
             </Button>
           </>
         ) : (
           <>
-            <Button 
-              size="sm" 
-              variant="outline" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setIsEditing(true)}
+              className="ml-2"
             >
-              <span className="material-icons text-sm mr-1">edit</span>
-              Modifica
+              <span className="material-icons">edit</span>
             </Button>
-            <Button 
-              size="sm" 
-              variant="outline" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={handleDeleteModule}
+              className="text-red-500 hover:text-red-700"
             >
-              <span className="material-icons text-sm mr-1">delete</span>
-              Elimina
+              <span className="material-icons">delete</span>
             </Button>
           </>
         )}
@@ -774,15 +952,19 @@ export default function ContentModule({
   
   return (
     <div className="mb-4">
-      <Card className="w-full">
-        <CardHeader className="px-6 py-3 flex flex-row items-center justify-between border-b border-neutral-light">
-          <div className="flex items-center text-sm">
-            <span className="material-icons text-neutral-medium mr-2">{getModuleIcon(module.type)}</span>
-            <CardTitle className="text-lg text-neutral-dark">{getModuleLabel(module.type)}</CardTitle>
+      <Card className="overflow-hidden">
+        <CardHeader className="py-2 px-4 flex flex-row items-center justify-between bg-neutral-lightest">
+          <div className="flex items-center">
+            <span className="material-icons text-primary-500 mr-2">
+              {getModuleIcon(module.type)}
+            </span>
+            <CardTitle className="text-base font-medium">
+              {getModuleLabel(module.type)}
+            </CardTitle>
           </div>
-          {renderModuleControls()}
+          {!isPreview && renderModuleControls()}
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent className="p-4">
           {renderModuleContent()}
         </CardContent>
       </Card>

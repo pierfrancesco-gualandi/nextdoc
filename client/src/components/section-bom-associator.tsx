@@ -237,11 +237,11 @@ export default function SectionBomAssociator({ sectionId }: SectionBomAssociator
     <div className="p-4">
       <div className="mb-4">
         <Label htmlFor="bom-select" className="block text-sm font-medium text-neutral-darkest mb-1">
-          Seleziona Distinta Base (BOM)
+          Seleziona Elenco Componenti (BOM)
         </Label>
         <Select value={selectedBomId} onValueChange={setSelectedBomId}>
           <SelectTrigger id="bom-select" className="w-full">
-            <SelectValue placeholder="Seleziona una distinta base" />
+            <SelectValue placeholder="Seleziona un elenco componenti" />
           </SelectTrigger>
           <SelectContent>
             {bomsLoading ? (
@@ -253,7 +253,7 @@ export default function SectionBomAssociator({ sectionId }: SectionBomAssociator
                 </SelectItem>
               ))
             ) : (
-              <div className="p-2">Nessuna distinta base disponibile</div>
+              <div className="p-2">Nessun elenco componenti disponibile</div>
             )}
           </SelectContent>
         </Select>
@@ -339,7 +339,7 @@ export default function SectionBomAssociator({ sectionId }: SectionBomAssociator
 
           <Separator className="my-4" />
 
-          <h3 className="text-sm font-medium text-neutral-darkest mb-2">Componenti disponibili nella distinta base:</h3>
+          <h3 className="text-sm font-medium text-neutral-darkest mb-2">Componenti disponibili nell'elenco componenti:</h3>
           {bomItemsLoading ? (
             <div className="p-2">Caricamento componenti...</div>
           ) : filteredBomItems.length > 0 ? (

@@ -85,7 +85,7 @@ export default function BomManager({ documentId }: BomManagerProps) {
     <div className="p-6">
       <div className="flex mb-4 space-x-4">
         <div className="flex-1">
-          <Label className="block text-sm font-medium text-neutral-darkest mb-1">Distinta base corrente</Label>
+          <Label className="block text-sm font-medium text-neutral-darkest mb-1">Elenco componenti corrente</Label>
           <Select value={currentBomId} onValueChange={setCurrentBomId}>
             <SelectTrigger>
               <SelectValue placeholder="Seleziona distinta base" />
@@ -121,7 +121,7 @@ export default function BomManager({ documentId }: BomManagerProps) {
         onClick={compareDistinct}
         disabled={!currentBomId || !compareBomId || currentBomId === compareBomId}
       >
-        Confronta distinte
+        Confronta elenchi componenti
       </Button>
       
       {comparisonLoading && <div className="my-4">Caricamento confronto...</div>}
@@ -200,7 +200,7 @@ export default function BomManager({ documentId }: BomManagerProps) {
               <table className="min-w-full border-collapse">
                 <thead>
                   <tr className="bg-neutral-lightest border-b border-neutral-light">
-                    <th className="py-2 px-3 text-left text-xs font-medium text-neutral-dark">Distinta</th>
+                    <th className="py-2 px-3 text-left text-xs font-medium text-neutral-dark">Elenco componenti</th>
                     <th className="py-2 px-3 text-left text-xs font-medium text-neutral-dark">Codice</th>
                     <th className="py-2 px-3 text-left text-xs font-medium text-neutral-dark">Descrizione</th>
                     <th className="py-2 px-3 text-left text-xs font-medium text-neutral-dark">Quantità</th>

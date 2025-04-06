@@ -234,7 +234,7 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
       'pdf': 'PDF',
       'link': 'Link',
       'component': 'Componente',
-      'bom': 'Distinta Base'
+      'bom': 'Elenco Componenti'
     };
     return types[type] || type;
   };

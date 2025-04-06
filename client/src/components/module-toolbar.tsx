@@ -37,7 +37,7 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
     { id: "pdf", icon: "picture_as_pdf", label: "PDF" },
     { id: "component", icon: "category", label: "Componente" },
     { id: "3d-model", icon: "view_in_ar", label: "Modello 3D" },
-    { id: "bom", icon: "inventory_2", label: "Distinta Base" }
+    { id: "bom", icon: "inventory_2", label: "Elenco Componenti" }
   ];
   
   const createModuleMutation = useMutation({

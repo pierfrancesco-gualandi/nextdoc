@@ -438,7 +438,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
             <TabsList className="px-4 border-b border-neutral-light">
               <TabsTrigger value="editor">Editor</TabsTrigger>
               <TabsTrigger value="preview">Anteprima</TabsTrigger>
-              <TabsTrigger value="bom">Distinta Base</TabsTrigger>
+              <TabsTrigger value="bom">Elenco Componenti</TabsTrigger>
               <TabsTrigger value="bom-section">Associa BOM</TabsTrigger>
               <TabsTrigger value="permissions">Permessi</TabsTrigger>
               <TabsTrigger value="history">Cronologia</TabsTrigger>
@@ -659,7 +659,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
             <div className="p-6">
               <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-sm">
                 <div className="px-6 py-4 border-b border-neutral-light">
-                  <h3 className="text-lg font-medium">Gestione Distinte Base</h3>
+                  <h3 className="text-lg font-medium">Gestione Elenchi Componenti</h3>
                 </div>
                 <BomManager documentId={id} />
               </div>
@@ -690,7 +690,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
               <div className="flex-1 overflow-y-auto">
                 {id === 'new' ? (
                   <div className="p-6 text-center">
-                    <p>Salva il documento prima di associare le distinte base.</p>
+                    <p>Salva il documento prima di associare gli elenchi componenti.</p>
                   </div>
                 ) : selectedSection ? (
                   <div className="max-w-5xl mx-auto bg-white shadow-sm">
@@ -699,7 +699,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                         Associa componenti BOM alla sezione: <span className="text-primary">{selectedSection.title}</span>
                       </h3>
                       <p className="text-sm text-neutral-medium mt-1">
-                        In questa sezione puoi associare i componenti di una distinta base alla sezione selezionata.
+                        In questa sezione puoi associare i componenti di un elenco componenti alla sezione selezionata.
                       </p>
                     </div>
                     <SectionBomAssociator sectionId={selectedSection.id} />
@@ -709,7 +709,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                     <span className="material-icons text-5xl text-neutral-medium mb-3">view_list</span>
                     <h3 className="text-xl font-medium text-neutral-dark mb-2">Seleziona una sezione</h3>
                     <p className="text-neutral-medium">
-                      Seleziona una sezione dal menu a sinistra per associare componenti di una distinta base.
+                      Seleziona una sezione dal menu a sinistra per associare componenti di un elenco componenti.
                     </p>
                   </div>
                 )}

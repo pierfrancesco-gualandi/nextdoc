@@ -174,10 +174,10 @@ const BomExcelImporter: React.FC<BomExcelImporterProps> = ({ onImportSuccess, sh
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileSpreadsheet className="h-5 w-5" />
-          Importa Distinta Base
+          Importa Elenco Componenti
         </CardTitle>
         <CardDescription>
-          Carica un file Excel (.xlsx, .xls) o CSV (.csv) contenente la distinta base completa.
+          Carica un file Excel (.xlsx, .xls) o CSV (.csv) contenente l'elenco componenti completo.
           Il file deve contenere almeno le colonne: "Livello" (numerico, 0 per il livello più alto) e "Codice".
           Le colonne "Descrizione", "Quantità" e "Unità di misura" sono opzionali.
         </CardDescription>
@@ -194,10 +194,10 @@ const BomExcelImporter: React.FC<BomExcelImporterProps> = ({ onImportSuccess, sh
         <form onSubmit={handleImport}>
           <div className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="title">Titolo della BOM</Label>
+              <Label htmlFor="title">Titolo dell'elenco componenti</Label>
               <Input
                 id="title"
-                placeholder="Inserisci un titolo per la distinta base"
+                placeholder="Inserisci un titolo per l'elenco componenti"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
@@ -207,14 +207,14 @@ const BomExcelImporter: React.FC<BomExcelImporterProps> = ({ onImportSuccess, sh
               <Label htmlFor="description">Descrizione (opzionale)</Label>
               <Textarea
                 id="description"
-                placeholder="Aggiungi una descrizione per questa distinta base"
+                placeholder="Aggiungi una descrizione per questo elenco componenti"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
             
             <div className="grid gap-2">
-              <Label>File distinta base</Label>
+              <Label>File elenco componenti</Label>
               <Tabs defaultValue="excel" className="w-full mb-2">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="excel" className="flex items-center gap-1">
@@ -296,7 +296,7 @@ const BomExcelImporter: React.FC<BomExcelImporterProps> = ({ onImportSuccess, sh
               disabled={!file || importMutation.isPending}
               className="gap-1"
             >
-              {importMutation.isPending ? 'Importazione...' : 'Importa BOM'}
+              {importMutation.isPending ? 'Importazione...' : 'Importa Elenco Componenti'}
             </Button>
           </div>
         </form>

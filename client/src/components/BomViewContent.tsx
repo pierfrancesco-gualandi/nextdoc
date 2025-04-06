@@ -215,15 +215,15 @@ const BomViewContent = ({
   }, [codeFilter, codeFilterType, descriptionFilter, descriptionFilterType, levelFilterValue, enableFiltering, onFilterUpdate]);
 
   if (isBomLoading || isItemsLoading) {
-    return <div className="py-4 text-center text-neutral-medium">Caricamento distinta base...</div>;
+    return <div className="py-4 text-center text-neutral-medium">Caricamento elenco componenti...</div>;
   }
 
   if (!bom) {
-    return <div className="py-4 text-center text-neutral-medium">Distinta base non trovata</div>;
+    return <div className="py-4 text-center text-neutral-medium">Elenco componenti non trovato</div>;
   }
 
   if (!bomItems || !Array.isArray(bomItems) || bomItems.length === 0) {
-    return <div className="py-4 text-center text-neutral-medium">Nessun componente trovato nella distinta base</div>;
+    return <div className="py-4 text-center text-neutral-medium">Nessun componente trovato nell'elenco</div>;
   }
 
   // Determina se mostrare i controlli di filtro o solo la tabella filtrata
