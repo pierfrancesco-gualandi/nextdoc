@@ -101,7 +101,12 @@ export default function ContentModule({
   
   const saveChanges = () => {
     updateModuleMutation.mutate({
-      content
+      id: module.id, 
+      module: {
+        content: JSON.stringify(content),  // Converti l'oggetto in stringa JSON
+        type: module.type,
+        sectionId: module.sectionId
+      }
     });
   };
   
@@ -364,13 +369,22 @@ export default function ContentModule({
                 const updatedContent = { ...content, filterSettings };
                 setContent(updatedContent); // Aggiorna lo stato locale
                 
-                // Aggiorna il modulo sul server ma senza rendere di nuovo
-                const updateRequest = { content: updatedContent };
-                
-                // Usa setTimeout per evitare il ciclo di render
-                setTimeout(() => {
-                  updateModuleMutation.mutate({ id: module.id, module: updateRequest });
-                }, 0);
+                try {
+                  // Usa setTimeout per evitare il ciclo di render
+                  setTimeout(() => {
+                    // Assicurati che il modulo da salvare contenga tutti i campi necessari
+                    updateModuleMutation.mutate({ 
+                      id: module.id, 
+                      module: {
+                        content: JSON.stringify(updatedContent),  // Converti l'oggetto in stringa JSON
+                        type: module.type,
+                        sectionId: module.sectionId
+                      }
+                    });
+                  }, 0);
+                } catch (error) {
+                  console.error("Errore nell'aggiornamento dei filtri:", error);
+                }
               }
             }}
           />
