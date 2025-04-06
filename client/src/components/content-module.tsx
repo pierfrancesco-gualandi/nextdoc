@@ -85,7 +85,9 @@ const BomViewContent = ({ bomId, filter, levelFilter, useFilters = false }: { bo
         item.component.description.toLowerCase().includes(localFilter.toLowerCase());
       
       // Applica il filtro per livello
-      const levelMatch = localLevelFilter === undefined || item.level === localLevelFilter;
+      const levelMatch = localLevelFilter === undefined || localLevelFilter === null || 
+        (typeof localLevelFilter === "string" && localLevelFilter === "all") || 
+        item.level === localLevelFilter;
       
       return textMatch && levelMatch;
     });
@@ -131,14 +133,14 @@ const BomViewContent = ({ bomId, filter, levelFilter, useFilters = false }: { bo
             <div>
               <Label htmlFor="level-filter" className="text-xs mb-1">Filtro per livello</Label>
               <Select
-                value={localLevelFilter !== undefined ? localLevelFilter.toString() : ''}
-                onValueChange={(value) => setLocalLevelFilter(value ? parseInt(value) : undefined)}
+                value={localLevelFilter !== undefined ? (typeof localLevelFilter === "number" ? localLevelFilter.toString() : "all") : "all"}
+                onValueChange={(value) => setLocalLevelFilter(value === "all" ? undefined : parseInt(value))}
               >
                 <SelectTrigger id="level-filter" className="h-8 text-sm">
                   <SelectValue placeholder="Tutti i livelli" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tutti i livelli</SelectItem>
+                  <SelectItem value="all">Tutti i livelli</SelectItem>
                   {uniqueLevels.map((level: number) => (
                     <SelectItem key={level} value={level.toString()}>
                       Livello {level}
@@ -688,17 +690,17 @@ export default function ContentModule({
                 <div>
                   <Label htmlFor="level-filter-edit">Filtro per livello</Label>
                   <Select
-                    value={content.levelFilter !== undefined ? content.levelFilter.toString() : ''}
+                    value={content.levelFilter !== undefined ? (typeof content.levelFilter === "number" ? content.levelFilter.toString() : "all") : "all"}
                     onValueChange={(value) => setContent({ 
                       ...content, 
-                      levelFilter: value ? parseInt(value) : undefined 
+                      levelFilter: value === "all" ? undefined : parseInt(value) 
                     })}
                   >
                     <SelectTrigger id="level-filter-edit">
                       <SelectValue placeholder="Tutti i livelli" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tutti i livelli</SelectItem>
+                      <SelectItem value="all">Tutti i livelli</SelectItem>
                       {/* I livelli vengono popolati dinamicamente quando si visualizza */}
                       {[0, 1, 2, 3, 4, 5].map((level) => (
                         <SelectItem key={level} value={level.toString()}>
