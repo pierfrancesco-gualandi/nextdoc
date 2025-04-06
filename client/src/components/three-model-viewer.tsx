@@ -296,7 +296,7 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
   };
 
   // Rendering diverso in base al formato
-  if (modelData.format === 'html' || modelData.format === 'webgl') {
+  if (modelData && (modelData.format === 'html' || modelData.format === 'webgl')) {
     // URL per i visualizzatori
     // Se il backend ci ha fornito un URL del visualizzatore specifico, usalo
     const viewerUrl = modelData.viewerUrl;

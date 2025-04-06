@@ -341,8 +341,11 @@ export default function ContentModule({
         return (
           <div className="my-2">
             <ThreeModelViewer
-              url={content.url}
-              title={content.title || "Modello 3D"}
+              modelData={{
+                src: content.url || "",
+                format: "gltf",
+                title: content.title || "Modello 3D"
+              }}
             />
           </div>
         );
