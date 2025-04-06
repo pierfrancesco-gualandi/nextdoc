@@ -285,14 +285,14 @@ const BomViewContent = ({
               <div className="space-y-2">
                 <Label htmlFor="level-filter">Filtra per Livello:</Label>
                 <Select
-                  value={levelFilterValue !== undefined ? levelFilterValue.toString() : ""}
-                  onValueChange={(v) => setLevelFilterValue(v ? parseInt(v) : undefined)}
+                  value={levelFilterValue !== undefined ? levelFilterValue.toString() : "all"}
+                  onValueChange={(v) => setLevelFilterValue(v === "all" ? undefined : parseInt(v))}
                 >
                   <SelectTrigger id="level-filter">
                     <SelectValue placeholder="Tutti i livelli" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tutti i livelli</SelectItem>
+                    <SelectItem value="all">Tutti i livelli</SelectItem>
                     {uniqueLevels.map((level: number) => (
                       <SelectItem key={level} value={level.toString()}>
                         Livello {level}
