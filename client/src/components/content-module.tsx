@@ -361,7 +361,7 @@ export default function ContentModule({
             bomId={content.bomId}
             filter={content.filter}
             levelFilter={content.levelFilter}
-            useFilters={content.useFilters}
+            useFilters={isPreview ? false : content.useFilters}  // In anteprima, non mostrare i controlli di filtro
             filterSettings={content.filterSettings}
             onFilterUpdate={(filterSettings: BomFilterSettings) => {
               // Aggiorna silenziosamente il contenuto del modulo con le impostazioni di filtro correnti

@@ -226,6 +226,10 @@ const BomViewContent = ({
     return <div className="py-4 text-center text-neutral-medium">Nessun componente trovato nella distinta base</div>;
   }
 
+  // Determina se mostrare i controlli di filtro o solo la tabella filtrata
+  // In modalità anteprima o per l'esportazione, mostra solo la tabella
+  const isPreviewOrExport = !showFilters;
+
   return (
     <div className="space-y-4">
       {showFilters && (
@@ -326,6 +330,7 @@ const BomViewContent = ({
         </Card>
       )}
       
+      {/* La tabella viene sempre mostrata, sia in modalità modifica che in anteprima */}
       <div className="overflow-x-auto">
         <Table className="w-full border-collapse">
           <TableHeader>
