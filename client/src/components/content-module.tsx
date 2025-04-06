@@ -74,14 +74,18 @@ const BomViewContent = ({ bomId, filter, levelFilter: initialLevelFilter, useFil
 
   // Trova i livelli unici disponibili nella distinta base
   const uniqueLevels = useMemo(() => {
-    if (!Array.isArray(bomItems)) return [];
+    if (!Array.isArray(bomItems) || bomItems.length === 0) return [0];
     try {
-      return Array.from(new Set(bomItems.map((item: any) => {
+      // Estrai tutti i livelli unici dalla distinta
+      const levels = Array.from(new Set(bomItems.map((item: any) => {
         if (item && typeof item.level === 'number') {
           return item.level;
         }
         return 0;
       }))).sort((a, b) => a - b);
+      
+      console.log("Livelli unici trovati nella distinta:", levels);
+      return levels;
     } catch (error) {
       console.error("Errore durante l'elaborazione dei livelli:", error);
       return [0, 1, 2]; // Valori di fallback
@@ -92,20 +96,21 @@ const BomViewContent = ({ bomId, filter, levelFilter: initialLevelFilter, useFil
   const filteredItems = useMemo(() => {
     if (!Array.isArray(bomItems)) return [];
     if (!enableFiltering) return bomItems;
-
+    
+    console.log("Filtraggio attivo con:", {
+      codeFilter, codeFilterType, descriptionFilter, descriptionFilterType, levelFilter
+    });
+    
+    // Applica filtri direttamente senza la logica a due fasi
     return bomItems.filter((item: any) => {
-      // Verifica che item e item.component esistano
       if (!item || !item.component) return false;
       
-      // Verifica che code e description esistano
       const code = item.component.code || '';
       const description = item.component.description || '';
       
-      // Applica il filtro per codice in base al tipo di filtro selezionato
-      let codeMatch = false;
-      if (!codeFilter) {
-        codeMatch = true;
-      } else {
+      // Applica il filtro per codice
+      let codeMatch = true;  // Predefinito a true se non c'è filtro
+      if (codeFilter) {
         switch (codeFilterType) {
           case 'equals':
             codeMatch = code.toLowerCase() === codeFilter.toLowerCase();
@@ -120,11 +125,9 @@ const BomViewContent = ({ bomId, filter, levelFilter: initialLevelFilter, useFil
         }
       }
       
-      // Applica il filtro per descrizione in base al tipo di filtro selezionato
-      let descriptionMatch = false;
-      if (!descriptionFilter) {
-        descriptionMatch = true;
-      } else {
+      // Applica il filtro per descrizione
+      let descriptionMatch = true;  // Predefinito a true se non c'è filtro
+      if (descriptionFilter) {
         switch (descriptionFilterType) {
           case 'equals':
             descriptionMatch = description.toLowerCase() === descriptionFilter.toLowerCase();
@@ -139,25 +142,16 @@ const BomViewContent = ({ bomId, filter, levelFilter: initialLevelFilter, useFil
         }
       }
       
-      // Applica il filtro per livello - se un livello è selezionato, mostra tutti gli elementi di quel livello
-      const levelMatch = levelFilter === undefined || 
-        levelFilter === null || 
-        (typeof levelFilter === "string" && levelFilter === "all") || 
-        item.level === levelFilter;
-      
-      // Filtra i codici padre e tutti i componenti appartenenti a quel codice
-      let parentCodeMatch = false;
-      if (codeFilter && enableFiltering) {
-        // Verifica se è selezionato un codice padre
-        if (item.parentCode === codeFilter || code === codeFilter) {
-          parentCodeMatch = true;
-        }
-      } else {
-        parentCodeMatch = true;
+      // Applica il filtro per livello - mostra tutti gli elementi di quel livello
+      let levelMatch = true;
+      if (levelFilter !== undefined && levelFilter !== null && 
+          !(typeof levelFilter === "string" && levelFilter === "all")) {
+        levelMatch = item.level === Number(levelFilter);
       }
       
       // Tutte le condizioni devono essere soddisfatte
-      return (codeMatch || parentCodeMatch) && descriptionMatch && levelMatch;
+      const matchResult = codeMatch && descriptionMatch && levelMatch;
+      return matchResult;
     });
   }, [
     bomItems, 
@@ -177,6 +171,10 @@ const BomViewContent = ({ bomId, filter, levelFilter: initialLevelFilter, useFil
   if (!Array.isArray(bomItems) || bomItems.length === 0) {
     return <div className="text-neutral-medium">Caricamento distinta base...</div>;
   }
+  
+  // Debug per visualizzare i dati caricati
+  console.log(`Distinta base ${bomId} caricata con ${bomItems.length} elementi`);
+  console.log("Livelli trovati:", uniqueLevels);
 
   return (
     <div className="flex flex-col">
