@@ -65,6 +65,21 @@ interface ContentModuleProps {
   isPreview?: boolean;
 }
 
+// Funzione per estrarre la traduzione dai dati del modulo
+const parseTranslation = (module: any): any => {
+  try {
+    // Verifica se il modulo ha una traduzione
+    if (module && module.translation && module.translation.content) {
+      // Parse del JSON della traduzione
+      const translationContent = JSON.parse(module.translation.content);
+      return translationContent;
+    }
+  } catch (error) {
+    console.error("Errore nel parsing della traduzione:", error);
+  }
+  return undefined;
+};
+
 export default function ContentModule({ 
   module, 
   onDelete, 
@@ -370,6 +385,7 @@ export default function ContentModule({
               levelFilter={content.levelFilter}
               useFilters={isPreview ? false : content.useFilters}  // In anteprima, non mostrare i controlli di filtro
               filterSettings={content.filterSettings}
+              translation={isPreview ? parseTranslation(module) : undefined}
               onFilterUpdate={(filterSettings: BomFilterSettings) => {
                 // Aggiorna silenziosamente il contenuto del modulo con le impostazioni di filtro correnti
                 if (!isEditing && JSON.stringify(filterSettings) !== JSON.stringify(content.filterSettings)) {

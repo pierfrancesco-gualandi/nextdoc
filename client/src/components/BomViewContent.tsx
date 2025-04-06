@@ -17,6 +17,24 @@ export interface BomFilterSettings {
   enableFiltering: boolean;
 }
 
+// Interfaccia per le traduzioni dell'elenco componenti
+export interface BomTranslation {
+  title?: string;
+  headers?: {
+    number?: string;
+    level?: string;
+    code?: string;
+    description?: string;
+    quantity?: string;
+  };
+  messages?: {
+    loading?: string;
+    notFound?: string;
+    empty?: string;
+    noResults?: string;
+  };
+}
+
 interface BomViewContentProps {
   bomId: number;
   filter?: string;
@@ -25,6 +43,8 @@ interface BomViewContentProps {
   // Parametro per memorizzare le impostazioni di filtro complesse
   filterSettings?: BomFilterSettings;
   onFilterUpdate?: (filterSettings: BomFilterSettings) => void;
+  // Traduzioni
+  translation?: BomTranslation;
 }
 
 function findChildComponents(items: any[], parentCode: string): string[] {
@@ -67,7 +87,8 @@ const BomViewContent = ({
   levelFilter, 
   useFilters = false,
   filterSettings,
-  onFilterUpdate
+  onFilterUpdate,
+  translation
 }: BomViewContentProps) => {
   // Stati locali per filtri
   const [codeFilter, setCodeFilter] = useState<string>(filterSettings?.codeFilter || "");
@@ -214,16 +235,24 @@ const BomViewContent = ({
     }
   }, [codeFilter, codeFilterType, descriptionFilter, descriptionFilterType, levelFilterValue, enableFiltering, onFilterUpdate]);
 
+  // Messaggi predefiniti o tradotti
+  const messages = {
+    loading: translation?.messages?.loading || "Caricamento elenco componenti...",
+    notFound: translation?.messages?.notFound || "Elenco componenti non trovato",
+    empty: translation?.messages?.empty || "Nessun componente trovato nell'elenco",
+    noResults: translation?.messages?.noResults || "Nessun risultato con i filtri applicati"
+  };
+
   if (isBomLoading || isItemsLoading) {
-    return <div className="py-4 text-center text-neutral-medium">Caricamento elenco componenti...</div>;
+    return <div className="py-4 text-center text-neutral-medium">{messages.loading}</div>;
   }
 
   if (!bom) {
-    return <div className="py-4 text-center text-neutral-medium">Elenco componenti non trovato</div>;
+    return <div className="py-4 text-center text-neutral-medium">{messages.notFound}</div>;
   }
 
   if (!bomItems || !Array.isArray(bomItems) || bomItems.length === 0) {
-    return <div className="py-4 text-center text-neutral-medium">Nessun componente trovato nell'elenco</div>;
+    return <div className="py-4 text-center text-neutral-medium">{messages.empty}</div>;
   }
 
   // Determina se mostrare i controlli di filtro o solo la tabella filtrata
@@ -332,14 +361,27 @@ const BomViewContent = ({
       
       {/* La tabella viene sempre mostrata, sia in modalità modifica che in anteprima */}
       <div className="overflow-x-auto">
+        {translation?.title && (
+          <h3 className="text-xl font-bold mb-2">{translation.title}</h3>
+        )}
         <Table className="w-full border-collapse">
           <TableHeader>
             <TableRow className="bg-neutral-lightest">
-              <TableHead className="font-medium p-2 border border-neutral-light text-left w-12">N°</TableHead>
-              <TableHead className="font-medium p-2 border border-neutral-light text-left w-20">Livello</TableHead>
-              <TableHead className="font-medium p-2 border border-neutral-light text-left">Codice</TableHead>
-              <TableHead className="font-medium p-2 border border-neutral-light text-left">Descrizione</TableHead>
-              <TableHead className="font-medium p-2 border border-neutral-light text-right w-24">Quantità</TableHead>
+              <TableHead className="font-medium p-2 border border-neutral-light text-left w-12">
+                {translation?.headers?.number || "N°"}
+              </TableHead>
+              <TableHead className="font-medium p-2 border border-neutral-light text-left w-20">
+                {translation?.headers?.level || "Livello"}
+              </TableHead>
+              <TableHead className="font-medium p-2 border border-neutral-light text-left">
+                {translation?.headers?.code || "Codice"}
+              </TableHead>
+              <TableHead className="font-medium p-2 border border-neutral-light text-left">
+                {translation?.headers?.description || "Descrizione"}
+              </TableHead>
+              <TableHead className="font-medium p-2 border border-neutral-light text-right w-24">
+                {translation?.headers?.quantity || "Quantità"}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -366,7 +408,7 @@ const BomViewContent = ({
             {filteredItems.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} className="p-4 text-center text-neutral-medium">
-                  Nessun risultato con i filtri applicati
+                  {messages.noResults}
                 </TableCell>
               </TableRow>
             )}

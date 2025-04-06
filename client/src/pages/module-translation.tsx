@@ -127,6 +127,22 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
             initialTranslatedContent.caption = '';
           } else if (module.type === 'checklist') {
             initialTranslatedContent.items = initialTranslatedContent.items.map((item: any) => ({ ...item, text: '' }));
+          } else if (module.type === 'bom') {
+            // Inizializza la struttura per le traduzioni dell'elenco componenti
+            initialTranslatedContent.title = '';
+            initialTranslatedContent.headers = {
+              number: '', 
+              level: '',
+              code: '',
+              description: '',
+              quantity: ''
+            };
+            initialTranslatedContent.messages = {
+              loading: '',
+              notFound: '',
+              empty: '',
+              noResults: ''
+            };
           }
           
           setTranslatedContent(initialTranslatedContent);
@@ -458,9 +474,116 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                         )}
                         
                         {/* Placeholder per altri tipi di moduli non traducibili */}
-                        {['3d-model', 'pdf', 'component', 'bom'].includes(module.type) && (
+                        {['3d-model', 'pdf', 'component'].includes(module.type) && (
                           <div className="text-center py-4 text-neutral-medium">
                             Questo tipo di modulo non richiede traduzione del contenuto.
+                          </div>
+                        )}
+                        
+                        {/* Traduzione per moduli BOM (Elenco Componenti) */}
+                        {module.type === 'bom' && (
+                          <div className="space-y-4">
+                            <div>
+                              <Label>Titolo</Label>
+                              <Input
+                                value={translatedContent.title || ''}
+                                onChange={(e) => handleTextChange(e.target.value, 'title')}
+                                placeholder="Titolo Elenco Componenti tradotto"
+                              />
+                            </div>
+                            
+                            <div>
+                              <Label>Intestazioni delle colonne</Label>
+                              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+                                <div>
+                                  <Label htmlFor="header-number" className="text-xs">Numero</Label>
+                                  <Input
+                                    id="header-number"
+                                    value={translatedContent.headers?.number || ''}
+                                    onChange={(e) => handleTextChange(e.target.value, 'headers.number')}
+                                    placeholder="N°"
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="header-level" className="text-xs">Livello</Label>
+                                  <Input
+                                    id="header-level"
+                                    value={translatedContent.headers?.level || ''}
+                                    onChange={(e) => handleTextChange(e.target.value, 'headers.level')}
+                                    placeholder="Livello"
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="header-code" className="text-xs">Codice</Label>
+                                  <Input
+                                    id="header-code"
+                                    value={translatedContent.headers?.code || ''}
+                                    onChange={(e) => handleTextChange(e.target.value, 'headers.code')}
+                                    placeholder="Codice"
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="header-description" className="text-xs">Descrizione</Label>
+                                  <Input
+                                    id="header-description"
+                                    value={translatedContent.headers?.description || ''}
+                                    onChange={(e) => handleTextChange(e.target.value, 'headers.description')}
+                                    placeholder="Descrizione"
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="header-quantity" className="text-xs">Quantità</Label>
+                                  <Input
+                                    id="header-quantity"
+                                    value={translatedContent.headers?.quantity || ''}
+                                    onChange={(e) => handleTextChange(e.target.value, 'headers.quantity')}
+                                    placeholder="Quantità"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <Label>Messaggi</Label>
+                              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                <div>
+                                  <Label htmlFor="msg-loading" className="text-xs">Caricamento</Label>
+                                  <Input
+                                    id="msg-loading"
+                                    value={translatedContent.messages?.loading || ''}
+                                    onChange={(e) => handleTextChange(e.target.value, 'messages.loading')}
+                                    placeholder="Caricamento elenco componenti..."
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="msg-not-found" className="text-xs">Non trovato</Label>
+                                  <Input
+                                    id="msg-not-found"
+                                    value={translatedContent.messages?.notFound || ''}
+                                    onChange={(e) => handleTextChange(e.target.value, 'messages.notFound')}
+                                    placeholder="Elenco componenti non trovato"
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="msg-empty" className="text-xs">Vuoto</Label>
+                                  <Input
+                                    id="msg-empty"
+                                    value={translatedContent.messages?.empty || ''}
+                                    onChange={(e) => handleTextChange(e.target.value, 'messages.empty')}
+                                    placeholder="Nessun componente trovato nell'elenco"
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="msg-no-results" className="text-xs">Nessun risultato</Label>
+                                  <Input
+                                    id="msg-no-results"
+                                    value={translatedContent.messages?.noResults || ''}
+                                    onChange={(e) => handleTextChange(e.target.value, 'messages.noResults')}
+                                    placeholder="Nessun risultato con i filtri applicati"
+                                  />
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
