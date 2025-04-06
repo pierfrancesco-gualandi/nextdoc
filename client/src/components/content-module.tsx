@@ -16,6 +16,7 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ThreeModelViewer from "./three-model-viewer";
 import ThreeModelEditor from "./three-model-editor";
 import VideoPlayer from "./video-player";
@@ -668,10 +669,25 @@ export default function ContentModule({
       
       case "3d-model":
         return (
-          <ThreeModelEditor 
-            modelData={content}
-            onChange={(updatedData) => setContent(updatedData)}
-          />
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="model-title">Titolo</Label>
+              <Input 
+                id="model-title" 
+                value={content.title || ""} 
+                onChange={(e) => setContent({ ...content, title: e.target.value })} 
+              />
+            </div>
+            {/* Implementazione di base per l'editor 3D */}
+            <div>
+              <Label htmlFor="model-url">URL del modello</Label>
+              <Input 
+                id="model-url" 
+                value={content.url || ""} 
+                onChange={(e) => setContent({ ...content, url: e.target.value })} 
+              />
+            </div>
+          </div>
         );
         
       case "table":
