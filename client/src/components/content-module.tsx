@@ -42,7 +42,7 @@ const BomSelector = ({ bomId, onChange }: { bomId: number, onChange: (bomId: num
       <SelectContent>
         {boms.map((bom: any) => (
           <SelectItem key={bom.id} value={bom.id.toString()}>
-            {bom.name}
+            {bom.title}
           </SelectItem>
         ))}
       </SelectContent>
@@ -51,13 +51,13 @@ const BomSelector = ({ bomId, onChange }: { bomId: number, onChange: (bomId: num
 };
 
 const BomViewContent = ({ bomId }: { bomId: number }) => {
-  const { data: bom } = useQuery({
+  const { data: bom = {} as any } = useQuery({
     queryKey: ['/api/boms', bomId],
     enabled: !!bomId,
     staleTime: 30000,
   });
 
-  const { data: bomItems } = useQuery({
+  const { data: bomItems = [] as any[] } = useQuery({
     queryKey: ['/api/boms', bomId, 'items'],
     enabled: !!bomId,
     staleTime: 30000,
@@ -67,14 +67,15 @@ const BomViewContent = ({ bomId }: { bomId: number }) => {
     return <div className="text-neutral-medium italic">Nessuna distinta base selezionata</div>;
   }
 
-  if (!bom || !bomItems) {
+  // Visualizza il messaggio di caricamento quando items non è ancora disponibile o vuoto
+  if (!Array.isArray(bomItems) || bomItems.length === 0) {
     return <div className="text-neutral-medium">Caricamento distinta base...</div>;
   }
 
   return (
     <div className="flex flex-col">
-      <h3 className="text-lg font-medium mb-2">{bom.name}</h3>
-      {bomItems.length > 0 ? (
+      <h3 className="text-lg font-medium mb-2">{bom && bom.title ? bom.title : 'Distinta Base'}</h3>
+      {Array.isArray(bomItems) && bomItems.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="min-w-full border-collapse">
             <thead>
