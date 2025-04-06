@@ -70,7 +70,17 @@ const BomViewContent = ({ bomId, filter, levelFilter, useFilters = false }: { bo
   // Trova i livelli unici disponibili nella distinta base
   const uniqueLevels = useMemo(() => {
     if (!Array.isArray(bomItems)) return [];
-    return Array.from(new Set(bomItems.map((item: any) => item.level))).sort((a, b) => a - b);
+    try {
+      return Array.from(new Set(bomItems.map((item: any) => {
+        if (item && typeof item.level === 'number') {
+          return item.level;
+        }
+        return 0;
+      }))).sort((a, b) => a - b);
+    } catch (error) {
+      console.error("Errore durante l'elaborazione dei livelli:", error);
+      return [0, 1, 2]; // Valori di fallback
+    }
   }, [bomItems]);
 
   // Filtra gli elementi in base ai criteri selezionati
