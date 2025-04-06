@@ -20,6 +20,91 @@ import ThreeModelViewer from "./three-model-viewer";
 import ThreeModelEditor from "./three-model-editor";
 import VideoPlayer from "./video-player";
 
+// We need to create these components for BOM module support
+const BomSelector = ({ bomId, onChange }: { bomId: number, onChange: (bomId: number) => void }) => {
+  const { data: boms } = useQuery({
+    queryKey: ['/api/boms'],
+    staleTime: 30000,
+  });
+
+  if (!boms || !Array.isArray(boms) || boms.length === 0) {
+    return <div className="text-neutral-medium">Nessuna distinta base disponibile</div>;
+  }
+
+  return (
+    <Select
+      value={bomId ? bomId.toString() : ""}
+      onValueChange={(value) => onChange(parseInt(value))}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Seleziona una distinta base" />
+      </SelectTrigger>
+      <SelectContent>
+        {boms.map((bom: any) => (
+          <SelectItem key={bom.id} value={bom.id.toString()}>
+            {bom.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+};
+
+const BomViewContent = ({ bomId }: { bomId: number }) => {
+  const { data: bom } = useQuery({
+    queryKey: ['/api/boms', bomId],
+    enabled: !!bomId,
+    staleTime: 30000,
+  });
+
+  const { data: bomItems } = useQuery({
+    queryKey: ['/api/boms', bomId, 'items'],
+    enabled: !!bomId,
+    staleTime: 30000,
+  });
+
+  if (!bomId) {
+    return <div className="text-neutral-medium italic">Nessuna distinta base selezionata</div>;
+  }
+
+  if (!bom || !bomItems) {
+    return <div className="text-neutral-medium">Caricamento distinta base...</div>;
+  }
+
+  return (
+    <div className="flex flex-col">
+      <h3 className="text-lg font-medium mb-2">{bom.name}</h3>
+      {bomItems.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full border-collapse">
+            <thead>
+              <tr className="bg-neutral-lightest border-b border-neutral-light">
+                <th className="py-2 px-3 text-left text-sm font-medium text-neutral-dark">Livello</th>
+                <th className="py-2 px-3 text-left text-sm font-medium text-neutral-dark">Codice</th>
+                <th className="py-2 px-3 text-left text-sm font-medium text-neutral-dark">Descrizione</th>
+                <th className="py-2 px-3 text-left text-sm font-medium text-neutral-dark">Quantità</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bomItems.map((item: any) => (
+                <tr key={item.id} className="border-b border-neutral-light hover:bg-neutral-lightest">
+                  <td className="py-2 px-3 text-sm">{item.level}</td>
+                  <td className="py-2 px-3 text-sm font-medium">{item.code}</td>
+                  <td className="py-2 px-3 text-sm">{item.description}</td>
+                  <td className="py-2 px-3 text-sm">{item.quantity}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="text-neutral-medium italic">Nessun componente nella distinta base</div>
+      )}
+    </div>
+  );
+};
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
 interface ContentModuleProps {
   module: any;
   onDelete: (id: number) => void;
@@ -85,6 +170,7 @@ export default function ContentModule({
       case "pdf": return "picture_as_pdf";
       case "component": return "category";
       case "3d-model": return "view_in_ar";
+      case "bom": return "inventory_2";
       default: return "edit_note";
     }
   };
@@ -102,6 +188,7 @@ export default function ContentModule({
       case "pdf": return "PDF";
       case "component": return "Componenti";
       case "3d-model": return "Modello 3D";
+      case "bom": return "Distinta Base";
       default: return type;
     }
   };
@@ -273,6 +360,11 @@ export default function ContentModule({
             </div>
             {content.caption && <div className="mt-2 text-sm text-neutral-dark italic">{content.caption}</div>}
           </div>
+        );
+
+      case "bom":
+        return (
+          <BomViewContent bomId={content.bomId} />
         );
         
       default:
@@ -471,6 +563,28 @@ export default function ContentModule({
               initialValue={content}
               onSave={(updatedContent) => setContent(updatedContent)}
             />
+          </div>
+        );
+        
+      case "bom":
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="bom-select">Seleziona Distinta Base</Label>
+              <BomSelector 
+                bomId={content.bomId} 
+                onChange={(bomId) => setContent({ ...content, bomId })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="bom-filter">Filtro (opzionale)</Label>
+              <Input 
+                id="bom-filter" 
+                value={content.filter || ""} 
+                onChange={(e) => setContent({ ...content, filter: e.target.value })}
+                placeholder="Filtro per codice o descrizione"
+              />
+            </div>
           </div>
         );
         
