@@ -89,10 +89,17 @@ const BomViewContent = ({ bomId, filter, levelFilter, useFilters = false }: { bo
     if (!enableFiltering) return bomItems;
 
     return bomItems.filter((item: any) => {
+      // Verifica che item e item.component esistano
+      if (!item || !item.component) return false;
+      
+      // Verifica che code e description esistano
+      const code = item.component.code || '';
+      const description = item.component.description || '';
+      
       // Applica il filtro di testo (codice o descrizione)
       const textMatch = !localFilter || 
-        item.component.code.toLowerCase().includes(localFilter.toLowerCase()) || 
-        item.component.description.toLowerCase().includes(localFilter.toLowerCase());
+        code.toLowerCase().includes(localFilter.toLowerCase()) || 
+        description.toLowerCase().includes(localFilter.toLowerCase());
       
       // Applica il filtro per livello
       const levelMatch = localLevelFilter === undefined || localLevelFilter === null || 
@@ -169,6 +176,7 @@ const BomViewContent = ({ bomId, filter, levelFilter, useFilters = false }: { bo
           <table className="min-w-full border-collapse">
             <thead>
               <tr className="bg-neutral-lightest border-b border-neutral-light">
+                <th className="py-2 px-3 text-left text-sm font-medium text-neutral-dark">N°</th>
                 <th className="py-2 px-3 text-left text-sm font-medium text-neutral-dark">Livello</th>
                 <th className="py-2 px-3 text-left text-sm font-medium text-neutral-dark">Codice</th>
                 <th className="py-2 px-3 text-left text-sm font-medium text-neutral-dark">Descrizione</th>
@@ -176,14 +184,26 @@ const BomViewContent = ({ bomId, filter, levelFilter, useFilters = false }: { bo
               </tr>
             </thead>
             <tbody>
-              {filteredItems.map((item: any) => (
-                <tr key={item.id} className="border-b border-neutral-light hover:bg-neutral-lightest">
-                  <td className="py-2 px-3 text-sm">{item.level}</td>
-                  <td className="py-2 px-3 text-sm font-medium">{item.component.code}</td>
-                  <td className="py-2 px-3 text-sm">{item.component.description}</td>
-                  <td className="py-2 px-3 text-sm">{item.quantity}</td>
-                </tr>
-              ))}
+              {filteredItems.map((item: any, index: number) => {
+                // Verifica che item esista e sia valido
+                if (!item || !item.component) return null;
+                
+                // Estrai proprietà in modo sicuro
+                const level = item.level !== undefined ? item.level : '';
+                const code = item.component.code || '';
+                const description = item.component.description || '';
+                const quantity = item.quantity || 0;
+                
+                return (
+                  <tr key={item.id || index} className="border-b border-neutral-light hover:bg-neutral-lightest">
+                    <td className="py-2 px-3 text-sm font-bold">{index + 1}</td>
+                    <td className="py-2 px-3 text-sm">{level}</td>
+                    <td className="py-2 px-3 text-sm font-medium">{code}</td>
+                    <td className="py-2 px-3 text-sm">{description}</td>
+                    <td className="py-2 px-3 text-sm">{quantity}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
