@@ -20,10 +20,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ThreeModelViewer from "./three-model-viewer";
 import ThreeModelEditor from "./three-model-editor";
 import VideoPlayer from "./video-player";
+import BomViewContent, { BomFilterSettings } from "./BomViewContent";
 
-// We need to create these components for BOM module support
+// Component to select a BOM
 const BomSelector = ({ bomId, onChange }: { bomId: number, onChange: (bomId: number) => void }) => {
-  const { data: boms } = useQuery({
+  const { data: boms = [] } = useQuery({
     queryKey: ['/api/boms'],
     staleTime: 30000,
   });
@@ -48,360 +49,6 @@ const BomSelector = ({ bomId, onChange }: { bomId: number, onChange: (bomId: num
         ))}
       </SelectContent>
     </Select>
-  );
-};
-
-const BomViewContent = ({ bomId, filter, levelFilter: initialLevelFilter, useFilters = false }: { bomId: number, filter?: string, levelFilter?: number, useFilters?: boolean }) => {
-  const { data: bom = {} as any } = useQuery({
-    queryKey: ['/api/boms', bomId],
-    enabled: !!bomId,
-    staleTime: 30000,
-  });
-
-  const { data: bomItems = [] as any[] } = useQuery({
-    queryKey: ['/api/boms', bomId, 'items'],
-    queryFn: async () => {
-      const response = await fetch(`/api/boms/${bomId}/items`);
-      if (!response.ok) {
-        throw new Error('Errore nel caricamento della distinta');
-      }
-      const data = await response.json();
-      console.log(`API ha restituito ${data.length} elementi nella distinta ${bomId}`);
-      return data;
-    },
-    enabled: !!bomId,
-    staleTime: 30000,
-  });
-
-  const [codeFilter, setCodeFilter] = useState('');
-  const [codeFilterType, setCodeFilterType] = useState<'contains' | 'startsWith' | 'equals'>('contains');
-  const [descriptionFilter, setDescriptionFilter] = useState('');
-  const [descriptionFilterType, setDescriptionFilterType] = useState<'contains' | 'startsWith' | 'equals'>('contains');
-  const [levelFilter, setLevelFilter] = useState<number | undefined>(initialLevelFilter);
-  const [enableFiltering, setEnableFiltering] = useState(useFilters);
-  const [filtersApplied, setFiltersApplied] = useState(false);
-
-  // Trova i livelli unici disponibili nella distinta base
-  const uniqueLevels = useMemo(() => {
-    if (!Array.isArray(bomItems) || bomItems.length === 0) return [0];
-    try {
-      // Estrai tutti i livelli unici dalla distinta
-      const levels = Array.from(new Set(bomItems.map((item: any) => {
-        if (item && typeof item.level === 'number') {
-          return item.level;
-        }
-        return 0;
-      }))).sort((a, b) => a - b);
-      
-      console.log("Livelli unici trovati nella distinta:", levels);
-      return levels;
-    } catch (error) {
-      console.error("Errore durante l'elaborazione dei livelli:", error);
-      return [0, 1, 2]; // Valori di fallback
-    }
-  }, [bomItems]);
-
-  // Funzione per trovare i codici figli di un codice selezionato
-  const findChildComponents = (items: any[], parentCode: string): string[] => {
-    const childCodes: string[] = [];
-    let currentLevel = -1;
-    let isChildren = false;
-    
-    // Prima identifica il livello del codice padre
-    for (const item of items) {
-      if (item.component && item.component.code === parentCode) {
-        currentLevel = item.level;
-        isChildren = true;
-        childCodes.push(parentCode); // Includi anche il codice padre
-        break;
-      }
-    }
-    
-    // Se il codice padre è stato trovato, cerca tutti i figli
-    if (isChildren) {
-      for (const item of items) {
-        if (item.level > currentLevel) {
-          // Questo è un figlio del codice padre
-          if (item.component && item.component.code) {
-            childCodes.push(item.component.code);
-          }
-        } else if (item.level <= currentLevel && childCodes.length > 1) {
-          // Abbiamo trovato un elemento successivo di livello uguale o superiore
-          // dopo aver già aggiunto dei figli, quindi siamo fuori dal ramo
-          break;
-        }
-      }
-    }
-    
-    return childCodes;
-  };
-  
-  // Filtra gli elementi in base ai criteri selezionati
-  const filteredItems = useMemo(() => {
-    if (!Array.isArray(bomItems)) return [];
-    if (!enableFiltering) return bomItems;
-    
-    console.log("Filtraggio attivo con:", {
-      codeFilter, codeFilterType, descriptionFilter, descriptionFilterType, levelFilter
-    });
-    
-    // Cerca codici padre e figli se è specificato un filtro per codice
-    let childCodes: string[] = [];
-    if (codeFilter) {
-      // Trova prima il componente che corrisponde esattamente al filtro
-      const parentItem = bomItems.find((item: any) => 
-        item.component && 
-        item.component.code.toLowerCase() === codeFilter.toLowerCase()
-      );
-      
-      if (parentItem) {
-        console.log("Trovato codice padre:", parentItem.component.code);
-        // Trova tutti i componenti figli
-        childCodes = findChildComponents(bomItems, parentItem.component.code);
-        console.log("Codici inclusi nel ramo:", childCodes);
-      }
-    }
-    
-    // Applica filtri con logica gerarchica
-    return bomItems.filter((item: any) => {
-      if (!item || !item.component) return false;
-      
-      const code = item.component.code || '';
-      const description = item.component.description || '';
-      
-      // Gestione speciale per filtro codice se abbiamo trovato una gerarchia
-      let codeMatch = true;  // Predefinito a true se non c'è filtro
-      if (codeFilter) {
-        if (childCodes.length > 0) {
-          // Usa la logica gerarchica se abbiamo trovato il codice specificato
-          codeMatch = childCodes.includes(code);
-        } else {
-          // Altrimenti usa il filtro normale
-          switch (codeFilterType) {
-            case 'equals':
-              codeMatch = code.toLowerCase() === codeFilter.toLowerCase();
-              break;
-            case 'startsWith':
-              codeMatch = code.toLowerCase().startsWith(codeFilter.toLowerCase());
-              break;
-            case 'contains':
-            default:
-              codeMatch = code.toLowerCase().includes(codeFilter.toLowerCase());
-              break;
-          }
-        }
-      }
-      
-      // Applica il filtro per descrizione
-      let descriptionMatch = true;  // Predefinito a true se non c'è filtro
-      if (descriptionFilter) {
-        switch (descriptionFilterType) {
-          case 'equals':
-            descriptionMatch = description.toLowerCase() === descriptionFilter.toLowerCase();
-            break;
-          case 'startsWith':
-            descriptionMatch = description.toLowerCase().startsWith(descriptionFilter.toLowerCase());
-            break;
-          case 'contains':
-          default:
-            descriptionMatch = description.toLowerCase().includes(descriptionFilter.toLowerCase());
-            break;
-        }
-      }
-      
-      // Applica il filtro per livello - mostra tutti gli elementi di quel livello
-      let levelMatch = true;
-      if (levelFilter !== undefined && levelFilter !== null && 
-          !(typeof levelFilter === "string" && levelFilter === "all")) {
-        levelMatch = item.level === Number(levelFilter);
-      }
-      
-      // Tutte le condizioni devono essere soddisfatte
-      // Se è attiva la logica gerarchica, applica comunque il filtro per livello
-      return codeMatch && descriptionMatch && levelMatch;
-    });
-  }, [
-    bomItems, 
-    enableFiltering, 
-    codeFilter,
-    codeFilterType, 
-    descriptionFilter,
-    descriptionFilterType, 
-    levelFilter
-  ]);
-
-  if (!bomId) {
-    return <div className="text-neutral-medium italic">Nessuna distinta base selezionata</div>;
-  }
-
-  // Visualizza il messaggio di caricamento quando items non è ancora disponibile o vuoto
-  if (!Array.isArray(bomItems) || bomItems.length === 0) {
-    return <div className="text-neutral-medium">Caricamento distinta base...</div>;
-  }
-  
-  // Debug per visualizzare i dati caricati
-  console.log(`Distinta base ${bomId} caricata con ${bomItems.length} elementi`);
-  console.log("Livelli trovati:", uniqueLevels);
-
-  return (
-    <div className="flex flex-col">
-      <h3 className="text-lg font-medium mb-2">{bom && bom.title ? bom.title : 'Distinta Base'}</h3>
-      
-      {/* Filtri */}
-      <div className="mb-4 border border-gray-200 rounded-md p-3 bg-gray-50">
-        <div className="flex items-center mb-2">
-          <Checkbox 
-            id="enable-filters"
-            checked={enableFiltering}
-            onCheckedChange={(checked) => setEnableFiltering(!!checked)}
-          />
-          <label htmlFor="enable-filters" className="ml-2 text-sm font-medium">Attiva filtri</label>
-        </div>
-        
-        {enableFiltering && (
-          <div className="space-y-3">
-            {/* Filtro per codice */}
-            <div className="space-y-2">
-              <Label htmlFor="code-filter" className="text-xs font-medium">Filtro per codice</Label>
-              <div className="flex gap-2">
-                <div className="flex-grow">
-                  <Input 
-                    id="code-filter" 
-                    value={codeFilter}
-                    onChange={e => setCodeFilter(e.target.value)}
-                    placeholder="Inserisci codice"
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div className="w-36">
-                  <Select
-                    value={codeFilterType}
-                    onValueChange={(value) => setCodeFilterType(value as 'contains' | 'startsWith' | 'equals')}
-                  >
-                    <SelectTrigger className="h-8 text-sm">
-                      <SelectValue placeholder="Contiene" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="contains">Contiene</SelectItem>
-                      <SelectItem value="startsWith">Inizia con</SelectItem>
-                      <SelectItem value="equals">Uguale a</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-            
-            {/* Filtro per descrizione */}
-            <div className="space-y-2">
-              <Label htmlFor="description-filter" className="text-xs font-medium">Filtro per descrizione</Label>
-              <div className="flex gap-2">
-                <div className="flex-grow">
-                  <Input 
-                    id="description-filter" 
-                    value={descriptionFilter}
-                    onChange={e => setDescriptionFilter(e.target.value)}
-                    placeholder="Inserisci descrizione"
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div className="w-36">
-                  <Select
-                    value={descriptionFilterType}
-                    onValueChange={(value) => setDescriptionFilterType(value as 'contains' | 'startsWith' | 'equals')}
-                  >
-                    <SelectTrigger className="h-8 text-sm">
-                      <SelectValue placeholder="Contiene" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="contains">Contiene</SelectItem>
-                      <SelectItem value="startsWith">Inizia con</SelectItem>
-                      <SelectItem value="equals">Uguale a</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-            
-            {/* Filtro per livello */}
-            <div className="space-y-2">
-              <Label htmlFor="level-filter" className="text-xs font-medium">Filtro per livello</Label>
-              <Select
-                value={levelFilter !== undefined ? (typeof levelFilter === "number" ? levelFilter.toString() : "all") : "all"}
-                onValueChange={(value) => setLevelFilter(value === "all" ? undefined : parseInt(value))}
-              >
-                <SelectTrigger id="level-filter" className="h-8 text-sm">
-                  <SelectValue placeholder="Tutti i livelli" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tutti i livelli</SelectItem>
-                  {uniqueLevels.map((level: number) => (
-                    <SelectItem key={level} value={level.toString()}>
-                      Livello {level}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {/* Pulsante per applicare i filtri */}
-            <div className="pt-2">
-              <Button 
-                size="sm" 
-                onClick={() => setFiltersApplied(true)}
-                className="w-full"
-              >
-                Applica filtri
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
-      
-      {/* Tabella */}
-      {Array.isArray(filteredItems) && filteredItems.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse">
-            <thead>
-              <tr className="bg-neutral-lightest border-b border-neutral-light">
-                <th className="py-2 px-3 text-left text-sm font-medium text-neutral-dark">N°</th>
-                <th className="py-2 px-3 text-left text-sm font-medium text-neutral-dark">Livello</th>
-                <th className="py-2 px-3 text-left text-sm font-medium text-neutral-dark">Codice</th>
-                <th className="py-2 px-3 text-left text-sm font-medium text-neutral-dark">Descrizione</th>
-                <th className="py-2 px-3 text-left text-sm font-medium text-neutral-dark">Quantità</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredItems.map((item: any, index: number) => {
-                // Verifica che item esista e sia valido
-                if (!item || !item.component) return null;
-                
-                // Estrai proprietà in modo sicuro
-                const level = item.level !== undefined ? item.level : '';
-                const code = item.component.code || '';
-                const description = item.component.description || '';
-                const quantity = item.quantity || 0;
-                
-                return (
-                  <tr key={item.id || index} className="border-b border-neutral-light hover:bg-neutral-lightest">
-                    <td className="py-2 px-3 text-sm font-bold">{index + 1}</td>
-                    <td className="py-2 px-3 text-sm">{level}</td>
-                    <td className="py-2 px-3 text-sm font-medium">{code}</td>
-                    <td className="py-2 px-3 text-sm">{description}</td>
-                    <td className="py-2 px-3 text-sm">{quantity}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <div className="text-neutral-medium italic">
-          {enableFiltering 
-            ? "Nessun componente corrisponde ai filtri selezionati" 
-            : "Nessun componente nella distinta base"}
-        </div>
-      )}
-    </div>
   );
 };
 
@@ -462,38 +109,36 @@ export default function ContentModule({
     onDelete(module.id);
   };
   
-  // Helper to get icon for module type
-  const getModuleIcon = (type: string) => {
+  const getModuleIcon = (type: string): string => {
     switch (type) {
       case "text": return "text_fields";
       case "image": return "image";
-      case "video": return "smart_display";
+      case "video": return "videocam";
       case "table": return "table_chart";
-      case "checklist": return "checklist";
       case "warning": return "warning";
+      case "checklist": return "checklist";
+      case "component": return "hub";
+      case "bom": return "account_tree";
       case "link": return "link";
       case "pdf": return "picture_as_pdf";
-      case "component": return "category";
       case "3d-model": return "view_in_ar";
-      case "bom": return "inventory_2";
-      default: return "edit_note";
+      default: return "article";
     }
   };
   
-  // Helper to get label for module type
-  const getModuleLabel = (type: string) => {
+  const getModuleLabel = (type: string): string => {
     switch (type) {
       case "text": return "Testo";
       case "image": return "Immagine";
       case "video": return "Video";
       case "table": return "Tabella";
-      case "checklist": return "Checklist";
       case "warning": return "Avviso";
+      case "checklist": return "Lista di controllo";
+      case "component": return "Componente";
+      case "bom": return "Distinta Base";
       case "link": return "Link";
       case "pdf": return "PDF";
-      case "component": return "Componenti";
       case "3d-model": return "Modello 3D";
-      case "bom": return "Distinta Base";
       default: return type;
     }
   };
@@ -503,170 +148,205 @@ export default function ContentModule({
       return renderModuleEditor();
     }
     
-    // Prima di renderizzare, assicuriamoci che l'oggetto content esista
-    if (!content) {
-      return <div className="p-2 text-neutral-dark">Contenuto non disponibile</div>;
-    }
-
     switch (module.type) {
       case "text":
-        // Assicuriamoci che il testo esista prima di renderizzarlo
-        return content.text 
-          ? <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: content.text }} /> 
-          : <div className="text-neutral-medium italic">Testo vuoto</div>;
+        return (
+          <div 
+            className="prose max-w-none" 
+            dangerouslySetInnerHTML={{ __html: content?.text || "" }} 
+          />
+        );
         
       case "image":
         return (
-          <div className="flex flex-col items-center">
-            <img src={content.src} alt={content.alt} className="max-w-full h-auto rounded-md max-h-80" />
+          <div className="flex flex-col items-center my-2">
+            {content?.src && (
+              <img 
+                src={content.src} 
+                alt={content.alt || "Immagine"} 
+                className="max-w-full h-auto object-contain border border-neutral-lightest rounded-md" 
+              />
+            )}
+            {content.caption && <div className="mt-2 text-sm text-neutral-dark italic">{content.caption}</div>}
+          </div>
+        );
+        
+      case "video":
+        return (
+          <div className="flex flex-col items-center my-2">
+            <VideoPlayer 
+              src={content.src}
+              title={content.title}
+              autoplay={content.autoplay}
+              loop={content.loop}
+              muted={content.muted}
+              controls={content.controls !== false}
+            />
+            {content.caption && <div className="mt-2 text-sm text-neutral-dark italic">{content.caption}</div>}
+          </div>
+        );
+        
+      case "table":
+        if (!content.headers || !content.rows) {
+          return <div className="text-neutral-medium italic">Tabella non configurata</div>;
+        }
+        
+        return (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border-collapse">
+              <thead>
+                <tr className="bg-neutral-lightest">
+                  {content.headers.map((header: string, index: number) => (
+                    <th 
+                      key={index} 
+                      className="border border-neutral-light p-2 text-left font-medium text-neutral-dark"
+                    >
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {content.rows.map((row: string[], rowIndex: number) => (
+                  <tr key={rowIndex} className="border-b border-neutral-light">
+                    {row.map((cell: string, cellIndex: number) => (
+                      <td 
+                        key={cellIndex} 
+                        className="border border-neutral-light p-2"
+                      >
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
             {content.caption && <div className="mt-2 text-sm text-neutral-dark italic">{content.caption}</div>}
           </div>
         );
         
       case "warning":
-        // Verifica se il modulo di avviso ha il contenuto necessario
-        if (!content.title || !content.message) {
-          return <div className="text-neutral-medium italic">Avviso configurato in modo incompleto</div>;
-        }
+        let bgColorClass = "bg-blue-50";
+        let borderColorClass = "border-blue-200";
+        let textColorClass = "text-blue-700";
+        let iconName = "info";
         
-        let bgColor = "bg-warning";
-        let borderColor = "border-warning";
-        let textColor = "text-warning";
-        let icon = "warning";
-        
-        if (content.level === "info") {
-          bgColor = "bg-info";
-          borderColor = "border-info";
-          textColor = "text-info";
-          icon = "info";
+        if (content.level === "warning") {
+          bgColorClass = "bg-yellow-50";
+          borderColorClass = "border-yellow-200";
+          textColorClass = "text-yellow-700";
+          iconName = "warning";
         } else if (content.level === "error") {
-          bgColor = "bg-error";
-          borderColor = "border-error";
-          textColor = "text-error";
-          icon = "error";
+          bgColorClass = "bg-red-50";
+          borderColorClass = "border-red-200";
+          textColorClass = "text-red-700";
+          iconName = "error";
         }
         
         return (
-          <div className={`p-4 ${bgColor} bg-opacity-5 border-l-4 ${borderColor}`}>
-            <div className="flex">
-              <span className={`material-icons ${textColor} mr-2`}>{icon}</span>
+          <div className={`${bgColorClass} ${borderColorClass} border rounded-md p-4 my-2`}>
+            <div className="flex items-start">
+              <span className={`material-icons ${textColorClass} mr-2`}>{iconName}</span>
               <div>
-                <p className="text-neutral-darkest font-medium mb-1">{content.title}</p>
-                <p className="text-neutral-dark whitespace-pre-wrap">{content.message}</p>
+                {content.title && <h4 className={`${textColorClass} font-medium mb-1`}>{content.title}</h4>}
+                <p className={textColorClass}>{content.message}</p>
               </div>
             </div>
           </div>
         );
         
-      case "component":
-        return <ComponentListContent documentId={documentId} />;
-        
       case "checklist":
+        if (!content.items || !Array.isArray(content.items)) {
+          return <div className="text-neutral-medium italic">Lista di controllo non configurata</div>;
+        }
+        
         return (
-          <div>
-            {content.items && content.items.map((item: any, index: number) => (
-              <div key={index} className="flex items-center mb-2">
-                <Checkbox id={`item-${index}`} checked={item.checked} disabled />
-                <label htmlFor={`item-${index}`} className="ml-2">{item.text}</label>
+          <div className="space-y-2 my-2">
+            {content.items.map((item: any, index: number) => (
+              <div key={index} className="flex items-start">
+                <div className="mr-2 mt-0.5">
+                  <Checkbox 
+                    id={`checklist-item-${module.id}-${index}`} 
+                    checked={item.checked} 
+                    disabled={true}
+                  />
+                </div>
+                <Label 
+                  htmlFor={`checklist-item-${module.id}-${index}`}
+                  className={`text-neutral-dark ${item.checked ? 'line-through text-neutral-medium' : ''}`}
+                >
+                  {item.text}
+                </Label>
               </div>
             ))}
           </div>
         );
         
+      case "component":
+        return (
+          <div className="my-2 border border-neutral-light rounded-md p-4 bg-neutral-lightest">
+            <div className="flex items-center">
+              <span className="material-icons text-primary mr-2">hub</span>
+              <h4 className="text-lg font-medium">Componente: {content.componentName || "Non specificato"}</h4>
+            </div>
+            <div className="mt-2">
+              <p className="text-neutral-medium">Quantità: {content.quantity || 1}</p>
+              {content.notes && <p className="mt-1">{content.notes}</p>}
+            </div>
+          </div>
+        );
+        
       case "link":
         return (
-          <div>
-            <a href={content.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+          <div className="my-2 p-3 border border-neutral-light rounded-md">
+            <a 
+              href={content.url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary flex items-center hover:underline"
+            >
+              <span className="material-icons mr-2">link</span>
               {content.text || content.url}
             </a>
-            {content.description && <p className="text-sm text-neutral-dark mt-1">{content.description}</p>}
+            {content.description && (
+              <p className="mt-1 text-neutral-medium text-sm">{content.description}</p>
+            )}
           </div>
         );
         
       case "pdf":
         return (
-          <div className="flex flex-col items-center">
-            <iframe src={content.src} title={content.title} className="w-full h-96 border border-neutral-light rounded"></iframe>
-            {content.title && <div className="mt-2 text-sm text-neutral-dark">{content.title}</div>}
+          <div className="my-2">
+            <div className="border border-neutral-light rounded-md p-3 bg-neutral-lightest">
+              <div className="flex items-center">
+                <span className="material-icons text-red-500 mr-2">picture_as_pdf</span>
+                <span className="font-medium">{content.title || "Documento PDF"}</span>
+              </div>
+              <div className="mt-2">
+                <a 
+                  href={content.src} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline flex items-center text-sm"
+                >
+                  <span className="material-icons text-sm mr-1">open_in_new</span>
+                  Apri PDF
+                </a>
+              </div>
+            </div>
           </div>
         );
-      
+        
       case "3d-model":
         return (
-          <div className="flex flex-col items-center">
-            <ThreeModelViewer 
-              modelData={content} 
-              width="100%" 
-              height="400px" 
-            />
-            {content.title && <div className="mt-2 text-sm text-neutral-dark">{content.title}</div>}
-          </div>
-        );
-
-      case "video":
-        return (
-          <div className="flex flex-col items-center">
-            <VideoPlayer 
-              src={content.src}
-              title={content.title}
-              caption={content.caption}
-              poster={content.poster}
-              format={content.format}
-              width="100%" 
-              height="400px"
-              autoplay={content.autoplay}
-              controls={content.controls !== false}
-              loop={content.loop}
-              muted={content.muted}
-              className="rounded-md overflow-hidden"
+          <div className="my-2">
+            <ThreeModelViewer
+              url={content.url}
+              title={content.title || "Modello 3D"}
             />
           </div>
         );
         
-      case "table":
-        // Verifica se la tabella ha intestazioni e righe
-        if (!content.headers || !content.rows || content.headers.length === 0) {
-          return <div className="text-neutral-medium italic">Tabella vuota o non configurata correttamente</div>;
-        }
-        
-        return (
-          <div className="flex flex-col items-center w-full">
-            <div className="w-full overflow-x-auto">
-              <Table className="w-full border-collapse">
-                <TableHeader>
-                  <TableRow className="bg-neutral-lightest">
-                    {content.headers.map((header: string, index: number) => (
-                      <TableHead key={index} className="text-neutral-dark font-medium p-2 border border-neutral-light text-left">
-                        {header}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {content.rows.map((row: string[], rowIndex: number) => {
-                    // Assicurati che ogni riga abbia lo stesso numero di celle delle intestazioni
-                    const displayRow = [...row];
-                    while (displayRow.length < content.headers.length) {
-                      displayRow.push(""); // Aggiungi celle vuote se mancanti
-                    }
-                    
-                    return (
-                      <TableRow key={rowIndex} className="hover:bg-neutral-lightest">
-                        {displayRow.slice(0, content.headers.length).map((cell: string, cellIndex: number) => (
-                          <TableCell key={cellIndex} className="p-2 border border-neutral-light">
-                            {cell || ""}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-            {content.caption && <div className="mt-2 text-sm text-neutral-dark italic">{content.caption}</div>}
-          </div>
-        );
-
       case "bom":
         return (
           <BomViewContent
@@ -674,6 +354,19 @@ export default function ContentModule({
             filter={content.filter}
             levelFilter={content.levelFilter}
             useFilters={content.useFilters}
+            filterSettings={content.filterSettings}
+            onFilterUpdate={(filterSettings: BomFilterSettings) => {
+              // Aggiorna silenziosamente il contenuto del modulo con le impostazioni di filtro correnti
+              if (!isEditing) {
+                const updatedContent = { ...content, filterSettings };
+                const updateRequest = {
+                  content: updatedContent
+                };
+                
+                // Aggiorna il modulo senza mostrare toast o UI di caricamento
+                updateModuleMutation.mutate({ id: module.id, module: updateRequest });
+              }
+            }}
           />
         );
         
@@ -872,10 +565,147 @@ export default function ContentModule({
               <Checkbox 
                 id="bom-use-filters"
                 checked={content.useFilters || false}
-                onCheckedChange={(checked) => setContent({ ...content, useFilters: !!checked })}
+                onCheckedChange={(checked) => {
+                  const useFilters = !!checked;
+                  // Se abilitiamo i filtri, inizializza anche le impostazioni
+                  const filterSettings = useFilters && !content.filterSettings 
+                    ? {
+                        codeFilter: "",
+                        codeFilterType: "contains",
+                        descriptionFilter: "",
+                        descriptionFilterType: "contains",
+                        enableFiltering: false
+                      } 
+                    : content.filterSettings;
+                  
+                  setContent({ ...content, useFilters, filterSettings });
+                }}
               />
               <Label htmlFor="bom-use-filters">Mostra filtri</Label>
             </div>
+            
+            {(content.useFilters || false) && (
+              <div className="border border-neutral-light rounded-md p-4 mt-2">
+                <h4 className="text-sm font-medium mb-2">Impostazioni dei filtri predefiniti</h4>
+                
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="code-filter-type">Filtro Codice</Label>
+                      <Select
+                        value={(content.filterSettings?.codeFilterType || "contains")}
+                        onValueChange={(value) => {
+                          const filterSettings = {
+                            ...(content.filterSettings || {}),
+                            codeFilterType: value as 'contains' | 'startsWith' | 'equals'
+                          };
+                          setContent({ ...content, filterSettings });
+                        }}
+                      >
+                        <SelectTrigger id="code-filter-type">
+                          <SelectValue placeholder="Tipo di filtro" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="contains">Contiene</SelectItem>
+                          <SelectItem value="startsWith">Inizia con</SelectItem>
+                          <SelectItem value="equals">Uguale a</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="code-filter-value">Valore</Label>
+                      <Input
+                        id="code-filter-value"
+                        value={content.filterSettings?.codeFilter || ""}
+                        onChange={(e) => {
+                          const filterSettings = {
+                            ...(content.filterSettings || {}),
+                            codeFilter: e.target.value
+                          };
+                          setContent({ ...content, filterSettings });
+                        }}
+                        placeholder="Codice da filtrare"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="description-filter-type">Filtro Descrizione</Label>
+                      <Select
+                        value={(content.filterSettings?.descriptionFilterType || "contains")}
+                        onValueChange={(value) => {
+                          const filterSettings = {
+                            ...(content.filterSettings || {}),
+                            descriptionFilterType: value as 'contains' | 'startsWith' | 'equals'
+                          };
+                          setContent({ ...content, filterSettings });
+                        }}
+                      >
+                        <SelectTrigger id="description-filter-type">
+                          <SelectValue placeholder="Tipo di filtro" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="contains">Contiene</SelectItem>
+                          <SelectItem value="startsWith">Inizia con</SelectItem>
+                          <SelectItem value="equals">Uguale a</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="description-filter-value">Valore</Label>
+                      <Input
+                        id="description-filter-value"
+                        value={content.filterSettings?.descriptionFilter || ""}
+                        onChange={(e) => {
+                          const filterSettings = {
+                            ...(content.filterSettings || {}),
+                            descriptionFilter: e.target.value
+                          };
+                          setContent({ ...content, filterSettings });
+                        }}
+                        placeholder="Descrizione da filtrare"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="level-filter">Filtro Livello</Label>
+                    <Input
+                      id="level-filter"
+                      type="number"
+                      min="0"
+                      max="10"
+                      value={content.filterSettings?.levelFilter !== undefined ? content.filterSettings.levelFilter : ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const filterSettings = {
+                          ...(content.filterSettings || {}),
+                          levelFilter: value ? parseInt(value) : undefined
+                        };
+                        setContent({ ...content, filterSettings });
+                      }}
+                      placeholder="Livello (0-10)"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="filter-enabled"
+                      checked={content.filterSettings?.enableFiltering || false}
+                      onCheckedChange={(checked) => {
+                        const filterSettings = {
+                          ...(content.filterSettings || {}),
+                          enableFiltering: !!checked
+                        };
+                        setContent({ ...content, filterSettings });
+                      }}
+                    />
+                    <Label htmlFor="filter-enabled">Attiva filtri all'apertura</Label>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
 

@@ -316,6 +316,9 @@ async function addModulesToDocument(
         case "component":
           await addComponentModule(docElements, module);
           break;
+        case "bom":
+          await addBomModule(docElements, module);
+          break;
         default:
           // Add a placeholder for unsupported module types
           docElements.push(
@@ -556,6 +559,336 @@ function addChecklistModule(docElements: any[], module: ContentModule): void {
           }),
         ],
         style: "Normal",
+      })
+    );
+  }
+}
+
+/**
+ * Add a BOM module to the document
+ */
+async function addBomModule(
+  docElements: any[],
+  module: ContentModule
+): Promise<void> {
+  // Estrai il contenuto del modulo BOM
+  const content = module.content as {
+    bomId: number;
+    filter?: string;
+    // Filtri per l'esportazione
+    filterSettings?: {
+      codeFilter?: string;
+      codeFilterType?: 'contains' | 'startsWith' | 'equals';
+      descriptionFilter?: string;
+      descriptionFilterType?: 'contains' | 'startsWith' | 'equals';
+      levelFilter?: number;
+      enableFiltering: boolean;
+    };
+  };
+
+  if (!content.bomId) {
+    docElements.push(
+      new Paragraph({
+        text: "[Nessuna distinta base selezionata]",
+        style: "Normal",
+      })
+    );
+    return;
+  }
+
+  // Recupera la distinta base
+  const bom = await storage.getBom(content.bomId);
+  if (!bom) {
+    throw new Error(`Distinta base con ID ${content.bomId} non trovata`);
+  }
+
+  // Recupera gli elementi della distinta
+  const bomItems = await storage.getBomItemsByBomId(content.bomId);
+  if (!bomItems || bomItems.length === 0) {
+    docElements.push(
+      new Paragraph({
+        text: `[Distinta base ${bom.title} - Nessun componente trovato]`,
+        style: "Normal",
+      })
+    );
+    return;
+  }
+
+  // Applica i filtri se presenti nelle impostazioni
+  let filteredItems = [...bomItems];
+  
+  if (content.filterSettings && content.filterSettings.enableFiltering) {
+    const { 
+      codeFilter, codeFilterType, 
+      descriptionFilter, descriptionFilterType, 
+      levelFilter 
+    } = content.filterSettings;
+
+    // Cerca codici padre e figli se è specificato un filtro per codice
+    let childCodes: string[] = [];
+    if (codeFilter) {
+      // Funzione per trovare i codici figli di un codice selezionato
+      const findChildComponents = (items: any[], parentCode: string): string[] => {
+        const childCodes: string[] = [];
+        let currentLevel = -1;
+        let isChildren = false;
+        
+        // Prima identifica il livello del codice padre
+        for (const item of items) {
+          if (item.component && item.component.code === parentCode) {
+            currentLevel = item.level;
+            isChildren = true;
+            childCodes.push(parentCode); // Includi anche il codice padre
+            break;
+          }
+        }
+        
+        // Se il codice padre è stato trovato, cerca tutti i figli
+        if (isChildren) {
+          for (const item of items) {
+            if (item.level > currentLevel) {
+              // Questo è un figlio del codice padre
+              if (item.component && item.component.code) {
+                childCodes.push(item.component.code);
+              }
+            } else if (item.level <= currentLevel && childCodes.length > 1) {
+              // Abbiamo trovato un elemento successivo di livello uguale o superiore
+              // dopo aver già aggiunto dei figli, quindi siamo fuori dal ramo
+              break;
+            }
+          }
+        }
+        
+        return childCodes;
+      };
+
+      // Trova prima il componente che corrisponde esattamente al filtro
+      const parentItem = bomItems.find((item: any) => 
+        item.component && 
+        item.component.code.toLowerCase() === codeFilter.toLowerCase()
+      );
+      
+      if (parentItem) {
+        // Trova tutti i componenti figli
+        childCodes = findChildComponents(bomItems, parentItem.component.code);
+      }
+    }
+
+    // Filtra gli elementi
+    filteredItems = bomItems.filter((item: any) => {
+      if (!item || !item.component) return false;
+      
+      const code = item.component.code || '';
+      const description = item.component.description || '';
+      
+      // Gestione speciale per filtro codice se abbiamo trovato una gerarchia
+      let codeMatch = true;  // Predefinito a true se non c'è filtro
+      if (codeFilter) {
+        if (childCodes.length > 0) {
+          // Usa la logica gerarchica se abbiamo trovato il codice specificato
+          codeMatch = childCodes.includes(code);
+        } else {
+          // Altrimenti usa il filtro normale
+          switch (codeFilterType) {
+            case 'equals':
+              codeMatch = code.toLowerCase() === codeFilter.toLowerCase();
+              break;
+            case 'startsWith':
+              codeMatch = code.toLowerCase().startsWith(codeFilter.toLowerCase());
+              break;
+            case 'contains':
+            default:
+              codeMatch = code.toLowerCase().includes(codeFilter.toLowerCase());
+              break;
+          }
+        }
+      }
+      
+      // Applica il filtro per descrizione
+      let descriptionMatch = true;
+      if (descriptionFilter) {
+        switch (descriptionFilterType) {
+          case 'equals':
+            descriptionMatch = description.toLowerCase() === descriptionFilter.toLowerCase();
+            break;
+          case 'startsWith':
+            descriptionMatch = description.toLowerCase().startsWith(descriptionFilter.toLowerCase());
+            break;
+          case 'contains':
+          default:
+            descriptionMatch = description.toLowerCase().includes(descriptionFilter.toLowerCase());
+            break;
+        }
+      }
+      
+      // Applica il filtro per livello
+      let levelMatch = true;
+      if (levelFilter !== undefined && levelFilter !== null) {
+        levelMatch = item.level === levelFilter;
+      }
+      
+      // Tutte le condizioni devono essere soddisfatte
+      return codeMatch && descriptionMatch && levelMatch;
+    });
+  }
+
+  // Titolo della distinta
+  docElements.push(
+    new Paragraph({
+      text: bom.title || "Distinta Base",
+      style: "Heading2",
+    })
+  );
+
+  // Aggiungi una tabella con gli elementi della distinta
+  const table = new Table({
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+      left: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+      right: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+    },
+  });
+
+  // Aggiungi riga di intestazione
+  const headerRow = new TableRow({
+    children: [
+      new TableCell({
+        children: [
+          new Paragraph({
+            text: "N°",
+            style: "TableHeader",
+          }),
+        ],
+        shading: {
+          fill: "EEEEEE",
+        },
+      }),
+      new TableCell({
+        children: [
+          new Paragraph({
+            text: "Livello",
+            style: "TableHeader",
+          }),
+        ],
+        shading: {
+          fill: "EEEEEE",
+        },
+      }),
+      new TableCell({
+        children: [
+          new Paragraph({
+            text: "Codice",
+            style: "TableHeader",
+          }),
+        ],
+        shading: {
+          fill: "EEEEEE",
+        },
+      }),
+      new TableCell({
+        children: [
+          new Paragraph({
+            text: "Descrizione",
+            style: "TableHeader",
+          }),
+        ],
+        shading: {
+          fill: "EEEEEE",
+        },
+      }),
+      new TableCell({
+        children: [
+          new Paragraph({
+            text: "Quantità",
+            style: "TableHeader",
+          }),
+        ],
+        shading: {
+          fill: "EEEEEE",
+        },
+      }),
+    ],
+  });
+  table.addRow(headerRow);
+
+  // Aggiungi righe per ogni elemento della distinta
+  filteredItems.forEach((item: any, index: number) => {
+    // Verifica che item esista e sia valido
+    if (!item || !item.component) return;
+
+    // Estrai proprietà in modo sicuro
+    const level = item.level !== undefined ? item.level : '';
+    const code = item.component.code || '';
+    const description = item.component.description || '';
+    const quantity = item.quantity || 0;
+
+    const dataRow = new TableRow({
+      children: [
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: String(index + 1),
+              style: "Normal",
+            }),
+          ],
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: String(level),
+              style: "Normal",
+            }),
+          ],
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: code,
+              style: "Normal",
+            }),
+          ],
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: description,
+              style: "Normal",
+            }),
+          ],
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: String(quantity),
+              style: "Normal",
+            }),
+          ],
+        }),
+      ],
+    });
+    table.addRow(dataRow);
+  });
+
+  // Aggiungi tabella al documento
+  docElements.push(table);
+
+  // Aggiungi una nota sui filtri se presenti
+  if (content.filterSettings && content.filterSettings.enableFiltering) {
+    const filterNote = `Nota: Sono stati applicati filtri alla visualizzazione della distinta base.`;
+    docElements.push(
+      new Paragraph({
+        text: filterNote,
+        style: "Normal",
+        spacing: {
+          before: 120,
+        },
       })
     );
   }
