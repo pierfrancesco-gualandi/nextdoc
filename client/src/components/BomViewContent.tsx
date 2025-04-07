@@ -377,12 +377,23 @@ const BomViewContent = ({
       {/* La tabella viene sempre mostrata, sia in modalità modifica che in anteprima */}
       <div className="overflow-x-auto">
         <h3 className="text-xl font-bold mb-2">
-          {translation?.title || (
-            // Se la traduzione è richiesta ma manca, evidenzia il titolo in rosso
-            highlightMissingTranslations && selectedLanguage
-              ? <span className="text-red-500">Elenco Componenti</span>
-              : "Elenco Componenti"
-          )}
+          {(() => {
+            console.log("BomViewContent - Rendering titolo, translation:", translation);
+            // Mostra il titolo tradotto se disponibile
+            if (translation && translation.title && translation.title.trim() !== "") {
+              console.log("BomViewContent - Usando titolo tradotto:", translation.title);
+              return translation.title;
+            } else {
+              // Se la traduzione è richiesta ma manca, evidenzia il titolo in rosso
+              if (highlightMissingTranslations && selectedLanguage) {
+                console.log("BomViewContent - Evidenziando titolo mancante in rosso");
+                return <span className="text-red-500">Elenco Componenti</span>;
+              } else {
+                console.log("BomViewContent - Usando titolo default");
+                return "Elenco Componenti";
+              }
+            }
+          })()}
         </h3>
         <Table className="w-full border-collapse">
           <TableHeader>

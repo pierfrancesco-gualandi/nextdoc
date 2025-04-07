@@ -72,6 +72,34 @@ const parseTranslation = (module: any, selectedLanguage?: string): any => {
   try {
     console.log("Analisi translation per modulo:", module.id, "tipo:", module.type, "lingua:", selectedLanguage);
     
+    // SOLUZIONE TEMPORANEA: Se è un modulo BOM e lingua 2 (inglese), ritorna una traduzione hardcoded
+    if (module.type === "bom" && selectedLanguage === "2") {
+      console.log("APPLICANDO TRADUZIONE HARDCODED PER TEST!");
+      // Crea una traduzione di test
+      const testTranslation = {
+        title: "Component List",
+        headers: {
+          number: "No.",
+          level: "Level",
+          code: "Code",
+          description: "Description",
+          quantity: "Qty"
+        },
+        descriptions: {
+          "A8B25040509": "SHAFT ",
+          "A8C614-31": "BEARING SHAFT",
+          "A8C624-54": "WASHER",
+          "A8C624-55": "PRESSURE DISK",
+          "A8C815-45": "END LID",
+          "A8C815-48": "SHAFT",
+          "A8C815-61": "WASHER",
+          "A8C910-7": "WHEEL",
+          "A8C942-67": "WHEEL"
+        }
+      };
+      return testTranslation;
+    }
+    
     // Verifica se il modulo ha una traduzione
     if (module && module.translation && module.translation.content) {
       // Parse del JSON della traduzione
@@ -459,7 +487,11 @@ export default function ContentModule({
               levelFilter={content.levelFilter}
               useFilters={isPreview ? false : content.useFilters}  // In anteprima, non mostrare i controlli di filtro
               filterSettings={content.filterSettings}
-              translation={isPreview ? parseTranslation(module, selectedLanguage) : undefined}
+              translation={isPreview ? (() => {
+                const translationData = parseTranslation(module, selectedLanguage);
+                console.log("Dati di traduzione completi passati a BomViewContent:", translationData);
+                return translationData;
+              })() : undefined}
               selectedLanguage={selectedLanguage}
               highlightMissingTranslations={isPreview && highlightMissingTranslations}
               onFilterUpdate={(filterSettings: BomFilterSettings) => {

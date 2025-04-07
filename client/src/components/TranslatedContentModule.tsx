@@ -41,11 +41,17 @@ export default function TranslatedContentModule({
   // Se non è stato trovato un modulo originale, non mostra nulla
   if (!originalModule) return null;
 
+  // Aggiungi log per debug
+  console.log("TranslatedContentModule - moduleId:", moduleId, "languageId:", languageId);
+  console.log("TranslatedContentModule - originalModule:", originalModule);
+  console.log("TranslatedContentModule - translatedModule:", translatedModule);
+  
   // Se è stata selezionata una lingua diversa dall'originale ed è disponibile una traduzione
   if (languageId !== '0' && translatedModule) {
     // Crea una copia del modulo originale con i contenuti tradotti
     const moduleWithTranslation = {
       ...originalModule,
+      translation: translatedModule, // Aggiungi la traduzione completa
       content: translatedModule.content // Sostituisci il contenuto con quello tradotto
     };
     
