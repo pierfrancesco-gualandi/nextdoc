@@ -95,14 +95,46 @@ export default function ModuleTranslationManager() {
 
   // Fetch modules for selected section
   const { data: modules, isLoading: isLoadingModules } = useQuery<any[]>({
-    queryKey: ['/api/sections', selectedSection, 'modules'],
+    queryKey: ['/api/sections', selectedSection, 'modules', selectedLanguage],
     queryFn: async () => {
       if (!selectedSection) return [];
+      
       const response = await fetch(`/api/sections/${selectedSection}/modules`);
       if (!response.ok) {
         throw new Error(`Errore nel caricamento dei moduli: ${response.statusText}`);
       }
-      return response.json();
+      
+      const modulesData = await response.json();
+      
+      // Se è selezionata una lingua, ottieni lo stato di traduzione per ogni modulo
+      if (selectedLanguage) {
+        const modulesWithTranslationInfo = await Promise.all(modulesData.map(async (module: any) => {
+          try {
+            // Controlla se esiste una traduzione per questo modulo nella lingua selezionata
+            const translationResponse = await fetch(`/api/modules/${module.id}?languageId=${selectedLanguage}`);
+            const moduleWithTranslation = await translationResponse.json();
+            
+            // Verifica se c'è una traduzione
+            const hasTranslation = moduleWithTranslation.translation !== undefined;
+            
+            return {
+              ...module,
+              translationStatus: hasTranslation ? "TRADOTTO" : "NON TRADOTTO",
+              translation: moduleWithTranslation.translation
+            };
+          } catch (translationError) {
+            console.error(`Errore nel recupero della traduzione per il modulo ${module.id}:`, translationError);
+            return {
+              ...module,
+              translationStatus: "NON TRADOTTO"
+            };
+          }
+        }));
+        
+        return modulesWithTranslationInfo;
+      }
+      
+      return modulesData;
     },
     enabled: !!selectedSection,
   });
@@ -142,10 +174,12 @@ export default function ModuleTranslationManager() {
   };
 
   // Funzione per ottenere lo stato di traduzione di un modulo
-  const getTranslationStatus = (moduleId: number, languageId: number) => {
-    // Qui dovresti fare una query per verificare lo stato della traduzione
-    // Per ora ritorniamo un valore statico
-    return 'Non tradotto';
+  const getTranslationStatus = (module: any, languageId: number) => {
+    if (!module) return 'Non tradotto';
+    
+    // Controlla se il modulo ha una proprietà translation definita
+    // Questa proprietà viene impostata da fetchModulesToTranslate quando controlla lo stato della traduzione
+    return module.translationStatus || 'Non tradotto';
   };
 
   return (
@@ -298,7 +332,7 @@ export default function ModuleTranslationManager() {
                         <TableCell>
                           {selectedLanguage ? (
                             <Badge className="bg-gray-100 text-gray-800 border-gray-200">
-                              {getTranslationStatus(module.id, selectedLanguage)}
+                              {getTranslationStatus(module, selectedLanguage)}
                             </Badge>
                           ) : (
                             <span className="text-neutral-medium">Seleziona una lingua</span>
@@ -387,7 +421,7 @@ export default function ModuleTranslationManager() {
                           <TableCell>
                             {selectedLanguage ? (
                               <Badge className="bg-gray-100 text-gray-800 border-gray-200">
-                                {getTranslationStatus(module.id, selectedLanguage)}
+                                {getTranslationStatus(module, selectedLanguage)}
                               </Badge>
                             ) : (
                               <span className="text-neutral-medium">Seleziona una lingua</span>

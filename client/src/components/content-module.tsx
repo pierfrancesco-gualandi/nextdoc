@@ -71,7 +71,11 @@ const parseTranslation = (module: any): any => {
     // Verifica se il modulo ha una traduzione
     if (module && module.translation && module.translation.content) {
       // Parse del JSON della traduzione
-      const translationContent = JSON.parse(module.translation.content);
+      const translationContent = typeof module.translation.content === 'string' 
+        ? JSON.parse(module.translation.content)
+        : module.translation.content;
+      
+      console.log("Traduzione trovata per il modulo:", module.id, translationContent);
       return translationContent;
     }
   } catch (error) {

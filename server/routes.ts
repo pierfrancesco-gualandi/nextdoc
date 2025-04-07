@@ -301,10 +301,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/modules/:id", async (req: Request, res: Response) => {
     try {
-      const module = await storage.getContentModule(Number(req.params.id));
+      const moduleId = Number(req.params.id);
+      const languageId = req.query.languageId ? Number(req.query.languageId) : undefined;
+      
+      // Ottieni il modulo di base
+      const module = await storage.getContentModule(moduleId);
       if (!module) {
         return res.status(404).json({ message: "Content module not found" });
       }
+      
+      // Se è richiesta una lingua specifica, ottieni anche la traduzione
+      if (languageId) {
+        try {
+          // Cerca la traduzione per questo modulo nella lingua richiesta
+          const translations = await storage.getContentModuleTranslationsByModuleId(moduleId, languageId);
+          
+          if (translations && translations.length > 0) {
+            // Aggiungi la traduzione al modulo
+            const moduleWithTranslation = {
+              ...module,
+              translation: translations[0]
+            };
+            return res.json(moduleWithTranslation);
+          }
+        } catch (translationError) {
+          console.error("Errore nel recupero della traduzione:", translationError);
+          // Non fallire se non troviamo la traduzione, restituisci solo il modulo di base
+        }
+      }
+      
+      // Restituisci il modulo senza traduzione
       res.json(module);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch content module" });

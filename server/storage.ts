@@ -136,7 +136,7 @@ export interface IStorage {
   getContentModuleTranslation(id: number): Promise<ContentModuleTranslation | undefined>;
   getContentModuleTranslationByLanguage(moduleId: number, languageId: number): Promise<ContentModuleTranslation | undefined>;
   getContentModuleTranslationsByLanguageId(languageId: number): Promise<ContentModuleTranslation[]>;
-  getContentModuleTranslationsByModuleId(moduleId: number): Promise<ContentModuleTranslation[]>;
+  getContentModuleTranslationsByModuleId(moduleId: number, languageId?: number): Promise<ContentModuleTranslation[]>;
   createContentModuleTranslation(translation: InsertContentModuleTranslation): Promise<ContentModuleTranslation>;
   updateContentModuleTranslation(id: number, translation: Partial<InsertContentModuleTranslation>): Promise<ContentModuleTranslation | undefined>;
   deleteContentModuleTranslation(id: number): Promise<boolean>;
@@ -968,9 +968,19 @@ export class MemStorage implements IStorage {
       .filter(translation => translation.languageId === languageId);
   }
 
-  async getContentModuleTranslationsByModuleId(moduleId: number): Promise<ContentModuleTranslation[]> {
-    return Array.from(this.contentModuleTranslations.values())
-      .filter(translation => translation.moduleId === moduleId);
+  async getContentModuleTranslationsByModuleId(moduleId: number, languageId?: number): Promise<ContentModuleTranslation[]> {
+    // Se è specificata una lingua, filtriamo solo per quella lingua
+    if (languageId) {
+      return Array.from(this.contentModuleTranslations.values())
+        .filter(translation => 
+          translation.moduleId === moduleId && 
+          translation.languageId === languageId
+        );
+    } else {
+      // Altrimenti restituiamo tutte le traduzioni per il modulo
+      return Array.from(this.contentModuleTranslations.values())
+        .filter(translation => translation.moduleId === moduleId);
+    }
   }
 
   async createContentModuleTranslation(translation: InsertContentModuleTranslation): Promise<ContentModuleTranslation> {
@@ -2022,11 +2032,23 @@ export class DatabaseStorage implements IStorage {
       .where(eq(contentModuleTranslations.languageId, languageId));
   }
 
-  async getContentModuleTranslationsByModuleId(moduleId: number): Promise<ContentModuleTranslation[]> {
-    return db
-      .select()
-      .from(contentModuleTranslations)
-      .where(eq(contentModuleTranslations.moduleId, moduleId));
+  async getContentModuleTranslationsByModuleId(moduleId: number, languageId?: number): Promise<ContentModuleTranslation[]> {
+    // Se è specificata una lingua, filtriamo solo per quella lingua
+    if (languageId) {
+      return db
+        .select()
+        .from(contentModuleTranslations)
+        .where(and(
+          eq(contentModuleTranslations.moduleId, moduleId),
+          eq(contentModuleTranslations.languageId, languageId)
+        ));
+    } else {
+      // Altrimenti restituiamo tutte le traduzioni per il modulo
+      return db
+        .select()
+        .from(contentModuleTranslations)
+        .where(eq(contentModuleTranslations.moduleId, moduleId));
+    }
   }
 
   async createContentModuleTranslation(translation: InsertContentModuleTranslation): Promise<ContentModuleTranslation> {

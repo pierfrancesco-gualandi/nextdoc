@@ -442,13 +442,21 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
   // Save or update translation mutation
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
+      // Assicurati che lo stato sia impostato a "translated" per aggiornare correttamente lo stato della traduzione
+      const dataWithStatus = {
+        ...data,
+        status: "translated" // Imposta lo stato a "translated" invece di "not_translated"
+      };
+      
+      console.log("Salvando traduzione:", dataWithStatus);
+      
       const method = existingTranslation ? 'PUT' : 'POST';
       const endpoint = existingTranslation 
         ? `/api/module-translations/${existingTranslation.id}` 
         : '/api/module-translations';
       
       try {
-        const response = await apiRequest(method, endpoint, data);
+        const response = await apiRequest(method, endpoint, dataWithStatus);
         
         // Verifica se la risposta è valida prima di provare a fare il parsing
         const contentType = response.headers.get('content-type');
@@ -467,6 +475,8 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/module-translations`, moduleId, selectedLanguage] });
+      // Invalida anche le query dello stato di traduzione per aggiornare la UI
+      queryClient.invalidateQueries({ queryKey: [`/api/documents`, section?.documentId, 'translation-status'] });
       toast({
         title: "Traduzione salvata",
         description: "La traduzione del modulo è stata salvata con successo",
@@ -663,7 +673,7 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
       moduleId: moduleId,
       languageId: parseInt(selectedLanguage),
       content: JSON.stringify(updatedContent),
-      status: 'completed',
+      status: 'translated', // Imposta lo stato a "translated" per indicare che è stato tradotto
     };
     
     saveMutation.mutate(data);
