@@ -91,7 +91,22 @@ function BomComponentsDescriptionEditor({
         ).values()
       );
       
-      setComponents(uniqueComponents);
+      // Qui filtriamo i componenti in base a quelli effettivamente presenti nel modulo
+      // Se la BOM visualizzata nel modulo ha un filtro, rispettiamo quel filtro
+      if (translatedContent.filteredItems && Array.isArray(translatedContent.filteredItems)) {
+        // Prendi solo i componenti che compaiono nel filtro visualizzato
+        const filteredCodes = translatedContent.filteredItems.map((item: any) => 
+          typeof item === 'string' ? item : item.code || item.componentCode);
+          
+        // Filtra i componenti in base ai codici presenti nel filtro
+        const filteredComponents = uniqueComponents.filter((comp) => 
+          filteredCodes.includes(comp.code));
+          
+        setComponents(filteredComponents.length > 0 ? filteredComponents : uniqueComponents);
+      } else {
+        setComponents(uniqueComponents);
+      }
+      
       setIsLoading(false);
     } else if (bomItems && !Array.isArray(bomItems)) {
       console.error("Formato BOM non valido:", bomItems);
@@ -102,7 +117,7 @@ function BomComponentsDescriptionEditor({
       });
       setIsLoading(false);
     }
-  }, [bomItems, toast]);
+  }, [bomItems, translatedContent.filteredItems, toast]);
   
   // Gestisce il cambiamento della descrizione di un componente
   const handleDescriptionChange = (code: string, description: string) => {
@@ -264,8 +279,23 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
         ? `/api/content-module-translations/${existingTranslation.id}` 
         : '/api/content-module-translations';
       
-      const response = await apiRequest(method, endpoint, data);
-      return await response.json();
+      try {
+        const response = await apiRequest(method, endpoint, data);
+        
+        // Verifica se la risposta è valida prima di provare a fare il parsing
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          return await response.json();
+        } else {
+          // Se la risposta non è JSON, gestisci l'errore
+          const text = await response.text();
+          console.error("Risposta non valida dal server:", text);
+          throw new Error("Il server ha restituito una risposta non valida");
+        }
+      } catch (err) {
+        console.error("Errore durante la richiesta:", err);
+        throw err;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/content-module-translations`, moduleId, selectedLanguage] });
@@ -275,9 +305,10 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
       });
     },
     onError: (error) => {
+      console.error("Errore di mutazione:", error);
       toast({
         title: "Errore",
-        description: `Si è verificato un errore durante il salvataggio: ${error}`,
+        description: `Si è verificato un errore durante il salvataggio: ${error instanceof Error ? error.message : String(error)}`,
         variant: "destructive",
       });
     }
@@ -324,6 +355,24 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
               noResults: ''
             };
             initialTranslatedContent.descriptions = {};
+            
+            // Ottieni i componenti che vengono effettivamente mostrati nel modulo BOM
+            // Cerca eventuali filteredItems o componenti specifici
+            try {
+              // Se c'è un filtro applicato o un insieme specifico di componenti da mostrare
+              if (parsedContent.filteredComponents && Array.isArray(parsedContent.filteredComponents)) {
+                // Usa i componenti già filtrati
+                initialTranslatedContent.filteredItems = parsedContent.filteredComponents;
+              } else if (parsedContent.items && Array.isArray(parsedContent.items)) {
+                // Usa l'elenco completo degli elementi
+                initialTranslatedContent.filteredItems = parsedContent.items;
+              } else if (parsedContent.filteredItems && Array.isArray(parsedContent.filteredItems)) {
+                // Mantieni l'elenco già esistente
+                initialTranslatedContent.filteredItems = parsedContent.filteredItems;
+              }
+            } catch (err) {
+              console.error("Errore nell'estrazione dei filtri BOM:", err);
+            }
           }
           
           setTranslatedContent(initialTranslatedContent);
