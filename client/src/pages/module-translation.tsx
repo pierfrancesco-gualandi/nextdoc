@@ -31,6 +31,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+// Rimuoviamo le importazioni che causano errori
 
 interface ModuleTranslationProps {
   toggleSidebar?: () => void;
@@ -48,27 +49,60 @@ function BomComponentsDescriptionEditor({
   translatedContent, 
   onUpdateDescriptions 
 }: BomComponentsDescriptionEditorProps) {
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [components, setComponents] = useState<any[]>([]);
+  const [searchText, setSearchText] = useState("");
   
   // Recupera gli elementi della BOM
-  const { data: bomItems, isLoading: isLoadingItems } = useQuery({
+  const { data: bomItems, isLoading: isLoadingItems, error } = useQuery({
     queryKey: ['/api/boms', bomId, 'items'],
     enabled: !!bomId,
     queryFn: async () => {
-      const response = await fetch(`/api/boms/${bomId}/items`);
-      if (!response.ok) throw new Error('Errore nel caricamento degli elementi della distinta base');
-      return response.json();
+      try {
+        const response = await fetch(`/api/boms/${bomId}/items`);
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Errore nel caricamento degli elementi della distinta base: ${errorText}`);
+        }
+        return response.json();
+      } catch (error) {
+        console.error("Errore API:", error);
+        toast({
+          title: "Errore di caricamento",
+          description: `Non è stato possibile caricare i componenti: ${error}`,
+          variant: "destructive"
+        });
+        return [];
+      }
     }
   });
   
   // Aggiorna i componenti quando arrivano i dati
   useEffect(() => {
     if (bomItems && Array.isArray(bomItems)) {
-      setComponents(bomItems.map((item: any) => item.component).filter(Boolean));
+      // Estrai i componenti unici (evitando duplicati di codice)
+      const uniqueComponents = Array.from(
+        new Map(
+          bomItems
+            .map((item: any) => item.component)
+            .filter(Boolean)
+            .map((comp: any) => [comp.code, comp])
+        ).values()
+      );
+      
+      setComponents(uniqueComponents);
+      setIsLoading(false);
+    } else if (bomItems && !Array.isArray(bomItems)) {
+      console.error("Formato BOM non valido:", bomItems);
+      toast({
+        title: "Formato non valido",
+        description: "Il formato dei dati ricevuti non è valido",
+        variant: "destructive"
+      });
       setIsLoading(false);
     }
-  }, [bomItems]);
+  }, [bomItems, toast]);
   
   // Gestisce il cambiamento della descrizione di un componente
   const handleDescriptionChange = (code: string, description: string) => {
@@ -85,36 +119,89 @@ function BomComponentsDescriptionEditor({
     onUpdateDescriptions(updatedDescriptions);
   };
   
+  // Filtra i componenti in base alla ricerca
+  const filteredComponents = searchText
+    ? components.filter(component => 
+        component.code.toLowerCase().includes(searchText.toLowerCase()) || 
+        component.description.toLowerCase().includes(searchText.toLowerCase())
+      )
+    : components;
+  
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded mb-4">
+        <h3 className="font-medium">Errore</h3>
+        <p className="text-sm">
+          Si è verificato un errore nel caricamento dei componenti. 
+          Verifica che l'ID della BOM sia corretto.
+        </p>
+      </div>
+    );
+  }
+  
   if (isLoading || isLoadingItems) {
     return <div className="p-4 text-center">Caricamento componenti...</div>;
   }
   
   if (!components || components.length === 0) {
-    return <div className="p-4 text-center">Nessun componente trovato</div>;
+    return <div className="p-4 text-center">Nessun componente trovato per questa BOM</div>;
   }
   
   return (
-    <div className="space-y-3">
-      {components.map(component => (
-        <div key={component.code} className="grid grid-cols-1 md:grid-cols-3 gap-3 border p-3 rounded-md">
-          <div className="flex flex-col">
-            <span className="text-xs text-neutral-medium">Codice</span>
-            <span className="font-medium">{component.code}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs text-neutral-medium">Descrizione originale</span>
-            <span>{component.description}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs text-neutral-medium">Descrizione tradotta</span>
-            <Input
-              value={(translatedContent.descriptions && translatedContent.descriptions[component.code]) || ''}
-              onChange={(e) => handleDescriptionChange(component.code, e.target.value)}
-              placeholder="Inserisci traduzione..."
-            />
-          </div>
+    <div className="space-y-4">
+      {/* Search bar */}
+      <div>
+        <div className="flex items-center border rounded-md px-3 py-2">
+          <span className="mr-2 text-neutral-medium">🔍</span>
+          <Input
+            type="text"
+            placeholder="Cerca per codice o descrizione..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+          />
+          {searchText && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSearchText("")}
+              className="h-4 w-4 p-0"
+            >
+              <span>✕</span>
+            </Button>
+          )}
         </div>
-      ))}
+      </div>
+      
+      {/* Component list */}
+      <div className="space-y-3">
+        {filteredComponents.length === 0 ? (
+          <div className="text-center p-4 border rounded-md">
+            Nessun componente corrisponde alla ricerca
+          </div>
+        ) : (
+          filteredComponents.map(component => (
+            <div key={component.code} className="grid grid-cols-1 md:grid-cols-3 gap-3 border p-3 rounded-md">
+              <div className="flex flex-col">
+                <span className="text-xs text-neutral-medium">Codice</span>
+                <span className="font-medium">{component.code}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-neutral-medium">Descrizione originale</span>
+                <span>{component.description}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-neutral-medium">Descrizione tradotta</span>
+                <Input
+                  value={(translatedContent.descriptions && translatedContent.descriptions[component.code]) || ''}
+                  onChange={(e) => handleDescriptionChange(component.code, e.target.value)}
+                  placeholder="Inserisci traduzione..."
+                />
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
@@ -126,7 +213,11 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
   const moduleId = parseInt(params.id || "0");
 
   const [selectedLanguage, setSelectedLanguage] = useState<string>("");
-  const [translatedContent, setTranslatedContent] = useState<any>({});
+  const [translatedContent, setTranslatedContent] = useState<any>({
+    headers: {},
+    messages: {},
+    descriptions: {}
+  });
   const [existingTranslation, setExistingTranslation] = useState<any>(null);
 
   // Fetch the original module
@@ -273,14 +364,22 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
       
       if (field.includes('.')) {
         const [parentField, childField] = field.split('.');
+        // Assicuriamoci che updated[parentField] esista sempre
+        if (!updated[parentField]) {
+          updated[parentField] = {};
+        }
+        
         if (index !== undefined && subIndex !== undefined && Array.isArray(updated[parentField]) && updated[parentField][index]) {
           updated[parentField][index][childField] = value;
         } else if (index !== undefined && Array.isArray(updated[parentField])) {
           updated[parentField][index] = { ...updated[parentField][index], [childField]: value };
-        } else if (updated[parentField]) {
-          updated[parentField] = { ...updated[parentField], [childField]: value };
+        } else {
+          // Ora che abbiamo garantito che updated[parentField] esiste, possiamo assegnare il childField
+          updated[parentField][childField] = value;
         }
       } else if (index !== undefined && subIndex !== undefined && field === 'rows') {
+        if (!updated.rows) updated.rows = [];
+        if (!updated.rows[index]) updated.rows[index] = [];
         updated.rows[index][subIndex] = value;
       } else if (index !== undefined && Array.isArray(updated[field])) {
         updated[field][index] = value;
@@ -288,6 +387,7 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
         updated[field] = value;
       }
       
+      console.log('Aggiornamento contenuto tradotto:', updated);
       return updated;
     });
   };
