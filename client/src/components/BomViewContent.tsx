@@ -370,9 +370,9 @@ const BomViewContent = ({
       
       {/* La tabella viene sempre mostrata, sia in modalità modifica che in anteprima */}
       <div className="overflow-x-auto">
-        {translation?.title && (
-          <h3 className="text-xl font-bold mb-2">{translation.title}</h3>
-        )}
+        <h3 className="text-xl font-bold mb-2">
+          {translation?.title || "Elenco Componenti"}
+        </h3>
         <Table className="w-full border-collapse">
           <TableHeader>
             <TableRow className="bg-neutral-lightest">
