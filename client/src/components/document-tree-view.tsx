@@ -188,6 +188,23 @@ export default function DocumentTreeView({
     const section = sections.find(s => s.id === sectionId);
     if (!section) return;
     
+    console.log(`Spostando sezione ${sectionId} (${section.title}) verso parentId=${newParentId}, order=${newOrder}`);
+    
+    // Verifica se stiamo spostando una sezione all'interno dello stesso livello
+    // o se stiamo cambiando il parent
+    const isChangingParent = section.parentId !== newParentId;
+    
+    // Se stiamo cambiando il parent, dobbiamo ricalcolare correttamente l'ordine
+    if (isChangingParent) {
+      // Troviamo tutte le sezioni che sono allo stesso livello della destinazione
+      const destinationSiblings = sections.filter(s => s.parentId === newParentId);
+      
+      // Aggiorniamo gli ordini di tutte le sezioni che verranno dopo la sezione spostata
+      if (destinationSiblings.length > 0) {
+        console.log(`Destinazione ha ${destinationSiblings.length} fratelli. Ricalcolo ordini.`);
+      }
+    }
+    
     updateSectionMutation.mutate({
       id: sectionId,
       data: {
@@ -578,8 +595,10 @@ function SectionItem({
       if (item.id === section.id) return;
       
       // When dropping on the child area, make it a child of this section
-      // Just use 0 as the order, it will be placed at the end
-      onMove(item.id, section.id, 0);
+      // Calcoliamo l'ordine corretto per inserirlo alla fine dei figli esistenti
+      const existingChildren = sections ? sections.filter(s => s.parentId === section.id).length : 0;
+      console.log(`Spostando la sezione ${item.id} come figlia di ${section.id}, ci sono già ${existingChildren} figli esistenti`);
+      onMove(item.id, section.id, existingChildren);
     },
     collect: (monitor) => ({
       isOverChild: monitor.isOver(),
