@@ -56,6 +56,9 @@ function BomComponentsDescriptionEditor({
   const [components, setComponents] = useState<any[]>([]);
   const [searchText, setSearchText] = useState("");
   
+  // Stato per tenere traccia delle descrizioni dei componenti
+  const [componentDescriptions, setComponentDescriptions] = useState<Record<string, string>>({});
+  
   // Recupera gli elementi della BOM
   const { data: bomItems, isLoading: isLoadingItems, error } = useQuery({
     queryKey: ['/api/boms', bomId, 'items'],
@@ -80,6 +83,14 @@ function BomComponentsDescriptionEditor({
     }
   });
   
+  // Inizializza le descrizioni dai dati della traduzione
+  useEffect(() => {
+    if (translatedContent && translatedContent.descriptions) {
+      console.log("Inizializzazione descrizioni tradotte:", translatedContent.descriptions);
+      setComponentDescriptions(translatedContent.descriptions);
+    }
+  }, [translatedContent]);
+
   // Aggiorna i componenti quando arrivano i dati
   useEffect(() => {
     if (!bomItems || !Array.isArray(bomItems)) {
@@ -289,18 +300,25 @@ function BomComponentsDescriptionEditor({
   
   // Gestisce il cambiamento della descrizione di un componente
   const handleDescriptionChange = (code: string, description: string) => {
-    // Inizializza se non esiste
-    const currentDescriptions = translatedContent.descriptions || {};
-    
-    // Crea una copia aggiornata delle descrizioni
-    const updatedDescriptions = {
-      ...currentDescriptions,
-      [code]: description
-    };
-    
-    // Aggiorna lo stato nel componente padre
-    onUpdateDescriptions(updatedDescriptions);
+    // Aggiorna lo stato locale
+    setComponentDescriptions(prev => {
+      const updated = { ...prev, [code]: description };
+      
+      // Aggiorna anche lo stato nel componente padre
+      onUpdateDescriptions(updated);
+      
+      return updated;
+    });
   };
+  
+  // Sincronizza le descrizioni nel componente padre quando cambiano quelle locali
+  useEffect(() => {
+    // Solo se ci sono descrizioni da sincronizzare
+    if (Object.keys(componentDescriptions).length > 0) {
+      console.log("Sincronizzazione descrizioni con il componente padre:", componentDescriptions);
+      onUpdateDescriptions(componentDescriptions);
+    }
+  }, [componentDescriptions, onUpdateDescriptions]);
   
   // Filtra i componenti in base alla ricerca
   const filteredComponents = searchText
@@ -376,7 +394,9 @@ function BomComponentsDescriptionEditor({
               <div className="flex flex-col">
                 <span className="text-xs text-neutral-medium">Descrizione tradotta</span>
                 <Input
-                  value={(translatedContent.descriptions && translatedContent.descriptions[component.code]) || ''}
+                  value={(componentDescriptions[component.code]) || 
+                         (translatedContent.descriptions && translatedContent.descriptions[component.code]) || 
+                         ''}
                   onChange={(e) => handleDescriptionChange(component.code, e.target.value)}
                   placeholder="Inserisci traduzione..."
                 />
@@ -431,6 +451,10 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
           throw new Error("Errore nel caricamento della traduzione");
         }
         const data = await response.json();
+        // Registra i dati della traduzione per debug
+        if (data.length > 0) {
+          console.log("Traduzione esistente trovata:", data[0]);
+        }
         return data.length > 0 ? data[0] : null;
       } catch (error) {
         console.error("Errore:", error);
@@ -582,9 +606,55 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
     if (translation) {
       setExistingTranslation(translation);
       
-      if (translation.content && typeof translation.content === 'string') {
+      if (translation.content) {
         try {
-          const parsedContent = JSON.parse(translation.content);
+          // Gestisce sia il caso in cui content sia già un oggetto che il caso in cui sia una stringa
+          const parsedContent = typeof translation.content === 'string' 
+            ? JSON.parse(translation.content) 
+            : translation.content;
+          
+          console.log("Caricamento traduzione esistente:", parsedContent);
+          
+          // Assicuriamoci che tutte le proprietà necessarie esistano
+          if (module.type === 'bom') {
+            // Assicurati che la struttura delle traduzioni BOM sia completa
+            if (!parsedContent.headers) {
+              parsedContent.headers = {
+                number: '', 
+                level: '',
+                code: '',
+                description: '',
+                quantity: ''
+              };
+            }
+            
+            if (!parsedContent.messages) {
+              parsedContent.messages = {
+                loading: '',
+                notFound: '',
+                empty: '',
+                noResults: ''
+              };
+            }
+            
+            if (!parsedContent.descriptions) {
+              parsedContent.descriptions = {};
+            }
+            
+            // Preserva filteredComponentCodes dall'originale se non presente nella traduzione
+            if (!parsedContent.filteredComponentCodes && module.content) {
+              const originalContent = typeof module.content === 'string' 
+                ? JSON.parse(module.content) 
+                : module.content;
+              
+              if (originalContent.filteredComponentCodes) {
+                parsedContent.filteredComponentCodes = originalContent.filteredComponentCodes;
+              } else if (originalContent.filterSettings?.filteredComponentCodes) {
+                parsedContent.filteredComponentCodes = originalContent.filterSettings.filteredComponentCodes;
+              }
+            }
+          }
+          
           setTranslatedContent(parsedContent);
         } catch (e) {
           console.error("Errore nel parsing della traduzione:", e);
@@ -593,7 +663,7 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
     } else {
       setExistingTranslation(null);
     }
-  }, [translation]);
+  }, [translation, module]);
 
   // Handle language selection
   const handleLanguageChange = (languageId: string) => {
