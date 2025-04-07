@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -43,7 +44,7 @@ export default function ModuleTranslationManager() {
   });
 
   // Fetch sections for selected document
-  const { data: sections } = useQuery<any[]>({
+  const { data: sections, isLoading: isLoadingSections } = useQuery<any[]>({
     queryKey: ['/api/documents', selectedDocument, 'sections'],
     enabled: !!selectedDocument,
   });
@@ -51,6 +52,37 @@ export default function ModuleTranslationManager() {
   // Fetch languages
   const { data: languages } = useQuery<any[]>({
     queryKey: ['/api/languages'],
+  });
+
+  // Fetch all modules from the selected document
+  const { data: allModules, isLoading: isLoadingAllModules } = useQuery<any[]>({
+    queryKey: ['/api/modules'],
+    enabled: !!selectedDocument,
+    queryFn: async () => {
+      const modulesData = [];
+      if (sections && sections.length > 0) {
+        for (const section of sections) {
+          try {
+            const response = await fetch(`/api/sections/${section.id}/modules`);
+            if (response.ok) {
+              const sectionModules = await response.json();
+              // Aggiungiamo informazioni sulla sezione per poterle visualizzare
+              const modulesWithSection = sectionModules.map((module: any) => ({
+                ...module,
+                sectionInfo: {
+                  id: section.id,
+                  title: section.title
+                }
+              }));
+              modulesData.push(...modulesWithSection);
+            }
+          } catch (error) {
+            console.error(`Errore nel caricamento dei moduli per la sezione ${section.id}:`, error);
+          }
+        }
+      }
+      return modulesData;
+    }
   });
 
   // Fetch modules for selected section
@@ -187,84 +219,195 @@ export default function ModuleTranslationManager() {
       </Card>
 
       {/* Tabella dei moduli disponibili */}
-      {selectedSection && (
+      {isLoadingSections ? (
+        <Card>
+          <CardContent className="text-center py-8">
+            <div className="mb-2">Caricamento sezioni...</div>
+            <Progress value={20} className="w-1/2 mx-auto" />
+          </CardContent>
+        </Card>
+      ) : selectedDocument ? (
         <Card>
           <CardHeader>
-            <CardTitle>Moduli in {getSectionName(selectedSection)}</CardTitle>
+            <CardTitle>
+              {selectedSection ? `Moduli in ${getSectionName(selectedSection)}` : 'Tutti i moduli nel documento'}
+            </CardTitle>
             <CardDescription>
-              Seleziona un modulo per gestire la sua traduzione.
+              {selectedSection ? 'Moduli specifici della sezione selezionata.' : 'Seleziona una sezione specifica per filtrare i moduli, o gestisci direttamente tutti i moduli del documento.'}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoadingModules ? (
-              <div className="text-center py-8">Caricamento moduli...</div>
-            ) : filteredModules && filteredModules.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Anteprima Contenuto</TableHead>
-                    <TableHead>Stato Traduzione</TableHead>
-                    <TableHead>Azioni</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredModules.map(module => (
-                    <TableRow key={module.id}>
-                      <TableCell>
-                        <Badge className={module.type === 'bom' ? 'bg-blue-100 text-blue-800 border-blue-200' : ''}>
-                          {getModuleTypeName(module.type)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {module.type === 'text' ? (
-                          <div className="max-w-xs truncate">
-                            {(() => {
-                              try {
-                                const content = JSON.parse(module.content);
-                                return content.text?.slice(0, 50) + (content.text?.length > 50 ? '...' : '');
-                              } catch (e) {
-                                return 'Errore nel parsing del contenuto';
-                              }
-                            })()}
-                          </div>
-                        ) : module.type === 'bom' ? (
-                          <div className="font-medium text-blue-600">Elenco Componenti (BOM)</div>
-                        ) : (
-                          <div className="italic text-neutral-medium">Contenuto non testuale</div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {selectedLanguage ? (
-                          <Badge className="bg-gray-100 text-gray-800 border-gray-200">
-                            {getTranslationStatus(module.id, selectedLanguage)}
-                          </Badge>
-                        ) : (
-                          <span className="text-neutral-medium">Seleziona una lingua</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          size="sm" 
-                          asChild
-                          disabled={!selectedLanguage}
-                        >
-                          <Link href={`/module-translation/${module.id}`}>
-                            Traduci
-                          </Link>
-                        </Button>
-                      </TableCell>
+            {selectedSection ? (
+              isLoadingModules ? (
+                <div className="text-center py-8">
+                  <div className="mb-2">Caricamento moduli...</div>
+                  <Progress value={60} className="w-1/2 mx-auto" />
+                </div>
+              ) : filteredModules && filteredModules.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Anteprima Contenuto</TableHead>
+                      <TableHead>Stato Traduzione</TableHead>
+                      <TableHead>Azioni</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredModules.map(module => (
+                      <TableRow key={module.id}>
+                        <TableCell>
+                          <Badge className={module.type === 'bom' ? 'bg-blue-100 text-blue-800 border-blue-200' : ''}>
+                            {getModuleTypeName(module.type)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {module.type === 'text' ? (
+                            <div className="max-w-xs truncate">
+                              {(() => {
+                                try {
+                                  const content = JSON.parse(module.content);
+                                  return content.text?.slice(0, 50) + (content.text?.length > 50 ? '...' : '');
+                                } catch (e) {
+                                  return 'Errore nel parsing del contenuto';
+                                }
+                              })()}
+                            </div>
+                          ) : module.type === 'bom' ? (
+                            <div className="font-medium text-blue-600">Elenco Componenti (BOM)</div>
+                          ) : (
+                            <div className="italic text-neutral-medium">Contenuto non testuale</div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {selectedLanguage ? (
+                            <Badge className="bg-gray-100 text-gray-800 border-gray-200">
+                              {getTranslationStatus(module.id, selectedLanguage)}
+                            </Badge>
+                          ) : (
+                            <span className="text-neutral-medium">Seleziona una lingua</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            size="sm" 
+                            asChild
+                            disabled={!selectedLanguage}
+                          >
+                            <Link href={`/module-translation/${module.id}`}>
+                              Traduci
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-8 text-neutral-medium">
+                  {modules?.length === 0 ? 
+                    "Nessun modulo trovato in questa sezione" : 
+                    "Nessun modulo corrisponde alla ricerca"}
+                </div>
+              )
             ) : (
-              <div className="text-center py-8 text-neutral-medium">
-                {modules?.length === 0 ? 
-                  "Nessun modulo trovato in questa sezione" : 
-                  "Nessun modulo corrisponde alla ricerca"}
-              </div>
+              // Se nessuna sezione è selezionata, mostra tutti i moduli di tutte le sezioni
+              isLoadingAllModules ? (
+                <div className="text-center py-8">
+                  <div className="mb-2">Caricamento di tutti i moduli...</div>
+                  <Progress value={40} className="w-1/2 mx-auto" />
+                </div>
+              ) : allModules && allModules.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Sezione</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Anteprima Contenuto</TableHead>
+                      <TableHead>Stato Traduzione</TableHead>
+                      <TableHead>Azioni</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allModules
+                      .filter(module => {
+                        // Filtra in base alla query di ricerca
+                        if (!searchQuery) return true;
+                        
+                        return module.type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          JSON.stringify(module.content).toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          module.sectionInfo?.title.toLowerCase().includes(searchQuery.toLowerCase());
+                      })
+                      .map(module => (
+                        <TableRow key={module.id}>
+                          <TableCell>
+                            <div className="font-medium">
+                              {module.sectionInfo?.title || 'Sezione sconosciuta'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={module.type === 'bom' ? 'bg-blue-100 text-blue-800 border-blue-200' : ''}>
+                              {getModuleTypeName(module.type)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {module.type === 'text' ? (
+                              <div className="max-w-xs truncate">
+                                {(() => {
+                                  try {
+                                    const content = JSON.parse(module.content);
+                                    return content.text?.slice(0, 50) + (content.text?.length > 50 ? '...' : '');
+                                  } catch (e) {
+                                    return 'Errore nel parsing del contenuto';
+                                  }
+                                })()}
+                              </div>
+                            ) : module.type === 'bom' ? (
+                              <div className="font-medium text-blue-600">Elenco Componenti (BOM)</div>
+                            ) : (
+                              <div className="italic text-neutral-medium">Contenuto non testuale</div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {selectedLanguage ? (
+                              <Badge className="bg-gray-100 text-gray-800 border-gray-200">
+                                {getTranslationStatus(module.id, selectedLanguage)}
+                              </Badge>
+                            ) : (
+                              <span className="text-neutral-medium">Seleziona una lingua</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              size="sm" 
+                              asChild
+                              disabled={!selectedLanguage}
+                            >
+                              <Link href={`/module-translation/${module.id}`}>
+                                Traduci
+                              </Link>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-8 text-neutral-medium">
+                  {!allModules ? 
+                    "Errore nel caricamento dei moduli" :
+                    allModules.length === 0 ? 
+                      "Nessun modulo trovato in questo documento" : 
+                      "Nessun modulo corrisponde alla ricerca"}
+                </div>
+              )
             )}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="text-center py-8 text-neutral-medium">
+            Seleziona un documento per visualizzare i suoi moduli
           </CardContent>
         </Card>
       )}
