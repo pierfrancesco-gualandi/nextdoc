@@ -417,15 +417,32 @@ const BomViewContent = ({
                     {item.component.code}
                   </TableCell>
                   <TableCell className="p-2 border border-neutral-light">
-                    {/* Mostra la descrizione tradotta se disponibile, altrimenti usa quella originale */}
-                    {translation?.descriptions && translation.descriptions[item.component.code] !== undefined
-                      ? translation.descriptions[item.component.code] 
-                      : (
+                    {/* Debug della traduzione e dei suoi contenuti in modo visibile */}
+                    {(() => {
+                      console.log(
+                        "Item:", item.component.code, 
+                        "- Translation exists:", !!translation,
+                        "- Descriptions exists:", !!(translation?.descriptions),
+                        "- Has this code?", translation?.descriptions ? Object.keys(translation.descriptions).includes(item.component.code) : false,
+                        "- Translation value:", translation?.descriptions ? translation.descriptions[item.component.code] : undefined
+                      );
+                      
+                      // Controlla se la traduzione esiste e non è undefined/null per questo codice
+                      const hasValidTranslation = translation?.descriptions && 
+                        item.component.code in translation.descriptions && 
+                        translation.descriptions[item.component.code] !== undefined && 
+                        translation.descriptions[item.component.code] !== null && 
+                        translation.descriptions[item.component.code] !== "";
+                        
+                      if (hasValidTranslation && translation?.descriptions) {
+                        return translation.descriptions[item.component.code];
+                      } else {
                         // Se la traduzione è richiesta ma manca, evidenzia il testo in rosso
-                        highlightMissingTranslations && selectedLanguage 
+                        return (highlightMissingTranslations && selectedLanguage)
                           ? <span className="text-red-500">{item.component.description}</span>
-                          : item.component.description
-                      )}
+                          : item.component.description;
+                      }
+                    })()}
                   </TableCell>
                   <TableCell className="p-2 border border-neutral-light text-right">
                     {item.quantity}
@@ -454,9 +471,10 @@ const BomViewContent = ({
 };
 
 // Funzione di utilità per estrarre i codici dei componenti dalla BOM
-export function getVisibleComponentCodes(items: any[]): string[] {
+const getVisibleComponentCodes = (items: any[]): string[] => {
   if (!items || !Array.isArray(items)) return [];
   return items.map(item => item.component?.code).filter(Boolean);
-}
+};
 
+export { getVisibleComponentCodes };
 export default BomViewContent;

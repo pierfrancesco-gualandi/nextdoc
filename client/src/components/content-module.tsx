@@ -70,6 +70,8 @@ interface ContentModuleProps {
 // Funzione per estrarre la traduzione dai dati del modulo
 const parseTranslation = (module: any, selectedLanguage?: string): any => {
   try {
+    console.log("Analisi translation per modulo:", module.id, "tipo:", module.type, "lingua:", selectedLanguage);
+    
     // Verifica se il modulo ha una traduzione
     if (module && module.translation && module.translation.content) {
       // Parse del JSON della traduzione
@@ -81,13 +83,16 @@ const parseTranslation = (module: any, selectedLanguage?: string): any => {
         translationContent = module.translation.content;
       }
       
-      console.log("Traduzione trovata per il modulo:", module.id, translationContent);
+      console.log("Traduzione diretta trovata per il modulo:", module.id, translationContent);
       
       // Per i moduli di tipo "bom", assicuriamoci che abbia la struttura corretta per le traduzioni
       if (module.type === "bom" && translationContent) {
         if (!translationContent.descriptions) {
           translationContent.descriptions = {};
         }
+        
+        // Debug dei contenuti delle descrizioni
+        console.log("Descrizioni nella traduzione:", translationContent.descriptions);
         
         // Assicuriamoci che le descrizioni vuote siano undefined e non stringhe vuote
         // per evitare che vengano interpretate come traduzioni esistenti
@@ -103,10 +108,14 @@ const parseTranslation = (module: any, selectedLanguage?: string): any => {
     
     // Se è specificata una lingua, cerca tra le traduzioni disponibili per quella lingua
     if (selectedLanguage && module && module.translations) {
+      console.log("Cerco nelle traduzioni disponibili:", module.translations);
+      
       // Trova la traduzione per la lingua selezionata
       const translation = module.translations.find((t: any) => 
         t.languageId === parseInt(selectedLanguage) || t.languageId === selectedLanguage
       );
+      
+      console.log("Traduzione trovata per linguaId:", selectedLanguage, "->", translation);
       
       if (translation && translation.content) {
         let translationContent;
@@ -122,6 +131,9 @@ const parseTranslation = (module: any, selectedLanguage?: string): any => {
             translationContent.descriptions = {};
           }
           
+          // Debug dei contenuti di descriptions
+          console.log("Descrizioni nella traduzione del modulo:", translationContent.descriptions);
+          
           // Assicuriamoci che le descrizioni vuote siano undefined e non stringhe vuote
           Object.keys(translationContent.descriptions).forEach(key => {
             if (translationContent.descriptions[key] === "") {
@@ -130,7 +142,7 @@ const parseTranslation = (module: any, selectedLanguage?: string): any => {
           });
         }
         
-        console.log("Traduzione trovata per la lingua:", selectedLanguage, translationContent);
+        console.log("Traduzione completa per la lingua:", selectedLanguage, translationContent);
         return translationContent;
       }
     }
