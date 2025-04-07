@@ -117,9 +117,29 @@ function BomComponentsDescriptionEditor({
       const originalContent = typeof originalModule?.content === 'string' 
         ? JSON.parse(originalModule.content) 
         : originalModule?.content || {};
+        
+      // Estrai direttamente i codici visibili dai componenti filtrati
+      if (originalContent?.filterSettings?.filteredComponentCodes && Array.isArray(originalContent.filterSettings.filteredComponentCodes)) {
+        console.log("Usando i codici componenti filtrati direttamente dal modulo originale", originalContent.filterSettings.filteredComponentCodes);
+        
+        const filteredCodes = originalContent.filterSettings.filteredComponentCodes;
+        if (filteredCodes.length > 0) {
+          // Filtra i componenti in base ai codici identificati
+          visibleComponents = bomItems
+            .filter((item: any) => item.component && filteredCodes.includes(item.component.code))
+            .map((item: any) => item.component);
+          
+          // Elimina duplicati
+          visibleComponents = Array.from(
+            new Map(visibleComponents.map((comp: any) => [comp.code, comp])).values()
+          );
+          
+          console.log("Componenti filtrati estratti direttamente:", visibleComponents.map((c:any) => c.code));
+        }
+      }
       
-      // Prendi i componenti solo dalla tabella BOM originale      
-      if (originalContent?.filterSettings?.enableFiltering) {
+      // Se non abbiamo componenti filtrati diretti, prova a ricostruirli usando i filtri
+      if (visibleComponents.length === 0 && originalContent?.filterSettings?.enableFiltering) {
         const bomId = originalContent.bomId || translatedContent.bomId;
         
         // Applica gli stessi filtri che sono stati applicati nella tabella originale
