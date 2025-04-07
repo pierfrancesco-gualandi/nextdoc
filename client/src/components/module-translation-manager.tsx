@@ -46,6 +46,14 @@ export default function ModuleTranslationManager() {
   // Fetch sections for selected document
   const { data: sections, isLoading: isLoadingSections } = useQuery<any[]>({
     queryKey: ['/api/documents', selectedDocument, 'sections'],
+    queryFn: async () => {
+      if (!selectedDocument) return [];
+      const response = await fetch(`/api/documents/${selectedDocument}/sections`);
+      if (!response.ok) {
+        throw new Error(`Errore nel caricamento delle sezioni: ${response.statusText}`);
+      }
+      return response.json();
+    },
     enabled: !!selectedDocument,
   });
 
@@ -88,6 +96,14 @@ export default function ModuleTranslationManager() {
   // Fetch modules for selected section
   const { data: modules, isLoading: isLoadingModules } = useQuery<any[]>({
     queryKey: ['/api/sections', selectedSection, 'modules'],
+    queryFn: async () => {
+      if (!selectedSection) return [];
+      const response = await fetch(`/api/sections/${selectedSection}/modules`);
+      if (!response.ok) {
+        throw new Error(`Errore nel caricamento dei moduli: ${response.statusText}`);
+      }
+      return response.json();
+    },
     enabled: !!selectedSection,
   });
 
