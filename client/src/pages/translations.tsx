@@ -26,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import TranslationComponentLink from "@/components/translation-component-link";
+import ModuleTranslationManager from "@/components/module-translation-manager";
 
 // Componenti interni per organizzare la pagina
 
@@ -1369,10 +1370,11 @@ export default function Translations({ toggleSidebar }: { toggleSidebar: () => v
 
       <main className="flex-1 overflow-y-auto p-6 bg-neutral-lightest">
         <Tabs defaultValue="languages" className="w-full">
-          <TabsList className="grid grid-cols-6 w-full max-w-4xl mx-auto mb-8">
+          <TabsList className="grid grid-cols-7 w-full max-w-5xl mx-auto mb-8">
             <TabsTrigger value="languages">Lingue</TabsTrigger>
             <TabsTrigger value="assignments">Assegnazioni</TabsTrigger>
             <TabsTrigger value="section-edit">Traduci Sezioni</TabsTrigger>
+            <TabsTrigger value="module-edit">Traduzioni Moduli</TabsTrigger>
             <TabsTrigger value="imports">Importazioni</TabsTrigger>
             <TabsTrigger value="status">Stato</TabsTrigger>
             <TabsTrigger value="ai">AI Traduzioni</TabsTrigger>
@@ -1389,6 +1391,10 @@ export default function Translations({ toggleSidebar }: { toggleSidebar: () => v
             
             <TabsContent value="section-edit">
               <SectionTranslationManager />
+            </TabsContent>
+            
+            <TabsContent value="module-edit">
+              <ModuleTranslationManager />
             </TabsContent>
             
             <TabsContent value="imports">
