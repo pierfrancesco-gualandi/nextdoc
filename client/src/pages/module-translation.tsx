@@ -42,12 +42,14 @@ interface BomComponentsDescriptionEditorProps {
   bomId: number;
   translatedContent: any;
   onUpdateDescriptions: (descriptions: Record<string, string>) => void;
+  originalModule?: any; // Aggiungiamo il modulo originale come prop
 }
 
 function BomComponentsDescriptionEditor({ 
   bomId, 
   translatedContent, 
-  onUpdateDescriptions 
+  onUpdateDescriptions,
+  originalModule
 }: BomComponentsDescriptionEditorProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
@@ -112,9 +114,9 @@ function BomComponentsDescriptionEditor({
       
       // Ottieni l'elenco dei componenti dalla tabella originale
       // Questo ci dà solo i componenti che sono effettivamente mostrati (filtrati)
-      const originalContent = typeof module?.content === 'string' 
-        ? JSON.parse(module.content) 
-        : module?.content || {};
+      const originalContent = typeof originalModule?.content === 'string' 
+        ? JSON.parse(originalModule.content) 
+        : originalModule?.content || {};
       
       // Prendi i componenti solo dalla tabella BOM originale      
       if (originalContent?.filterSettings?.enableFiltering) {
@@ -263,7 +265,7 @@ function BomComponentsDescriptionEditor({
     }
     
     setIsLoading(false);
-  }, [bomItems, translatedContent, toast, module]);
+  }, [bomItems, translatedContent, toast, originalModule]);
   
   // Gestisce il cambiamento della descrizione di un componente
   const handleDescriptionChange = (code: string, description: string) => {
@@ -1050,6 +1052,7 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                               <BomComponentsDescriptionEditor 
                                                 bomId={bomContent.bomId}
                                                 translatedContent={translatedContent}
+                                                originalModule={module}
                                                 onUpdateDescriptions={(descriptions: Record<string, string>) => {
                                                   setTranslatedContent((prev: any) => ({
                                                     ...prev,
