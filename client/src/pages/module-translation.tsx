@@ -80,9 +80,22 @@ function BomComponentsDescriptionEditor({
   
   // Aggiorna i componenti quando arrivano i dati
   useEffect(() => {
-    if (bomItems && Array.isArray(bomItems)) {
-      // Estrai i componenti unici (evitando duplicati di codice)
-      const uniqueComponents = Array.from(
+    if (!bomItems || !Array.isArray(bomItems)) {
+      if (bomItems) {
+        console.error("Formato BOM non valido:", bomItems);
+        toast({
+          title: "Formato non valido",
+          description: "Il formato dei dati ricevuti non è valido",
+          variant: "destructive"
+        });
+      }
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      // Estrai tutti i componenti dalla distinta base
+      const allComponents = Array.from(
         new Map(
           bomItems
             .map((item: any) => item.component)
@@ -91,33 +104,66 @@ function BomComponentsDescriptionEditor({
         ).values()
       );
       
-      // Qui filtriamo i componenti in base a quelli effettivamente presenti nel modulo
-      // Se la BOM visualizzata nel modulo ha un filtro, rispettiamo quel filtro
+      console.log("Tutti i componenti disponibili:", allComponents.map(c => c.code));
+      
+      // Prova a estrarre i componenti visualizzati nella tabella del modulo
+      let visibleComponents = allComponents;
+      
+      // Prima controlla se ci sono componenti specificatamente filtrati nel contenuto tradotto
       if (translatedContent.filteredItems && Array.isArray(translatedContent.filteredItems)) {
-        // Prendi solo i componenti che compaiono nel filtro visualizzato
-        const filteredCodes = translatedContent.filteredItems.map((item: any) => 
-          typeof item === 'string' ? item : item.code || item.componentCode);
+        console.log("Usando i componenti filtrati dal contenuto tradotto");
+        const filteredCodes = translatedContent.filteredItems
+          .map((item: any) => typeof item === 'string' ? item : item.code || item.componentCode)
+          .filter(Boolean);
           
-        // Filtra i componenti in base ai codici presenti nel filtro
-        const filteredComponents = uniqueComponents.filter((comp) => 
-          filteredCodes.includes(comp.code));
+        if (filteredCodes.length > 0) {
+          visibleComponents = allComponents.filter(comp => filteredCodes.includes(comp.code));
+        }
+      }
+      // Se non sono stati trovati componenti filtrati nel contenuto tradotto,
+      // controlla se esistono nelle proprietà del modulo originale
+      else if (translatedContent.bomId && translatedContent.visibleComponents) {
+        console.log("Usando i componenti visibili dal modulo originale");
+        const visibleCodes = Array.isArray(translatedContent.visibleComponents) 
+          ? translatedContent.visibleComponents
+          : [];
           
-        setComponents(filteredComponents.length > 0 ? filteredComponents : uniqueComponents);
-      } else {
-        setComponents(uniqueComponents);
+        if (visibleCodes.length > 0) {
+          visibleComponents = allComponents.filter(comp => visibleCodes.includes(comp.code));
+        }
+      }
+      // Altrimenti prova a cercare componenti filtrati nella tabella
+      else if (translatedContent.items && Array.isArray(translatedContent.items)) {
+        console.log("Usando gli elementi dalla tabella");
+        const tableCodes = translatedContent.items
+          .map((item: any) => typeof item === 'string' ? item : item.code || item.componentCode)
+          .filter(Boolean);
+          
+        if (tableCodes.length > 0) {
+          visibleComponents = allComponents.filter(comp => tableCodes.includes(comp.code));
+        }
       }
       
-      setIsLoading(false);
-    } else if (bomItems && !Array.isArray(bomItems)) {
-      console.error("Formato BOM non valido:", bomItems);
-      toast({
-        title: "Formato non valido",
-        description: "Il formato dei dati ricevuti non è valido",
-        variant: "destructive"
-      });
-      setIsLoading(false);
+      console.log("Componenti filtrati:", visibleComponents.map(c => c.code));
+      
+      // Se nessun filtro ha trovato componenti, usa tutti i componenti
+      setComponents(visibleComponents.length > 0 ? visibleComponents : allComponents);
+    } catch (err) {
+      console.error("Errore durante il filtraggio dei componenti:", err);
+      // In caso di errore, mostra tutti i componenti disponibili
+      const allComponents = Array.from(
+        new Map(
+          bomItems
+            .map((item: any) => item.component)
+            .filter(Boolean)
+            .map((comp: any) => [comp.code, comp])
+        ).values()
+      );
+      setComponents(allComponents);
     }
-  }, [bomItems, translatedContent.filteredItems, toast]);
+    
+    setIsLoading(false);
+  }, [bomItems, translatedContent, toast]);
   
   // Gestisce il cambiamento della descrizione di un componente
   const handleDescriptionChange = (code: string, description: string) => {
@@ -254,11 +300,11 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
 
   // Fetch existing translation when language changes
   const { data: translation, isLoading: isLoadingTranslation } = useQuery<any>({
-    queryKey: [`/api/content-module-translations`, moduleId, selectedLanguage],
+    queryKey: [`/api/module-translations`, moduleId, selectedLanguage],
     enabled: !!moduleId && !!selectedLanguage,
     queryFn: async () => {
       try {
-        const response = await fetch(`/api/content-module-translations?moduleId=${moduleId}&languageId=${selectedLanguage}`);
+        const response = await fetch(`/api/module-translations?moduleId=${moduleId}&languageId=${selectedLanguage}`);
         if (!response.ok) {
           throw new Error("Errore nel caricamento della traduzione");
         }
@@ -276,8 +322,8 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
     mutationFn: async (data: any) => {
       const method = existingTranslation ? 'PUT' : 'POST';
       const endpoint = existingTranslation 
-        ? `/api/content-module-translations/${existingTranslation.id}` 
-        : '/api/content-module-translations';
+        ? `/api/module-translations/${existingTranslation.id}` 
+        : '/api/module-translations';
       
       try {
         const response = await apiRequest(method, endpoint, data);
@@ -298,7 +344,7 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/content-module-translations`, moduleId, selectedLanguage] });
+      queryClient.invalidateQueries({ queryKey: [`/api/module-translations`, moduleId, selectedLanguage] });
       toast({
         title: "Traduzione salvata",
         description: "La traduzione del modulo è stata salvata con successo",
