@@ -33,6 +33,10 @@ export interface BomTranslation {
     empty?: string;
     noResults?: string;
   };
+  // Traduzioni delle descrizioni dei componenti
+  descriptions?: {
+    [code: string]: string; // Map di codice -> descrizione tradotta
+  };
 }
 
 interface BomViewContentProps {
@@ -397,7 +401,10 @@ const BomViewContent = ({
                     {item.component.code}
                   </TableCell>
                   <TableCell className="p-2 border border-neutral-light">
-                    {item.component.description}
+                    {/* Mostra la descrizione tradotta se disponibile, altrimenti usa quella originale */}
+                    {translation?.descriptions && translation.descriptions[item.component.code] 
+                      ? translation.descriptions[item.component.code] 
+                      : item.component.description}
                   </TableCell>
                   <TableCell className="p-2 border border-neutral-light text-right">
                     {item.quantity}

@@ -25,9 +25,98 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface ModuleTranslationProps {
   toggleSidebar?: () => void;
+}
+
+// Componente per tradurre le descrizioni dei componenti BOM
+interface BomComponentsDescriptionEditorProps {
+  bomId: number;
+  translatedContent: any;
+  onUpdateDescriptions: (descriptions: Record<string, string>) => void;
+}
+
+function BomComponentsDescriptionEditor({ 
+  bomId, 
+  translatedContent, 
+  onUpdateDescriptions 
+}: BomComponentsDescriptionEditorProps) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [components, setComponents] = useState<any[]>([]);
+  
+  // Recupera gli elementi della BOM
+  const { data: bomItems, isLoading: isLoadingItems } = useQuery({
+    queryKey: ['/api/boms', bomId, 'items'],
+    enabled: !!bomId,
+    queryFn: async () => {
+      const response = await fetch(`/api/boms/${bomId}/items`);
+      if (!response.ok) throw new Error('Errore nel caricamento degli elementi della distinta base');
+      return response.json();
+    }
+  });
+  
+  // Aggiorna i componenti quando arrivano i dati
+  useEffect(() => {
+    if (bomItems && Array.isArray(bomItems)) {
+      setComponents(bomItems.map((item: any) => item.component).filter(Boolean));
+      setIsLoading(false);
+    }
+  }, [bomItems]);
+  
+  // Gestisce il cambiamento della descrizione di un componente
+  const handleDescriptionChange = (code: string, description: string) => {
+    // Inizializza se non esiste
+    const currentDescriptions = translatedContent.descriptions || {};
+    
+    // Crea una copia aggiornata delle descrizioni
+    const updatedDescriptions = {
+      ...currentDescriptions,
+      [code]: description
+    };
+    
+    // Aggiorna lo stato nel componente padre
+    onUpdateDescriptions(updatedDescriptions);
+  };
+  
+  if (isLoading || isLoadingItems) {
+    return <div className="p-4 text-center">Caricamento componenti...</div>;
+  }
+  
+  if (!components || components.length === 0) {
+    return <div className="p-4 text-center">Nessun componente trovato</div>;
+  }
+  
+  return (
+    <div className="space-y-3">
+      {components.map(component => (
+        <div key={component.code} className="grid grid-cols-1 md:grid-cols-3 gap-3 border p-3 rounded-md">
+          <div className="flex flex-col">
+            <span className="text-xs text-neutral-medium">Codice</span>
+            <span className="font-medium">{component.code}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs text-neutral-medium">Descrizione originale</span>
+            <span>{component.description}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs text-neutral-medium">Descrizione tradotta</span>
+            <Input
+              value={(translatedContent.descriptions && translatedContent.descriptions[component.code]) || ''}
+              onChange={(e) => handleDescriptionChange(component.code, e.target.value)}
+              placeholder="Inserisci traduzione..."
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationProps) {
@@ -143,6 +232,7 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
               empty: '',
               noResults: ''
             };
+            initialTranslatedContent.descriptions = {};
           }
           
           setTranslatedContent(initialTranslatedContent);
@@ -178,7 +268,7 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
 
   // Handle text input change for different module types
   const handleTextChange = (value: string, field: string, index?: number, subIndex?: number) => {
-    setTranslatedContent(prev => {
+    setTranslatedContent((prev: any) => {
       const updated = { ...prev };
       
       if (field.includes('.')) {
@@ -583,6 +673,47 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                   />
                                 </div>
                               </div>
+                            </div>
+                            
+                            {/* Traduzioni delle descrizioni dei componenti */}
+                            <div>
+                              <Accordion type="single" collapsible className="mt-4">
+                                <AccordionItem value="descriptions">
+                                  <AccordionTrigger>
+                                    <Label className="cursor-pointer">Traduzioni descrizioni componenti</Label>
+                                  </AccordionTrigger>
+                                  <AccordionContent>
+                                    <div className="space-y-4 pt-2">
+                                      <p className="text-sm text-neutral-medium">
+                                        Aggiungi le traduzioni delle descrizioni dei componenti presenti nella tabella.
+                                      </p>
+                                      
+                                      {/* Carica i componenti della BOM usando l'API */}
+                                      <div className="grid grid-cols-1 gap-3">
+                                        {module.content && (() => {
+                                          try {
+                                            const bomContent = JSON.parse(module.content);
+                                            return (
+                                              <BomComponentsDescriptionEditor 
+                                                bomId={bomContent.bomId}
+                                                translatedContent={translatedContent}
+                                                onUpdateDescriptions={(descriptions: Record<string, string>) => {
+                                                  setTranslatedContent((prev: any) => ({
+                                                    ...prev,
+                                                    descriptions
+                                                  }));
+                                                }}
+                                              />
+                                            );
+                                          } catch (e) {
+                                            return <div className="text-red-500">Errore nel caricamento dei componenti</div>;
+                                          }
+                                        })()}
+                                      </div>
+                                    </div>
+                                  </AccordionContent>
+                                </AccordionItem>
+                              </Accordion>
                             </div>
                           </div>
                         )}
