@@ -396,10 +396,40 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
   const handleSaveTranslation = () => {
     if (!selectedLanguage || !module) return;
     
+    // Assicuriamoci che le strutture dei messaggi e delle intestazioni esistano
+    const updatedContent = { ...translatedContent };
+    
+    // Garantisci che headers e messages esistano
+    if (!updatedContent.headers) {
+      updatedContent.headers = {
+        number: '', 
+        level: '',
+        code: '',
+        description: '',
+        quantity: ''
+      };
+    }
+    
+    if (!updatedContent.messages) {
+      updatedContent.messages = {
+        loading: '',
+        notFound: '',
+        empty: '',
+        noResults: ''
+      };
+    }
+    
+    // Garantisci che descriptions esista
+    if (!updatedContent.descriptions) {
+      updatedContent.descriptions = {};
+    }
+    
+    console.log('Salvando traduzione:', updatedContent);
+    
     const data = {
       moduleId: moduleId,
       languageId: parseInt(selectedLanguage),
-      content: JSON.stringify(translatedContent),
+      content: JSON.stringify(updatedContent),
       status: 'completed',
     };
     
@@ -792,7 +822,19 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                       <div className="grid grid-cols-1 gap-3">
                                         {module.content && (() => {
                                           try {
-                                            const bomContent = JSON.parse(module.content);
+                                            const bomContent = typeof module.content === 'string' ? JSON.parse(module.content) : module.content;
+                                            
+                                            if (!bomContent || !bomContent.bomId) {
+                                              return (
+                                                <div className="p-4 text-orange-700 bg-orange-50 border border-orange-200 rounded-md">
+                                                  <h3 className="font-medium">Dati BOM mancanti</h3>
+                                                  <p className="text-sm">
+                                                    Il modulo non contiene un ID di BOM valido. Verifica che l'elenco componenti sia stato configurato correttamente.
+                                                  </p>
+                                                </div>
+                                              );
+                                            }
+                                            
                                             return (
                                               <BomComponentsDescriptionEditor 
                                                 bomId={bomContent.bomId}
@@ -800,13 +842,22 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                                 onUpdateDescriptions={(descriptions: Record<string, string>) => {
                                                   setTranslatedContent((prev: any) => ({
                                                     ...prev,
-                                                    descriptions
+                                                    descriptions: descriptions || {}
                                                   }));
                                                 }}
                                               />
                                             );
                                           } catch (e) {
-                                            return <div className="text-red-500">Errore nel caricamento dei componenti</div>;
+                                            console.error("Errore nel parsing del contenuto BOM:", e);
+                                            return (
+                                              <div className="p-4 text-red-700 bg-red-50 border border-red-200 rounded-md">
+                                                <h3 className="font-medium">Errore nel caricamento dei componenti</h3>
+                                                <p className="text-sm">
+                                                  Si è verificato un errore nell'analisi del contenuto del modulo BOM. 
+                                                  Dettaglio: {String(e)}
+                                                </p>
+                                              </div>
+                                            );
                                           }
                                         })()}
                                       </div>
