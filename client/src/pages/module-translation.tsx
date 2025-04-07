@@ -94,7 +94,8 @@ function BomComponentsDescriptionEditor({
     }
     
     try {
-      // Estrai tutti i componenti dalla distinta base
+      // Assicurati che ci siano solo componenti visibili nella traduzione
+      // Inizia con l'ottenere tutti i componenti dalla BOM
       const allComponents = Array.from(
         new Map(
           bomItems
@@ -106,69 +107,150 @@ function BomComponentsDescriptionEditor({
       
       console.log("Tutti i componenti disponibili:", allComponents.map(c => c.code));
       
-      // Prova a estrarre i componenti visualizzati nella tabella del modulo
-      let visibleComponents = allComponents;
+      // Determina quali componenti devono essere mostrati nella traduzione
+      let visibleComponents = [];
       
-      // Prima controlla se ci sono componenti specificatamente filtrati nel contenuto tradotto
-      if (translatedContent.filteredComponentCodes && Array.isArray(translatedContent.filteredComponentCodes)) {
-        console.log("Usando i componenti filtrati dal contenuto tradotto (filteredComponentCodes)");
-        const filteredCodes = translatedContent.filteredComponentCodes.filter(Boolean);
-          
-        if (filteredCodes.length > 0) {
-          visibleComponents = allComponents.filter(comp => filteredCodes.includes(comp.code));
-        }
-      }
-      // Prova con il filtro delle impostazioni
-      else if (translatedContent.filterSettings?.filteredComponentCodes && 
-                Array.isArray(translatedContent.filterSettings.filteredComponentCodes)) {
-        console.log("Usando i componenti dalle impostazioni di filtro");
-        const filteredCodes = translatedContent.filterSettings.filteredComponentCodes.filter(Boolean);
+      // Ottieni l'elenco dei componenti dalla tabella originale
+      // Questo ci dà solo i componenti che sono effettivamente mostrati (filtrati)
+      const originalContent = typeof module?.content === 'string' 
+        ? JSON.parse(module.content) 
+        : module?.content || {};
+      
+      // Prendi i componenti solo dalla tabella BOM originale      
+      if (originalContent?.filterSettings?.enableFiltering) {
+        const bomId = originalContent.bomId || translatedContent.bomId;
         
-        if (filteredCodes.length > 0) {
-          visibleComponents = allComponents.filter(comp => filteredCodes.includes(comp.code));
-        }
-      }
-      // Verifica se ci sono elementi filtrati nell'array filteredItems
-      else if (translatedContent.filteredItems && Array.isArray(translatedContent.filteredItems)) {
-        console.log("Usando i componenti filtrati dal contenuto tradotto (filteredItems)");
-        const filteredCodes = translatedContent.filteredItems
-          .map((item: any) => typeof item === 'string' ? item : item.code || item.componentCode)
-          .filter(Boolean);
+        // Applica gli stessi filtri che sono stati applicati nella tabella originale
+        // In questo modo vedremo solo i componenti che appaiono nella tabella
+        if (bomId && bomItems.length > 0) {
+          // Prendi direttamente i componenti filtrati dal modulo originale
+          const filterSettings = originalContent.filterSettings;
           
-        if (filteredCodes.length > 0) {
-          visibleComponents = allComponents.filter(comp => filteredCodes.includes(comp.code));
-        }
-      }
-      // Se non sono stati trovati componenti filtrati, controlla se esistono nelle proprietà del modulo originale
-      else if (translatedContent.bomId && translatedContent.visibleComponents) {
-        console.log("Usando i componenti visibili dal modulo originale");
-        const visibleCodes = Array.isArray(translatedContent.visibleComponents) 
-          ? translatedContent.visibleComponents
-          : [];
+          // Filtra gli elementi della BOM usando le stesse impostazioni di filtro
+          // dell'originale, per vedere esattamente ciò che vedrebbe l'utente
+          const filteredBomItems = bomItems.filter((item: any) => {
+            if (!item || !item.component) return false;
+            
+            const code = item.component.code || '';
+            const description = item.component.description || '';
+            let match = true;
+            
+            // Applica filtro per codice
+            if (filterSettings.codeFilter) {
+              switch (filterSettings.codeFilterType) {
+                case 'equals':
+                  match = match && code.toLowerCase() === filterSettings.codeFilter.toLowerCase();
+                  break;
+                case 'startsWith':
+                  match = match && code.toLowerCase().startsWith(filterSettings.codeFilter.toLowerCase());
+                  break;
+                case 'contains':
+                default:
+                  match = match && code.toLowerCase().includes(filterSettings.codeFilter.toLowerCase());
+                  break;
+              }
+            }
+            
+            // Applica filtro per descrizione
+            if (filterSettings.descriptionFilter) {
+              switch (filterSettings.descriptionFilterType) {
+                case 'equals':
+                  match = match && description.toLowerCase() === filterSettings.descriptionFilter.toLowerCase();
+                  break;
+                case 'startsWith':
+                  match = match && description.toLowerCase().startsWith(filterSettings.descriptionFilter.toLowerCase());
+                  break;
+                case 'contains':
+                default:
+                  match = match && description.toLowerCase().includes(filterSettings.descriptionFilter.toLowerCase());
+                  break;
+              }
+            }
+            
+            // Applica filtro per livello
+            if (filterSettings.levelFilter !== undefined) {
+              match = match && item.level === filterSettings.levelFilter;
+            }
+            
+            return match;
+          });
           
-        if (visibleCodes.length > 0) {
-          visibleComponents = allComponents.filter(comp => visibleCodes.includes(comp.code));
-        }
-      }
-      // Altrimenti prova a cercare componenti filtrati nella tabella
-      else if (translatedContent.items && Array.isArray(translatedContent.items)) {
-        console.log("Usando gli elementi dalla tabella");
-        const tableCodes = translatedContent.items
-          .map((item: any) => typeof item === 'string' ? item : item.code || item.componentCode)
-          .filter(Boolean);
+          // Estrai solo i componenti dai dati filtrati
+          const filteredComponents = Array.from(
+            new Map(
+              filteredBomItems
+                .map((item: any) => item.component)
+                .filter(Boolean)
+                .map((comp: any) => [comp.code, comp])
+            ).values()
+          );
           
-        if (tableCodes.length > 0) {
-          visibleComponents = allComponents.filter(comp => tableCodes.includes(comp.code));
+          visibleComponents = filteredComponents;
+          console.log("Componenti filtrati dagli stessi filtri dell'originale:", visibleComponents.map(c => c.code));
+        }
+      } 
+      
+      // Se non abbiamo trovato componenti filtrati o non era attivato il filtro nell'originale,
+      // proviamo altri metodi per determinare i componenti visibili
+      if (visibleComponents.length === 0) {
+        // Prima controlla se ci sono componenti specificatamente filtrati nel contenuto tradotto
+        if (translatedContent.filteredComponentCodes && Array.isArray(translatedContent.filteredComponentCodes)) {
+          console.log("Usando i componenti filtrati dal contenuto tradotto (filteredComponentCodes)");
+          const filteredCodes = translatedContent.filteredComponentCodes.filter(Boolean);
+              
+          if (filteredCodes.length > 0) {
+            visibleComponents = allComponents.filter(comp => filteredCodes.includes(comp.code));
+          }
+        }
+        // Prova con il filtro delle impostazioni
+        else if (translatedContent.filterSettings?.filteredComponentCodes && 
+                 Array.isArray(translatedContent.filterSettings.filteredComponentCodes)) {
+          console.log("Usando i componenti dalle impostazioni di filtro");
+          const filteredCodes = translatedContent.filterSettings.filteredComponentCodes.filter(Boolean);
+            
+          if (filteredCodes.length > 0) {
+            visibleComponents = allComponents.filter(comp => filteredCodes.includes(comp.code));
+          }
+        }
+        // Verifica se ci sono elementi filtrati nell'array filteredItems
+        else if (translatedContent.filteredItems && Array.isArray(translatedContent.filteredItems)) {
+          console.log("Usando i componenti filtrati dal contenuto tradotto (filteredItems)");
+          const filteredCodes = translatedContent.filteredItems
+            .map((item: any) => typeof item === 'string' ? item : item.code || item.componentCode)
+            .filter(Boolean);
+              
+          if (filteredCodes.length > 0) {
+            visibleComponents = allComponents.filter(comp => filteredCodes.includes(comp.code));
+          }
+        }
+        // Se non sono stati trovati componenti filtrati, controlla se esistono nelle proprietà del modulo originale
+        else if (translatedContent.bomId && translatedContent.visibleComponents) {
+          console.log("Usando i componenti visibili dal modulo originale");
+          const visibleCodes = Array.isArray(translatedContent.visibleComponents) 
+            ? translatedContent.visibleComponents
+            : [];
+              
+          if (visibleCodes.length > 0) {
+            visibleComponents = allComponents.filter(comp => visibleCodes.includes(comp.code));
+          }
         }
       }
       
-      console.log("Componenti filtrati:", visibleComponents.map(c => c.code));
+      console.log("Componenti finali filtrati:", visibleComponents.map(c => c.code));
       
-      // Se nessun filtro ha trovato componenti, usa tutti i componenti
-      setComponents(visibleComponents.length > 0 ? visibleComponents : allComponents);
+      // Se abbiamo trovato componenti visibili, usa quelli, altrimenti usa i primi 5 componenti
+      // come fallback invece di mostrare tutti i componenti (per evitare di sovraccaricare l'interfaccia)
+      if (visibleComponents.length > 0) {
+        setComponents(visibleComponents);
+      } else {
+        // Limitiamo a 5 componenti invece di mostrarli tutti
+        const limitedComponents = allComponents.slice(0, 5);
+        console.log("Nessun componente filtrato trovato, limitando a 5 componenti:", limitedComponents.map(c => c.code));
+        setComponents(limitedComponents);
+      }
     } catch (err) {
       console.error("Errore durante il filtraggio dei componenti:", err);
-      // In caso di errore, mostra tutti i componenti disponibili
+      // In caso di errore, mostra i primi 5 componenti (per limitare)
       const allComponents = Array.from(
         new Map(
           bomItems
@@ -177,11 +259,11 @@ function BomComponentsDescriptionEditor({
             .map((comp: any) => [comp.code, comp])
         ).values()
       );
-      setComponents(allComponents);
+      setComponents(allComponents.slice(0, 5));
     }
     
     setIsLoading(false);
-  }, [bomItems, translatedContent, toast]);
+  }, [bomItems, translatedContent, toast, module]);
   
   // Gestisce il cambiamento della descrizione di un componente
   const handleDescriptionChange = (code: string, description: string) => {
