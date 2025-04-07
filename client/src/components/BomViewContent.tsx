@@ -432,4 +432,10 @@ const BomViewContent = ({
   );
 };
 
+// Funzione di utilità per estrarre i codici dei componenti dalla BOM
+export function getVisibleComponentCodes(items: any[]): string[] {
+  if (!items || !Array.isArray(items)) return [];
+  return items.map(item => item.component?.code).filter(Boolean);
+}
+
 export default BomViewContent;

@@ -110,8 +110,27 @@ function BomComponentsDescriptionEditor({
       let visibleComponents = allComponents;
       
       // Prima controlla se ci sono componenti specificatamente filtrati nel contenuto tradotto
-      if (translatedContent.filteredItems && Array.isArray(translatedContent.filteredItems)) {
-        console.log("Usando i componenti filtrati dal contenuto tradotto");
+      if (translatedContent.filteredComponentCodes && Array.isArray(translatedContent.filteredComponentCodes)) {
+        console.log("Usando i componenti filtrati dal contenuto tradotto (filteredComponentCodes)");
+        const filteredCodes = translatedContent.filteredComponentCodes.filter(Boolean);
+          
+        if (filteredCodes.length > 0) {
+          visibleComponents = allComponents.filter(comp => filteredCodes.includes(comp.code));
+        }
+      }
+      // Prova con il filtro delle impostazioni
+      else if (translatedContent.filterSettings?.filteredComponentCodes && 
+                Array.isArray(translatedContent.filterSettings.filteredComponentCodes)) {
+        console.log("Usando i componenti dalle impostazioni di filtro");
+        const filteredCodes = translatedContent.filterSettings.filteredComponentCodes.filter(Boolean);
+        
+        if (filteredCodes.length > 0) {
+          visibleComponents = allComponents.filter(comp => filteredCodes.includes(comp.code));
+        }
+      }
+      // Verifica se ci sono elementi filtrati nell'array filteredItems
+      else if (translatedContent.filteredItems && Array.isArray(translatedContent.filteredItems)) {
+        console.log("Usando i componenti filtrati dal contenuto tradotto (filteredItems)");
         const filteredCodes = translatedContent.filteredItems
           .map((item: any) => typeof item === 'string' ? item : item.code || item.componentCode)
           .filter(Boolean);
@@ -120,8 +139,7 @@ function BomComponentsDescriptionEditor({
           visibleComponents = allComponents.filter(comp => filteredCodes.includes(comp.code));
         }
       }
-      // Se non sono stati trovati componenti filtrati nel contenuto tradotto,
-      // controlla se esistono nelle proprietà del modulo originale
+      // Se non sono stati trovati componenti filtrati, controlla se esistono nelle proprietà del modulo originale
       else if (translatedContent.bomId && translatedContent.visibleComponents) {
         console.log("Usando i componenti visibili dal modulo originale");
         const visibleCodes = Array.isArray(translatedContent.visibleComponents) 

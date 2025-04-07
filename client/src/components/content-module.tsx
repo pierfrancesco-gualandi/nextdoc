@@ -387,9 +387,17 @@ export default function ContentModule({
               filterSettings={content.filterSettings}
               translation={isPreview ? parseTranslation(module) : undefined}
               onFilterUpdate={(filterSettings: BomFilterSettings) => {
+                // Estrai codici componenti filtrati per consentire traduzioni mirate
+                const filteredComponentCodes = filterSettings.filteredComponentCodes || [];
+                
                 // Aggiorna silenziosamente il contenuto del modulo con le impostazioni di filtro correnti
                 if (!isEditing && JSON.stringify(filterSettings) !== JSON.stringify(content.filterSettings)) {
-                  const updatedContent = { ...content, filterSettings };
+                  // Aggiungiamo l'elenco dei codici componenti al contenuto del modulo
+                  const updatedContent = { 
+                    ...content, 
+                    filterSettings,
+                    filteredComponentCodes // Aggiorna l'elenco dei componenti visibili
+                  };
                   setContent(updatedContent); // Aggiorna lo stato locale
                   
                   try {
