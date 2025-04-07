@@ -63,10 +63,12 @@ interface ContentModuleProps {
   onUpdate: (id: number, data: any) => void;
   documentId: string;
   isPreview?: boolean;
+  selectedLanguage?: string;
+  highlightMissingTranslations?: boolean;
 }
 
 // Funzione per estrarre la traduzione dai dati del modulo
-const parseTranslation = (module: any): any => {
+const parseTranslation = (module: any, selectedLanguage?: string): any => {
   try {
     // Verifica se il modulo ha una traduzione
     if (module && module.translation && module.translation.content) {
@@ -83,6 +85,26 @@ const parseTranslation = (module: any): any => {
       
       return translationContent;
     }
+    
+    // Se è specificata una lingua, cerca tra le traduzioni disponibili per quella lingua
+    if (selectedLanguage && module && module.translations) {
+      // Trova la traduzione per la lingua selezionata
+      const translation = module.translations.find((t: any) => 
+        t.languageId === parseInt(selectedLanguage) || t.languageId === selectedLanguage
+      );
+      
+      if (translation && translation.content) {
+        let translationContent;
+        if (typeof translation.content === 'string') {
+          translationContent = JSON.parse(translation.content);
+        } else {
+          translationContent = translation.content;
+        }
+        
+        console.log("Traduzione trovata per la lingua:", selectedLanguage, translationContent);
+        return translationContent;
+      }
+    }
   } catch (error) {
     console.error("Errore nel parsing della traduzione:", error);
   }
@@ -94,7 +116,9 @@ export default function ContentModule({
   onDelete, 
   onUpdate,
   documentId,
-  isPreview = false
+  isPreview = false,
+  selectedLanguage,
+  highlightMissingTranslations = true
 }: ContentModuleProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -394,7 +418,9 @@ export default function ContentModule({
               levelFilter={content.levelFilter}
               useFilters={isPreview ? false : content.useFilters}  // In anteprima, non mostrare i controlli di filtro
               filterSettings={content.filterSettings}
-              translation={isPreview ? parseTranslation(module) : undefined}
+              translation={isPreview ? parseTranslation(module, selectedLanguage) : undefined}
+              selectedLanguage={selectedLanguage}
+              highlightMissingTranslations={isPreview && highlightMissingTranslations}
               onFilterUpdate={(filterSettings: BomFilterSettings) => {
                 // Estrai codici componenti filtrati per consentire traduzioni mirate
                 const filteredComponentCodes = filterSettings.filteredComponentCodes || [];

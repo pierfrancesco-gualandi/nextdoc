@@ -7,13 +7,15 @@ interface TranslatedContentModuleProps {
   documentId: string;
   languageId: string;
   isPreview?: boolean;
+  highlightMissingTranslations?: boolean;
 }
 
 export default function TranslatedContentModule({ 
   moduleId, 
   documentId, 
   languageId,
-  isPreview = false 
+  isPreview = false,
+  highlightMissingTranslations = false
 }: TranslatedContentModuleProps) {
   // Ottieni il modulo originale
   const { data: originalModule } = useQuery<any>({
@@ -54,6 +56,8 @@ export default function TranslatedContentModule({
         onUpdate={() => {}} // Funzione vuota perché in anteprima non serve
         documentId={documentId}
         isPreview={isPreview}
+        selectedLanguage={languageId}
+        highlightMissingTranslations={highlightMissingTranslations}
       />
     );
   }
@@ -66,6 +70,8 @@ export default function TranslatedContentModule({
       onUpdate={() => {}} // Funzione vuota perché in anteprima non serve
       documentId={documentId}
       isPreview={isPreview}
+      selectedLanguage={languageId}
+      highlightMissingTranslations={highlightMissingTranslations}
     />
   );
 }

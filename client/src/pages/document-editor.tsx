@@ -631,6 +631,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                                   documentId={id}
                                   level={0}
                                   languageId={selectedLanguage}
+                                  highlightMissingTranslations={true}
                                 />
                               ) : (
                                 <DocumentSectionPreview 

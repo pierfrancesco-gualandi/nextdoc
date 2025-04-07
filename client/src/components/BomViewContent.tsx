@@ -50,6 +50,10 @@ interface BomViewContentProps {
   onFilterUpdate?: (filterSettings: BomFilterSettings) => void;
   // Traduzioni
   translation?: BomTranslation;
+  // Lingua selezionata
+  selectedLanguage?: string;
+  // Evidenzia testi non tradotti
+  highlightMissingTranslations?: boolean;
 }
 
 function findChildComponents(items: any[], parentCode: string): string[] {
@@ -93,7 +97,9 @@ const BomViewContent = ({
   useFilters = false,
   filterSettings,
   onFilterUpdate,
-  translation
+  translation,
+  selectedLanguage,
+  highlightMissingTranslations = false
 }: BomViewContentProps) => {
   // Stati locali per filtri
   const [codeFilter, setCodeFilter] = useState<string>(filterSettings?.codeFilter || "");
@@ -371,7 +377,12 @@ const BomViewContent = ({
       {/* La tabella viene sempre mostrata, sia in modalità modifica che in anteprima */}
       <div className="overflow-x-auto">
         <h3 className="text-xl font-bold mb-2">
-          {translation?.title || "Elenco Componenti"}
+          {translation?.title || (
+            // Se la traduzione è richiesta ma manca, evidenzia il titolo in rosso
+            highlightMissingTranslations && selectedLanguage
+              ? <span className="text-red-500">Elenco Componenti</span>
+              : "Elenco Componenti"
+          )}
         </h3>
         <Table className="w-full border-collapse">
           <TableHeader>
@@ -409,7 +420,12 @@ const BomViewContent = ({
                     {/* Mostra la descrizione tradotta se disponibile, altrimenti usa quella originale */}
                     {translation?.descriptions && translation.descriptions[item.component.code] 
                       ? translation.descriptions[item.component.code] 
-                      : item.component.description}
+                      : (
+                        // Se la traduzione è richiesta ma manca, evidenzia il testo in rosso
+                        highlightMissingTranslations && selectedLanguage 
+                          ? <span className="text-red-500">{item.component.description}</span>
+                          : item.component.description
+                      )}
                   </TableCell>
                   <TableCell className="p-2 border border-neutral-light text-right">
                     {item.quantity}

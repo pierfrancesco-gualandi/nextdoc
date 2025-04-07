@@ -8,6 +8,7 @@ interface TranslatedDocumentSectionPreviewProps {
   documentId: string;
   level: number;
   languageId: string;
+  highlightMissingTranslations?: boolean;
 }
 
 export default function TranslatedDocumentSectionPreview({ 
@@ -15,7 +16,8 @@ export default function TranslatedDocumentSectionPreview({
   allSections, 
   documentId,
   level,
-  languageId
+  languageId,
+  highlightMissingTranslations = true
 }: TranslatedDocumentSectionPreviewProps) {
   // Ottiene i moduli per questa sezione
   const { data: modules } = useQuery({
@@ -58,13 +60,26 @@ export default function TranslatedDocumentSectionPreview({
   };
 
   // Determina se usare il titolo e la descrizione originali o tradotti
-  const title = (languageId !== '0' && translatedSection) ? translatedSection.title : section.title;
-  const description = (languageId !== '0' && translatedSection) ? translatedSection.description : section.description;
+  const hasTitleTranslation = languageId !== '0' && translatedSection && translatedSection.title;
+  const hasDescriptionTranslation = languageId !== '0' && translatedSection && translatedSection.description;
+  
+  // Se non c'è traduzione e highlightMissingTranslations è true, mostra in rosso
+  const titleContent = hasTitleTranslation 
+    ? translatedSection.title
+    : (highlightMissingTranslations && languageId !== '0' 
+       ? <span className="text-red-500">{section.title}</span> 
+       : section.title);
+  
+  const descriptionContent = hasDescriptionTranslation
+    ? translatedSection.description
+    : (highlightMissingTranslations && languageId !== '0' && section.description
+       ? <span className="text-red-500">{section.description}</span>
+       : section.description);
   
   return (
     <div className={`mb-8 ${indentClass}`}>
-      <h2 className={getHeadingClass()}>{title}</h2>
-      {description && <p className="mb-4">{description}</p>}
+      <h2 className={getHeadingClass()}>{titleContent}</h2>
+      {descriptionContent && <p className="mb-4">{descriptionContent}</p>}
       
       {/* Mostra i moduli della sezione con le traduzioni se disponibili */}
       {modules && modules.length > 0 && (
@@ -76,6 +91,7 @@ export default function TranslatedDocumentSectionPreview({
                 documentId={documentId}
                 languageId={languageId}
                 isPreview={true}
+                highlightMissingTranslations={highlightMissingTranslations}
               />
             </div>
           ))}
@@ -93,6 +109,7 @@ export default function TranslatedDocumentSectionPreview({
               documentId={documentId}
               level={level + 1}
               languageId={languageId}
+              highlightMissingTranslations={highlightMissingTranslations}
             />
           ))}
         </div>
