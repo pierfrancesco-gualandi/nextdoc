@@ -423,16 +423,32 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
             // Ottieni i componenti che vengono effettivamente mostrati nel modulo BOM
             // Cerca eventuali filteredItems o componenti specifici
             try {
-              // Se c'è un filtro applicato o un insieme specifico di componenti da mostrare
-              if (parsedContent.filteredComponents && Array.isArray(parsedContent.filteredComponents)) {
-                // Usa i componenti già filtrati
+              // Verifica se ci sono componenti filtrati nella proprietà filteredComponentCodes
+              if (parsedContent.filteredComponentCodes && Array.isArray(parsedContent.filteredComponentCodes)) {
+                console.log("Trasferendo filteredComponentCodes alla traduzione", parsedContent.filteredComponentCodes);
+                // Usa i codici dei componenti filtrati
+                initialTranslatedContent.filteredComponentCodes = parsedContent.filteredComponentCodes;
+              }
+              // Se abbiamo impostazioni di filtro con componenti filtrati
+              else if (parsedContent.filterSettings?.filteredComponentCodes && 
+                Array.isArray(parsedContent.filterSettings.filteredComponentCodes)) {
+                console.log("Trasferendo filterSettings.filteredComponentCodes alla traduzione", 
+                  parsedContent.filterSettings.filteredComponentCodes);
+                // Usa i codici estratti dalle impostazioni di filtro
+                initialTranslatedContent.filteredComponentCodes = parsedContent.filterSettings.filteredComponentCodes;
+              }
+              // Mantieni la compatibilità con le versioni precedenti
+              else if (parsedContent.filteredComponents && Array.isArray(parsedContent.filteredComponents)) {
                 initialTranslatedContent.filteredItems = parsedContent.filteredComponents;
               } else if (parsedContent.items && Array.isArray(parsedContent.items)) {
-                // Usa l'elenco completo degli elementi
                 initialTranslatedContent.filteredItems = parsedContent.items;
               } else if (parsedContent.filteredItems && Array.isArray(parsedContent.filteredItems)) {
-                // Mantieni l'elenco già esistente
                 initialTranslatedContent.filteredItems = parsedContent.filteredItems;
+              }
+              
+              // Aggiungi anche le impostazioni filtro originali
+              if (parsedContent.filterSettings) {
+                initialTranslatedContent.filterSettings = parsedContent.filterSettings;
               }
             } catch (err) {
               console.error("Errore nell'estrazione dei filtri BOM:", err);

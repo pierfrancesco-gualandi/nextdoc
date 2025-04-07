@@ -15,6 +15,7 @@ export interface BomFilterSettings {
   descriptionFilterType?: 'contains' | 'startsWith' | 'equals';
   levelFilter?: number;
   enableFiltering: boolean;
+  filteredComponentCodes?: string[]; // Lista di codici dei componenti filtrati
 }
 
 // Interfaccia per le traduzioni dell'elenco componenti
@@ -225,19 +226,23 @@ const BomViewContent = ({
   // Aggiorna i filtri e notifica il componente padre
   useEffect(() => {
     if (onFilterUpdate) {
+      // Estrai i codici dei componenti visualizzati per aggiungere ai filtri
+      const visibleComponentCodes = filteredItems.map(item => item?.component?.code).filter(Boolean);
+      
       const newFilterSettings = {
         codeFilter,
         codeFilterType,
         descriptionFilter,
         descriptionFilterType,
         levelFilter: levelFilterValue,
-        enableFiltering
+        enableFiltering,
+        filteredComponentCodes: visibleComponentCodes // Aggiungi i codici dei componenti filtrati
       };
       
       // Salva le impostazioni di filtro nel componente padre
       onFilterUpdate(newFilterSettings);
     }
-  }, [codeFilter, codeFilterType, descriptionFilter, descriptionFilterType, levelFilterValue, enableFiltering, onFilterUpdate]);
+  }, [codeFilter, codeFilterType, descriptionFilter, descriptionFilterType, levelFilterValue, enableFiltering, onFilterUpdate, filteredItems]);
 
   // Messaggi predefiniti o tradotti
   const messages = {
