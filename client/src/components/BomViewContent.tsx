@@ -418,7 +418,7 @@ const BomViewContent = ({
                   </TableCell>
                   <TableCell className="p-2 border border-neutral-light">
                     {/* Mostra la descrizione tradotta se disponibile, altrimenti usa quella originale */}
-                    {translation?.descriptions && translation.descriptions[item.component.code] 
+                    {translation?.descriptions && translation.descriptions[item.component.code] !== undefined
                       ? translation.descriptions[item.component.code] 
                       : (
                         // Se la traduzione è richiesta ma manca, evidenzia il testo in rosso

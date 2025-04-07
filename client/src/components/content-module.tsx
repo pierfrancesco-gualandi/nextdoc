@@ -83,6 +83,21 @@ const parseTranslation = (module: any, selectedLanguage?: string): any => {
       
       console.log("Traduzione trovata per il modulo:", module.id, translationContent);
       
+      // Per i moduli di tipo "bom", assicuriamoci che abbia la struttura corretta per le traduzioni
+      if (module.type === "bom" && translationContent) {
+        if (!translationContent.descriptions) {
+          translationContent.descriptions = {};
+        }
+        
+        // Assicuriamoci che le descrizioni vuote siano undefined e non stringhe vuote
+        // per evitare che vengano interpretate come traduzioni esistenti
+        Object.keys(translationContent.descriptions).forEach(key => {
+          if (translationContent.descriptions[key] === "") {
+            translationContent.descriptions[key] = undefined;
+          }
+        });
+      }
+      
       return translationContent;
     }
     
@@ -99,6 +114,20 @@ const parseTranslation = (module: any, selectedLanguage?: string): any => {
           translationContent = JSON.parse(translation.content);
         } else {
           translationContent = translation.content;
+        }
+        
+        // Per i moduli di tipo "bom", assicuriamoci che abbia la struttura corretta per le traduzioni
+        if (module.type === "bom" && translationContent) {
+          if (!translationContent.descriptions) {
+            translationContent.descriptions = {};
+          }
+          
+          // Assicuriamoci che le descrizioni vuote siano undefined e non stringhe vuote
+          Object.keys(translationContent.descriptions).forEach(key => {
+            if (translationContent.descriptions[key] === "") {
+              translationContent.descriptions[key] = undefined;
+            }
+          });
         }
         
         console.log("Traduzione trovata per la lingua:", selectedLanguage, translationContent);
