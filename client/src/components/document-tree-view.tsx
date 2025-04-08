@@ -264,9 +264,9 @@ export default function DocumentTreeView({
   }
 
   return (
-    <div className="tree-view pl-1 text-sm">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-medium text-sm text-neutral-dark">STRUTTURA DOCUMENTO</h3>
+    <div className="tree-view pl-1 text-sm w-full">
+      <div className="flex items-center justify-between mb-2 sticky top-0 bg-white z-10 pr-1">
+        <h3 className="font-medium text-sm text-neutral-dark whitespace-nowrap">STRUTTURA DOCUMENTO</h3>
         <button 
           className="text-primary hover:text-primary-dark"
           onClick={() => addNewSection()}
@@ -275,28 +275,30 @@ export default function DocumentTreeView({
         </button>
       </div>
       
-      <SectionTree 
-        sections={sections} 
-        parentId={null} 
-        level={0} 
-        selectedSectionId={selectedSectionId}
-        onSectionSelect={onSectionSelect}
-        onAddSection={addNewSection}
-        onMoveSection={moveSection}
-        documentId={documentId}
-      />
-      
-      {sections.filter(s => !s.parentId).length === 0 && (
-        <div className="text-sm text-neutral-medium py-2">
-          Nessuna sezione disponibile.
-          <button 
-            className="block mt-2 text-primary hover:text-primary-dark"
-            onClick={() => addNewSection()}
-          >
-            + Aggiungi sezione
-          </button>
-        </div>
-      )}
+      <div className="overflow-y-auto max-h-[calc(100vh-200px)] overflow-x-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+        <SectionTree 
+          sections={sections} 
+          parentId={null} 
+          level={0} 
+          selectedSectionId={selectedSectionId}
+          onSectionSelect={onSectionSelect}
+          onAddSection={addNewSection}
+          onMoveSection={moveSection}
+          documentId={documentId}
+        />
+        
+        {sections.filter(s => !s.parentId).length === 0 && (
+          <div className="text-sm text-neutral-medium py-2">
+            Nessuna sezione disponibile.
+            <button 
+              className="block mt-2 text-primary hover:text-primary-dark"
+              onClick={() => addNewSection()}
+            >
+              + Aggiungi sezione
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Trash bin component for deleting sections via drag & drop */}
       <TrashBin 
@@ -663,7 +665,7 @@ function SectionItem({
               {hasChildren ? 'folder' : 'article'}
             </span>
             
-            <span className="truncate max-w-[180px]">{section.title}</span>
+            <span className="truncate max-w-[220px] min-w-0">{section.title}</span>
             
             {componentsLabel}
           </div>
