@@ -178,31 +178,73 @@ export function TiptapEditor({
       case 'title':
         editor.chain().focus().toggleBold().setColor('#000').run();
         editor.commands.updateAttributes('paragraph', { 
-          style: 'font-size: 24px; font-weight: bold;' 
+          style: 'font-size: 24px; font-weight: bold; margin-bottom: 12px;' 
         });
         break;
       case 'subtitle':
         editor.chain().focus().toggleBold().setColor('#444').run();
         editor.commands.updateAttributes('paragraph', { 
-          style: 'font-size: 18px;' 
+          style: 'font-size: 18px; margin-bottom: 8px;' 
+        });
+        break;
+      case 'heading1':
+        editor.chain().focus().toggleBold().setColor('#000').run();
+        editor.commands.updateAttributes('paragraph', { 
+          style: 'font-size: 22px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 10px;' 
+        });
+        break;
+      case 'heading2':
+        editor.chain().focus().toggleBold().setColor('#333').run();
+        editor.commands.updateAttributes('paragraph', { 
+          style: 'font-size: 20px; font-weight: bold; margin-bottom: 8px;' 
+        });
+        break;
+      case 'heading3':
+        editor.chain().focus().toggleBold().setColor('#444').run();
+        editor.commands.updateAttributes('paragraph', { 
+          style: 'font-size: 18px; font-weight: bold; margin-bottom: 8px;' 
+        });
+        break;
+      case 'quoted':
+        editor.chain().focus().setColor('#333').run();
+        editor.commands.updateAttributes('paragraph', { 
+          style: 'font-size: 16px; border-left: 3px solid #ccc; padding-left: 10px; font-style: italic;' 
         });
         break;
       case 'warning':
         editor.chain().focus().toggleBold().setColor('#e74c3c').run();
         editor.commands.updateAttributes('paragraph', { 
-          style: 'font-size: 16px;' 
+          style: 'font-size: 16px; background-color: #fff3cd; padding: 10px; border-left: 4px solid #e74c3c; margin-bottom: 10px;' 
         });
         break;
       case 'info':
         editor.chain().focus().setColor('#3498db').run();
         editor.commands.updateAttributes('paragraph', { 
-          style: 'font-size: 16px;' 
+          style: 'font-size: 16px; background-color: #cfe2ff; padding: 10px; border-left: 4px solid #3498db; margin-bottom: 10px;' 
+        });
+        break;
+      case 'success':
+        editor.chain().focus().setColor('#2ecc71').run();
+        editor.commands.updateAttributes('paragraph', { 
+          style: 'font-size: 16px; background-color: #d1e7dd; padding: 10px; border-left: 4px solid #2ecc71; margin-bottom: 10px;' 
+        });
+        break;
+      case 'highlight':
+        editor.chain().focus().setColor('#000').run();
+        editor.commands.updateAttributes('paragraph', { 
+          style: 'font-size: 16px; background-color: #ffeeba; padding: 3px 5px; border-radius: 4px;' 
+        });
+        break;
+      case 'code':
+        editor.chain().focus().setColor('#333').run();
+        editor.commands.updateAttributes('paragraph', { 
+          style: 'font-size: 14px; font-family: monospace; background-color: #f8f9fa; padding: 8px; border-radius: 4px; white-space: pre-wrap;' 
         });
         break;
       case 'note':
         editor.chain().focus().toggleItalic().setColor('#7f8c8d').run();
         editor.commands.updateAttributes('paragraph', { 
-          style: 'font-size: 14px;' 
+          style: 'font-size: 14px; background-color: #f8f9fa; padding: 5px; border: 1px dashed #ccc; margin-bottom: 10px;' 
         });
         break;
       default:
@@ -472,8 +514,15 @@ export function TiptapEditor({
               <SelectItem value="normal">Normale</SelectItem>
               <SelectItem value="title">Titolo</SelectItem>
               <SelectItem value="subtitle">Sottotitolo</SelectItem>
+              <SelectItem value="heading1">Intestazione 1</SelectItem>
+              <SelectItem value="heading2">Intestazione 2</SelectItem>
+              <SelectItem value="heading3">Intestazione 3</SelectItem>
+              <SelectItem value="quoted">Citazione</SelectItem>
               <SelectItem value="warning">Avviso</SelectItem>
               <SelectItem value="info">Informazione</SelectItem>
+              <SelectItem value="success">Successo</SelectItem>
+              <SelectItem value="highlight">Evidenziato</SelectItem>
+              <SelectItem value="code">Codice</SelectItem>
               <SelectItem value="note">Nota</SelectItem>
             </SelectContent>
           </Select>
