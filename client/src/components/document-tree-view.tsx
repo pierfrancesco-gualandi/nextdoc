@@ -427,7 +427,10 @@ function SectionTree({
           isExpanded={expandedSections[section.id] || false}
           hasChildren={hasSectionChildren(section.id)}
           onToggleExpand={() => toggleExpand(section.id)}
-          onSelect={() => onSectionSelect && onSectionSelect(section)}
+          onSelect={() => {
+            console.log("Sezione selezionata:", section);
+            onSectionSelect && onSectionSelect(section);
+          }}
           onAddChild={() => onAddSection(section.id)}
           onMove={onMoveSection}
           parentId={parentId}
@@ -614,6 +617,8 @@ function SectionItem({
   // Calculate padding based on level
   const levelPadding = level > 0 ? `${Math.min(level * 0.5, 5)}rem` : '0';
   
+  console.log("Rendering section:", section.id, section.title, "- Description:", section.description);
+  
   return (
     <div
       className={`relative ${isDragging ? 'opacity-50' : 'opacity-100'}`}
@@ -668,7 +673,7 @@ function SectionItem({
               
               <div className="min-w-0 flex-1">
                 <div className="truncate mr-1 font-medium">{section.title}</div>
-                {section.description && (
+                {section.description && section.description.trim() !== '' && (
                   <div className="truncate text-xs text-gray-500 max-w-full">{section.description}</div>
                 )}
               </div>
