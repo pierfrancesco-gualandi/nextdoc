@@ -275,7 +275,7 @@ export default function DocumentTreeView({
         </button>
       </div>
       
-      <div className="overflow-y-auto max-h-[calc(100vh-200px)] overflow-x-visible pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+      <div className="overflow-y-auto max-h-[calc(100vh-200px)] overflow-x-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
         <SectionTree 
           sections={sections} 
           parentId={null} 
@@ -640,78 +640,76 @@ function SectionItem({
         `}
         style={{ paddingLeft: levelPadding }}
       >
-        <div className="group cursor-pointer">
-          <div className="flex items-center justify-between relative hover:z-10">
-            <div className="flex items-center min-w-0 flex-1" onClick={onSelect}>
-              {hasChildren && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleExpand();
-                  }}
-                  className="mr-1 text-neutral-medium focus:outline-none flex-shrink-0"
-                >
-                  <span className="material-icons text-sm">
-                    {isExpanded ? 'expand_more' : 'chevron_right'}
-                  </span>
-                </button>
-              )}
-              
-              <span 
-                className={`
-                  material-icons text-sm mr-1 flex-shrink-0
-                  ${isSelected ? 'text-primary' : 'text-neutral-medium'}
-                `}
+        <div className="flex items-center justify-between group cursor-pointer">
+          <div className="flex items-center flex-grow" onClick={onSelect}>
+            {hasChildren && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleExpand();
+                }}
+                className="mr-1 text-neutral-medium focus:outline-none"
               >
-                {hasChildren ? 'folder' : 'article'}
-              </span>
-              
-              <span className="truncate min-w-0 mr-1">{section.title}</span>
-              
-              {componentsLabel}
-            </div>
+                <span className="material-icons text-sm">
+                  {isExpanded ? 'expand_more' : 'chevron_right'}
+                </span>
+              </button>
+            )}
             
-            <div className="invisible group-hover:visible flex items-center space-x-1 flex-shrink-0 ml-1">
-              <button 
-                className="text-neutral-medium hover:text-neutral-dark p-1"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Sposta la sezione verso l'alto (diminuisci order)
-                  if (index > 0) {
-                    onMove(section.id, parentId, index - 1);
-                  }
-                }}
-                title="Sposta in alto"
-                disabled={index === 0}
-              >
-                <span className="material-icons text-sm">keyboard_arrow_up</span>
-              </button>
-              <button 
-                className="text-neutral-medium hover:text-neutral-dark p-1"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Sposta la sezione verso il basso (aumenta order)
-                  onMove(section.id, parentId, index + 1);
-                }}
-                title="Sposta in basso"
-              >
-                <span className="material-icons text-sm">keyboard_arrow_down</span>
-              </button>
-              <button 
-                className="text-neutral-medium hover:text-neutral-dark p-1"
-                onClick={onAddChild}
-                title="Aggiungi sottosezione"
-              >
-                <span className="material-icons text-sm">add</span>
-              </button>
-              <button 
-                className="text-neutral-medium hover:text-neutral-dark p-1 cursor-move"
-                onClick={(e) => e.stopPropagation()}
-                title="Trascina per spostare"
-              >
-                <span className="material-icons text-sm">drag_indicator</span>
-              </button>
-            </div>
+            <span 
+              className={`
+                material-icons text-sm mr-1 
+                ${isSelected ? 'text-primary' : 'text-neutral-medium'}
+              `}
+            >
+              {hasChildren ? 'folder' : 'article'}
+            </span>
+            
+            <span className="truncate max-w-[220px] min-w-0">{section.title}</span>
+            
+            {componentsLabel}
+          </div>
+          
+          <div className="hidden group-hover:flex items-center space-x-1">
+            <button 
+              className="text-neutral-medium hover:text-neutral-dark p-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Sposta la sezione verso l'alto (diminuisci order)
+                if (index > 0) {
+                  onMove(section.id, parentId, index - 1);
+                }
+              }}
+              title="Sposta in alto"
+              disabled={index === 0}
+            >
+              <span className="material-icons text-sm">keyboard_arrow_up</span>
+            </button>
+            <button 
+              className="text-neutral-medium hover:text-neutral-dark p-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Sposta la sezione verso il basso (aumenta order)
+                onMove(section.id, parentId, index + 1);
+              }}
+              title="Sposta in basso"
+            >
+              <span className="material-icons text-sm">keyboard_arrow_down</span>
+            </button>
+            <button 
+              className="text-neutral-medium hover:text-neutral-dark p-1"
+              onClick={onAddChild}
+              title="Aggiungi sottosezione"
+            >
+              <span className="material-icons text-sm">add</span>
+            </button>
+            <button 
+              className="text-neutral-medium hover:text-neutral-dark p-1 cursor-move"
+              onClick={(e) => e.stopPropagation()}
+              title="Trascina per spostare"
+            >
+              <span className="material-icons text-sm">drag_indicator</span>
+            </button>
           </div>
         </div>
         
