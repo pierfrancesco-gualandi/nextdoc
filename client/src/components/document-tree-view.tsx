@@ -640,15 +640,15 @@ function SectionItem({
         `}
         style={{ paddingLeft: levelPadding }}
       >
-        <div className="flex items-center justify-between group cursor-pointer min-w-[450px]">
-          <div className="flex items-center flex-grow min-w-[240px]" onClick={onSelect}>
+        <div className="flex items-center justify-between group cursor-pointer min-w-[300px] gap-1">
+          <div className="flex items-center flex-grow min-w-[180px]" onClick={onSelect}>
             {hasChildren && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onToggleExpand();
                 }}
-                className="mr-1 text-neutral-medium focus:outline-none"
+                className="text-neutral-medium focus:outline-none"
               >
                 <span className="material-icons text-sm">
                   {isExpanded ? 'expand_more' : 'chevron_right'}
@@ -658,19 +658,19 @@ function SectionItem({
             
             <span 
               className={`
-                material-icons text-sm mr-1 
+                material-icons text-sm 
                 ${isSelected ? 'text-primary' : 'text-neutral-medium'}
               `}
             >
               {hasChildren ? 'folder' : 'article'}
             </span>
             
-            <span className="truncate max-w-[220px] min-w-0">{section.title}</span>
+            <span className="truncate max-w-[150px] min-w-0">{section.title}</span>
             
             {componentsLabel}
           </div>
           
-          <div className="flex items-center space-x-1 min-w-[120px] justify-end">
+          <div className="flex items-center min-w-[100px] justify-end ml-1">
             <button 
               className="text-neutral-medium hover:text-neutral-dark p-1"
               onClick={(e) => {
