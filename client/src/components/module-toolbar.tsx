@@ -33,6 +33,11 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
     { id: "table", icon: "table_chart", label: "Tabella" },
     { id: "checklist", icon: "checklist", label: "Checklist" },
     { id: "warning", icon: "warning", label: "Avviso" },
+    { id: "danger", icon: "error", label: "PERICOLO" },
+    { id: "warning-alert", icon: "warning_amber", label: "AVVERTENZA" },
+    { id: "caution", icon: "report_problem", label: "ATTENZIONE" },
+    { id: "note", icon: "info", label: "NOTA" },
+    { id: "safety-instructions", icon: "shield", label: "Istruzioni di sicurezza" },
     { id: "link", icon: "link", label: "Link" },
     { id: "pdf", icon: "picture_as_pdf", label: "PDF" },
     { id: "component", icon: "category", label: "Componente" },
@@ -290,6 +295,21 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
         break;
       case "warning":
         defaultContent = { title: "Attenzione", message: "", level: "warning" };
+        break;
+      case "danger":
+        defaultContent = { title: "PERICOLO", description: "" };
+        break;
+      case "warning-alert":
+        defaultContent = { title: "AVVERTENZA", description: "" };
+        break;
+      case "caution":
+        defaultContent = { title: "ATTENZIONE", description: "" };
+        break;
+      case "note":
+        defaultContent = { title: "NOTA", description: "" };
+        break;
+      case "safety-instructions":
+        defaultContent = { title: "Istruzioni di sicurezza", description: "" };
         break;
       case "link":
         defaultContent = { url: "", text: "", description: "" };
