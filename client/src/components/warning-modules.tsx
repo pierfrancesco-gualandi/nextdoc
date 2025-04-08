@@ -8,6 +8,9 @@ interface WarningModuleProps {
   backgroundColor: string;
   textColor: string;
   isTranslated?: boolean;
+  highlightMissingTranslations?: boolean;
+  originalTitle?: string;
+  originalDescription?: string;
 }
 
 // Componente di base per i moduli di avvertenza
@@ -17,8 +20,18 @@ export const WarningModule: React.FC<WarningModuleProps> = ({
   imageUrl,
   backgroundColor,
   textColor,
-  isTranslated = false
+  isTranslated = false,
+  highlightMissingTranslations = false,
+  originalTitle,
+  originalDescription
 }) => {
+  // Determina se usare il testo originale con evidenziazione per mancata traduzione
+  const showOriginalTitle = highlightMissingTranslations && !isTranslated && originalTitle;
+  const showOriginalDescription = highlightMissingTranslations && !isTranslated && originalDescription;
+  
+  // Classe CSS per evidenziare il testo non tradotto
+  const missingTranslationClass = "bg-red-100 text-red-800 px-1 py-0.5 rounded";
+  
   return (
     <Card className="mb-4 border-0 overflow-hidden">
       <div className="flex">
@@ -39,12 +52,19 @@ export const WarningModule: React.FC<WarningModuleProps> = ({
         {/* Cella con il testo */}
         <CardContent className="flex-grow p-4">
           <h3 
-            className="text-xl font-bold mb-2"
-            style={{ color: textColor }}
+            className={`text-xl font-bold mb-2 ${showOriginalTitle ? missingTranslationClass : ''}`}
+            style={{ color: showOriginalTitle ? "inherit" : textColor }}
           >
-            {title}
+            {showOriginalTitle ? originalTitle : title}
           </h3>
-          <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: description }} />
+          
+          {showOriginalDescription ? (
+            <div className={missingTranslationClass}>
+              <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: originalDescription }} />
+            </div>
+          ) : (
+            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: description }} />
+          )}
         </CardContent>
       </div>
     </Card>
@@ -56,10 +76,16 @@ export const DangerModule: React.FC<{
   title?: string;
   description: string;
   isTranslated?: boolean;
+  highlightMissingTranslations?: boolean;
+  originalTitle?: string;
+  originalDescription?: string;
 }> = ({ 
   title = "PERICOLO", 
   description,
-  isTranslated = false
+  isTranslated = false,
+  highlightMissingTranslations = false,
+  originalTitle,
+  originalDescription
 }) => {
   return (
     <WarningModule
@@ -69,6 +95,9 @@ export const DangerModule: React.FC<{
       backgroundColor="#d9001e"
       textColor="#d9001e"
       isTranslated={isTranslated}
+      highlightMissingTranslations={highlightMissingTranslations}
+      originalTitle={originalTitle}
+      originalDescription={originalDescription}
     />
   );
 };
@@ -78,10 +107,16 @@ export const WarningAlertModule: React.FC<{
   title?: string;
   description: string;
   isTranslated?: boolean;
+  highlightMissingTranslations?: boolean;
+  originalTitle?: string;
+  originalDescription?: string;
 }> = ({ 
   title = "AVVERTENZA", 
   description,
-  isTranslated = false
+  isTranslated = false,
+  highlightMissingTranslations = false,
+  originalTitle,
+  originalDescription
 }) => {
   return (
     <WarningModule
@@ -91,6 +126,9 @@ export const WarningAlertModule: React.FC<{
       backgroundColor="#ff9900"
       textColor="#ff9900"
       isTranslated={isTranslated}
+      highlightMissingTranslations={highlightMissingTranslations}
+      originalTitle={originalTitle}
+      originalDescription={originalDescription}
     />
   );
 };
@@ -100,10 +138,16 @@ export const CautionModule: React.FC<{
   title?: string;
   description: string;
   isTranslated?: boolean;
+  highlightMissingTranslations?: boolean;
+  originalTitle?: string;
+  originalDescription?: string;
 }> = ({ 
   title = "ATTENZIONE", 
   description,
-  isTranslated = false
+  isTranslated = false,
+  highlightMissingTranslations = false,
+  originalTitle,
+  originalDescription
 }) => {
   return (
     <WarningModule
@@ -113,28 +157,40 @@ export const CautionModule: React.FC<{
       backgroundColor="#ffd500"
       textColor="#000000"
       isTranslated={isTranslated}
+      highlightMissingTranslations={highlightMissingTranslations}
+      originalTitle={originalTitle}
+      originalDescription={originalDescription}
     />
   );
 };
 
-// Modulo NOTA (blu)
+// Modulo NOTA (blu) - Senza icona di pericolo
 export const NoteModule: React.FC<{
   title?: string;
   description: string;
   isTranslated?: boolean;
+  highlightMissingTranslations?: boolean;
+  originalTitle?: string;
+  originalDescription?: string;
 }> = ({ 
   title = "NOTA", 
   description,
-  isTranslated = false
+  isTranslated = false,
+  highlightMissingTranslations = false,
+  originalTitle,
+  originalDescription
 }) => {
   return (
     <WarningModule
       title={title}
       description={description}
-      imageUrl="/uploads/1744114740439-80ea52939809d17cd1cd09be1d70a598.png"
+      // Non usare l'icona di pericolo per il modulo NOTA
       backgroundColor="#3366cc"
       textColor="#3366cc"
       isTranslated={isTranslated}
+      highlightMissingTranslations={highlightMissingTranslations}
+      originalTitle={originalTitle}
+      originalDescription={originalDescription}
     />
   );
 };
@@ -144,10 +200,16 @@ export const SafetyInstructionsModule: React.FC<{
   title?: string;
   description: string;
   isTranslated?: boolean;
+  highlightMissingTranslations?: boolean;
+  originalTitle?: string;
+  originalDescription?: string;
 }> = ({ 
   title = "Istruzioni di sicurezza", 
   description,
-  isTranslated = false
+  isTranslated = false,
+  highlightMissingTranslations = false,
+  originalTitle,
+  originalDescription
 }) => {
   return (
     <WarningModule
@@ -157,6 +219,9 @@ export const SafetyInstructionsModule: React.FC<{
       backgroundColor="#339933"
       textColor="#339933"
       isTranslated={isTranslated}
+      highlightMissingTranslations={highlightMissingTranslations}
+      originalTitle={originalTitle}
+      originalDescription={originalDescription}
     />
   );
 };

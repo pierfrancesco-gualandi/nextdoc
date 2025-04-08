@@ -490,49 +490,179 @@ export default function ContentModule({
         );
         
       case "danger":
-        return (
-          <DangerModule
-            title={content.title}
-            description={content.description}
-            isTranslated={!!module.translation?.content}
-          />
-        );
+        {
+          // Se il modulo è tradotto, ottieni il contenuto originale
+          let originalContent = null;
+          if (isPreview && selectedLanguage && selectedLanguage !== '0') {
+            try {
+              // Se c'è il campo original nel modulo, usalo per accedere ai dati originali
+              if (module.original) {
+                originalContent = module.original.content && typeof module.original.content === 'string' 
+                  ? JSON.parse(module.original.content) 
+                  : module.original.content;
+              }
+              // Altrimenti estrai i dati originali dal modulo stesso
+              else {
+                originalContent = module.content && typeof module.content === 'string' 
+                  ? JSON.parse(module.content) 
+                  : module.content;
+              }
+            } catch (e) {
+              console.error("Errore nel parsing del contenuto originale:", e);
+            }
+          }
+          
+          return (
+            <DangerModule
+              title={content.title}
+              description={content.description}
+              isTranslated={!!module.translation?.content}
+              highlightMissingTranslations={highlightMissingTranslations}
+              originalTitle={originalContent?.title}
+              originalDescription={originalContent?.description}
+            />
+          );
+        }
         
       case "warning-alert":
-        return (
-          <WarningAlertModule
-            title={content.title}
-            description={content.description}
-            isTranslated={!!module.translation?.content}
-          />
-        );
+        {
+          // Se il modulo è tradotto, ottieni il contenuto originale
+          let originalContent = null;
+          if (isPreview && selectedLanguage && selectedLanguage !== '0') {
+            try {
+              // Se c'è il campo original nel modulo, usalo per accedere ai dati originali
+              if (module.original) {
+                originalContent = module.original.content && typeof module.original.content === 'string' 
+                  ? JSON.parse(module.original.content) 
+                  : module.original.content;
+              }
+              // Altrimenti estrai i dati originali dal modulo stesso
+              else {
+                originalContent = module.content && typeof module.content === 'string' 
+                  ? JSON.parse(module.content) 
+                  : module.content;
+              }
+            } catch (e) {
+              console.error("Errore nel parsing del contenuto originale:", e);
+            }
+          }
+          
+          return (
+            <WarningAlertModule
+              title={content.title}
+              description={content.description}
+              isTranslated={!!module.translation?.content}
+              highlightMissingTranslations={highlightMissingTranslations}
+              originalTitle={originalContent?.title}
+              originalDescription={originalContent?.description}
+            />
+          );
+        }
         
       case "caution":
-        return (
-          <CautionModule
-            title={content.title}
-            description={content.description}
-            isTranslated={!!module.translation?.content}
-          />
-        );
+        {
+          // Se il modulo è tradotto, ottieni il contenuto originale
+          let originalContent = null;
+          if (isPreview && selectedLanguage && selectedLanguage !== '0') {
+            try {
+              // Se c'è il campo original nel modulo, usalo per accedere ai dati originali
+              if (module.original) {
+                originalContent = module.original.content && typeof module.original.content === 'string' 
+                  ? JSON.parse(module.original.content) 
+                  : module.original.content;
+              }
+              // Altrimenti estrai i dati originali dal modulo stesso
+              else {
+                originalContent = module.content && typeof module.content === 'string' 
+                  ? JSON.parse(module.content) 
+                  : module.content;
+              }
+            } catch (e) {
+              console.error("Errore nel parsing del contenuto originale:", e);
+            }
+          }
+          
+          return (
+            <CautionModule
+              title={content.title}
+              description={content.description}
+              isTranslated={!!module.translation?.content}
+              highlightMissingTranslations={highlightMissingTranslations}
+              originalTitle={originalContent?.title}
+              originalDescription={originalContent?.description}
+            />
+          );
+        }
         
       case "note":
-        return (
-          <NoteModule
-            title={content.title}
-            description={content.description}
-            isTranslated={!!module.translation?.content}
-          />
-        );
+        {
+          // Se il modulo è tradotto, ottieni il contenuto originale
+          let originalContent = null;
+          if (isPreview && selectedLanguage && selectedLanguage !== '0') {
+            try {
+              // Se c'è il campo original nel modulo, usalo per accedere ai dati originali
+              if (module.original) {
+                originalContent = module.original.content && typeof module.original.content === 'string' 
+                  ? JSON.parse(module.original.content) 
+                  : module.original.content;
+              }
+              // Altrimenti estrai i dati originali dal modulo stesso
+              else {
+                originalContent = module.content && typeof module.content === 'string' 
+                  ? JSON.parse(module.content) 
+                  : module.content;
+              }
+            } catch (e) {
+              console.error("Errore nel parsing del contenuto originale:", e);
+            }
+          }
+          
+          return (
+            <NoteModule
+              title={content.title}
+              description={content.description}
+              isTranslated={!!module.translation?.content}
+              highlightMissingTranslations={highlightMissingTranslations}
+              originalTitle={originalContent?.title}
+              originalDescription={originalContent?.description}
+            />
+          );
+        }
         
       case "safety-instructions":
-        return (
-          <SafetyInstructionsModule
-            title={content.title}
-            description={content.description}
-            isTranslated={!!module.translation?.content}
-          />
-        );
+        {
+          // Se il modulo è tradotto, ottieni il contenuto originale
+          let originalContent = null;
+          if (isPreview && selectedLanguage && selectedLanguage !== '0') {
+            try {
+              // Se c'è il campo original nel modulo, usalo per accedere ai dati originali
+              if (module.original) {
+                originalContent = module.original.content && typeof module.original.content === 'string' 
+                  ? JSON.parse(module.original.content) 
+                  : module.original.content;
+              }
+              // Altrimenti estrai i dati originali dal modulo stesso
+              else {
+                originalContent = module.content && typeof module.content === 'string' 
+                  ? JSON.parse(module.content) 
+                  : module.content;
+              }
+            } catch (e) {
+              console.error("Errore nel parsing del contenuto originale:", e);
+            }
+          }
+          
+          return (
+            <SafetyInstructionsModule
+              title={content.title}
+              description={content.description}
+              isTranslated={!!module.translation?.content}
+              highlightMissingTranslations={highlightMissingTranslations}
+              originalTitle={originalContent?.title}
+              originalDescription={originalContent?.description}
+            />
+          );
+        }
 
       case "bom":
         // Mostra la descrizione traducibile se disponibile

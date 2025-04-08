@@ -48,11 +48,23 @@ export default function TranslatedContentModule({
   
   // Se è stata selezionata una lingua diversa dall'originale ed è disponibile una traduzione
   if (languageId !== '0' && translatedModule) {
+    // Prepara il contenuto tradotto
+    let translatedContent;
+    try {
+      translatedContent = typeof translatedModule.content === 'string' 
+        ? JSON.parse(translatedModule.content) 
+        : translatedModule.content;
+    } catch (e) {
+      console.error("Errore nel parsing del contenuto tradotto:", e);
+      translatedContent = translatedModule.content;
+    }
+    
     // Crea una copia del modulo originale con i contenuti tradotti
     const moduleWithTranslation = {
       ...originalModule,
       translation: translatedModule, // Aggiungi la traduzione completa
-      content: translatedModule.content // Sostituisci il contenuto con quello tradotto
+      original: { ...originalModule }, // Mantieni l'originale per la visualizzazione del testo originale se richiesto
+      content: translatedContent // Sostituisci il contenuto con quello tradotto
     };
     
     return (
