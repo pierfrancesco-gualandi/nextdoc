@@ -289,6 +289,31 @@ export type WarningModuleContent = {
   level: 'info' | 'warning' | 'error';
 };
 
+export type DangerModuleContent = {
+  title: string;
+  description: string;
+};
+
+export type WarningAlertModuleContent = {
+  title: string;
+  description: string;
+};
+
+export type CautionModuleContent = {
+  title: string;
+  description: string;
+};
+
+export type NoteModuleContent = {
+  title: string;
+  description: string;
+};
+
+export type SafetyInstructionsModuleContent = {
+  title: string;
+  description: string;
+};
+
 export type LinkModuleContent = {
   url: string;
   text: string;

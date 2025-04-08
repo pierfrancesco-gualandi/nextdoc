@@ -21,6 +21,13 @@ import ThreeModelViewer from "./three-model-viewer";
 import ThreeModelEditor from "./three-model-editor";
 import VideoPlayer from "./video-player";
 import BomViewContent, { BomFilterSettings } from "./BomViewContent";
+import { 
+  DangerModule,
+  WarningAlertModule,
+  CautionModule,
+  NoteModule,
+  SafetyInstructionsModule
+} from "./warning-modules";
 
 // Component to select a BOM
 const BomSelector = ({ bomId, onChange }: { bomId: number, onChange: (bomId: number) => void }) => {
@@ -244,6 +251,11 @@ export default function ContentModule({
       case "link": return "link";
       case "pdf": return "picture_as_pdf";
       case "3d-model": return "view_in_ar";
+      case "danger": return "error";
+      case "warning-alert": return "warning_amber";
+      case "caution": return "report_problem";
+      case "note": return "info";
+      case "safety-instructions": return "shield";
       default: return "article";
     }
   };
@@ -261,6 +273,11 @@ export default function ContentModule({
       case "link": return "Link";
       case "pdf": return "PDF";
       case "3d-model": return "Modello 3D";
+      case "danger": return "PERICOLO";
+      case "warning-alert": return "AVVERTENZA";
+      case "caution": return "ATTENZIONE";
+      case "note": return "NOTA";
+      case "safety-instructions": return "Istruzioni di sicurezza";
       default: return type;
     }
   };
@@ -472,6 +489,51 @@ export default function ContentModule({
           </div>
         );
         
+      case "danger":
+        return (
+          <DangerModule
+            title={content.title}
+            description={content.description}
+            isTranslated={!!module.translation?.content}
+          />
+        );
+        
+      case "warning-alert":
+        return (
+          <WarningAlertModule
+            title={content.title}
+            description={content.description}
+            isTranslated={!!module.translation?.content}
+          />
+        );
+        
+      case "caution":
+        return (
+          <CautionModule
+            title={content.title}
+            description={content.description}
+            isTranslated={!!module.translation?.content}
+          />
+        );
+        
+      case "note":
+        return (
+          <NoteModule
+            title={content.title}
+            description={content.description}
+            isTranslated={!!module.translation?.content}
+          />
+        );
+        
+      case "safety-instructions":
+        return (
+          <SafetyInstructionsModule
+            title={content.title}
+            description={content.description}
+            isTranslated={!!module.translation?.content}
+          />
+        );
+
       case "bom":
         // Mostra la descrizione traducibile se disponibile
         return (
@@ -1036,6 +1098,116 @@ export default function ContentModule({
                 value={content.title || ""} 
                 onChange={(e) => setContent({ ...content, title: e.target.value })} 
                 placeholder="Manuale di istruzioni"
+              />
+            </div>
+          </div>
+        );
+        
+      case "danger":
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="danger-title">Titolo</Label>
+              <Input 
+                id="danger-title" 
+                value={content.title || "PERICOLO"} 
+                onChange={(e) => setContent({ ...content, title: e.target.value })} 
+              />
+            </div>
+            <div>
+              <Label htmlFor="danger-description">Descrizione</Label>
+              <TiptapEditor 
+                content={content.description || ""} 
+                onChange={(description) => setContent({ ...content, description })} 
+                sectionId={module.sectionId}
+              />
+            </div>
+          </div>
+        );
+        
+      case "warning-alert":
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="warning-alert-title">Titolo</Label>
+              <Input 
+                id="warning-alert-title" 
+                value={content.title || "AVVERTENZA"} 
+                onChange={(e) => setContent({ ...content, title: e.target.value })} 
+              />
+            </div>
+            <div>
+              <Label htmlFor="warning-alert-description">Descrizione</Label>
+              <TiptapEditor 
+                content={content.description || ""} 
+                onChange={(description) => setContent({ ...content, description })} 
+                sectionId={module.sectionId}
+              />
+            </div>
+          </div>
+        );
+        
+      case "caution":
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="caution-title">Titolo</Label>
+              <Input 
+                id="caution-title" 
+                value={content.title || "ATTENZIONE"} 
+                onChange={(e) => setContent({ ...content, title: e.target.value })} 
+              />
+            </div>
+            <div>
+              <Label htmlFor="caution-description">Descrizione</Label>
+              <TiptapEditor 
+                content={content.description || ""} 
+                onChange={(description) => setContent({ ...content, description })} 
+                sectionId={module.sectionId}
+              />
+            </div>
+          </div>
+        );
+        
+      case "note":
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="note-title">Titolo</Label>
+              <Input 
+                id="note-title" 
+                value={content.title || "NOTA"} 
+                onChange={(e) => setContent({ ...content, title: e.target.value })} 
+              />
+            </div>
+            <div>
+              <Label htmlFor="note-description">Descrizione</Label>
+              <TiptapEditor 
+                content={content.description || ""} 
+                onChange={(description) => setContent({ ...content, description })} 
+                sectionId={module.sectionId}
+              />
+            </div>
+          </div>
+        );
+        
+      case "safety-instructions":
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="safety-title">Titolo</Label>
+              <Input 
+                id="safety-title" 
+                value={content.title || "Istruzioni di sicurezza"} 
+                onChange={(e) => setContent({ ...content, title: e.target.value })} 
+              />
+            </div>
+            <div>
+              <Label htmlFor="safety-description">Descrizione</Label>
+              <TiptapEditor 
+                content={content.description || ""} 
+                onChange={(description) => setContent({ ...content, description })} 
+                sectionId={module.sectionId}
               />
             </div>
           </div>
