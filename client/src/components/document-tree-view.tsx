@@ -640,7 +640,7 @@ function SectionItem({
         `}
         style={{ paddingLeft: levelPadding }}
       >
-        <div className="flex items-center justify-between group cursor-pointer min-w-[300px] gap-1">
+        <div className="flex items-center justify-between group cursor-pointer min-w-[280px] gap-0">
           <div className="flex items-center flex-grow min-w-[180px]" onClick={onSelect}>
             {hasChildren && (
               <button
@@ -670,9 +670,9 @@ function SectionItem({
             {componentsLabel}
           </div>
           
-          <div className="flex items-center min-w-[100px] justify-end ml-1">
+          <div className="flex items-center min-w-[90px] justify-end">
             <button 
-              className="text-neutral-medium hover:text-neutral-dark p-1"
+              className="text-neutral-medium hover:text-neutral-dark p-0.5"
               onClick={(e) => {
                 e.stopPropagation();
                 // Sposta la sezione verso l'alto (diminuisci order)
@@ -686,7 +686,7 @@ function SectionItem({
               <span className="material-icons text-sm">keyboard_arrow_up</span>
             </button>
             <button 
-              className="text-neutral-medium hover:text-neutral-dark p-1"
+              className="text-neutral-medium hover:text-neutral-dark p-0.5"
               onClick={(e) => {
                 e.stopPropagation();
                 // Sposta la sezione verso il basso (aumenta order)
@@ -697,14 +697,14 @@ function SectionItem({
               <span className="material-icons text-sm">keyboard_arrow_down</span>
             </button>
             <button 
-              className="text-neutral-medium hover:text-neutral-dark p-1"
+              className="text-neutral-medium hover:text-neutral-dark p-0.5"
               onClick={onAddChild}
               title="Aggiungi sottosezione"
             >
               <span className="material-icons text-sm">add</span>
             </button>
             <button 
-              className="text-neutral-medium hover:text-neutral-dark p-1 cursor-move"
+              className="text-neutral-medium hover:text-neutral-dark p-0.5 cursor-move"
               onClick={(e) => e.stopPropagation()}
               title="Trascina per spostare"
             >
