@@ -670,7 +670,7 @@ function SectionItem({
             {componentsLabel}
           </div>
           
-          <div className="hidden group-hover:flex items-center space-x-1 min-w-[120px] justify-end">
+          <div className="flex items-center space-x-1 min-w-[120px] justify-end">
             <button 
               className="text-neutral-medium hover:text-neutral-dark p-1"
               onClick={(e) => {
