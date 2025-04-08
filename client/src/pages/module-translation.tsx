@@ -531,6 +531,11 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
           } else if (module.type === 'warning') {
             initialTranslatedContent.title = '';
             initialTranslatedContent.message = '';
+          } else if (module.type === 'danger' || module.type === 'warning-alert' || 
+                     module.type === 'caution' || module.type === 'note' || 
+                     module.type === 'safety-instructions') {
+            initialTranslatedContent.title = '';
+            initialTranslatedContent.description = '';
           } else if (module.type === 'image' || module.type === 'video') {
             initialTranslatedContent.caption = '';
             initialTranslatedContent.alt = initialTranslatedContent.alt || '';
@@ -779,6 +784,11 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
       'table': 'Tabella',
       'checklist': 'Checklist',
       'warning': 'Avvertenza',
+      'danger': 'PERICOLO',
+      'warning-alert': 'AVVERTENZA',
+      'caution': 'ATTENZIONE',
+      'note': 'NOTA',
+      'safety-instructions': 'Istruzioni di sicurezza',
       '3d-model': 'Modello 3D',
       'pdf': 'PDF',
       'link': 'Link',
@@ -897,6 +907,131 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                           </>
                         )}
                         
+                        {/* PERICOLO Module */}
+                        {module.type === 'danger' && (
+                          <>
+                            <div>
+                              <Label htmlFor="danger-title">Titolo PERICOLO</Label>
+                              <Input
+                                id="danger-title"
+                                value={translatedContent.title || ''}
+                                onChange={(e) => handleTextChange(e.target.value, 'title')}
+                                placeholder="Titolo PERICOLO tradotto..."
+                              />
+                            </div>
+                            <div className="mt-2">
+                              <Label htmlFor="danger-description">Descrizione</Label>
+                              <Textarea
+                                id="danger-description"
+                                value={translatedContent.description || ''}
+                                onChange={(e) => handleTextChange(e.target.value, 'description')}
+                                className="min-h-[150px]"
+                                placeholder="Descrizione PERICOLO tradotta..."
+                              />
+                            </div>
+                          </>
+                        )}
+                        
+                        {/* AVVERTENZA Module */}
+                        {module.type === 'warning-alert' && (
+                          <>
+                            <div>
+                              <Label htmlFor="warning-alert-title">Titolo AVVERTENZA</Label>
+                              <Input
+                                id="warning-alert-title"
+                                value={translatedContent.title || ''}
+                                onChange={(e) => handleTextChange(e.target.value, 'title')}
+                                placeholder="Titolo AVVERTENZA tradotto..."
+                              />
+                            </div>
+                            <div className="mt-2">
+                              <Label htmlFor="warning-alert-description">Descrizione</Label>
+                              <Textarea
+                                id="warning-alert-description"
+                                value={translatedContent.description || ''}
+                                onChange={(e) => handleTextChange(e.target.value, 'description')}
+                                className="min-h-[150px]"
+                                placeholder="Descrizione AVVERTENZA tradotta..."
+                              />
+                            </div>
+                          </>
+                        )}
+                        
+                        {/* ATTENZIONE Module */}
+                        {module.type === 'caution' && (
+                          <>
+                            <div>
+                              <Label htmlFor="caution-title">Titolo ATTENZIONE</Label>
+                              <Input
+                                id="caution-title"
+                                value={translatedContent.title || ''}
+                                onChange={(e) => handleTextChange(e.target.value, 'title')}
+                                placeholder="Titolo ATTENZIONE tradotto..."
+                              />
+                            </div>
+                            <div className="mt-2">
+                              <Label htmlFor="caution-description">Descrizione</Label>
+                              <Textarea
+                                id="caution-description"
+                                value={translatedContent.description || ''}
+                                onChange={(e) => handleTextChange(e.target.value, 'description')}
+                                className="min-h-[150px]"
+                                placeholder="Descrizione ATTENZIONE tradotta..."
+                              />
+                            </div>
+                          </>
+                        )}
+                        
+                        {/* NOTA Module */}
+                        {module.type === 'note' && (
+                          <>
+                            <div>
+                              <Label htmlFor="note-title">Titolo NOTA</Label>
+                              <Input
+                                id="note-title"
+                                value={translatedContent.title || ''}
+                                onChange={(e) => handleTextChange(e.target.value, 'title')}
+                                placeholder="Titolo NOTA tradotto..."
+                              />
+                            </div>
+                            <div className="mt-2">
+                              <Label htmlFor="note-description">Descrizione</Label>
+                              <Textarea
+                                id="note-description"
+                                value={translatedContent.description || ''}
+                                onChange={(e) => handleTextChange(e.target.value, 'description')}
+                                className="min-h-[150px]"
+                                placeholder="Descrizione NOTA tradotta..."
+                              />
+                            </div>
+                          </>
+                        )}
+                        
+                        {/* Istruzioni di sicurezza Module */}
+                        {module.type === 'safety-instructions' && (
+                          <>
+                            <div>
+                              <Label htmlFor="safety-title">Titolo Istruzioni di sicurezza</Label>
+                              <Input
+                                id="safety-title"
+                                value={translatedContent.title || ''}
+                                onChange={(e) => handleTextChange(e.target.value, 'title')}
+                                placeholder="Titolo Istruzioni di sicurezza tradotto..."
+                              />
+                            </div>
+                            <div className="mt-2">
+                              <Label htmlFor="safety-description">Descrizione</Label>
+                              <Textarea
+                                id="safety-description"
+                                value={translatedContent.description || ''}
+                                onChange={(e) => handleTextChange(e.target.value, 'description')}
+                                className="min-h-[150px]"
+                                placeholder="Descrizione Istruzioni di sicurezza tradotta..."
+                              />
+                            </div>
+                          </>
+                        )}
+                        
                         {(module.type === 'image' || module.type === 'video') && (
                           <>
                             {module.type === 'image' && (
@@ -937,14 +1072,23 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                             <div>
                               <Label>Intestazioni</Label>
                               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                                {translatedContent.headers && translatedContent.headers.map((header: string, index: number) => (
-                                  <Input
-                                    key={`header-${index}`}
-                                    value={header}
-                                    onChange={(e) => handleTextChange(e.target.value, 'headers', index)}
-                                    placeholder={`Intestazione ${index + 1}`}
-                                  />
-                                ))}
+                                {Array.isArray(translatedContent.headers) ? (
+                                  // Se headers è un array, utilizziamo map per renderizzare gli input
+                                  translatedContent.headers.map((header: string, index: number) => (
+                                    <Input
+                                      key={`header-${index}`}
+                                      value={header}
+                                      onChange={(e) => handleTextChange(e.target.value, 'headers', index)}
+                                      placeholder={`Intestazione ${index + 1}`}
+                                    />
+                                  ))
+                                ) : (
+                                  // Se headers è un oggetto o non è definito, mostriamo un messaggio
+                                  <div className="col-span-4 text-red-500">
+                                    Impossibile visualizzare le intestazioni in questo formato.
+                                    Controlla il tipo di tabella.
+                                  </div>
+                                )}
                               </div>
                             </div>
                             
