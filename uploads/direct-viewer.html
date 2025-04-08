@@ -98,6 +98,34 @@
             text-align: center;
             display: none;
         }
+        #debug-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 8px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            font-size: 12px;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 90;
+            display: none;
+        }
+        #debug-toggle {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(44, 62, 80, 0.8);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 95;
+        }
     </style>
 </head>
 <body>
@@ -109,7 +137,7 @@
         </div>
     </div>
     
-    <iframe id="content-frame" allowfullscreen></iframe>
+    <iframe id="content-frame" allowfullscreen sandbox="allow-same-origin allow-scripts allow-popups allow-forms"></iframe>
     
     <div id="loading">
         <div class="spinner"></div>
@@ -121,6 +149,9 @@
         <p id="error-message">Non è stato possibile caricare il modello 3D.</p>
         <button id="retry-btn">Riprova</button>
     </div>
+
+    <div id="debug-info"></div>
+    <button id="debug-toggle">Debug</button>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -138,43 +169,136 @@
             const retryBtn = document.getElementById('retry-btn');
             const fullscreenBtn = document.getElementById('fullscreen-btn');
             const closeBtn = document.getElementById('close-btn');
+            const debugInfo = document.getElementById('debug-info');
+            const debugToggle = document.getElementById('debug-toggle');
+            
+            // Funzione di log per debugging
+            function log(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.textContent = `[${timestamp}] ${message}`;
+                debugInfo.appendChild(logEntry);
+                debugInfo.scrollTop = debugInfo.scrollHeight;
+                console.log(`[Visualizzatore] ${message}`);
+            }
+            
+            // Toggle debug info
+            debugToggle.addEventListener('click', function() {
+                if (debugInfo.style.display === 'block') {
+                    debugInfo.style.display = 'none';
+                } else {
+                    debugInfo.style.display = 'block';
+                }
+            });
             
             // Imposta titolo
             document.title = title;
             modelTitle.textContent = title;
+            log(`Visualizzatore inizializzato: "${title}"`);
+            
+            // Estrai informazioni sull'URL
+            const urlExt = modelUrl ? modelUrl.split('.').pop().toLowerCase() : '';
+            log(`Tipo file rilevato: ${urlExt || 'sconosciuto'}`);
+            
+            // Controllo se l'URL è valido
+            if (!modelUrl) {
+                showError('URL del modello non specificato');
+                log('Errore: URL non specificato');
+                return;
+            }
+            
+            // Riconosci se il modello è in una cartella di un archivio estratto
+            let isExtractedArchive = false;
+            let isFolderIndex = false;
+            
+            // Tenta di rilevare se l'URL punta a un archivio estratto
+            if (modelUrl.includes('/A4B09')) {
+                isExtractedArchive = true;
+                log('Rilevato modello da archivio estratto: ' + modelUrl);
+                
+                // Controlla se sembra puntare a un file index.html
+                if (modelUrl.endsWith('/index.html') || modelUrl.endsWith('/')) {
+                    isFolderIndex = true;
+                    log('File index.html rilevato in cartella');
+                }
+            }
             
             // Funzione per caricare il modello
             function loadModel() {
-                if (!modelUrl) {
-                    showError('URL del modello non specificato');
-                    return;
-                }
-                
                 // Nascondi errore e mostra loading
                 error.style.display = 'none';
                 loading.style.display = 'flex';
+                log(`Tentativo di caricamento modello: ${modelUrl}`);
                 
-                // Carica il modello
-                contentFrame.src = modelUrl;
-                
-                // Gestione eventi
-                contentFrame.onload = function() {
-                    loading.style.display = 'none';
-                };
-                
-                contentFrame.onerror = function() {
-                    showError('Errore durante il caricamento del modello');
-                };
+                // Prepara l'iframe
+                try {
+                    // Carica il modello
+                    contentFrame.src = modelUrl;
+                    
+                    // Gestione eventi
+                    contentFrame.onload = function() {
+                        loading.style.display = 'none';
+                        log('Modello caricato con successo nell\'iframe');
+                        
+                        // Se è un archivio estratto, potrebbe richiedere ulteriori aggiustamenti
+                        if (isExtractedArchive) {
+                            log('Tentativo di impostare base URL per risorse relative');
+                            try {
+                                // Tenta di intervenire sul documento caricato per correggere i path relativi
+                                setTimeout(function() {
+                                    try {
+                                        const frameDoc = contentFrame.contentDocument || contentFrame.contentWindow.document;
+                                        const baseUrl = modelUrl.substring(0, modelUrl.lastIndexOf('/') + 1);
+                                        
+                                        log(`Base URL impostata: ${baseUrl}`);
+                                        
+                                        // Crea o aggiorna il tag base
+                                        let baseTag = frameDoc.querySelector('base');
+                                        if (!baseTag) {
+                                            baseTag = frameDoc.createElement('base');
+                                            frameDoc.head.insertBefore(baseTag, frameDoc.head.firstChild);
+                                        }
+                                        baseTag.href = baseUrl;
+                                        
+                                        log('Tag base inserito nel documento caricato');
+                                    } catch (e) {
+                                        log(`Errore nell'accesso al documento dell'iframe: ${e.message}`);
+                                    }
+                                }, 200);
+                            } catch (e) {
+                                log(`Errore nel tentativo di correggere path relativi: ${e.message}`);
+                            }
+                        }
+                    };
+                    
+                    contentFrame.onerror = function(e) {
+                        showError('Errore durante il caricamento del modello');
+                        log(`Errore evento iframe.onerror: ${e.type}`);
+                    };
+                } catch (e) {
+                    showError(`Errore: ${e.message}`);
+                    log(`Eccezione durante il caricamento: ${e.message}`);
+                }
                 
                 // Timeout per modelli lenti
                 setTimeout(function() {
                     if (loading.style.display !== 'none') {
                         const loadingText = loading.querySelector('div:last-child');
                         if (loadingText) {
-                            loadingText.textContent = 'Caricamento lento. Attendi o riprova...';
+                            const message = 'Caricamento lento. Attendi o riprova...';
+                            loadingText.textContent = message;
+                            log(message);
                         }
                     }
-                }, 15000);
+                }, 10000);
+                
+                // Timeout più lungo per determinare un errore di caricamento
+                setTimeout(function() {
+                    if (loading.style.display !== 'none') {
+                        log('Timeout di caricamento dopo 30 secondi');
+                        // Non mostriamo l'errore automaticamente, lasciamo che l'utente continui ad attendere se lo desidera
+                    }
+                }, 30000);
             }
             
             // Funzione per mostrare errori
@@ -182,14 +306,17 @@
                 loading.style.display = 'none';
                 errorMessage.textContent = message;
                 error.style.display = 'block';
+                log(`Errore visualizzato: ${message}`);
             }
             
             // Gestione pulsanti
             retryBtn.addEventListener('click', function() {
+                log('Pulsante riprova cliccato');
                 loadModel();
             });
             
             fullscreenBtn.addEventListener('click', function() {
+                log('Richiesta schermo intero');
                 if (contentFrame.requestFullscreen) {
                     contentFrame.requestFullscreen();
                 } else if (contentFrame.webkitRequestFullscreen) {
@@ -200,6 +327,7 @@
             });
             
             closeBtn.addEventListener('click', function() {
+                log('Chiusura visualizzatore');
                 window.close();
                 setTimeout(function() {
                     window.history.back();
@@ -208,6 +336,15 @@
             
             // Avvia caricamento
             loadModel();
+            
+            // Gestione messaggi dall'iframe
+            window.addEventListener('message', function(event) {
+                try {
+                    log(`Messaggio ricevuto dall'iframe: ${JSON.stringify(event.data)}`);
+                } catch (e) {
+                    log(`Messaggio ricevuto dall'iframe (non JSON): ${event.data}`);
+                }
+            });
         });
     </script>
 </body>

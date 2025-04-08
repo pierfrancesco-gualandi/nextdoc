@@ -482,7 +482,7 @@ export default function ContentModule({
             <ThreeModelViewer
               modelData={{
                 src: content.url || "",
-                format: "gltf",
+                format: content.format || "html", // Usa il formato specifico dal contenuto se disponibile
                 title: content.title || "Modello 3D"
               }}
             />
@@ -883,7 +883,6 @@ export default function ContentModule({
                 onChange={(e) => setContent({ ...content, title: e.target.value })} 
               />
             </div>
-            {/* Implementazione di base per l'editor 3D */}
             <div>
               <Label htmlFor="model-url">URL del modello</Label>
               <Input 
@@ -891,6 +890,25 @@ export default function ContentModule({
                 value={content.url || ""} 
                 onChange={(e) => setContent({ ...content, url: e.target.value })} 
               />
+            </div>
+            <div>
+              <Label htmlFor="model-format">Formato del modello</Label>
+              <Select
+                value={content.format || "html"}
+                onValueChange={(value) => setContent({ ...content, format: value })}
+              >
+                <SelectTrigger id="model-format">
+                  <SelectValue placeholder="Seleziona formato" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="html">HTML / WebGL</SelectItem>
+                  <SelectItem value="gltf">GLTF / GLB</SelectItem>
+                  <SelectItem value="obj">OBJ</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground mt-1">
+                Seleziona "HTML / WebGL" per visualizzatori WebGL caricati da ZIP o cartelle
+              </p>
             </div>
           </div>
         );
