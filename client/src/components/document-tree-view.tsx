@@ -427,10 +427,7 @@ function SectionTree({
           isExpanded={expandedSections[section.id] || false}
           hasChildren={hasSectionChildren(section.id)}
           onToggleExpand={() => toggleExpand(section.id)}
-          onSelect={() => {
-            console.log("Sezione selezionata:", section);
-            onSectionSelect && onSectionSelect(section);
-          }}
+          onSelect={() => onSectionSelect && onSectionSelect(section)}
           onAddChild={() => onAddSection(section.id)}
           onMove={onMoveSection}
           parentId={parentId}
@@ -617,8 +614,6 @@ function SectionItem({
   // Calculate padding based on level
   const levelPadding = level > 0 ? `${Math.min(level * 0.5, 5)}rem` : '0';
   
-  console.log("Rendering section:", section.id, section.title, "- Description:", section.description);
-  
   return (
     <div
       className={`relative ${isDragging ? 'opacity-50' : 'opacity-100'}`}
@@ -636,7 +631,7 @@ function SectionItem({
         className={`
           tree-item 
           ${isSelected ? 'tree-item-active bg-gray-100' : ''} 
-          px-2 py-1.5 my-1 
+          px-2 py-1 my-1 
           flex flex-col 
           rounded-sm 
           transition-colors 
@@ -671,12 +666,7 @@ function SectionItem({
                 {hasChildren ? 'folder' : 'article'}
               </span>
               
-              <div className="min-w-0 flex-1">
-                <div className="truncate mr-1 font-medium">{section.title}</div>
-                {section.description && section.description.trim() !== '' && (
-                  <div className="truncate text-xs text-gray-500 max-w-full">{section.description}</div>
-                )}
-              </div>
+              <span className="truncate min-w-0 mr-1">{section.title}</span>
               
               {componentsLabel}
             </div>
