@@ -18,6 +18,7 @@ import {
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ThreeModelViewer from "./three-model-viewer";
+import FileSelector from "./file-selector";
 import ThreeModelEditor from "./three-model-editor";
 import VideoPlayer from "./video-player";
 import BomViewContent, { BomFilterSettings } from "./BomViewContent";
@@ -477,11 +478,22 @@ export default function ContentModule({
         );
         
       case "3d-model":
+        // Verifica se l'URL è un ID di file caricato o un URL diretto
+        const modelUrl = content.url && content.url.startsWith('/uploads') 
+          ? content.url 
+          : content.fileId 
+            ? `/uploads/${content.fileId}` 
+            : content.src 
+              ? content.src 
+              : "";
+              
+        console.log("URL modello 3D:", modelUrl, "Content:", content);
+        
         return (
           <div className="my-2">
             <ThreeModelViewer
               modelData={{
-                src: content.url || "",
+                src: modelUrl,
                 format: content.format || "html", // Usa il formato specifico dal contenuto se disponibile
                 title: content.title || "Modello 3D"
               }}
@@ -873,6 +885,14 @@ export default function ContentModule({
         );
       
       case "3d-model":
+        // Mostra informazioni sul file correntemente caricato
+        let fileInfo = "";
+        if (content.fileId) {
+          fileInfo = `File ID: ${content.fileId}`;
+        } else if (content.url) {
+          fileInfo = `URL: ${content.url}`;
+        }
+        
         return (
           <div className="space-y-4">
             <div>
@@ -883,14 +903,59 @@ export default function ContentModule({
                 onChange={(e) => setContent({ ...content, title: e.target.value })} 
               />
             </div>
+            
+            {/* File uploader per modelli 3D */}
             <div>
-              <Label htmlFor="model-url">URL del modello</Label>
+              <Label>File del modello 3D</Label>
+              <div className="mt-2">
+                {fileInfo ? (
+                  <div className="bg-slate-100 p-2 rounded-md text-sm mb-2">
+                    <span className="material-icons text-xs mr-1 align-middle">file_present</span> {fileInfo}
+                  </div>
+                ) : null}
+                <FileSelector
+                  onFileSelected={(file) => {
+                    if (file) {
+                      // Se abbiamo un file, lo impostiamo nel modulo
+                      setContent({
+                        ...content,
+                        fileId: file.filename,
+                        fileName: file.originalName,
+                        // Mantieni l'URL solo se non è un file appena selezionato
+                        url: undefined
+                      });
+                    }
+                  }}
+                  accept=".html,.htm,.gltf,.glb,.obj"
+                />
+                <div className="text-xs text-neutral-medium mt-1">
+                  Accetta file HTML, GLTF, GLB e OBJ. Per modelli WebGL carica un file HTML o carica un archivio ZIP.
+                </div>
+              </div>
+            </div>
+            
+            {/* L'URL è opzionale e alternativo al file */}
+            <div>
+              <Label htmlFor="model-url">URL del modello (opzionale)</Label>
               <Input 
                 id="model-url" 
                 value={content.url || ""} 
-                onChange={(e) => setContent({ ...content, url: e.target.value })} 
+                onChange={(e) => {
+                  // Se impostiamo un URL, cancelliamo il file
+                  setContent({ 
+                    ...content, 
+                    url: e.target.value,
+                    fileId: e.target.value ? undefined : content.fileId,
+                    fileName: e.target.value ? undefined : content.fileName
+                  });
+                }}
+                placeholder="URL esterno (usare solo se non si carica un file)"
               />
+              <p className="text-xs text-neutral-medium mt-1">
+                Usare solo se non viene caricato un file. L'URL ha precedenza sul file caricato.
+              </p>
             </div>
+            
             <div>
               <Label htmlFor="model-format">Formato del modello</Label>
               <Select

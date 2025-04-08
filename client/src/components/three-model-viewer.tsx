@@ -295,9 +295,37 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
     }
   };
 
-  // Rendering diverso in base al formato
+  // Renderizzazione diversa in base al formato
   if (modelData && (modelData.format === 'html' || modelData.format === 'webgl')) {
+    // Verifica se abbiamo un URL valido
+    if (!modelData.src) {
+      return (
+        <div 
+          style={{
+            width: width,
+            height: height,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderRadius: '8px',
+            border: '1px solid #ccc',
+            backgroundColor: '#f9f9f9',
+            color: '#d32f2f',
+            flexDirection: 'column',
+            padding: '20px',
+            textAlign: 'center'
+          }}
+        >
+          <div style={{ fontSize: '24px', marginBottom: '10px' }}>⚠️</div>
+          <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Errore di caricamento</div>
+          <div>URL del modello non specificato.</div>
+        </div>
+      );
+    }
+    
     // URL per i visualizzatori
+    console.log("Visualizzazione modello HTML WebGL:", modelData.src);
+    
     // Se il backend ci ha fornito un URL del visualizzatore specifico, usalo
     const viewerUrl = modelData.viewerUrl;
     const helperUrl = viewerUrl || `/uploads/model-helper.html?modelUrl=${encodeURIComponent(modelData.src)}&title=${encodeURIComponent(modelData.title || 'Modello 3D')}`;
