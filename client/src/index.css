@@ -36,19 +36,44 @@
   /* Scrollbar personalizzata per overflow */
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
-    height: 6px;
+    height: 8px;
+    display: block !important;
   }
   
   .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
+    background: #f1f1f1;
+    display: block !important;
   }
   
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: #d1d5db;
     border-radius: 3px;
+    display: block !important;
   }
   
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background-color: #9ca3af;
+  }
+  
+  /* Sempre mostra la scrollbar orizzontale */
+  .always-show-scrollbar-x {
+    overflow-x: scroll;
+    scrollbar-width: thin;
+  }
+  
+  .always-show-scrollbar-x::-webkit-scrollbar {
+    height: 8px;
+    display: block !important;
+  }
+  
+  .always-show-scrollbar-x::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    display: block !important;
+  }
+  
+  .always-show-scrollbar-x::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+    border-radius: 3px;
+    display: block !important;
   }
 }

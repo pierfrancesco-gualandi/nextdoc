@@ -275,7 +275,7 @@ export default function DocumentTreeView({
         </button>
       </div>
       
-      <div className="overflow-y-auto max-h-[calc(100vh-200px)] overflow-x-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+      <div className="overflow-y-auto max-h-[calc(100vh-200px)] pr-2 scrollbar-thin always-show-scrollbar-x">
         <SectionTree 
           sections={sections} 
           parentId={null} 
@@ -640,8 +640,8 @@ function SectionItem({
         `}
         style={{ paddingLeft: levelPadding }}
       >
-        <div className="flex items-center justify-between group cursor-pointer">
-          <div className="flex items-center flex-grow" onClick={onSelect}>
+        <div className="flex items-center justify-between group cursor-pointer min-w-[450px]">
+          <div className="flex items-center flex-grow min-w-[240px]" onClick={onSelect}>
             {hasChildren && (
               <button
                 onClick={(e) => {
@@ -670,7 +670,7 @@ function SectionItem({
             {componentsLabel}
           </div>
           
-          <div className="hidden group-hover:flex items-center space-x-1">
+          <div className="hidden group-hover:flex items-center space-x-1 min-w-[120px] justify-end">
             <button 
               className="text-neutral-medium hover:text-neutral-dark p-1"
               onClick={(e) => {
