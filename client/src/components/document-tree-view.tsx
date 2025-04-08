@@ -640,8 +640,11 @@ function SectionItem({
         `}
         style={{ paddingLeft: levelPadding }}
       >
-        <div className="flex items-center justify-between group cursor-pointer min-w-[280px] gap-0">
-          <div className="flex items-center flex-grow min-w-[180px]" onClick={onSelect}>
+        <div 
+          className={`flex items-center justify-between group cursor-pointer min-w-[280px] gap-0 ${isSelected ? 'bg-gray-100' : ''}`}
+          onClick={onSelect}
+        >
+          <div className="flex items-center flex-grow min-w-[180px]">
             {hasChildren && (
               <button
                 onClick={(e) => {
@@ -670,7 +673,7 @@ function SectionItem({
             {componentsLabel}
           </div>
           
-          <div className="flex items-center min-w-[90px] justify-end">
+          <div className="flex items-center min-w-[90px] justify-end" onClick={e => e.stopPropagation()}>
             <button 
               className="text-neutral-medium hover:text-neutral-dark p-0.5"
               onClick={(e) => {
