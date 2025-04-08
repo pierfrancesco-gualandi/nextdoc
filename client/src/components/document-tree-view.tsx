@@ -631,7 +631,7 @@ function SectionItem({
         className={`
           tree-item 
           ${isSelected ? 'tree-item-active bg-gray-100' : ''} 
-          px-2 py-1 my-1 
+          px-2 py-1.5 my-1 
           flex flex-col 
           rounded-sm 
           transition-colors 
@@ -666,7 +666,12 @@ function SectionItem({
                 {hasChildren ? 'folder' : 'article'}
               </span>
               
-              <span className="truncate min-w-0 mr-1">{section.title}</span>
+              <div className="min-w-0 flex-1">
+                <div className="truncate mr-1 font-medium">{section.title}</div>
+                {section.description && (
+                  <div className="truncate text-xs text-gray-500 max-w-full">{section.description}</div>
+                )}
+              </div>
               
               {componentsLabel}
             </div>
