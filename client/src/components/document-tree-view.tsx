@@ -401,8 +401,11 @@ function SectionTree({
   const [{ isOverEmptyArea }, dropEmptyArea] = useDrop({
     accept: 'SECTION',
     drop(item: DragItem) {
-      // Calculate the new order - position it at the end of current level sections
-      const newOrder = currentLevelSections.length;
+      // Calcola quante sezioni ci sono a questo livello per inserire alla fine
+      const numSectionsAtThisLevel = sections.filter(s => s.parentId === parentId).length;
+      // Usa l'ultimo ordine disponibile (lunghezza totale delle sezioni a questo livello)
+      const newOrder = numSectionsAtThisLevel;
+      console.log(`Drop in area vuota: inserimento alla fine con order=${newOrder}, parentId=${parentId}`);
       onMoveSection(item.id, parentId, newOrder);
     },
     collect: (monitor) => ({
@@ -595,10 +598,8 @@ function SectionItem({
       if (item.id === section.id) return;
       
       // When dropping on the child area, make it a child of this section
-      // Calcoliamo l'ordine corretto per inserirlo alla fine dei figli esistenti
-      const existingChildren = sections ? sections.filter(s => s.parentId === section.id).length : 0;
-      console.log(`Spostando la sezione ${item.id} come figlia di ${section.id}, ci sono già ${existingChildren} figli esistenti`);
-      onMove(item.id, section.id, existingChildren);
+      // Calcoliamo l'ordine corretto usando una callback
+      onMove(item.id, section.id, 999); // Usiamo un numero alto per inserire alla fine
     },
     collect: (monitor) => ({
       isOverChild: monitor.isOver(),
@@ -667,16 +668,43 @@ function SectionItem({
             {componentsLabel}
           </div>
           
-          <div className="hidden group-hover:flex items-center">
+          <div className="hidden group-hover:flex items-center space-x-1">
+            <button 
+              className="text-neutral-medium hover:text-neutral-dark p-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Sposta la sezione verso l'alto (diminuisci order)
+                if (index > 0) {
+                  onMove(section.id, parentId, index - 1);
+                }
+              }}
+              title="Sposta in alto"
+              disabled={index === 0}
+            >
+              <span className="material-icons text-sm">keyboard_arrow_up</span>
+            </button>
+            <button 
+              className="text-neutral-medium hover:text-neutral-dark p-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Sposta la sezione verso il basso (aumenta order)
+                onMove(section.id, parentId, index + 1);
+              }}
+              title="Sposta in basso"
+            >
+              <span className="material-icons text-sm">keyboard_arrow_down</span>
+            </button>
             <button 
               className="text-neutral-medium hover:text-neutral-dark p-1"
               onClick={onAddChild}
+              title="Aggiungi sottosezione"
             >
               <span className="material-icons text-sm">add</span>
             </button>
             <button 
               className="text-neutral-medium hover:text-neutral-dark p-1 cursor-move"
               onClick={(e) => e.stopPropagation()}
+              title="Trascina per spostare"
             >
               <span className="material-icons text-sm">drag_indicator</span>
             </button>
