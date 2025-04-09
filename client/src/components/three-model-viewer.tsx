@@ -328,6 +328,22 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
     // URL diretto al modello HTML/WebGL
     const directUrl = modelData.src;
     
+    // URL per il file specifico A4B09778.htm nella stessa cartella
+    let a4b09778Url = '';
+    
+    // Estrai il percorso della cartella dal percorso del file
+    if (modelData.folderPath) {
+      // Se abbiamo un folderPath, costruiamo il percorso diretto ad A4B09778.htm
+      const folderPath = '/uploads/' + modelData.folderPath;
+      a4b09778Url = `${folderPath}/A4B09778.htm`;
+    } else {
+      // Altrimenti, prova a derivarlo dal percorso del file
+      const urlParts = directUrl.split('/');
+      urlParts.pop(); // Rimuovi l'ultimo elemento (il nome del file)
+      const basePath = urlParts.join('/');
+      a4b09778Url = `${basePath}/A4B09778.htm`;
+    }
+    
     // Utilizziamo un pulsante per aprire il modello 3D in una nuova finestra,
     // poiché il modello richiede file esterni nella stessa cartella
     return (
@@ -357,27 +373,55 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
           </div>
         </div>
         
-        <a
-          href={directUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            backgroundColor: '#2171b5',
-            color: 'white',
-            padding: '12px 24px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            textDecoration: 'none',
-            display: 'inline-flex',
-            alignItems: 'center',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            transition: 'all 0.2s ease',
-            fontSize: '15px',
-            marginBottom: '10px'
-          }}
-        >
-          Visualizza modello 3D completo
-        </a>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+          <a
+            href={directUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              backgroundColor: '#2171b5',
+              color: 'white',
+              padding: '12px 24px',
+              borderRadius: '4px',
+              fontWeight: 'bold',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              transition: 'all 0.2s ease',
+              fontSize: '15px',
+              textAlign: 'center',
+              width: '100%',
+              justifyContent: 'center'
+            }}
+          >
+            Visualizza modello 3D selezionato
+          </a>
+          
+          <a
+            href={a4b09778Url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              backgroundColor: '#0d7855',
+              color: 'white',
+              padding: '12px 24px',
+              borderRadius: '4px',
+              fontWeight: 'bold',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              transition: 'all 0.2s ease',
+              fontSize: '15px',
+              textAlign: 'center',
+              width: '100%',
+              justifyContent: 'center'
+            }}
+          >
+            Apri A4B09778.htm
+          </a>
+        </div>
         
         <div style={{ marginTop: '15px', fontSize: '13px', color: '#777', textAlign: 'center' }}>
           Questo modello richiede diversi file di supporto (iv3d.js, scene.iv3d, ivstyles.css) per 
