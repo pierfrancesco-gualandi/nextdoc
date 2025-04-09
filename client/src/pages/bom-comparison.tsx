@@ -392,9 +392,9 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
   const getComparisonSummary = () => {
     if (!comparisonResult) return null;
     
-    const { commonCodes, uniqueTargetCodes, targetItems } = comparisonResult;
-    const totalTargetCodes = targetItems.length;
-    const matchPercentage = Math.round((commonCodes.length / totalTargetCodes) * 100);
+    const { commonCodes = [], uniqueTargetCodes = [], targetItems = [] } = comparisonResult;
+    const totalTargetCodes = targetItems?.length || 0;
+    const matchPercentage = totalTargetCodes > 0 ? Math.round((commonCodes.length / totalTargetCodes) * 100) : 0;
     
     return {
       totalTargetCodes,
@@ -599,8 +599,8 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {comparisonResult.targetItems.map((item: any) => {
-                              const isCommon = comparisonResult.commonCodes.includes(item.code);
+                            {comparisonResult.targetItems?.map((item: any) => {
+                              const isCommon = comparisonResult.commonCodes?.includes(item.code);
                               
                               return (
                                 <TableRow 
