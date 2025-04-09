@@ -43,13 +43,17 @@ interface BomComponentsDescriptionEditorProps {
   translatedContent: any;
   onUpdateDescriptions: (descriptions: Record<string, string>) => void;
   originalModule?: any; // Aggiungiamo il modulo originale come prop
+  getOriginalContent?: (code: string) => string;
+  isFieldTranslated?: (code: string) => boolean;
 }
 
 function BomComponentsDescriptionEditor({ 
   bomId, 
   translatedContent, 
   onUpdateDescriptions,
-  originalModule
+  originalModule,
+  getOriginalContent,
+  isFieldTranslated
 }: BomComponentsDescriptionEditorProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
@@ -398,7 +402,8 @@ function BomComponentsDescriptionEditor({
                          (translatedContent.descriptions && translatedContent.descriptions[component.code]) || 
                          ''}
                   onChange={(e) => handleDescriptionChange(component.code, e.target.value)}
-                  placeholder="Inserisci traduzione..."
+                  placeholder={component.description}
+                  className={isFieldTranslated && !isFieldTranslated(component.code) ? "placeholder:text-red-500 placeholder:font-medium placeholder:bg-red-50" : ""}
                 />
               </div>
             </div>
@@ -782,6 +787,84 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
     );
   }
 
+  // Funzione per verificare se un campo è stato tradotto
+  const isFieldTranslated = (field: string, index?: number, subIndex?: number) => {
+    if (!translatedContent) return false;
+    
+    // Gestione di campi nidificati come 'headers.title'
+    if (field.includes('.')) {
+      const [parent, child] = field.split('.');
+      if (!translatedContent[parent]) return false;
+      
+      return !!translatedContent[parent][child] && 
+             typeof translatedContent[parent][child] === 'string' && 
+             translatedContent[parent][child].trim() !== '';
+    }
+    
+    // Gestione di array bidimensionali (tabelle)
+    if (field === 'rows' && index !== undefined && subIndex !== undefined) {
+      return !!translatedContent.rows && 
+             !!translatedContent.rows[index] && 
+             !!translatedContent.rows[index][subIndex] && 
+             translatedContent.rows[index][subIndex].trim() !== '';
+    }
+    
+    // Gestione di array semplici
+    if (index !== undefined && Array.isArray(translatedContent[field])) {
+      if (translatedContent[field][index] && typeof translatedContent[field][index] === 'object') {
+        // Per elementi di array che sono oggetti (es. checklist items)
+        return !!translatedContent[field][index].text && translatedContent[field][index].text.trim() !== '';
+      }
+      
+      return !!translatedContent[field][index] && 
+             typeof translatedContent[field][index] === 'string' && 
+             translatedContent[field][index].trim() !== '';
+    }
+    
+    // Campi standard
+    return !!translatedContent[field] && 
+           typeof translatedContent[field] === 'string' && 
+           translatedContent[field].trim() !== '';
+  };
+  
+  // Ottiene il contenuto originale del campo per mostrarlo come placeholder
+  const getOriginalContent = (field: string, index?: number, subIndex?: number) => {
+    if (!module || !module.content) return '';
+    
+    let content;
+    try {
+      content = typeof module.content === 'string' ? JSON.parse(module.content) : module.content;
+    } catch (e) {
+      console.error("Errore nel parsing del contenuto originale:", e);
+      return '';
+    }
+    
+    // Gestione di campi nidificati come 'headers.title'
+    if (field.includes('.')) {
+      const [parent, child] = field.split('.');
+      if (!content[parent]) return '';
+      return content[parent][child] || '';
+    }
+    
+    // Gestione di array bidimensionali (tabelle)
+    if (field === 'rows' && index !== undefined && subIndex !== undefined) {
+      return content.rows && content.rows[index] ? content.rows[index][subIndex] || '' : '';
+    }
+    
+    // Gestione di array semplici
+    if (index !== undefined && Array.isArray(content[field])) {
+      if (content[field][index] && typeof content[field][index] === 'object') {
+        // Per elementi di array che sono oggetti (es. checklist items)
+        return content[field][index].text || '';
+      }
+      
+      return content[field][index] || '';
+    }
+    
+    // Campi standard
+    return content[field] || '';
+  };
+
   const getModuleTypeName = (type: string) => {
     const types: { [key: string]: string } = {
       'text': 'Testo',
@@ -898,7 +981,8 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                 id="warning-title"
                                 value={translatedContent.title || ''}
                                 onChange={(e) => handleTextChange(e.target.value, 'title')}
-                                placeholder="Titolo dell'avvertenza tradotto..."
+                                placeholder={getOriginalContent('title')}
+                                className={!isFieldTranslated('title') ? "placeholder:text-red-500 placeholder:font-medium placeholder:bg-red-50" : ""}
                               />
                             </div>
                             <div>
@@ -907,8 +991,8 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                 id="warning-message"
                                 value={translatedContent.message || ''}
                                 onChange={(e) => handleTextChange(e.target.value, 'message')}
-                                className="min-h-[150px]"
-                                placeholder="Messaggio dell'avvertenza tradotto..."
+                                className={`min-h-[150px] ${!isFieldTranslated('message') ? "placeholder:text-red-500 placeholder:font-medium placeholder:bg-red-50" : ""}`}
+                                placeholder={getOriginalContent('message')}
                               />
                             </div>
                           </>
@@ -1048,7 +1132,8 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                 id="testp-title"
                                 value={translatedContent.title || ''}
                                 onChange={(e) => handleTextChange(e.target.value, 'title')}
-                                placeholder="Titolo del file di testo tradotto..."
+                                placeholder={getOriginalContent('title')}
+                                className={!isFieldTranslated('title') ? "placeholder:text-red-500 placeholder:font-medium placeholder:bg-red-50" : ""}
                               />
                             </div>
                             <div className="mt-2">
@@ -1057,8 +1142,8 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                 id="testp-description"
                                 value={translatedContent.description || ''}
                                 onChange={(e) => handleTextChange(e.target.value, 'description')}
-                                className="min-h-[100px]"
-                                placeholder="Descrizione del file di testo tradotta..."
+                                className={`min-h-[100px] ${!isFieldTranslated('description') ? "placeholder:text-red-500 placeholder:font-medium placeholder:bg-red-50" : ""}`}
+                                placeholder={getOriginalContent('description')}
                               />
                             </div>
                             
@@ -1217,7 +1302,8 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                     id="header-number"
                                     value={translatedContent.headers?.number || ''}
                                     onChange={(e) => handleTextChange(e.target.value, 'headers.number')}
-                                    placeholder="N°"
+                                    placeholder={getOriginalContent('headers.number') || "N°"}
+                                    className={!isFieldTranslated('headers.number') ? "placeholder:text-red-500 placeholder:font-medium placeholder:bg-red-50" : ""}
                                   />
                                 </div>
                                 <div>
@@ -1226,7 +1312,8 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                     id="header-level"
                                     value={translatedContent.headers?.level || ''}
                                     onChange={(e) => handleTextChange(e.target.value, 'headers.level')}
-                                    placeholder="Livello"
+                                    placeholder={getOriginalContent('headers.level') || "Livello"}
+                                    className={!isFieldTranslated('headers.level') ? "placeholder:text-red-500 placeholder:font-medium placeholder:bg-red-50" : ""}
                                   />
                                 </div>
                                 <div>
@@ -1235,7 +1322,8 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                     id="header-code"
                                     value={translatedContent.headers?.code || ''}
                                     onChange={(e) => handleTextChange(e.target.value, 'headers.code')}
-                                    placeholder="Codice"
+                                    placeholder={getOriginalContent('headers.code') || "Codice"}
+                                    className={!isFieldTranslated('headers.code') ? "placeholder:text-red-500 placeholder:font-medium placeholder:bg-red-50" : ""}
                                   />
                                 </div>
                                 <div>
@@ -1244,7 +1332,8 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                     id="header-description"
                                     value={translatedContent.headers?.description || ''}
                                     onChange={(e) => handleTextChange(e.target.value, 'headers.description')}
-                                    placeholder="Descrizione"
+                                    placeholder={getOriginalContent('headers.description') || "Descrizione"}
+                                    className={!isFieldTranslated('headers.description') ? "placeholder:text-red-500 placeholder:font-medium placeholder:bg-red-50" : ""}
                                   />
                                 </div>
                                 <div>
@@ -1253,7 +1342,8 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                     id="header-quantity"
                                     value={translatedContent.headers?.quantity || ''}
                                     onChange={(e) => handleTextChange(e.target.value, 'headers.quantity')}
-                                    placeholder="Quantità"
+                                    placeholder={getOriginalContent('headers.quantity') || "Quantità"}
+                                    className={!isFieldTranslated('headers.quantity') ? "placeholder:text-red-500 placeholder:font-medium placeholder:bg-red-50" : ""}
                                   />
                                 </div>
                               </div>
@@ -1268,7 +1358,8 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                     id="msg-loading"
                                     value={translatedContent.messages?.loading || ''}
                                     onChange={(e) => handleTextChange(e.target.value, 'messages.loading')}
-                                    placeholder="Caricamento elenco componenti..."
+                                    placeholder={getOriginalContent('messages.loading') || "Caricamento elenco componenti..."}
+                                    className={!isFieldTranslated('messages.loading') ? "placeholder:text-red-500 placeholder:font-medium placeholder:bg-red-50" : ""}
                                   />
                                 </div>
                                 <div>
@@ -1277,7 +1368,8 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                     id="msg-not-found"
                                     value={translatedContent.messages?.notFound || ''}
                                     onChange={(e) => handleTextChange(e.target.value, 'messages.notFound')}
-                                    placeholder="Elenco componenti non trovato"
+                                    placeholder={getOriginalContent('messages.notFound') || "Elenco componenti non trovato"}
+                                    className={!isFieldTranslated('messages.notFound') ? "placeholder:text-red-500 placeholder:font-medium placeholder:bg-red-50" : ""}
                                   />
                                 </div>
                                 <div>
@@ -1286,7 +1378,8 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                     id="msg-empty"
                                     value={translatedContent.messages?.empty || ''}
                                     onChange={(e) => handleTextChange(e.target.value, 'messages.empty')}
-                                    placeholder="Nessun componente trovato nell'elenco"
+                                    placeholder={getOriginalContent('messages.empty') || "Nessun componente trovato nell'elenco"}
+                                    className={!isFieldTranslated('messages.empty') ? "placeholder:text-red-500 placeholder:font-medium placeholder:bg-red-50" : ""}
                                   />
                                 </div>
                                 <div>
@@ -1295,7 +1388,8 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                     id="msg-no-results"
                                     value={translatedContent.messages?.noResults || ''}
                                     onChange={(e) => handleTextChange(e.target.value, 'messages.noResults')}
-                                    placeholder="Nessun risultato con i filtri applicati"
+                                    placeholder={getOriginalContent('messages.noResults') || "Nessun risultato con i filtri applicati"}
+                                    className={!isFieldTranslated('messages.noResults') ? "placeholder:text-red-500 placeholder:font-medium placeholder:bg-red-50" : ""}
                                   />
                                 </div>
                               </div>
@@ -1336,6 +1430,8 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                                 bomId={bomContent.bomId}
                                                 translatedContent={translatedContent}
                                                 originalModule={module}
+                                                getOriginalContent={getOriginalContent}
+                                                isFieldTranslated={(code) => isFieldTranslated(`descriptions.${code}`)}
                                                 onUpdateDescriptions={(descriptions: Record<string, string>) => {
                                                   setTranslatedContent((prev: any) => ({
                                                     ...prev,
