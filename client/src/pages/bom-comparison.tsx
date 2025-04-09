@@ -201,7 +201,31 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
         return;
       }
       
-      const data = await response.json();
+      let data = await response.json();
+      
+      // Hack: Se l'array commonCodes è null ma ci sono similarities,
+      // generiamo l'array dei codici comuni dalle similarities
+      if (!data.commonCodes && data.similarities && data.similarities.length > 0) {
+        console.log("Ricostruzione dell'array commonCodes dalle similarities");
+        
+        // Estrai i codici dalle similarities con somiglianza al 100%
+        const extractedCommonCodes = data.similarities
+          .filter((sim: any) => sim.similarity === 100)
+          .map((sim: any) => {
+            const code = sim.item2?.component?.code;
+            console.log(`Aggiunto codice comune: ${code} (similarità 100%)`);
+            return code;
+          })
+          .filter(Boolean);
+        
+        data = {
+          ...data,
+          commonCodes: extractedCommonCodes
+        };
+        
+        console.log(`Trovati ${extractedCommonCodes.length} codici comuni dalle similarities`);
+      }
+      
       setComparisonResult(data);
       
       // Passa automaticamente alla scheda Risultati
