@@ -1299,24 +1299,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const similarities = [];
       for (const item1 of enhancedItems1) {
         for (const item2 of enhancedItems2) {
-          const code1 = item1.component?.code || "";
-          const code2 = item2.component?.code || "";
-          const desc1 = item1.component?.description || "";
-          const desc2 = item2.component?.description || "";
+          const code1 = (item1.component?.code || "").trim().toUpperCase();
+          const code2 = (item2.component?.code || "").trim().toUpperCase();
+          const desc1 = (item1.component?.description || "").trim().toUpperCase();
+          const desc2 = (item2.component?.description || "").trim().toUpperCase();
           
           // Calculate similarity
           let similarity = 0;
+          
+          // Check exact match (case-insensitive)
           if (code1 === code2) {
             similarity = 100;
-          } else if (code1.includes(code2) || code2.includes(code1)) {
+          } 
+          // Check if codes contain each other (case-insensitive)
+          else if (code1.includes(code2) || code2.includes(code1)) {
             similarity = 85;
-          } else if (desc1 === desc2) {
+          } 
+          // Check if codes match without symbols/spaces
+          else if (code1.replace(/[\s\-\.]/g, '') === code2.replace(/[\s\-\.]/g, '')) {
+            similarity = 95;
+          }
+          // Check if they match numerically (just the numbers)
+          else if (code1.replace(/\D/g, '') === code2.replace(/\D/g, '') && code1.replace(/\D/g, '').length > 3) {
             similarity = 80;
-          } else if (desc1.includes(desc2) || desc2.includes(desc1)) {
+          }
+          // Description matches
+          else if (desc1 === desc2) {
+            similarity = 80;
+          } 
+          else if (desc1.includes(desc2) || desc2.includes(desc1)) {
             similarity = 65;
           }
           
           if (similarity > 50) {
+            console.log(`Match found: ${code1} vs ${code2} - Similarity: ${similarity}`);
             similarities.push({
               item1: { ...item1 },
               item2: { ...item2 },

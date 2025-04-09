@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -52,6 +52,7 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
   const { toast } = useToast();
   
   // Stati per le selezioni
+  const [tabState, setTabState] = useState<string>("compare");
   const [selectedDocumentId, setSelectedDocumentId] = useState<string>("");
   const [selectedSourceBomId, setSelectedSourceBomId] = useState<string>("");
   const [selectedTargetBomId, setSelectedTargetBomId] = useState<string>("");
@@ -202,6 +203,9 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
       
       const data = await response.json();
       setComparisonResult(data);
+      
+      // Passa automaticamente alla scheda Risultati
+      setTabState("results");
       
       toast({
         title: "Confronto completato",
@@ -421,10 +425,15 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
       
       <main className="flex-1 overflow-y-auto bg-neutral-lightest p-6">
         <div className="container mx-auto">
-          <Tabs defaultValue="compare" className="w-full">
+          <Tabs value={tabState} onValueChange={setTabState} className="w-full">
             <TabsList className="mb-4">
               <TabsTrigger value="compare">Confronto</TabsTrigger>
-              <TabsTrigger value="result" disabled={!comparisonResult}>Risultati</TabsTrigger>
+              <TabsTrigger 
+                value="results" 
+                disabled={!comparisonResult}
+              >
+                Risultati
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="compare">
@@ -516,7 +525,7 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
               </Card>
             </TabsContent>
             
-            <TabsContent value="result">
+            <TabsContent value="results">
               {comparisonResult && (
                 <div className="space-y-6">
                   <Card>
