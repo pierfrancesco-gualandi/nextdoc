@@ -435,9 +435,17 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
     
     const { commonCodes = [], targetItems = [] } = comparisonResult;
     
+    // Otteniamo l'elenco di codici unici (senza duplicati)
+    const allTargetCodes = new Set(targetItems.map((item: any) => item.code));
+    
     // Calcola i codici unici dalla target BOM (non presenti nei codici comuni)
+    // Prendiamo solo quelli al livello principale (level 0 o 1)
+    // e quelli che non sono sottoelementi di altri componenti
     const nonAssociatedCodes = targetItems
-      .filter((item: any) => !commonCodes.includes(item.code))
+      .filter((item: any) => {
+        // Filtriamo solo i componenti di livello 0 e 1 che non sono nei codici comuni
+        return (item.level === 0 || item.level === 1) && !commonCodes.includes(item.code);
+      })
       .map((item: any) => ({
         code: item.code,
         description: item.description,
@@ -445,7 +453,7 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
         quantity: item.quantity
       }));
     
-    const totalTargetCodes = targetItems?.length || 0;
+    const totalTargetCodes = allTargetCodes.size; // Utilizziamo il Set per contare i codici unici
     const uniqueCodesCount = nonAssociatedCodes.length;
     const commonCodesCount = commonCodes.length;
     
@@ -454,12 +462,14 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
       ? Math.round((commonCodesCount / totalTargetCodes) * 100) 
       : 0;
     
-    console.log("Calcolo percentuale:", { 
+    console.log("Calcolo percentuale corretto:", { 
+      allTargetCodes: Array.from(allTargetCodes),
+      targetItemsLength: targetItems.length,
+      totalUniqueTargetCodes: totalTargetCodes,
       commonCodesCount, 
-      totalTargetCodes, 
       uniqueCodesCount,
       matchPercentage,
-      nonAssociatedCodesCount: nonAssociatedCodes.length 
+      nonAssociatedCodesDetails: nonAssociatedCodes
     });
     
     return {
