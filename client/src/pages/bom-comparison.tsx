@@ -697,7 +697,7 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
                       
                       <div className="overflow-x-auto">
                         <Table>
-                          <TableCaption>Elenco dei codici nella nuova distinta base</TableCaption>
+                          <TableCaption>Codici non associati nella nuova distinta base</TableCaption>
                           <TableHeader>
                             <TableRow>
                               <TableHead>Codice</TableHead>
@@ -708,42 +708,31 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {comparisonResult.targetItems?.map((item: any) => {
-                              const isCommon = comparisonResult.commonCodes?.includes(item.code);
-                              
-                              return (
-                                <TableRow 
-                                  key={item.id} 
-                                  className={isCommon ? "" : "bg-amber-100 hover:bg-amber-200 font-medium"}
-                                >
-                                  <TableCell className={isCommon ? "" : "text-amber-700 font-medium"}>
-                                    {item.code}
-                                    {!isCommon && (
-                                      <span className="inline-block ml-2 text-amber-500">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-alert-triangle">
-                                          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
-                                          <path d="M12 9v4"></path><path d="M12 17h.01"></path>
-                                        </svg>
-                                      </span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell className={isCommon ? "" : "text-amber-700 font-medium"}>{item.description}</TableCell>
-                                  <TableCell className={isCommon ? "" : "text-amber-700 font-medium"}>{item.level}</TableCell>
-                                  <TableCell className={isCommon ? "" : "text-amber-700 font-medium"}>{item.quantity}</TableCell>
-                                  <TableCell>
-                                    {isCommon ? (
-                                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                                        Associato
-                                      </span>
-                                    ) : (
-                                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-200 text-amber-800 border border-amber-400">
-                                        Non Associato
-                                      </span>
-                                    )}
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
+                            {/* Filtra e mostra solo i codici non associati */}
+                            {summary.nonAssociatedCodes?.map((item: any) => (
+                              <TableRow 
+                                key={item.id} 
+                                className="bg-amber-100 hover:bg-amber-200 font-medium"
+                              >
+                                <TableCell className="text-amber-700 font-medium">
+                                  {item.code}
+                                  <span className="inline-block ml-2 text-amber-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-alert-triangle">
+                                      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                                      <path d="M12 9v4"></path><path d="M12 17h.01"></path>
+                                    </svg>
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-amber-700 font-medium">{item.description}</TableCell>
+                                <TableCell className="text-amber-700 font-medium">{item.level}</TableCell>
+                                <TableCell className="text-amber-700 font-medium">{item.quantity}</TableCell>
+                                <TableCell>
+                                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-200 text-amber-800 border border-amber-400">
+                                    Non Associato
+                                  </span>
+                                </TableCell>
+                              </TableRow>
+                            ))}
                           </TableBody>
                         </Table>
                       </div>
