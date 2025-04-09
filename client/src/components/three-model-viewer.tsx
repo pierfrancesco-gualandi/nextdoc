@@ -328,10 +328,8 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
     // URL diretto al modello HTML/WebGL
     const directUrl = modelData.src;
     
-    // URL al visualizzatore diretto
-    const viewerUrl = `/uploads/webgl-direct-viewer.html?modelUrl=${encodeURIComponent(modelData.src)}`;
-    
-    // Utilizziamo l'iframe con il visualizzatore diretto per mostrare il modello 3D
+    // Utilizziamo un pulsante per aprire il modello 3D in una nuova finestra,
+    // poiché il modello richiede file esterni nella stessa cartella
     return (
       <div
         style={{
@@ -340,54 +338,51 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
           position: 'relative',
           overflow: 'hidden',
           borderRadius: '8px',
-          border: '1px solid #ccc'
+          border: '1px solid #ccc',
+          backgroundColor: '#fff',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '20px'
         }}
       >
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            padding: '8px 12px',
-            background: 'rgba(0, 0, 0, 0.6)',
-            color: 'white',
-            fontSize: '14px',
-            zIndex: 10,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}
-        >
-          <div style={{ fontWeight: 'bold' }}>{modelData.title || 'Modello 3D WebGL'}</div>
-          <a
-            href={directUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              color: 'white',
-              padding: '4px 8px',
-              fontSize: '12px',
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              borderRadius: '4px',
-              textDecoration: 'none'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            Apri in nuova finestra
-          </a>
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <div style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '10px' }}>
+            {modelData.title || 'Modello 3D WebGL'}
+          </div>
+          <div style={{ fontSize: '14px', color: '#666', maxWidth: '80%', margin: '0 auto' }}>
+            Per visualizzare correttamente questo modello 3D e tutti i suoi controlli,
+            è necessario aprirlo in una nuova finestra.
+          </div>
         </div>
         
-        <iframe 
-          src={viewerUrl}
+        <a
+          href={directUrl}
+          target="_blank"
+          rel="noopener noreferrer"
           style={{
-            width: '100%',
-            height: '100%',
-            border: 'none'
+            backgroundColor: '#2171b5',
+            color: 'white',
+            padding: '12px 24px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            textDecoration: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            transition: 'all 0.2s ease',
+            fontSize: '15px',
+            marginBottom: '10px'
           }}
-          title={modelData.title || "Modello 3D WebGL"}
-          allowFullScreen
-        />
+        >
+          Visualizza modello 3D completo
+        </a>
+        
+        <div style={{ marginTop: '15px', fontSize: '13px', color: '#777', textAlign: 'center' }}>
+          Questo modello richiede diversi file di supporto (iv3d.js, scene.iv3d, ivstyles.css) per 
+          funzionare correttamente e mostrare il menu e l'albero dei componenti.
+        </div>
       </div>
     );
   }
