@@ -328,21 +328,9 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
     // URL diretto al modello HTML/WebGL
     const directUrl = modelData.src;
     
-    // URL per il file specifico A4B09778.htm nella stessa cartella
-    let a4b09778Url = '';
-    
-    // Estrai il percorso della cartella dal percorso del file
-    if (modelData.folderPath) {
-      // Se abbiamo un folderPath, costruiamo il percorso diretto ad A4B09778.htm
-      const folderPath = '/uploads/' + modelData.folderPath;
-      a4b09778Url = `${folderPath}/A4B09778.htm`;
-    } else {
-      // Altrimenti, prova a derivarlo dal percorso del file
-      const urlParts = directUrl.split('/');
-      urlParts.pop(); // Rimuovi l'ultimo elemento (il nome del file)
-      const basePath = urlParts.join('/');
-      a4b09778Url = `${basePath}/A4B09778.htm`;
-    }
+    // URL per il file specifico A4B09778.htm nella cartella uploads/A4B09778
+    // Utilizziamo un percorso assoluto alla cartella "A4B09778" che esiste in uploads
+    const a4b09778Url = '/uploads/A4B09778/A4B09778.htm';
     
     // Utilizziamo un pulsante per aprire il modello 3D in una nuova finestra,
     // poiché il modello richiede file esterni nella stessa cartella
