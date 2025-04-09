@@ -419,6 +419,10 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
   
   const summary = getComparisonSummary();
   
+  // Debug per visualizzare la risposta completa
+  console.log("Dati di confronto completi:", comparisonResult);
+  console.log("Codici comuni trovati:", comparisonResult?.commonCodes);
+  
   return (
     <>
       <Header title="Confronto Distinte Base" toggleSidebar={toggleSidebar} />
