@@ -489,6 +489,17 @@ export default function ContentModule({
               
         console.log("URL modello 3D:", modelUrl, "Content:", content);
         
+        // Controlla se l'URL è vuoto
+        if (!modelUrl || modelUrl === "") {
+          return (
+            <div className="my-2 p-4 border border-red-300 bg-red-50 text-red-800 rounded-md text-center">
+              <div className="text-2xl mb-2">⚠️</div>
+              <div className="font-medium mb-1">Errore di visualizzazione</div>
+              <div>Nessun URL o file specificato per il modello 3D.</div>
+            </div>
+          );
+        }
+        
         return (
           <div className="my-2">
             <ThreeModelViewer
@@ -497,6 +508,7 @@ export default function ContentModule({
                 format: content.format || "html", // Usa il formato specifico dal contenuto se disponibile
                 title: content.title || "Modello 3D"
               }}
+              height={400} // Altezza aumentata per modelli WebGL
             />
           </div>
         );

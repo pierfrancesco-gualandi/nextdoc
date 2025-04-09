@@ -1,0 +1,59 @@
+<article class="w3ex-viewport w3ex-flex-5 w3ex-vbox w3ex-space-between">
+             <!--TODO CTRL asideTavCtrl-->
+            <div ng-show="isSet('tabArticle',1)" ng-controller="asideTavCtrl" ng-init="drawRoot()" class="ng-scope ng-hide">
+                <div class="w3-bar w3-theme-l4">
+                    <!-- ngRepeat: tName in tavArr --><button ng-repeat="tName in tavArr" class="w3-bar-item w3-button ng-binding ng-scope w3-hover-theme2 w3-white" ng-class="isSet('tabTavole',$index)? 'w3-hover-theme2 w3-white' : 'w3-hover-theme w3-theme-l4'  " ng-click="drawTavola(codeM, $index); setTab('tabTavole' ,$index); setTabIdx($index)">
+                        A4B09176
+                    </button><!-- end ngRepeat: tName in tavArr -->
+                </div>
+                <div ng-show="isTpNod(getCurrentNode())>0" class="w3ex-vbox w3ex-flex-5 w3-white  w3-display-container w3ex-viewport-scroll">
+                    <!-- <img src="img/TEST3.png" class="w3-display-topmiddle w3-image" alt="TEST" width="1200" height="700"> -->
+
+                    <div class="w3-panel">
+                        <input type="range" id="zoomCtrlC" value="38" min="1" max="100" ng-change="zoomC(zoonFactC)" ng-model="zoonFactC" class="ng-pristine ng-untouched ng-valid ng-not-empty ng-valid-min ng-valid-max">
+                        <button type="button" ng-click="cCreset()">reset</button>
+                        <!--TODO path cod corrente-->
+                        <ul class="w3ex-breadcrumb" style="display: inline">
+                            <!-- ngRepeat: pathId in pathIdArr --><li ng-repeat="pathId in pathIdArr" class="ng-scope"><a href="#" class="w3-button w3-padding-small w3-hover-theme2 ng-binding" ng-click="setCurrentNode(pathId)">A0BP171304M1</a></li><!-- end ngRepeat: pathId in pathIdArr --><li ng-repeat="pathId in pathIdArr" class="ng-scope"><a href="#" class="w3-button w3-padding-small w3-hover-theme2 ng-binding" ng-click="setCurrentNode(pathId)">A4B09176</a></li><!-- end ngRepeat: pathId in pathIdArr -->
+                        </ul>
+                    </div>
+                    <div class="canvas-container" style="width: 1193px; height: 843px; position: relative; user-select: none;"><canvas id="c" ng-click="" width="1193" height="843" class="lower-canvas" style="position: absolute; width: 1193px; height: 843px; left: 0px; top: 0px; touch-action: none; user-select: none;"></canvas><canvas class="upper-canvas " width="1193" height="843" style="position: absolute; width: 1193px; height: 843px; left: 0px; top: 0px; touch-action: none; user-select: none; cursor: default;"></canvas></div>
+
+                    <div ng-show="odVis" class="w3-card w3-theme w3-display-position ng-hide" style="top:px;left:px">
+                        <table class="w3-table w3-striped w3-bordered w3-tiny"> 
+                        <tbody><tr>
+                            <td>Description:</td>
+                            <td class="ng-binding">
+                                   
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Qty/Qty.T:</td>
+                            <td class="ng-binding">
+                                /
+                            </td>
+                        </tr>
+                        </tbody></table>
+                    </div>
+                </div>
+
+                <div ng-show="isTpNod(getCurrentNode())<=0" class="w3ex-vbox w3ex-flex-5 w3-white  w3-display-container w3ex-viewport-scroll ng-hide">
+                    <div class="w3-panel w3-center">
+                        <img src="data/noDocNoTav.png" class="w3-image" alt="no tavola" width="600" height="400"> 
+                        <div class="w3-panel">
+                            <ul class="w3ex-breadcrumb" style="display: inline">
+                                <!-- ngRepeat: pathId in pathIdArr --><li ng-repeat="pathId in pathIdArr" class="ng-scope"><a href="#" class="w3-button w3-padding-small w3-hover-theme2 ng-binding" ng-click="setCurrentNode(pathId)">A0BP171304M1</a></li><!-- end ngRepeat: pathId in pathIdArr --><li ng-repeat="pathId in pathIdArr" class="ng-scope"><a href="#" class="w3-button w3-padding-small w3-hover-theme2 ng-binding" ng-click="setCurrentNode(pathId)">A4B09176</a></li><!-- end ngRepeat: pathId in pathIdArr -->
+                            </ul>
+                        </div>
+                        <div class="w3-panel ng-binding">
+                            MODULE 101 A
+                        </div>
+                    </div>
+                    <canvas id="cc" ng-click="" width="1193" height="843"></canvas>
+                </div>
+            </div>
+
+            <div ng-show="isSet('tabArticle',2)" ng-controller="stFindCtrl" class="w3-responsive ng-scope ng-hide">
+                <table st-safe-src="rowCollection" st-table="displayedCollection" class="w3-table w3-striped w3-bordered w3-small w3-hoverable-theme">
+                    <thead>
+                      ...

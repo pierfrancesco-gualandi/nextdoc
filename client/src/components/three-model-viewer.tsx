@@ -323,15 +323,14 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
       );
     }
     
-    // URL per i visualizzatori
     console.log("Visualizzazione modello HTML WebGL:", modelData.src);
     
-    // Se il backend ci ha fornito un URL del visualizzatore specifico, usalo
-    const viewerUrl = modelData.viewerUrl;
-    const helperUrl = viewerUrl || `/uploads/model-helper.html?modelUrl=${encodeURIComponent(modelData.src)}&title=${encodeURIComponent(modelData.title || 'Modello 3D')}`;
-    const directViewerUrl = `/uploads/direct-viewer.html?modelUrl=${encodeURIComponent(modelData.src)}&title=${encodeURIComponent(modelData.title || 'Modello 3D')}`;
+    // URL diretto al modello
+    const directUrl = modelData.src;
     
-    // Usa un approccio più semplice per i modelli HTML WebGL
+    // URL al visualizzatore iframe (più affidabile per modelli HTML con risorse esterne)
+    const iframeViewerUrl = `/uploads/webgl-iframe-viewer.html?modelUrl=${encodeURIComponent(modelData.src)}&title=${encodeURIComponent(modelData.title || 'Modello 3D')}`;
+    
     return (
       <div
         style={{
@@ -343,150 +342,17 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
           border: '1px solid #ccc',
         }}
       >
-        {/* Overlay superiore con titolo e pulsanti */}
-        <div
+        {/* Iframe che visualizza il visualizzatore, che a sua volta carica il modello */}
+        <iframe 
+          src={iframeViewerUrl}
           style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            padding: '8px 12px',
-            background: 'rgba(0, 0, 0, 0.7)',
-            color: 'white',
-            fontSize: '14px',
-            zIndex: 10, // Aumentato z-index per essere sopra tutto
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
+            width: '100%',
+            height: '100%',
+            border: 'none',
           }}
-        >
-          <div style={{ fontWeight: 'bold' }}>{modelData.title || 'Modello 3D WebGL'}</div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {/* Pulsante per aprire nel visualizzatore */}
-            <a 
-              href={helperUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{
-                color: 'white',
-                textDecoration: 'none',
-                border: '1px solid white',
-                padding: '3px 8px',
-                borderRadius: '3px',
-                fontSize: '12px',
-                backgroundColor: 'rgba(52, 152, 219, 0.7)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              <span>🔍</span> Visualizzatore
-            </a>
-            
-            {/* Pulsante per aprire direttamente */}
-            <a 
-              href={directViewerUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{
-                color: 'white',
-                textDecoration: 'none',
-                border: '1px solid white',
-                padding: '3px 8px',
-                borderRadius: '3px',
-                fontSize: '12px',
-                backgroundColor: 'rgba(46, 204, 113, 0.7)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              <span>↗️</span> Apri direttamente
-            </a>
-          </div>
-        </div>
-        
-        {/* Contenuto principale che mostra un messaggio più semplice con i pulsanti */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            backgroundColor: 'white',
-            padding: '20px',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-            maxWidth: '80%',
-            textAlign: 'center',
-            zIndex: 2,
-          }}
-        >
-          <div style={{ marginBottom: '15px', fontWeight: 'bold', fontSize: '18px' }}>
-            Modello 3D WebGL
-          </div>
-          <div style={{ marginBottom: '15px' }}>
-            I modelli WebGL richiedono di essere aperti in una nuova finestra per una corretta visualizzazione.
-            Per visualizzare questo modello, usa uno dei seguenti metodi:
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-            <a 
-              href={helperUrl}
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{
-                backgroundColor: '#3498db',
-                color: 'white',
-                padding: '8px 16px',
-                borderRadius: '4px',
-                textDecoration: 'none',
-                fontWeight: 'bold'
-              }}
-            >
-              Apri nel visualizzatore
-            </a>
-            <a 
-              href={directViewerUrl}
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{
-                backgroundColor: '#2ecc71',
-                color: 'white',
-                padding: '8px 16px',
-                borderRadius: '4px',
-                textDecoration: 'none',
-                fontWeight: 'bold'
-              }}
-            >
-              Apri direttamente
-            </a>
-          </div>
-        </div>
-        
-        {/* Sfondo leggermente più scuro dietro il messaggio principale */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: '#f5f5f5',
-            zIndex: 1,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}
-        >
-          {/* Immagine rappresentativa di un modello 3D (emoji come segnaposto) */}
-          <div style={{ fontSize: '50px', opacity: 0.2 }}>🧊</div>
-        </div>
+          title={modelData.title || "Modello 3D WebGL"}
+          allowFullScreen
+        />
       </div>
     );
   }
