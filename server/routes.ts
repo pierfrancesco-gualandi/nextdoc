@@ -1283,7 +1283,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const component = await storage.getComponent(item.componentId);
         return {
           ...item,
-          component
+          component,
+          code: component?.code || "",
+          description: component?.description || ""
         };
       }));
       
@@ -1291,18 +1293,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const component = await storage.getComponent(item.componentId);
         return {
           ...item,
-          component
+          component,
+          code: component?.code || "",
+          description: component?.description || ""
         };
       }));
+
+      console.log(`BOM1 items count: ${enhancedItems1.length}`);
+      console.log(`BOM2 items count: ${enhancedItems2.length}`);
+      
+      // Estrai tutti i codici per la ricerca rapida
+      const allCodes1 = enhancedItems1.map(item => (item.code || "").trim().toUpperCase());
+      const allCodes2 = enhancedItems2.map(item => (item.code || "").trim().toUpperCase());
+      
+      console.log(`BOM1 unique codes count: ${new Set(allCodes1).size}`);
+      console.log(`BOM2 unique codes count: ${new Set(allCodes2).size}`);
+      
+      // Lista dei codici comuni
+      const commonCodes = [];
       
       // Find similarities (based on component code and description)
       const similarities = [];
       for (const item1 of enhancedItems1) {
         for (const item2 of enhancedItems2) {
-          const code1 = (item1.component?.code || "").trim().toUpperCase();
-          const code2 = (item2.component?.code || "").trim().toUpperCase();
-          const desc1 = (item1.component?.description || "").trim().toUpperCase();
-          const desc2 = (item2.component?.description || "").trim().toUpperCase();
+          const code1 = (item1.code || "").trim().toUpperCase();
+          const code2 = (item2.code || "").trim().toUpperCase();
+          const desc1 = (item1.description || "").trim().toUpperCase();
+          const desc2 = (item2.description || "").trim().toUpperCase();
           
           // Calculate similarity
           let similarity = 0;
@@ -1310,6 +1327,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Check exact match (case-insensitive)
           if (code1 === code2) {
             similarity = 100;
+            // Aggiungi alla lista dei codici comuni (se non già presente)
+            if (!commonCodes.includes(code1)) {
+              commonCodes.push(code1);
+            }
           } 
           // Check if codes contain each other (case-insensitive)
           else if (code1.includes(code2) || code2.includes(code1)) {
@@ -1318,6 +1339,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Check if codes match without symbols/spaces
           else if (code1.replace(/[\s\-\.]/g, '') === code2.replace(/[\s\-\.]/g, '')) {
             similarity = 95;
+            if (!commonCodes.includes(code1)) {
+              commonCodes.push(code1);
+            }
           }
           // Check if they match numerically (just the numbers)
           else if (code1.replace(/\D/g, '') === code2.replace(/\D/g, '') && code1.replace(/\D/g, '').length > 3) {
@@ -1342,22 +1366,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Find unique items in BOM 1
-      const uniqueItems1 = enhancedItems1.filter(item1 => {
-        return !enhancedItems2.some(item2 => item1.componentId === item2.componentId);
-      });
+      console.log(`Similarities count: ${similarities.length}`);
+      console.log(`Common codes count: ${commonCodes.length}`);
       
-      // Find unique items in BOM 2
-      const uniqueItems2 = enhancedItems2.filter(item2 => {
-        return !enhancedItems1.some(item1 => item2.componentId === item1.componentId);
-      });
+      // Find unique codes in BOM 2 (target)
+      const uniqueTargetCodes = allCodes2.filter(code => !commonCodes.includes(code));
+      console.log(`Unique target codes count: ${uniqueTargetCodes.length}`);
+      
+      // Preparazione dati per il frontend (simile al formato del confronto manuale nel client)
+      const sourceItems = enhancedItems1.map(item => ({
+        id: item.id,
+        componentId: item.componentId, 
+        bomId: item.bomId,
+        level: item.level,
+        parentId: item.parentId,
+        quantity: item.quantity,
+        notes: item.notes,
+        code: item.code,
+        description: item.description
+      }));
+      
+      const targetItems = enhancedItems2.map(item => ({
+        id: item.id,
+        componentId: item.componentId, 
+        bomId: item.bomId,
+        level: item.level,
+        parentId: item.parentId,
+        quantity: item.quantity,
+        notes: item.notes,
+        code: item.code,
+        description: item.description
+      }));
       
       res.json({
         bom1: { id: bomId1, title: bom1.title },
         bom2: { id: bomId2, title: bom2.title },
         similarities,
-        uniqueItems1,
-        uniqueItems2
+        sourceItems,
+        targetItems,
+        commonCodes,
+        uniqueTargetCodes,
+        sourceBomId: bomId1,
+        targetBomId: bomId2
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to compare BOMs" });
