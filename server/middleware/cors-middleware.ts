@@ -14,8 +14,9 @@ export function corsMiddleware(req: Request, res: Response, next: NextFunction) 
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   
   // Importante: consenti l'incorporamento in iframe impostando Content-Security-Policy
-  res.header('Content-Security-Policy', "frame-ancestors 'self' *");
-  res.header('X-Frame-Options', 'ALLOWALL');
+  // Policy più permissiva per supportare WebGL, script inline e risorse esterne
+  res.header('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline'; worker-src * blob:; frame-ancestors 'self' *;");
+  res.removeHeader('X-Frame-Options'); // Rimuovi X-Frame-Options per consentire iframe
 
   // Prepara i tipi MIME corretti per i file di modelli 3D
   // Questa mappatura associa le estensioni dei file ai loro tipi MIME corretti
@@ -52,6 +53,20 @@ export function corsMiddleware(req: Request, res: Response, next: NextFunction) 
     const fileExtension = req.url.split('.').pop()?.toLowerCase();
     if (fileExtension && mimeTypeMap[`.${fileExtension}`]) {
       res.type(mimeTypeMap[`.${fileExtension}`]);
+    }
+    
+    // Aggiungi header specifici per i file HTML che contengono WebGL
+    if (fileExtension === 'html' || fileExtension === 'htm') {
+      // Consenti l'esecuzione di script inline e risorse esterne
+      res.header('X-Content-Type-Options', 'nosniff');
+      
+      // Permetti tutte le caratteristiche per WebGL
+      res.header('Feature-Policy', 'accelerometer *; camera *; geolocation *; gyroscope *; magnetometer *; microphone *; payment *; usb *; xr-spatial-tracking *');
+      
+      // Permetti l'accesso a WebGL e altre API senza restrizioni
+      res.header('Cross-Origin-Embedder-Policy', 'require-corp');
+      res.header('Cross-Origin-Opener-Policy', 'same-origin');
+      res.header('Cross-Origin-Resource-Policy', 'cross-origin');
     }
   }
 
