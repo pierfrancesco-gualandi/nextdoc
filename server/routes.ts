@@ -5,6 +5,7 @@ import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { upload, saveFileInfo, getFileUrl } from "./upload";
 import { handleZipUpload, handleMultiZipUpload } from "./zip-handler";
+import { handleWebGLModelUpload, initializeWebGLModelFiles } from "./webgl-model-handler";
 import { createWordDocument } from "./word-export";
 import path from "path";
 import fs from "fs";
@@ -2019,7 +2020,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // File upload routes
-  app.post("/api/upload", upload.single("file"), handleZipUpload, saveFileInfo, (req: Request, res: Response) => {
+  app.post("/api/upload", upload.single("file"), handleWebGLModelUpload, handleZipUpload, saveFileInfo, (req: Request, res: Response) => {
     // Se il file è stato estratto da un ZIP e abbiamo un URL del visualizzatore, aggiungiamolo alla risposta
     if (req.viewerUrl) {
       return res.status(201).json({

@@ -1,191 +1,169 @@
-<!DOCTYPE html>
-<html lang="it">
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modello 3D di Esempio</title>
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-        #container {
-            width: 100%;
-            height: 100%;
-            background-color: #f0f0f0;
-            position: relative;
-        }
-    </style>
-    <!-- I file CSS saranno caricati dinamicamente quando riceveremo le informazioni sulla cartella -->
+<meta charset="utf-8" />
+<title>3D Model</title>
+<script type="text/javascript" src="iv3d.js"></script>
+
+<link rel="stylesheet" type="text/css" href="test/ivtest.css"/>
+<link rel="stylesheet" type="text/css" href="ivstyles.css"/>
+
 </head>
-<body>
-    <div id="container">
-        <!-- L'interfaccia sarà generata dinamicamente dal JavaScript -->
-    </div>
-    
-    <script>
-        // Informazioni per il debug
-        console.log('Modello 3D - HTML principale caricato');
-        
-        // Crea un elemento di debug temporaneo
-        const debugElement = document.createElement('div');
-        debugElement.style.cssText = `
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            right: 10px;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 10px;
-            font-family: monospace;
-            font-size: 12px;
-            z-index: 100;
-            max-height: 150px;
-            overflow-y: auto;
-        `;
-        document.getElementById('container').appendChild(debugElement);
-        
-        function logDebug(message) {
-            console.log(message);
-            debugElement.innerHTML += `<div>${message}</div>`;
-        }
-        
-        // Registra un gestore per i messaggi dal parent frame
-        window.addEventListener('message', function(event) {
-            logDebug(`Ricevuto messaggio dal parent: ${event.data.type}`);
-            
-            if (event.data && event.data.type === 'model-folder-info') {
-                const folderInfo = event.data;
-                
-                logDebug(`Ricevute informazioni cartella con ${folderInfo.allFiles?.length || 0} file`);
-                
-                // Cerca il file CSS nella mappa dei file
-                if (folderInfo.fileMap) {
-                    const cssUrl = folderInfo.fileMap['res/style.css'] || 
-                                   folderInfo.fileMap['style.css'];
-                    
-                    if (cssUrl) {
-                        logDebug(`Caricamento CSS da: ${cssUrl}`);
+
+
+
+<body onload='view3d=iv.initSample("scene.iv3d",0xffffff)'>
+
+
+
+    <div id="file-header" class="fileHeader" >  
+
+
+         <div class="toolbar-left">
+               <div class="ivmenu">
+               <ul>
+                  <li class='has-sub last'>
+                  <a ><span id="select-mode-menu">Mode:Select</span></a>
+                     <ul>
+                        <li><a onclick="iv.onMenuSelected(this)" id="view3d-mode-select"><span>Select</span></a></li>
+                        <li><a onclick="iv.onMenuSelected(this)" id="view3d-mode-move"><span>Move</span></a></li>
+                        <li><a onclick="iv.onMenuSelected(this)" id="view3d-mode-rotate"><span>Rotate</span></a></li>
+                        <li><a onclick="iv.onMenuSelected(this)" id="view3d-mode-scale"><span>Scale</span></a></li>
+                        <li><a onclick="iv.onMenuSelected(this)" id="view3d-mode-measure"><span>Measure</span></a></li>
                         
-                        // Crea un link per il CSS
-                        const linkElement = document.createElement('link');
-                        linkElement.rel = 'stylesheet';
-                        linkElement.href = cssUrl;
-                        document.head.appendChild(linkElement);
-                    }
-                    
-                    // Cerca il file JS nella mappa dei file
-                    const jsUrl = folderInfo.fileMap['res/script.js'] || 
-                                  folderInfo.fileMap['script.js'];
-                    
-                    if (jsUrl) {
-                        logDebug(`Caricamento JS da: ${jsUrl}`);
-                        
-                        // Crea uno script tag per il JS
-                        const scriptElement = document.createElement('script');
-                        scriptElement.src = jsUrl;
-                        document.body.appendChild(scriptElement);
-                    } else {
-                        logDebug('File JavaScript non trovato nella mappa dei file');
-                        // Carica un JS di fallback
-                        loadFallbackScript();
-                    }
-                } else {
-                    logDebug('Nessuna mappa dei file ricevuta nel messaggio');
-                    loadFallbackScript();
-                }
-            }
-        });
-        
-        // Funzione per caricare uno script di fallback se non troviamo il file JS esterno
-        function loadFallbackScript() {
-            logDebug('Caricamento script di fallback...');
+                     </ul>
+                  </li>
+               </ul>
+               </div>      
+            </div>   
+
+            <div class="button" id="axis-x" onclick="iv.onToggleAxis(1)">X</div>
+            <div class="button" id="axis-y" onclick="iv.onToggleAxis(2)">Y</div>
+            <div class="button" id="axis-z" onclick="iv.onToggleAxis(4)">Z</div>
+
+
+      <div class="toolbar-left">
+              <div class="ivmenu">
+              <ul>
+                 <li class='has-sub last'>
+                 <a ><span id="clip-planes-mdenu">Clipping Planes</span></a>
+                    <ul>
+                       <li><a onclick="iv.onMenuSelected(this)" id="view3d-clip-0"><span>Clip 0</span></a></li>
+                       <li><a onclick="iv.onMenuSelected(this)" id="view3d-clip-1"><span>Clip 1</span></a></li>
+                       <li><a onclick="iv.onMenuSelected(this)" id="view3d-clip-2"><span>Clip 2</span></a></li>
+                       <li><a onclick="iv.onMenuSelected(this)" id="view3d-clip-mode"><span>Clip Mode</span></a></li>
+                       
+                    </ul>
+                 </li>
+              </ul>
+              </div>
+      </div>    
+
+
+        <div class="toolbar-right">
+            <div class="ivmenu">
+            <ul>
+               <li class='has-sub last'>
+               <a ><span>Options</span></a>
+                  <ul>
+
+                     <li><a  onclick="iv.onMenuSelected(this);" id="view3d-cfg-tree"><span>Scene Tree</span></a></li>
+                     <li class="separator"></li>                  
+
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-cfg-rectselect"><span>Rect Selection: Fully Inside Only</span></a></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-cfg-rotationcenter"><span>Rotate Around Mouse Pointer</span></a></li>
+   
+                     <li class="Header"><span>Render Options</span></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-cfg-textures"><span>Textures On/Off</span></a></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-cfg-materials"><span>Materials On/Off</span></a></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-cfg-dblside"><span>Show Backfacing Polygons</span></a></li>
+
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-cfg-xray"><span>XRay</span></a></li>
+                                 
+            <li class="Header"><span>Render Mode</span></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-rm-solid"><span>Solid</span></a></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-rm-wire"><span>Wireframe</span></a></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-rm-wireshaded"><span>Shaded Wireframe</span></a></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-rm-hiddenwire"><span>Hidden Wireframe</span></a></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-rm-outline"><span>Outline</span></a></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-rm-illustration"><span>Ilustration</span></a></li>
             
-            // Crea un canvas predefinito
-            const canvas = document.createElement('canvas');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            document.getElementById('container').appendChild(canvas);
-            
-            const ctx = canvas.getContext('2d');
-            let angle = 0;
-            
-            // Animazione di fallback
-            function animate() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                // Centro e dimensione
-                const centerX = canvas.width / 2;
-                const centerY = canvas.height / 2;
-                const size = 100;
-                
-                // Disegna un cubo rotante semplice
-                ctx.save();
-                ctx.translate(centerX, centerY);
-                ctx.rotate(angle);
-                
-                // Cubo
-                ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
-                ctx.fillRect(-size/2, -size/2, size, size);
-                
-                // Bordo
-                ctx.strokeStyle = 'white';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(-size/2, -size/2, size, size);
-                
-                ctx.restore();
-                
-                // Testo di debug
-                ctx.fillStyle = 'white';
-                ctx.font = '14px Arial';
-                ctx.fillText('FALLBACK - Script esterno non trovato', 20, 30);
-                
-                // Aggiorna angolo
-                angle += 0.01;
-                requestAnimationFrame(animate);
-            }
-            
-            // Avvia animazione
-            animate();
-        }
-        
-        // Funzione per richiedere le informazioni sulla cartella
-        function requestFolderInfo() {
-            logDebug('Richiesta informazioni cartella al parent frame...');
-            
-            try {
-                window.parent.postMessage({
-                    type: 'request-model-folder-info'
-                }, '*');
-            } catch (error) {
-                logDebug(`Errore nell'invio del messaggio: ${error.message}`);
-                // Se non riusciamo a comunicare, carica il fallback
-                setTimeout(loadFallbackScript, 1000);
-            }
-        }
-        
-        // Richiedi informazioni quando il documento è pronto
-        document.addEventListener('DOMContentLoaded', function() {
-            logDebug('DOM caricato, richiedo informazioni cartella...');
-            requestFolderInfo();
-            
-            // Se dopo 3 secondi non abbiamo ricevuto risposta, carica il fallback
-            setTimeout(function() {
-                if (!document.querySelector('script[src*="script.js"]')) {
-                    logDebug('Timeout - nessuna risposta dal parent');
-                    loadFallbackScript();
-                }
-            }, 3000);
-        });
-        
-        // Se il documento è già pronto, richiedi subito
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            logDebug('Documento già pronto, richiedo informazioni cartella immediatamente...');
-            requestFolderInfo();
-        }
-    </script>
+                  </ul>
+               </li>
+            </ul>
+            </div>            
+         </div>   
+         
+         
+         <div class="toolbar">
+                <div class="ivmenu" id="views">
+                <ul>
+                   <li class='has-sub last'>
+                   <a ><span>Views</span></a>
+                      <ul>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-ortho"><span>Ortho</span></a></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-perspective"><span>Perspective</span></a></li>
+                         <li class="separator"></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-user"><span>User</span></a></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-left"><span>Left</span></a></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-right"><span>Right</span></a></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-top"><span>Top</span></a></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-bottom"><span>Bottom</span></a></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-front"><span>Front</span></a></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-back"><span>Back</span></a></li>
+                         <li class="separator"></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-home"><span>Set Default View (HOME)</span></a></li>
+                      </ul>
+                   </li>
+                </ul>
+                </div>
+        </div>  
+      
+       <div class="toolbar">
+         <div class="ivmenu">
+         <ul>
+            <li class='has-sub last'>
+            <a><span id="left_button">Mouse Buttons</span></a>
+               <ul>
+                  <li class="Header"><span>Left Button</span></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-lbtn-none"><span>None</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-lbtn-orbit"><span>Orbit</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-lbtn-zoom"><span>Zoom</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-lbtn-pan"><span>Pan</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-lbtn-rectSelect"><span>Rectangle Select</span></a></li>
+                  
+                  <li class="Header"><span>Right Button</span></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-rbtn-none"><span>None</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-rbtn-orbit"><span>Orbit</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-rbtn-zoom"><span>Zoom</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-rbtn-pan"><span>Pan</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-rbtn-rectSelect"><span>Rectangle Select</span></a></li>
+
+                  <li class="Header"><span>Middle Button</span></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-mbtn-none"><span>None</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-mbtn-orbit"><span>Orbit</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-mbtn-zoom"><span>Zoom</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-mbtn-pan"><span>Pan</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-mbtn-rectSelect"><span>Rectangle Select</span></a></li>
+               </ul>
+            </li>
+         </ul>
+         </div>
+      </div>  
+</div>
+
+
+<div id="treeview-frame" class="treeframe" >
+<div class="tree-view" id="treeview"></div>
+</div>
+
+<div class="vdivider" id="vidivider"><span></span></div>
+
+<div class="viewframe">
+    <canvas id="canvas3d" style="border:none" width="800" height="600"></canvas>
+</div>
+
 </body>
+
+
 </html>

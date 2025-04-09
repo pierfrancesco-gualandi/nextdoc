@@ -80,6 +80,18 @@ const FileSelector: React.FC<FileSelectorProps> = ({
         formData.append('folderName', folder);
       }
       
+      // Se è un file HTML, potrebbe essere un modello WebGL
+      if (file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm')) {
+        // Aggiungiamo un flag per indicare che è un potenziale modello WebGL
+        formData.append('webglModel', 'true');
+        
+        // Aggiungiamo un ID specifico per il modello (basato sul nome file senza estensione)
+        const modelId = file.name.replace(/\.(html|htm)$/i, '');
+        formData.append('modelId', modelId);
+        
+        console.log('Caricamento modello WebGL:', modelId);
+      }
+      
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,

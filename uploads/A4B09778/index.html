@@ -1,33 +1,52 @@
 <!DOCTYPE html>
-<html lang="it">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modello 3D di Esempio</title>
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-        #container {
-            width: 100%;
-            height: 100%;
-            background-color: #f0f0f0;
-            position: relative;
-        }
-    </style>
-    <!-- I file CSS saranno caricati dinamicamente quando riceveremo le informazioni sulla cartella -->
+<meta charset="utf-8">
+<title>3D Model - A4B09778</title>
+<script type="text/javascript" src="iv3d.js"></script>
+
+<link rel="stylesheet" type="text/css" href="test/ivtest.css">
+<link rel="stylesheet" type="text/css" href="ivstyles.css">
+
 </head>
-<body>
-    <div id="container">
-        <!-- L'interfaccia sarà generata dinamicamente dal JavaScript -->
+
+<body onload="view3d=iv.initSample(&quot;scene.iv3d&quot;,0xffffff)">
+
+    <div id="file-header" class="fileHeader">  
+
+         <div class="toolbar-left">
+               <div class="ivmenu">
+               <ul>
+                  <li class="has-sub last">
+                  <a><span id="select-mode-menu">Mode:Select</span></a>
+                     <ul>
+                        <li><a onclick="iv.onMenuSelected(this)" id="view3d-mode-select"><img src="test/checkmark.png" style="visibility: visible;"><span>Select</span></a></li>
+                        <li><a onclick="iv.onMenuSelected(this)" id="view3d-mode-move"><span>Move</span></a></li>
+                        <li><a onclick="iv.onMenuSelected(this)" id="view3d-mode-rotate"><span>Rotate</span></a></li>
+                        <li><a onclick="iv.onMenuSelected(this)" id="view3d-mode-scale"><span>Scale</span></a></li>
+                        <li><a onclick="iv.onMenuSelected(this)" id="view3d-mode-measure"><span>Measure</span></a></li>
+                     </ul>
+                  </li>
+               </ul>
+               </div>
+         </div>
+
     </div>
-    
+
+    <div id="content" style="position:absolute; top:40px; bottom:0px; left:0px; right:0px;">
+        <div id="leftPanel" style="position:absolute; top:0px; bottom:0px; left:0px; width:300px; overflow:auto;">
+            <div id="treeContainer"></div>
+        </div>
+        <div id="rightPanel" style="position:absolute; top:0px; bottom:0px; left:301px; right:0px;">
+            <canvas id="canvas3d" style="width:100%; height:100%;"></canvas>
+        </div>
+    </div>
+
     <script>
-        // Informazioni per il debug
+        // Messaggio per l'utente
+        window.onload = function() {
+            alert("Questa è una struttura di base. Per visualizzare il modello 3D completo, è necessario caricare tutti i file necessari nelle posizioni corrette.");
+        };
         console.log('Modello 3D - HTML principale caricato');
         
         // Crea un elemento di debug temporaneo
