@@ -536,6 +536,12 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                      module.type === 'safety-instructions') {
             initialTranslatedContent.title = '';
             initialTranslatedContent.description = '';
+          } else if (module.type === 'testp') {
+            initialTranslatedContent.title = '';
+            initialTranslatedContent.description = '';
+            // Preserva il contenuto del testo e l'URL del file, ma inizializza i campi traducibili
+            initialTranslatedContent.savedTextContent = initialTranslatedContent.savedTextContent || '';
+            initialTranslatedContent.textFileUrl = initialTranslatedContent.textFileUrl || '';
           } else if (module.type === 'image' || module.type === 'video') {
             initialTranslatedContent.caption = '';
             initialTranslatedContent.alt = initialTranslatedContent.alt || '';
@@ -779,6 +785,7 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
   const getModuleTypeName = (type: string) => {
     const types: { [key: string]: string } = {
       'text': 'Testo',
+      'testp': 'File di testo',
       'image': 'Immagine',
       'video': 'Video',
       'table': 'Tabella',
@@ -1028,6 +1035,38 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                                 className="min-h-[150px]"
                                 placeholder="Descrizione Istruzioni di sicurezza tradotta..."
                               />
+                            </div>
+                          </>
+                        )}
+                        
+                        {/* File di testo Module */}
+                        {module.type === 'testp' && (
+                          <>
+                            <div>
+                              <Label htmlFor="testp-title">Titolo del file di testo</Label>
+                              <Input
+                                id="testp-title"
+                                value={translatedContent.title || ''}
+                                onChange={(e) => handleTextChange(e.target.value, 'title')}
+                                placeholder="Titolo del file di testo tradotto..."
+                              />
+                            </div>
+                            <div className="mt-2">
+                              <Label htmlFor="testp-description">Descrizione</Label>
+                              <Textarea
+                                id="testp-description"
+                                value={translatedContent.description || ''}
+                                onChange={(e) => handleTextChange(e.target.value, 'description')}
+                                className="min-h-[100px]"
+                                placeholder="Descrizione del file di testo tradotta..."
+                              />
+                            </div>
+                            
+                            <div className="mt-4 pt-4 border-t border-dashed border-neutral-light">
+                              <div className="flex items-center space-x-2 text-sm text-neutral-medium">
+                                <span className="material-icons text-base">info</span>
+                                <span>Il contenuto del file di testo e l'URL non sono traducibili.</span>
+                              </div>
                             </div>
                           </>
                         )}

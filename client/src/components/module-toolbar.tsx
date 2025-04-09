@@ -28,6 +28,7 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
   
   const moduleTypes = [
     { id: "text", icon: "text_fields", label: "Testo" },
+    { id: "testp", icon: "description", label: "Test File" },
     { id: "image", icon: "image", label: "Immagine" },
     { id: "video", icon: "smart_display", label: "Video" },
     { id: "table", icon: "table_chart", label: "Tabella" },
@@ -270,6 +271,15 @@ export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolba
     switch (type) {
       case "text":
         defaultContent = { text: "" };
+        break;
+      case "testp":
+        defaultContent = { 
+          title: "File di testo", 
+          description: "Descrizione del file", 
+          textContent: "",
+          savedTextContent: "",
+          textFileUrl: ""
+        };
         break;
       case "image":
         defaultContent = { src: "", alt: "", caption: "" };

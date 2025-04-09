@@ -242,6 +242,7 @@ export default function ContentModule({
   const getModuleIcon = (type: string): string => {
     switch (type) {
       case "text": return "text_fields";
+      case "testp": return "description";
       case "image": return "image";
       case "video": return "videocam";
       case "table": return "table_chart";
@@ -264,6 +265,7 @@ export default function ContentModule({
   const getModuleLabel = (type: string): string => {
     switch (type) {
       case "text": return "Testo";
+      case "testp": return "File di testo";
       case "image": return "Immagine";
       case "video": return "Video";
       case "table": return "Tabella";
@@ -289,6 +291,32 @@ export default function ContentModule({
     }
     
     switch (module.type) {
+      case "testp":
+        return (
+          <div className="text-module border rounded-md overflow-hidden bg-white">
+            <div className="bg-neutral-lightest px-4 py-2 border-b flex items-center justify-between">
+              <div className="font-medium">{content?.title || "File di testo"}</div>
+              <div className="text-xs text-neutral-medium">{content?.description || ""}</div>
+            </div>
+            <div className="p-4">
+              {content?.savedTextContent ? (
+                <div className="whitespace-pre-wrap font-mono text-sm bg-neutral-lightest p-4 rounded-md border border-neutral-light overflow-x-auto">
+                  {content.savedTextContent}
+                </div>
+              ) : content?.textFileUrl ? (
+                <div className="flex items-center justify-center text-neutral-medium">
+                  <span className="material-icons mr-2">description</span>
+                  File di testo: {content.textFileUrl.split('/').pop()}
+                </div>
+              ) : (
+                <div className="text-neutral-medium text-center py-4">
+                  Nessun contenuto di testo disponibile
+                </div>
+              )}
+            </div>
+          </div>
+        );
+        
       case "text":
         return (
           <div 
@@ -753,6 +781,96 @@ export default function ContentModule({
   
   const renderModuleEditor = () => {
     switch (module.type) {
+      case "testp":
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="testp-title">Titolo</Label>
+              <Input 
+                id="testp-title" 
+                value={content.title || ""} 
+                onChange={(e) => setContent({ ...content, title: e.target.value })} 
+                placeholder="Titolo del file di testo"
+              />
+            </div>
+            <div>
+              <Label htmlFor="testp-description">Descrizione</Label>
+              <Input 
+                id="testp-description" 
+                value={content.description || ""} 
+                onChange={(e) => setContent({ ...content, description: e.target.value })} 
+                placeholder="Descrizione del file di testo"
+              />
+            </div>
+            <div>
+              <Label htmlFor="testp-file">File di testo</Label>
+              <div className="flex items-center space-x-2">
+                <Input 
+                  id="testp-file" 
+                  value={content.textFileUrl || ""} 
+                  onChange={(e) => setContent({ ...content, textFileUrl: e.target.value })} 
+                  placeholder="URL del file di testo"
+                  disabled={!!content.textContent}
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    // Implementare upload file
+                    console.log("Upload file di testo");
+                  }}
+                >
+                  <span className="material-icons text-sm mr-1">upload_file</span>
+                  Upload
+                </Button>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="testp-content">Contenuto</Label>
+              <Textarea 
+                id="testp-content" 
+                value={content.textContent || ""} 
+                onChange={(e) => setContent({ ...content, textContent: e.target.value })} 
+                placeholder="Inserisci il contenuto del file di testo"
+                className="font-mono text-sm min-h-[200px]"
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button 
+                variant="default" 
+                size="sm"
+                type="button"
+                onClick={() => {
+                  // Salva il contenuto corrente come savedTextContent
+                  setContent({ 
+                    ...content, 
+                    savedTextContent: content.textContent
+                  });
+                  
+                  // Auto salvataggio del modulo
+                  setTimeout(() => {
+                    updateModuleMutation.mutate({
+                      id: module.id, 
+                      module: {
+                        content: JSON.stringify({
+                          ...content,
+                          savedTextContent: content.textContent
+                        }), 
+                        type: module.type,
+                        sectionId: module.sectionId
+                      }
+                    });
+                  }, 100);
+                }}
+              >
+                <span className="material-icons text-sm mr-1">save</span>
+                Salva contenuto
+              </Button>
+            </div>
+          </div>
+        );
+      
       case "text":
         return (
           <div className="mb-4">

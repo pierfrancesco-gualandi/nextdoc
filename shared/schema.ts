@@ -325,6 +325,14 @@ export type PdfModuleContent = {
   title?: string;
 };
 
+export type TestpModuleContent = {
+  title?: string;
+  description?: string;
+  textFileUrl?: string;
+  textContent?: string;
+  savedTextContent?: string; // Contenuto salvato che viene visualizzato in anteprima
+};
+
 export type BomModuleContent = {
   bomId: number;
   filter?: string;
