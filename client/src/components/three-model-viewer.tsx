@@ -328,9 +328,9 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
     // URL diretto al modello HTML/WebGL
     const directUrl = modelData.src;
     
-    // URL per il file specifico A4B09778.htm nella cartella uploads/A4B09778
-    // Utilizziamo un percorso assoluto alla cartella "A4B09778" che esiste in uploads
-    const a4b09778Url = '/uploads/A4B09778/A4B09778.htm';
+    // URL per il file speciale A4B09778-direct.html che gestisce il caricamento del modello
+    // Questo file è ottimizzato per caricare il modello WebGL con tutti i suoi componenti
+    const a4b09778Url = '/uploads/A4B09778-direct.html';
     
     // Utilizziamo un pulsante per aprire il modello 3D in una nuova finestra,
     // poiché il modello richiede file esterni nella stessa cartella
@@ -407,7 +407,7 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
               justifyContent: 'center'
             }}
           >
-            Apri A4B09778.htm
+            Visualizza modello 3D con tutti i componenti
           </a>
         </div>
         
