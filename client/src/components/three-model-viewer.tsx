@@ -328,9 +328,9 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
     // URL diretto al modello HTML/WebGL
     const directUrl = modelData.src;
     
-    // URL per il file speciale A4B09778-direct.html che gestisce il caricamento del modello
-    // Questo file è ottimizzato per caricare il modello WebGL con tutti i suoi componenti
-    const a4b09778Url = '/uploads/A4B09778-direct.html';
+    // URL per il file speciale di visualizzazione del modello 3D
+    // con opzione di download del modello completo
+    const a4b09778Url = '/uploads/A4B09778-direct-viewer.html';
     
     // Utilizziamo un pulsante per aprire il modello 3D in una nuova finestra,
     // poiché il modello richiede file esterni nella stessa cartella
@@ -356,8 +356,8 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
             {modelData.title || 'Modello 3D WebGL'}
           </div>
           <div style={{ fontSize: '14px', color: '#666', maxWidth: '80%', margin: '0 auto' }}>
-            Per visualizzare correttamente questo modello 3D e tutti i suoi controlli,
-            è necessario aprirlo in una nuova finestra.
+            Questo modello 3D richiede file esterni specifici per funzionare correttamente.
+            Utilizza i pulsanti qui sotto per visualizzare o scaricare il modello completo.
           </div>
         </div>
         
@@ -412,8 +412,18 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
         </div>
         
         <div style={{ marginTop: '15px', fontSize: '13px', color: '#777', textAlign: 'center' }}>
-          Questo modello richiede diversi file di supporto (iv3d.js, scene.iv3d, ivstyles.css) per 
-          funzionare correttamente e mostrare il menu e l'albero dei componenti.
+          <a 
+            href="/uploads/A4B09778.zip" 
+            style={{
+              display: 'inline-block',
+              marginTop: '10px',
+              color: '#0366d6',
+              textDecoration: 'none',
+              fontWeight: 'bold'
+            }}
+          >
+            Scarica il modello completo (.zip)
+          </a>
         </div>
       </div>
     );

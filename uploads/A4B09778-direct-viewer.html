@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8">
+    <title>3D Model Viewer - A4B09778</title>
+    <script type="text/javascript" src="/uploads/A4B09778/res/script.js"></script>
+    <link rel="stylesheet" type="text/css" href="/uploads/A4B09778/test/test.html">
+    <link rel="stylesheet" type="text/css" href="/uploads/A4B09778/res/style.css">
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        .loading-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        .three-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <div id="loading-message" class="loading-message">
+            <h2>Caricamento del modello 3D...</h2>
+            <p>Questa è una versione semplificata del visualizzatore, per una migliore esperienza utilizza il modello 3D originale</p>
+        </div>
+        <canvas id="three-canvas" class="three-canvas"></canvas>
+    </div>
+
+    <script>
+        // Script per caricare un visualizzatore 3D semplificato
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mostra un messaggio alternativo dopo 3 secondi se il caricamento fallisce
+            setTimeout(function() {
+                document.getElementById('loading-message').innerHTML = `
+                    <h2>Modello 3D non disponibile</h2>
+                    <p>Impossibile caricare il visualizzatore 3D completo.</p>
+                    <p>Per visualizzare questo modello 3D, è necessario scaricare la cartella "A4B09778" e aprire il file index.html in locale.</p>
+                    <div style="margin-top: 20px">
+                        <a href="/uploads/A4B09778.zip" style="display: inline-block; padding: 10px 20px; background: #4285f4; color: white; text-decoration: none; border-radius: 5px;">
+                            Scarica la cartella completa
+                        </a>
+                    </div>
+                `;
+                
+                // Creiamo un canvas con un'animazione semplice
+                const canvas = document.getElementById('three-canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                
+                let angle = 0;
+                
+                function animate() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    const centerX = canvas.width / 2;
+                    const centerY = canvas.height / 2;
+                    const size = 100;
+                    
+                    // Disegna un cubo in rotazione
+                    angle += 0.01;
+                    
+                    // Disegna i lati del cubo in rotazione
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate(angle);
+                    
+                    // Faccia frontale
+                    ctx.fillStyle = '#4285f4';
+                    ctx.fillRect(-size/2, -size/2, size, size);
+                    
+                    // Bordi
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(-size/2, -size/2, size, size);
+                    
+                    // Linee prospettiche
+                    ctx.beginPath();
+                    ctx.moveTo(-size/2, -size/2);
+                    ctx.lineTo(-size/2 - 20, -size/2 - 20);
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(size/2, -size/2);
+                    ctx.lineTo(size/2 + 20, -size/2 - 20);
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(-size/2, size/2);
+                    ctx.lineTo(-size/2 - 20, size/2 + 20);
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(size/2, size/2);
+                    ctx.lineTo(size/2 + 20, size/2 + 20);
+                    ctx.stroke();
+                    
+                    // Faccia superiore
+                    ctx.fillStyle = '#34a853';
+                    ctx.beginPath();
+                    ctx.moveTo(-size/2, -size/2);
+                    ctx.lineTo(-size/2 - 20, -size/2 - 20);
+                    ctx.lineTo(size/2 + 20, -size/2 - 20);
+                    ctx.lineTo(size/2, -size/2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Faccia laterale
+                    ctx.fillStyle = '#fbbc05';
+                    ctx.beginPath();
+                    ctx.moveTo(size/2, -size/2);
+                    ctx.lineTo(size/2 + 20, -size/2 - 20);
+                    ctx.lineTo(size/2 + 20, size/2 + 20);
+                    ctx.lineTo(size/2, size/2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    ctx.restore();
+                    
+                    requestAnimationFrame(animate);
+                }
+                
+                animate();
+                
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
