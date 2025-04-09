@@ -289,10 +289,14 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
       return;
     }
     
+    // Creiamo il documento con tutti i campi richiesti dallo schema
     createDocumentMutation.mutate({
       title: newDocumentTitle,
       description: `Documento creato dal confronto tra le distinte base #${selectedSourceBomId} e #${selectedTargetBomId}`,
-      status: "draft"
+      status: "draft",
+      createdById: 1, // ID utente predefinito
+      updatedById: 1, // Anche questo è obbligatorio
+      visibility: "public" // Campo obbligatorio secondo lo schema
     });
   };
   
