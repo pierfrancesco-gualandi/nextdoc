@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizzatore 3D a Schermo Intero</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        
+        iframe {
+            border: none;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        
+        .spinner {
+            border: 5px solid rgba(0, 0, 0, 0.1);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border-left-color: #09f;
+            animation: spin 1s ease infinite;
+            margin-bottom: 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            color: #e53935;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Caricamento del modello 3D...</p>
+    </div>
+    
+    <div id="error" class="error-overlay">
+        <h2>⚠️ Errore</h2>
+        <p id="error-message">Si è verificato un errore nel caricamento del modello.</p>
+    </div>
+    
+    <iframe id="viewer" src="about:blank"></iframe>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const modelUrl = urlParams.get('modelUrl');
+            const iframe = document.getElementById('viewer');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const errorMessage = document.getElementById('error-message');
+            
+            if (!modelUrl) {
+                loading.style.display = 'none';
+                error.style.display = 'flex';
+                errorMessage.textContent = 'URL del modello non specificato.';
+                return;
+            }
+            
+            // Carica il modello nell'iframe
+            iframe.onload = function() {
+                // Nascondi il loading
+                setTimeout(function() {
+                    loading.style.display = 'none';
+                }, 1000); // Breve ritardo per assicurarsi che il contenuto sia completamente caricato
+            };
+            
+            iframe.onerror = function() {
+                loading.style.display = 'none';
+                error.style.display = 'flex';
+                errorMessage.textContent = 'Errore nel caricamento del modello.';
+            };
+            
+            // Imposta un timeout nel caso in cui il caricamento sia troppo lungo
+            setTimeout(function() {
+                if (loading.style.display !== 'none') {
+                    // Se il loading è ancora visibile dopo 30 secondi, probabilmente c'è un problema
+                    loading.style.display = 'none';
+                    error.style.display = 'flex';
+                    errorMessage.textContent = 'Timeout nel caricamento del modello (30s).';
+                }
+            }, 30000);
+            
+            // Imposta l'URL dell'iframe
+            iframe.src = modelUrl;
+            
+            // Gestione messaggi dalla finestra figlio (non necessario al momento)
+            window.addEventListener('message', function(event) {
+                // Qui potremmo gestire i messaggi dall'iframe se necessario
+                console.log('Messaggio ricevuto:', event.data);
+            });
+        });
+    </script>
+</body>
+</html>

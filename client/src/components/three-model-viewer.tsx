@@ -328,8 +328,8 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
     // URL diretto al modello
     const directUrl = modelData.src;
     
-    // URL al visualizzatore iframe (più affidabile per modelli HTML con risorse esterne)
-    const iframeViewerUrl = `/uploads/webgl-iframe-viewer.html?modelUrl=${encodeURIComponent(modelData.src)}&title=${encodeURIComponent(modelData.title || 'Modello 3D')}`;
+    // URL al visualizzatore a schermo intero (per WebGL con interfacce complesse)
+    const fullscreenViewerUrl = `/uploads/fullscreen-iframe-viewer.html?modelUrl=${encodeURIComponent(modelData.src)}`;
     
     return (
       <div
@@ -340,19 +340,99 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
           overflow: 'hidden',
           borderRadius: '8px',
           border: '1px solid #ccc',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          backgroundColor: '#f5f5f5'
         }}
       >
-        {/* Iframe che visualizza il visualizzatore, che a sua volta carica il modello */}
-        <iframe 
-          src={iframeViewerUrl}
+        {/* Header con titolo */}
+        <div
           style={{
-            width: '100%',
-            height: '100%',
-            border: 'none',
+            padding: '8px 12px',
+            background: 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            fontSize: '14px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
           }}
-          title={modelData.title || "Modello 3D WebGL"}
-          allowFullScreen
-        />
+        >
+          <div style={{ fontWeight: 'bold' }}>{modelData.title || 'Modello 3D WebGL'}</div>
+        </div>
+        
+        {/* Contenuto principale */}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+        >
+          <div style={{ fontSize: '60px', marginBottom: '20px', color: '#999' }}>🧊</div>
+          <div style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '12px' }}>
+            Modello 3D WebGL Interattivo
+          </div>
+          <div style={{ textAlign: 'center', marginBottom: '20px', maxWidth: '90%' }}>
+            Questo modello WebGL richiede l'apertura in modalità a schermo intero per visualizzare 
+            correttamente tutti i controlli, l'albero dei componenti e il modello stesso.
+          </div>
+          
+          <a 
+            href={directUrl}
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{
+              backgroundColor: '#2e5e88',
+              color: 'white',
+              padding: '10px 20px',
+              borderRadius: '4px',
+              textDecoration: 'none',
+              fontWeight: 'bold',
+              marginBottom: '10px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <span style={{ fontSize: '18px' }}>↗️</span> Apri il modello in nuova scheda
+          </a>
+          
+          <a 
+            href={fullscreenViewerUrl}
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{
+              backgroundColor: '#2c8756',
+              color: 'white',
+              padding: '10px 20px',
+              borderRadius: '4px',
+              textDecoration: 'none',
+              fontWeight: 'bold',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <span style={{ fontSize: '18px' }}>⛶</span> Visualizza a schermo intero
+          </a>
+        </div>
+        
+        {/* Footer con note */}
+        <div
+          style={{
+            padding: '10px',
+            fontSize: '12px',
+            color: '#666',
+            textAlign: 'center',
+            borderTop: '1px solid #ddd'
+          }}
+        >
+          Nota: I modelli WebGL complessi potrebbero richiedere un browser moderno e una scheda grafica compatibile.
+        </div>
       </div>
     );
   }
