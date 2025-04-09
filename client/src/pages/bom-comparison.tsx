@@ -203,9 +203,16 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
       
       let data = await response.json();
       
+      // Recupera gli elementi completi della BOM target
+      console.log("Recupero elementi completi della target BOM");
+      const targetBomResponse = await fetch(`/api/boms/${selectedTargetBomId}/items`);
+      const targetItems = targetBomResponse.ok ? await targetBomResponse.json() : [];
+      
+      console.log(`Recuperati ${targetItems.length} elementi della BOM target`);
+      
       // Hack: Se l'array commonCodes è null ma ci sono similarities,
       // generiamo l'array dei codici comuni dalle similarities
-      if (!data.commonCodes && data.similarities && data.similarities.length > 0) {
+      if (data.similarities && data.similarities.length > 0) {
         console.log("Ricostruzione dell'array commonCodes dalle similarities");
         
         // Estrai i codici dalle similarities con somiglianza al 100%
@@ -218,12 +225,14 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
           })
           .filter(Boolean);
         
+        console.log(`Trovati ${extractedCommonCodes.length} codici comuni dalle similarities`);
+        
+        // Prepara i dati completi
         data = {
           ...data,
-          commonCodes: extractedCommonCodes
+          commonCodes: extractedCommonCodes,
+          targetItems: targetItems
         };
-        
-        console.log(`Trovati ${extractedCommonCodes.length} codici comuni dalle similarities`);
       }
       
       setComparisonResult(data);
@@ -420,24 +429,41 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
   const getComparisonSummary = () => {
     if (!comparisonResult) return null;
     
-    const { commonCodes = [], uniqueTargetCodes = [], targetItems = [] } = comparisonResult;
+    const { commonCodes = [], targetItems = [] } = comparisonResult;
+    
+    // Calcola i codici unici dalla target BOM (non presenti nei codici comuni)
+    const nonAssociatedCodes = targetItems
+      .filter((item: any) => !commonCodes.includes(item.code))
+      .map((item: any) => ({
+        code: item.code,
+        description: item.description,
+        level: item.level,
+        quantity: item.quantity
+      }));
+    
     const totalTargetCodes = targetItems?.length || 0;
-    const matchPercentage = totalTargetCodes > 0 ? Math.round((commonCodes.length / totalTargetCodes) * 100) : 0;
+    const uniqueCodesCount = nonAssociatedCodes.length;
+    const commonCodesCount = commonCodes.length;
+    
+    // Calcola la percentuale di corrispondenza (quanti codici sono comuni rispetto al totale)
+    const matchPercentage = totalTargetCodes > 0 
+      ? Math.round((commonCodesCount / totalTargetCodes) * 100) 
+      : 0;
+    
+    console.log("Calcolo percentuale:", { 
+      commonCodesCount, 
+      totalTargetCodes, 
+      uniqueCodesCount,
+      matchPercentage,
+      nonAssociatedCodesCount: nonAssociatedCodes.length 
+    });
     
     return {
       totalTargetCodes,
-      commonCodesCount: commonCodes.length,
-      uniqueCodesCount: uniqueTargetCodes.length,
+      commonCodesCount,
+      uniqueCodesCount,
       matchPercentage,
-      // Aggiungi elenco di codici non associati per una migliore visualizzazione
-      nonAssociatedCodes: targetItems
-        .filter((item: any) => !commonCodes.includes(item.code))
-        .map((item: any) => ({
-          code: item.code,
-          description: item.description,
-          level: item.level,
-          quantity: item.quantity
-        }))
+      nonAssociatedCodes
     };
   };
   
