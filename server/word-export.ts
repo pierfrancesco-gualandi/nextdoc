@@ -235,7 +235,7 @@ export async function createWordDocument(
       }
 
       // Add modules from this section
-      await addModulesToDocument(docElements, sectionData.modules);
+      await addModulesToDocument(docElements, sectionData.modules, exportData.languageId);
 
       // Process subsections
       for (const subSection of sectionData.subSections) {
@@ -256,7 +256,7 @@ export async function createWordDocument(
         }
 
         // Add modules from this subsection
-        await addModulesToDocument(docElements, subSection.modules);
+        await addModulesToDocument(docElements, subSection.modules, exportData.languageId);
       }
     }
 
@@ -300,35 +300,58 @@ export async function createWordDocument(
  */
 async function addModulesToDocument(
   docElements: any[],
-  modules: ContentModule[]
+  modules: ContentModule[],
+  languageId?: number
 ): Promise<void> {
   // Sort modules by order
   modules.sort((a, b) => a.order - b.order);
 
   for (const module of modules) {
     try {
+      // Cerca la traduzione del modulo se è specificato un ID lingua
+      let translatedModule = module;
+      let translationContent = null;
+      
+      if (languageId) {
+        try {
+          // Cerca una traduzione per questo modulo
+          const translation = await storage.getContentModuleTranslationByLanguage(module.id, languageId);
+          if (translation && translation.content) {
+            translationContent = translation.content;
+            // Creiamo una copia del modulo con il contenuto tradotto
+            translatedModule = {
+              ...module,
+              translatedContent: translationContent
+            };
+            console.log(`Trovata traduzione per il modulo ${module.id}, tipo: ${module.type}`);
+          }
+        } catch (err) {
+          console.warn(`Errore nel recupero della traduzione per il modulo ${module.id}:`, err);
+        }
+      }
+      
       // Process the module based on its type
       switch (module.type) {
         case "text":
-          addTextModule(docElements, module);
+          addTextModule(docElements, translatedModule, translationContent);
           break;
         case "image":
-          await addImageModule(docElements, module);
+          await addImageModule(docElements, translatedModule, translationContent);
           break;
         case "table":
-          addTableModule(docElements, module);
+          addTableModule(docElements, translatedModule, translationContent);
           break;
         case "warning":
-          addWarningModule(docElements, module);
+          addWarningModule(docElements, translatedModule, translationContent);
           break;
         case "checklist":
-          addChecklistModule(docElements, module);
+          addChecklistModule(docElements, translatedModule, translationContent);
           break;
         case "component":
-          await addComponentModule(docElements, module);
+          await addComponentModule(docElements, translatedModule, translationContent);
           break;
         case "bom":
-          await addBomModule(docElements, module);
+          await addBomModule(docElements, translatedModule, translationContent);
           break;
         case "3d-model":
           // Nota: i modelli 3D non possono essere inclusi direttamente in Word
@@ -382,8 +405,9 @@ async function addModulesToDocument(
 /**
  * Add a text module to the document
  */
-function addTextModule(docElements: any[], module: ContentModule): void {
-  const content = module.content as { text: string };
+function addTextModule(docElements: any[], module: ContentModule, translationContent: any = null): void {
+  // Usa il contenuto tradotto se disponibile
+  const content = translationContent ? translationContent : module.content as { text: string };
   
   // Process text that might contain HTML
   // This is a simple approach - for more complex HTML we would need a proper HTML parser
