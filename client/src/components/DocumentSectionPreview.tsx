@@ -68,11 +68,12 @@ export default function DocumentSectionPreview({
       )}
       
       {/* Componente note per i lettori */}
-      {userRole === "reader" && userId && (
+      {userId && (
         <ReaderNotes 
           documentId={documentId} 
           sectionId={section.id} 
-          userId={userId} 
+          userId={userId}
+          userRole={userRole}
         />
       )}
 

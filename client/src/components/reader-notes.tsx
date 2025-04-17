@@ -10,9 +10,10 @@ interface ReaderNotesProps {
   sectionId?: number;
   moduleId?: number;
   userId: number;
+  userRole?: string;
 }
 
-export default function ReaderNotes({ documentId, sectionId, moduleId, userId }: ReaderNotesProps) {
+export default function ReaderNotes({ documentId, sectionId, moduleId, userId, userRole }: ReaderNotesProps) {
   const [noteText, setNoteText] = useState('');
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();
@@ -85,13 +86,20 @@ export default function ReaderNotes({ documentId, sectionId, moduleId, userId }:
             {filteredNotes.map((note: any) => (
               <div 
                 key={note.id} 
-                className="p-3 rounded-md bg-pink-100 border border-pink-200"
+                className={`p-3 rounded-md ${userRole === 'reader' ? 'bg-pink-200 border-pink-300 shadow-sm' : 'bg-pink-100 border-pink-200'} border`}
               >
-                <p className="text-sm text-neutral-dark">{note.content}</p>
+                <p className={`text-sm ${userRole === 'reader' ? 'text-pink-800 font-medium' : 'text-neutral-dark'}`}>
+                  {note.content}
+                </p>
                 <div className="flex justify-between items-center mt-1">
                   <span className="text-xs text-neutral-medium">
                     {new Date(note.createdAt).toLocaleString()}
                   </span>
+                  {userRole === 'reader' && (
+                    <span className="text-xs font-medium px-2 py-0.5 bg-pink-100 text-pink-700 rounded-full">
+                      Nota lettore
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
