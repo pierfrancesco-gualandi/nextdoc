@@ -438,6 +438,12 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   
   return (
     <>
+      {/* Dialog per selezione utente */}
+      <UserSelectorDialog 
+        isOpen={showUserSelector} 
+        onClose={handleUserSelect} 
+      />
+      
       <Header 
         title={documentTitle} 
         documentId={id}
@@ -487,7 +493,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                     <CardContent>
                       <DocumentDetails 
                         document={null} 
-                        userId={userId}
+                        userId={currentUserId}
                       />
                     </CardContent>
                   </Card>
@@ -648,8 +654,8 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                                   level={0}
                                   languageId={selectedLanguage}
                                   highlightMissingTranslations={true}
-                                  userRole={userRole}
-                                  userId={userId}
+                                  userRole={currentUserRole}
+                                  userId={currentUserId}
                                 />
                               ) : (
                                 <DocumentSectionPreview 
@@ -658,8 +664,8 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                                   allSections={sections}
                                   documentId={id}
                                   level={0}
-                                  userRole={userRole}
-                                  userId={userId}
+                                  userRole={currentUserRole}
+                                  userId={currentUserId}
                                 />
                               )
                             ))}
