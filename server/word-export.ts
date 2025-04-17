@@ -35,6 +35,7 @@ interface DocExportData {
       modules: ContentModule[];
     }[];
   }[];
+  languageId?: number;
 }
 
 /**
@@ -55,6 +56,15 @@ export async function createWordDocument(
     const allSections = await storage.getSectionsByDocumentId(doc.id);
     const rootSections = allSections.filter((s) => !s.parentId);
     
+    // Recupera la lingua selezionata se specificata
+    let selectedLanguage = undefined;
+    if (languageId) {
+      selectedLanguage = await storage.getLanguage(languageId);
+      if (!selectedLanguage) {
+        console.warn(`Lingua con ID ${languageId} non trovata, verrà utilizzata la lingua originale`);
+      }
+    }
+    
     // Sort sections by order
     rootSections.sort((a, b) => a.order - b.order);
 
@@ -67,6 +77,7 @@ export async function createWordDocument(
         version: doc.version,
       },
       sections: [],
+      languageId: languageId,
     };
 
     // For each root section, get content and sub-sections
