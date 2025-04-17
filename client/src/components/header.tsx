@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "lucide-react";
 import { useUser } from "../contexts/UserContext";
+import UserSelectorDialog from "./user-selector-dialog";
 
 interface HeaderProps {
   title?: string;
@@ -33,6 +34,7 @@ export default function Header({
   // Stati per gestire i dropdown
   const [versionMenuOpen, setVersionMenuOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [userSelectorOpen, setUserSelectorOpen] = useState(false);
   
   // Refs per gestire i click esterni
   const versionDropdownRef = useRef<HTMLDivElement>(null);
@@ -49,7 +51,7 @@ export default function Header({
   });
   
   // Usa il contesto utente
-  const { currentUserId, displayName, userBadgeColor, currentUserRole } = useUser();
+  const { currentUserId, displayName, userBadgeColor, currentUserRole, setUserDetails } = useUser();
 
   // Format status for display
   const getStatusDisplay = (status: string) => {
@@ -118,18 +120,34 @@ export default function Header({
             )}
             {displayName && (
               <div 
-                className="flex items-center ml-4 px-3 py-1 rounded-full"
+                className="flex items-center ml-4 px-3 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity"
                 style={{ 
                   backgroundColor: `${userBadgeColor}20`,
                   color: userBadgeColor,
                   borderColor: `${userBadgeColor}40`,
                   border: "1px solid"
                 }}
+                onClick={() => setUserSelectorOpen(true)}
+                title="Clicca per cambiare utente"
               >
                 <User className="w-4 h-4 mr-1" />
                 <span className="text-sm font-medium">{displayName}</span>
               </div>
             )}
+            
+            {/* Dialog per la selezione dell'utente */}
+            <UserSelectorDialog 
+              isOpen={userSelectorOpen}
+              onClose={(userId, userRole, displayName, badgeColor) => {
+                setUserDetails(userId, userRole, displayName, badgeColor);
+                setUserSelectorOpen(false);
+                toast({
+                  title: "Utente cambiato",
+                  description: `Ora stai utilizzando ${displayName} con ruolo ${userRole}`
+                });
+              }}
+              onCancel={() => setUserSelectorOpen(false)}
+            />
           </div>
         </div>
         
