@@ -2176,6 +2176,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Route to serve uploaded files
+
+
+  // Endpoint per scaricare il file esportato
+  app.get("/api/exports/:filename", (req: Request, res: Response) => {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, "../exports", filename);
+    
+    // Verifica che il file esista
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: "File esportato non trovato" });
+    }
+    
+    // Imposta gli header per il download
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    
+    // Invia il file
+    res.sendFile(filePath);
+  });
+
   app.use("/uploads", (req: Request, res: Response, next: NextFunction) => {
     const filePath = path.join(process.cwd(), "uploads", req.path);
     fs.access(filePath, fs.constants.F_OK, (err) => {

@@ -69,6 +69,149 @@ export function downloadTextFile(fileName: string, content: string, type: string
 }
 
 /**
+ * Esporta un documento in formato HTML
+ * @param documentId ID del documento da esportare
+ */
+export async function exportToHtml(documentId: string): Promise<void> {
+  try {
+    const document = await getFullDocument(documentId);
+    
+    // Genera il contenuto HTML
+    let content = `
+      <h1>${document.title}</h1>
+      <p>${document.description || ''}</p>
+      <p><strong>Versione:</strong> ${document.version}</p>
+    `;
+    
+    // Aggiungi le sezioni e i moduli
+    for (const section of document.sections) {
+      content += `
+        <h2>${section.title}</h2>
+        <p>${section.description || ''}</p>
+      `;
+      
+      // Aggiungi i moduli della sezione
+      for (const module of section.modules) {
+        switch (module.type) {
+          case 'text':
+            content += `<div>${module.content.text}</div>`;
+            break;
+          case 'image':
+            content += `
+              <div style="text-align: center; margin: 15px 0;">
+                <img src="${module.content.src}" alt="${module.content.alt || ''}" style="max-width: 100%;" />
+                ${module.content.caption ? `<p><em>${module.content.caption}</em></p>` : ''}
+              </div>
+            `;
+            break;
+          case 'warning':
+            const warningColor = module.content.level === 'error' ? '#ffdddd' : 
+                                 module.content.level === 'warning' ? '#fff3cd' : '#d1ecf1';
+            content += `
+              <div style="background-color: ${warningColor}; padding: 10px; border-left: 4px solid #b22222; margin: 15px 0;">
+                <h4 style="margin: 0;">${module.content.title}</h4>
+                <p>${module.content.message}</p>
+              </div>
+            `;
+            break;
+          // Altri tipi di modulo potrebbero essere aggiunti qui
+        }
+      }
+    }
+    
+    // Genera il documento HTML completo
+    const htmlDocument = generateHtml(document.title, content);
+    
+    // Scarica il file
+    downloadTextFile(`${document.title.replace(/\s+/g, '_')}_v${document.version}.html`, htmlDocument, 'text/html;charset=utf-8');
+  } catch (error) {
+    console.error('Errore durante l\'esportazione HTML:', error);
+    throw error;
+  }
+}
+
+/**
+ * Esporta un documento in formato PDF
+ * @param documentId ID del documento da esportare
+ */
+export async function exportToPdf(documentId: string): Promise<void> {
+  // Per ora, useremo l'approccio semplice di chiamare l'API del server per generare il PDF
+  try {
+    const response = await fetch(`/api/documents/${documentId}/export/pdf`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Errore durante l\'esportazione PDF');
+    }
+    
+    // Ottieni il blob dal responso
+    const blob = await response.blob();
+    
+    // Estrai il nome del file dall'header Content-Disposition o usa un nome predefinito
+    let filename = 'documento.pdf';
+    const contentDisposition = response.headers.get('Content-Disposition');
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1];
+      }
+    }
+    
+    // Salva il file usando file-saver
+    saveAs(blob, filename);
+  } catch (error) {
+    console.error('Errore durante l\'esportazione PDF:', error);
+    throw error;
+  }
+}
+
+/**
+ * Esporta un documento in formato Word (.docx)
+ * @param documentId ID del documento da esportare
+ * @param languageId ID opzionale della lingua per traduzioni
+ * @returns Promise che si risolve quando il download è completo
+ */
+export async function exportToWord(documentId: string, languageId?: string): Promise<void> {
+  try {
+    // Parametri della query
+    const queryParams = new URLSearchParams();
+    if (languageId) {
+      queryParams.append('languageId', languageId);
+    }
+    
+    // URL con parametri
+    const url = `/api/documents/${documentId}/export/word${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    
+    // Richiesta di esportazione
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Errore durante l\'esportazione Word');
+    }
+    
+    // Ottieni il blob dal responso
+    const blob = await response.blob();
+    
+    // Estrai il nome del file dall'header Content-Disposition o usa un nome predefinito
+    let filename = 'documento.docx';
+    const contentDisposition = response.headers.get('Content-Disposition');
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1];
+      }
+    }
+    
+    // Salva il file usando file-saver
+    saveAs(blob, filename);
+  } catch (error) {
+    console.error('Errore durante l\'esportazione Word:', error);
+    throw error;
+  }
+}
+
+/**
  * Genera un semplice documento HTML
  * @param title Titolo del documento
  * @param content Contenuto HTML del documento

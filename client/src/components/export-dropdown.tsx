@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { exportToHtml, exportToPdf } from "@/lib/file-export";
+import { exportToHtml, exportToPdf, exportToWord } from "@/lib/document-utils";
 import { useToast } from "@/hooks/use-toast";
 
 interface ExportDropdownProps {
@@ -35,10 +35,10 @@ export function ExportDropdown({ documentId }: ExportDropdownProps) {
           await exportToPdf(documentId);
           break;
         case 'word':
-          // Not implemented yet
+          await exportToWord(documentId);
           toast({
-            title: "Funzionalità in arrivo",
-            description: "L'esportazione in formato Word sarà disponibile a breve"
+            title: "Esportazione completata",
+            description: "Il documento è stato esportato in formato Word"
           });
           break;
       }
