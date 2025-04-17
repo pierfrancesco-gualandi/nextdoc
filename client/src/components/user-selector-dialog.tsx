@@ -6,19 +6,21 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter
+  DialogFooter,
+  DialogClose
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 
 interface UserSelectorDialogProps {
   isOpen: boolean;
   onClose: (userId: number, userRole: string) => void;
+  onCancel?: () => void;  // Nuovo prop per gestire la cancellazione
 }
 
-export default function UserSelectorDialog({ isOpen, onClose }: UserSelectorDialogProps) {
+export default function UserSelectorDialog({ isOpen, onClose, onCancel }: UserSelectorDialogProps) {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [selectedUserRole, setSelectedUserRole] = useState<string>('');
 
@@ -29,7 +31,7 @@ export default function UserSelectorDialog({ isOpen, onClose }: UserSelectorDial
 
   // Aggiorna il ruolo quando viene selezionato un utente
   useEffect(() => {
-    if (selectedUserId && users) {
+    if (selectedUserId && users && Array.isArray(users)) {
       const user = users.find((user: any) => user.id === selectedUserId);
       if (user) {
         setSelectedUserRole(user.role);
@@ -42,10 +44,17 @@ export default function UserSelectorDialog({ isOpen, onClose }: UserSelectorDial
     setSelectedUserId(userId);
   };
 
-  // Gestisce la chiusura del dialog
+  // Gestisce la chiusura del dialog con conferma
   const handleConfirm = () => {
     if (selectedUserId) {
       onClose(selectedUserId, selectedUserRole);
+    }
+  };
+  
+  // Gestisce la chiusura del dialog senza selezione
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
     }
   };
 
@@ -84,6 +93,15 @@ export default function UserSelectorDialog({ isOpen, onClose }: UserSelectorDial
   return (
     <Dialog open={isOpen}>
       <DialogContent className="max-w-md">
+        {/* Pulsante di chiusura nell'angolo in alto a destra */}
+        <button 
+          onClick={handleCancel} 
+          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Chiudi</span>
+        </button>
+        
         <DialogHeader>
           <DialogTitle>Seleziona utente</DialogTitle>
           <DialogDescription>
@@ -99,7 +117,7 @@ export default function UserSelectorDialog({ isOpen, onClose }: UserSelectorDial
           <div className="py-4">
             <RadioGroup value={selectedUserId?.toString()} onValueChange={(value) => handleUserSelect(parseInt(value))}>
               <div className="space-y-2">
-                {users && users.map((user: any) => (
+                {users && Array.isArray(users) && users.map((user: any) => (
                   <div key={user.id} className="flex items-center justify-between space-x-2 p-2 rounded-md hover:bg-neutral-50">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value={user.id.toString()} id={`user-${user.id}`} />
@@ -118,7 +136,13 @@ export default function UserSelectorDialog({ isOpen, onClose }: UserSelectorDial
           </div>
         )}
         
-        <DialogFooter>
+        <DialogFooter className="flex justify-between">
+          <Button 
+            variant="outline"
+            onClick={handleCancel}
+          >
+            Annulla
+          </Button>
           <Button 
             onClick={handleConfirm}
             disabled={!selectedUserId}

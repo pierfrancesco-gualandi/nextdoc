@@ -151,6 +151,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   
   // State per il selettore utente e l'utente corrente
   const [showUserSelector, setShowUserSelector] = useState<boolean>(true);
+  const [userSelectCanceled, setUserSelectCanceled] = useState<boolean>(false);
   const [currentUserId, setCurrentUserId] = useState<number>(1);
   const [currentUserRole, setCurrentUserRole] = useState<string>("reader");
   
@@ -159,7 +160,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     queryKey: ['/api/users'],
   });
   
-  // Gestisce la chiusura del selettore utente
+  // Gestisce la chiusura del selettore utente con selezione
   const handleUserSelect = (userId: number, userRole: string) => {
     setCurrentUserId(userId);
     setCurrentUserRole(userRole);
@@ -168,6 +169,19 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     toast({
       title: "Utente selezionato",
       description: `Stai visualizzando il documento con i permessi di ${userRole}`,
+    });
+  };
+  
+  // Gestisce la chiusura del selettore utente senza selezione
+  const handleUserSelectCancel = () => {
+    // Se è stato annullato una volta, non mostriamo più il selettore
+    setUserSelectCanceled(true);
+    setShowUserSelector(false);
+    
+    // Usiamo l'utente di default (primo utente, solitamente admin)
+    toast({
+      title: "Selezione utente annullata",
+      description: "Stai visualizzando il documento con i permessi di default",
     });
   };
   
