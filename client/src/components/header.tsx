@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { ExportDropdown } from "./export-dropdown";
 import { useQuery } from "@tanstack/react-query";
@@ -28,6 +28,14 @@ export default function Header({
   const [activeTab, setActiveTab] = useState("editor");
   const { toast } = useToast();
   
+  // Stati per gestire i dropdown
+  const [versionMenuOpen, setVersionMenuOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  
+  // Refs per gestire i click esterni
+  const versionDropdownRef = useRef<HTMLDivElement>(null);
+  const moreDropdownRef = useRef<HTMLDivElement>(null);
+  
   const { data: documentVersions } = useQuery({
     queryKey: documentId ? [`/api/documents/${documentId}/versions`] : ["no-versions"],
     enabled: !!documentId && documentId !== 'new',
@@ -51,6 +59,7 @@ export default function Header({
       title: "Cronologia versioni",
       description: "Funzionalità in sviluppo"
     });
+    setVersionMenuOpen(!versionMenuOpen);
   };
   
   const showComments = () => {
@@ -59,6 +68,26 @@ export default function Header({
       description: "Funzionalità in sviluppo"
     });
   };
+  
+  // Gestisce i click esterni per chiudere i dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      // Per il menu versioni
+      if (versionDropdownRef.current && !versionDropdownRef.current.contains(event.target as Node)) {
+        setVersionMenuOpen(false);
+      }
+      
+      // Per il menu altro
+      if (moreDropdownRef.current && !moreDropdownRef.current.contains(event.target as Node)) {
+        setMoreMenuOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <header className="bg-white border-b border-neutral-light">
@@ -82,7 +111,7 @@ export default function Header({
         
         {documentId && (
           <div className="flex items-center space-x-2">
-            <div className="dropdown relative">
+            <div className="relative" ref={versionDropdownRef}>
               <button 
                 className="p-2 rounded-full hover:bg-neutral-lightest has-tooltip"
                 onClick={showVersionHistory}
@@ -91,8 +120,8 @@ export default function Header({
                 <span className="tooltip -mt-10">Cronologia</span>
               </button>
               
-              {documentVersions && documentVersions.length > 0 && (
-                <div className="dropdown-content bg-white mt-2 p-2 rounded shadow-lg">
+              {versionMenuOpen && documentVersions && Array.isArray(documentVersions) && documentVersions.length > 0 && (
+                <div className="absolute right-0 mt-2 bg-white p-2 rounded shadow-lg z-50">
                   <h4 className="text-sm font-medium text-neutral-dark mb-2 px-2">Versioni recenti</h4>
                   {documentVersions.slice(0, 3).map((version: any) => (
                     <div key={version.id} className="px-2 py-1 hover:bg-neutral-lightest rounded text-sm">
@@ -120,25 +149,30 @@ export default function Header({
               <span className="tooltip -mt-10">Commenti</span>
             </button>
             
-            <div className="dropdown relative">
-              <button className="p-2 rounded-full hover:bg-neutral-lightest has-tooltip">
+            <div className="relative" ref={moreDropdownRef}>
+              <button 
+                className="p-2 rounded-full hover:bg-neutral-lightest has-tooltip"
+                onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+              >
                 <span className="material-icons">more_vert</span>
                 <span className="tooltip -mt-10">Altro</span>
               </button>
-              <div className="dropdown-content bg-white mt-2 rounded shadow-lg">
-                <a href="#" className="block px-4 py-2 text-sm hover:bg-neutral-lightest">
-                  <span className="material-icons text-sm mr-2">content_copy</span>
-                  Duplica
-                </a>
-                <a href="#" className="block px-4 py-2 text-sm hover:bg-neutral-lightest">
-                  <span className="material-icons text-sm mr-2">share</span>
-                  Condividi
-                </a>
-                <a href="#" className="block px-4 py-2 text-sm hover:bg-neutral-lightest">
-                  <span className="material-icons text-sm mr-2">delete</span>
-                  Elimina
-                </a>
-              </div>
+              {moreMenuOpen && (
+                <div className="absolute right-0 mt-2 bg-white rounded shadow-lg z-50 min-w-[160px]">
+                  <a href="#" className="block px-4 py-2 text-sm hover:bg-neutral-lightest">
+                    <span className="material-icons text-sm mr-2">content_copy</span>
+                    Duplica
+                  </a>
+                  <a href="#" className="block px-4 py-2 text-sm hover:bg-neutral-lightest">
+                    <span className="material-icons text-sm mr-2">share</span>
+                    Condividi
+                  </a>
+                  <a href="#" className="block px-4 py-2 text-sm hover:bg-neutral-lightest">
+                    <span className="material-icons text-sm mr-2">delete</span>
+                    Elimina
+                  </a>
+                </div>
+              )}
             </div>
             
             <div className="border-l border-neutral-light h-6 mx-2"></div>

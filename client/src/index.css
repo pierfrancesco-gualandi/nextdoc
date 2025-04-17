@@ -13,26 +13,6 @@
 }
 
 @layer components {
-  /* Dropdown menu che rimane visibile quando ci si sposta sopra */
-  .dropdown {
-    position: relative;
-    display: inline-block;
-  }
-
-  .dropdown-content {
-    position: absolute;
-    right: 0;
-    min-width: 160px;
-    z-index: 50;
-    display: none;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  }
-
-  .dropdown:hover .dropdown-content,
-  .dropdown-content:hover {
-    display: block;
-  }
-  
   /* Scrollbar personalizzata per overflow */
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
