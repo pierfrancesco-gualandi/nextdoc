@@ -9,6 +9,12 @@ import { handleWebGLModelUpload, initializeWebGLModelFiles } from "./webgl-model
 import { createWordDocument } from "./word-export";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+// Ottieni il percorso corrente in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import { read, utils } from 'xlsx';
 import { parse } from 'csv-parse/sync';
 import type { jsonb } from "drizzle-orm/pg-core";
