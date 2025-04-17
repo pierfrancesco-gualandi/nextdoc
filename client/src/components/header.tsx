@@ -4,6 +4,7 @@ import { ExportDropdown } from "./export-dropdown";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { User } from "lucide-react";
 
 interface HeaderProps {
   title?: string;
@@ -40,6 +41,32 @@ export default function Header({
     queryKey: documentId ? [`/api/documents/${documentId}/versions`] : ["no-versions"],
     enabled: !!documentId && documentId !== 'new',
   });
+  
+  // Ottieni l'utente corrente
+  const { data: users } = useQuery({
+    queryKey: ['/api/users'],
+  });
+  
+  // Controlla se c'è un utente selezionato nel sessionStorage
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  
+  useEffect(() => {
+    // Controllo se esiste un utente selezionato nel sessionStorage
+    const selectedUserId = sessionStorage.getItem('selectedUserId');
+    
+    if (selectedUserId && users && Array.isArray(users)) {
+      const foundUser = users.find((user: any) => user.id.toString() === selectedUserId);
+      if (foundUser) {
+        setCurrentUser(foundUser);
+      } else if (users.length > 0) {
+        // Se non c'è un utente selezionato, usa il primo della lista (admin)
+        setCurrentUser(users[0]);
+      }
+    } else if (users && Array.isArray(users) && users.length > 0) {
+      // Se non c'è un utente selezionato, usa il primo della lista (admin)
+      setCurrentUser(users[0]);
+    }
+  }, [users]);
 
   // Format status for display
   const getStatusDisplay = (status: string) => {
@@ -105,6 +132,12 @@ export default function Header({
               <span className={`status-badge ${statusDisplay.bgClass}`}>
                 {statusDisplay.label}
               </span>
+            )}
+            {currentUser && (
+              <div className="flex items-center ml-4 text-neutral-dark bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-full">
+                <User className="w-4 h-4 mr-1" />
+                <span className="text-sm font-medium">{currentUser.name || currentUser.username}</span>
+              </div>
             )}
           </div>
         </div>
