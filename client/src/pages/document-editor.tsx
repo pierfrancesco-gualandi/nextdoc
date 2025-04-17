@@ -154,6 +154,8 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   const [userSelectCanceled, setUserSelectCanceled] = useState<boolean>(false);
   const [currentUserId, setCurrentUserId] = useState<number>(1);
   const [currentUserRole, setCurrentUserRole] = useState<string>("reader");
+  const [displayName, setDisplayName] = useState<string>("");
+  const [userBadgeColor, setUserBadgeColor] = useState<string>("#3b82f6");
   
   // Carica tutti gli utenti
   const { data: users } = useQuery({
@@ -161,10 +163,18 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   });
   
   // Gestisce la chiusura del selettore utente con selezione
-  const handleUserSelect = (userId: number, userRole: string) => {
+  const handleUserSelect = (userId: number, userRole: string, customName: string, badgeColor: string) => {
     setCurrentUserId(userId);
     setCurrentUserRole(userRole);
+    setDisplayName(customName);
+    setUserBadgeColor(badgeColor);
     setShowUserSelector(false);
+    
+    // Salva nel sessionStorage
+    sessionStorage.setItem('selectedUserId', userId.toString());
+    sessionStorage.setItem('selectedUserRole', userRole);
+    sessionStorage.setItem('selectedUserName', customName);
+    sessionStorage.setItem('selectedUserColor', badgeColor);
     
     toast({
       title: "Utente selezionato",
