@@ -18,6 +18,7 @@ import DocumentSectionPreview from "@/components/DocumentSectionPreview";
 import TranslatedDocumentSectionPreview from "@/components/TranslatedDocumentSectionPreview";
 import LanguageSelector from "@/components/language-selector";
 import UserSelectorDialog from "@/components/user-selector-dialog";
+import { useUser } from "../contexts/UserContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -167,6 +168,9 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     queryKey: ['/api/users'],
   });
   
+  // Usa il contesto utente
+  const { setUserDetails } = useUser();
+  
   // Gestisce la chiusura del selettore utente con selezione
   const handleUserSelect = (userId: number, userRole: string, customName: string, badgeColor: string) => {
     setCurrentUserId(userId);
@@ -174,6 +178,9 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     setDisplayName(customName);
     setUserBadgeColor(badgeColor);
     setShowUserSelector(false);
+    
+    // Aggiorna il contesto utente
+    setUserDetails(userId, userRole, customName, badgeColor);
     
     // Salva nel sessionStorage
     sessionStorage.setItem('selectedUserId', userId.toString());
