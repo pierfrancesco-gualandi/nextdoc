@@ -73,6 +73,7 @@ interface ContentModuleProps {
   isPreview?: boolean;
   selectedLanguage?: string;
   highlightMissingTranslations?: boolean;
+  disabled?: boolean;
 }
 
 // Funzione per estrarre la traduzione dai dati del modulo
@@ -195,7 +196,8 @@ export default function ContentModule({
   documentId,
   isPreview = false,
   selectedLanguage,
-  highlightMissingTranslations = true
+  highlightMissingTranslations = true,
+  disabled = false
 }: ContentModuleProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();

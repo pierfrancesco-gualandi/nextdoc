@@ -713,6 +713,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                                 onDelete={handleDeleteModule}
                                 onUpdate={handleUpdateModule}
                                 documentId={id}
+                                disabled={!canEdit}
                               />
                             ))
                           ) : (

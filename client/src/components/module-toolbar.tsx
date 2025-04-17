@@ -259,6 +259,9 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
   });
 
   const handleAddModule = (type: string) => {
+    // Se è disabilitato, non fare nulla
+    if (disabled) return;
+    
     // Per i tipi che supportano l'upload, mostra il dialog di upload
     if (type === "image" || type === "video" || type === "pdf" || type === "3d-model") {
       setUploadType(type as "image" | "video" | "pdf" | "3d-model");
@@ -604,19 +607,30 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
 
   return (
     <>
-      <div className="border border-neutral-light rounded-md overflow-hidden mb-6">
+      <div className={`border border-neutral-light rounded-md overflow-hidden mb-6 ${disabled ? 'opacity-70' : ''}`}>
         <div className="bg-neutral-lightest px-3 py-2 border-b border-neutral-light">
-          <span className="text-sm font-medium text-neutral-dark">Moduli</span>
+          <span className="text-sm font-medium text-neutral-dark flex items-center justify-between">
+            Moduli
+            {disabled && (
+              <span className="text-xs text-neutral-medium italic">Non hai permessi per aggiungere moduli</span>
+            )}
+          </span>
         </div>
         <div className="p-2 flex flex-wrap gap-1">
           {moduleTypes.map(module => (
             <button 
               key={module.id}
-              className="bg-white hover:bg-neutral-lightest border border-neutral-light rounded p-1.5 flex items-center text-sm"
-              draggable
-              onDragStart={(e) => handleDragStart(e, module.id)}
-              onDragEnd={handleDragEnd}
-              onClick={() => handleAddModule(module.id)}
+              className={`border rounded p-1.5 flex items-center text-sm ${
+                disabled 
+                  ? 'bg-neutral-lightest border-neutral-light text-neutral-medium cursor-not-allowed' 
+                  : 'bg-white hover:bg-neutral-lightest border-neutral-light'
+              }`}
+              draggable={!disabled}
+              onDragStart={!disabled ? (e) => handleDragStart(e, module.id) : undefined}
+              onDragEnd={!disabled ? handleDragEnd : undefined}
+              onClick={!disabled ? () => handleAddModule(module.id) : undefined}
+              disabled={disabled}
+              title={disabled ? "Non hai permessi per aggiungere moduli" : ""}
             >
               <span className="material-icons text-sm mr-1">{module.icon}</span>
               {module.label}
