@@ -2,6 +2,7 @@ import { useState, useRef, useMemo, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/contexts/UserContext";
 import { TiptapEditor } from "@/components/ui/tiptap-editor";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -204,9 +205,15 @@ export default function ContentModule({
   const [isEditing, setIsEditingState] = useState(false);
   const [content, setContent] = useState(module.content);
   
+  // Ottieni il ruolo utente dal contesto
+  const { currentUserRole } = useUser();
+  
   // Wrapper per setIsEditing che controlla i permessi
   const setIsEditing = (value: boolean) => {
-    if (value && disabled) {
+    // Non permettere di entrare in modalità di modifica se:
+    // 1. Il modulo è disabilitato (props), oppure
+    // 2. L'utente non ha il ruolo di admin o editor
+    if (value && (disabled || (currentUserRole !== 'admin' && currentUserRole !== 'editor'))) {
       toast({
         title: "Permesso negato",
         description: "Non hai i permessi per modificare questo modulo",

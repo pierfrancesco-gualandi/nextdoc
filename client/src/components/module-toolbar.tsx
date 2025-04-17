@@ -18,6 +18,8 @@ interface ModuleToolbarProps {
 export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = false }: ModuleToolbarProps) {
   const { toast } = useToast();
   const [isDragging, setIsDragging] = useState(false);
+  // Ottieni il ruolo dell'utente corrente dal contesto
+  const { currentUserRole } = useUser();
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [uploadType, setUploadType] = useState<"image" | "video" | "pdf" | "3d-model">("image");
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -260,8 +262,15 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
   });
 
   const handleAddModule = (type: string) => {
-    // Se è disabilitato, non fare nulla
-    if (disabled) return;
+    // Se è disabilitato o l'utente non ha permesso di modifica, non fare nulla
+    if (disabled || (currentUserRole !== 'admin' && currentUserRole !== 'editor')) {
+      toast({
+        title: "Permesso negato",
+        description: "Non hai i permessi necessari per aggiungere moduli",
+        variant: "destructive"
+      });
+      return;
+    }
     
     // Per i tipi che supportano l'upload, mostra il dialog di upload
     if (type === "image" || type === "video" || type === "pdf" || type === "3d-model") {
