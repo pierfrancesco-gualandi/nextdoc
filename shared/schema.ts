@@ -20,7 +20,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  role: text("role").notNull().default("reader"), // "admin" (full access), "translator" (translation-only), "reader" (view-only)
+  role: text("role").notNull().default("reader"), // "admin" (full access), "editor" (content editing), "translator" (translation-only), "reader" (view-only)
   name: text("name").notNull(),
   email: text("email").notNull(),
 });

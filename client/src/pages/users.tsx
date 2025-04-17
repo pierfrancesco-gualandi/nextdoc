@@ -88,7 +88,8 @@ export default function Users({ toggleSidebar }: UsersProps) {
     switch(role) {
       case "admin": return "bg-error bg-opacity-10 text-error";
       case "editor": return "bg-warning bg-opacity-10 text-warning";
-      case "viewer": return "bg-info bg-opacity-10 text-info";
+      case "translator": return "bg-success bg-opacity-10 text-success";
+      case "reader": return "bg-info bg-opacity-10 text-info";
       default: return "bg-neutral-light text-neutral-dark";
     }
   };
@@ -98,13 +99,14 @@ export default function Users({ toggleSidebar }: UsersProps) {
     switch(role) {
       case "admin": return "Amministratore";
       case "editor": return "Editore";
-      case "viewer": return "Visualizzatore";
+      case "translator": return "Traduttore";
+      case "reader": return "Lettore";
       default: return role;
     }
   };
   
   // Filter users based on search query
-  const filteredUsers = users ? 
+  const filteredUsers = users && Array.isArray(users) ? 
     users.filter((user: any) => 
       user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -190,7 +192,8 @@ export default function Users({ toggleSidebar }: UsersProps) {
                           <SelectContent>
                             <SelectItem value="admin">Amministratore</SelectItem>
                             <SelectItem value="editor">Editore</SelectItem>
-                            <SelectItem value="viewer">Visualizzatore</SelectItem>
+                            <SelectItem value="translator">Traduttore</SelectItem>
+                            <SelectItem value="reader">Lettore</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
