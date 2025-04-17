@@ -16,8 +16,14 @@ import {
 } from "docx";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 import { storage } from "./storage";
 import { ContentModule, Section } from "@shared/schema";
+
+// Ottieni il percorso corrente in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Define interface for document data
 interface DocExportData {
@@ -472,6 +478,9 @@ async function addImageModule(
             width: 400, // Adjust width as needed, maintaining aspect ratio
             height: 300, // Adjust height as needed
           },
+          // Aggiungi le proprietà mancanti richieste dalla libreria docx
+          type: "png", // Imposta il tipo come predefinito, anche se è un jpg funzionerà
+          altText: content.alt || "Immagine",
         }),
       ],
     })
@@ -500,7 +509,43 @@ function addTableModule(docElements: any[], module: ContentModule, translationCo
     caption?: string;
   };
 
-  // Create table
+  // Create table rows array first
+  const rows = [];
+  
+  // Add header row
+  const headerCells = content.headers.map(
+    (header: string) =>
+      new TableCell({
+        children: [
+          new Paragraph({
+            text: header,
+            style: "TableHeader",
+          }),
+        ],
+        shading: {
+          fill: "EEEEEE",
+        },
+      })
+  );
+  rows.push(new TableRow({ children: headerCells }));
+  
+  // Add data rows
+  for (const rowData of content.rows) {
+    const cells = rowData.map(
+      (cell: string) =>
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: cell,
+              style: "Normal",
+            }),
+          ],
+        })
+    );
+    rows.push(new TableRow({ children: cells }));
+  }
+  
+  // Create table with rows
   const table = new Table({
     width: {
       size: 100,
@@ -514,44 +559,10 @@ function addTableModule(docElements: any[], module: ContentModule, translationCo
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
       insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
     },
+    rows: rows,
   });
 
-  // Add header row
-  const headerRow = new TableRow({
-    children: content.headers.map(
-      (header) =>
-        new TableCell({
-          children: [
-            new Paragraph({
-              text: header,
-              style: "TableHeader",
-            }),
-          ],
-          shading: {
-            fill: "EEEEEE",
-          },
-        })
-    ),
-  });
-  table.addRow(headerRow);
-
-  // Add data rows
-  for (const rowData of content.rows) {
-    const row = new TableRow({
-      children: rowData.map(
-        (cell) =>
-          new TableCell({
-            children: [
-              new Paragraph({
-                text: cell,
-                style: "Normal",
-              }),
-            ],
-          })
-      ),
-    });
-    table.addRow(row);
-  }
+  // La tabella contiene già le righe ora, non c'è bisogno di aggiungerle
 
   // Add table to document
   docElements.push(table);
@@ -823,7 +834,132 @@ async function addBomModule(
     })
   );
 
-  // Aggiungi una tabella con gli elementi della distinta
+  // Crea array di righe per la tabella
+  const rows = [];
+  
+  // Aggiungi riga di intestazione
+  rows.push(
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: "N°",
+              style: "TableHeader",
+            }),
+          ],
+          shading: {
+            fill: "EEEEEE",
+          },
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: "Livello",
+              style: "TableHeader",
+            }),
+          ],
+          shading: {
+            fill: "EEEEEE",
+          },
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: "Codice",
+              style: "TableHeader",
+            }),
+          ],
+          shading: {
+            fill: "EEEEEE",
+          },
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: "Descrizione",
+              style: "TableHeader",
+            }),
+          ],
+          shading: {
+            fill: "EEEEEE",
+          },
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: "Quantità",
+              style: "TableHeader",
+            }),
+          ],
+          shading: {
+            fill: "EEEEEE",
+          },
+        }),
+      ],
+    })
+  );
+
+  // Aggiungi righe per ogni elemento della distinta
+  filteredItems.forEach((item: any, index: number) => {
+    // Verifica che item esista e sia valido
+    if (!item || !item.component) return;
+
+    // Estrai proprietà in modo sicuro
+    const level = item.level !== undefined ? item.level : '';
+    const code = item.component.code || '';
+    const description = item.component.description || '';
+    const quantity = item.quantity || 0;
+
+    rows.push(
+      new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph({
+                text: String(index + 1),
+                style: "Normal",
+              }),
+            ],
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                text: String(level),
+                style: "Normal",
+              }),
+            ],
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                text: code,
+                style: "Normal",
+              }),
+            ],
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                text: description,
+                style: "Normal",
+              }),
+            ],
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                text: String(quantity),
+                style: "Normal",
+              }),
+            ],
+          }),
+        ],
+      })
+    );
+  });
+  
+  // Crea la tabella con le righe
   const table = new Table({
     width: {
       size: 100,
@@ -837,126 +973,7 @@ async function addBomModule(
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
       insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
     },
-  });
-
-  // Aggiungi riga di intestazione
-  const headerRow = new TableRow({
-    children: [
-      new TableCell({
-        children: [
-          new Paragraph({
-            text: "N°",
-            style: "TableHeader",
-          }),
-        ],
-        shading: {
-          fill: "EEEEEE",
-        },
-      }),
-      new TableCell({
-        children: [
-          new Paragraph({
-            text: "Livello",
-            style: "TableHeader",
-          }),
-        ],
-        shading: {
-          fill: "EEEEEE",
-        },
-      }),
-      new TableCell({
-        children: [
-          new Paragraph({
-            text: "Codice",
-            style: "TableHeader",
-          }),
-        ],
-        shading: {
-          fill: "EEEEEE",
-        },
-      }),
-      new TableCell({
-        children: [
-          new Paragraph({
-            text: "Descrizione",
-            style: "TableHeader",
-          }),
-        ],
-        shading: {
-          fill: "EEEEEE",
-        },
-      }),
-      new TableCell({
-        children: [
-          new Paragraph({
-            text: "Quantità",
-            style: "TableHeader",
-          }),
-        ],
-        shading: {
-          fill: "EEEEEE",
-        },
-      }),
-    ],
-  });
-  table.addRow(headerRow);
-
-  // Aggiungi righe per ogni elemento della distinta
-  filteredItems.forEach((item: any, index: number) => {
-    // Verifica che item esista e sia valido
-    if (!item || !item.component) return;
-
-    // Estrai proprietà in modo sicuro
-    const level = item.level !== undefined ? item.level : '';
-    const code = item.component.code || '';
-    const description = item.component.description || '';
-    const quantity = item.quantity || 0;
-
-    const dataRow = new TableRow({
-      children: [
-        new TableCell({
-          children: [
-            new Paragraph({
-              text: String(index + 1),
-              style: "Normal",
-            }),
-          ],
-        }),
-        new TableCell({
-          children: [
-            new Paragraph({
-              text: String(level),
-              style: "Normal",
-            }),
-          ],
-        }),
-        new TableCell({
-          children: [
-            new Paragraph({
-              text: code,
-              style: "Normal",
-            }),
-          ],
-        }),
-        new TableCell({
-          children: [
-            new Paragraph({
-              text: description,
-              style: "Normal",
-            }),
-          ],
-        }),
-        new TableCell({
-          children: [
-            new Paragraph({
-              text: String(quantity),
-              style: "Normal",
-            }),
-          ],
-        }),
-      ],
-    });
-    table.addRow(dataRow);
+    rows: rows,
   });
 
   // Aggiungi tabella al documento
@@ -994,7 +1011,83 @@ async function addComponentModule(
     throw new Error(`Component with ID ${content.componentId} not found`);
   }
 
-  // Create a table with component details
+  // Crea array di righe per la tabella
+  const rows = [];
+  
+  // Aggiungi riga di intestazione
+  rows.push(
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: "Codice",
+              style: "TableHeader",
+            }),
+          ],
+          shading: {
+            fill: "EEEEEE",
+          },
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: "Descrizione",
+              style: "TableHeader",
+            }),
+          ],
+          shading: {
+            fill: "EEEEEE",
+          },
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: "Quantità",
+              style: "TableHeader",
+            }),
+          ],
+          shading: {
+            fill: "EEEEEE",
+          },
+        }),
+      ],
+    })
+  );
+  
+  // Aggiungi riga per il componente
+  rows.push(
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: component.code,
+              style: "Normal",
+            }),
+          ],
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: component.description,
+              style: "Normal",
+            }),
+          ],
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              text: String(content.quantity),
+              style: "Normal",
+            }),
+          ],
+        }),
+      ],
+    })
+  );
+  
+  // Crea la tabella con le righe
   const table = new Table({
     width: {
       size: 100,
@@ -1008,78 +1101,8 @@ async function addComponentModule(
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
       insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
     },
+    rows: rows,
   });
-
-  // Add header row
-  const headerRow = new TableRow({
-    children: [
-      new TableCell({
-        children: [
-          new Paragraph({
-            text: "Codice",
-            style: "TableHeader",
-          }),
-        ],
-        shading: {
-          fill: "EEEEEE",
-        },
-      }),
-      new TableCell({
-        children: [
-          new Paragraph({
-            text: "Descrizione",
-            style: "TableHeader",
-          }),
-        ],
-        shading: {
-          fill: "EEEEEE",
-        },
-      }),
-      new TableCell({
-        children: [
-          new Paragraph({
-            text: "Quantità",
-            style: "TableHeader",
-          }),
-        ],
-        shading: {
-          fill: "EEEEEE",
-        },
-      }),
-    ],
-  });
-  table.addRow(headerRow);
-
-  // Add component row
-  const dataRow = new TableRow({
-    children: [
-      new TableCell({
-        children: [
-          new Paragraph({
-            text: component.code,
-            style: "Normal",
-          }),
-        ],
-      }),
-      new TableCell({
-        children: [
-          new Paragraph({
-            text: component.description,
-            style: "Normal",
-          }),
-        ],
-      }),
-      new TableCell({
-        children: [
-          new Paragraph({
-            text: String(content.quantity),
-            style: "Normal",
-          }),
-        ],
-      }),
-    ],
-  });
-  table.addRow(dataRow);
 
   // Add table to document
   docElements.push(table);
