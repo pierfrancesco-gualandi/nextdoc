@@ -201,8 +201,21 @@ export default function ContentModule({
 }: ContentModuleProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditingState] = useState(false);
   const [content, setContent] = useState(module.content);
+  
+  // Wrapper per setIsEditing che controlla i permessi
+  const setIsEditing = (value: boolean) => {
+    if (value && disabled) {
+      toast({
+        title: "Permesso negato",
+        description: "Non hai i permessi per modificare questo modulo",
+        variant: "destructive"
+      });
+      return;
+    }
+    setIsEditingState(value);
+  };
   
   const updateModuleMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -1693,10 +1706,17 @@ export default function ContentModule({
       <div className="flex justify-end space-x-2 mt-2">
         {isEditing ? (
           <>
-            <Button variant="outline" onClick={() => setIsEditing(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsEditing(false)}
+              disabled={disabled}
+            >
               Annulla
             </Button>
-            <Button onClick={saveChanges}>
+            <Button 
+              onClick={saveChanges}
+              disabled={disabled}
+            >
               Salva
             </Button>
           </>
@@ -1705,16 +1725,20 @@ export default function ContentModule({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setIsEditing(true)}
-              className="ml-2"
+              onClick={!disabled ? () => setIsEditing(true) : undefined}
+              className={`ml-2 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={disabled}
+              title={disabled ? "Non hai permessi per modificare questo modulo" : "Modifica"}
             >
               <span className="material-icons">edit</span>
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleDeleteModule}
-              className="text-red-500 hover:text-red-700"
+              onClick={!disabled ? handleDeleteModule : undefined}
+              className={`${disabled ? 'text-red-300 opacity-50 cursor-not-allowed' : 'text-red-500 hover:text-red-700'}`}
+              disabled={disabled}
+              title={disabled ? "Non hai permessi per eliminare questo modulo" : "Elimina"}
             >
               <span className="material-icons">delete</span>
             </Button>
