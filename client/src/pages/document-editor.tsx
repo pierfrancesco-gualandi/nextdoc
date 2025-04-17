@@ -606,17 +606,33 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                       <div className="px-6 py-4 border-b border-neutral-light flex justify-between items-center">
                         <h3 className="text-lg font-medium">{selectedSection.title}</h3>
                         <div className="flex items-center space-x-2">
-                          <button className="p-1.5 text-neutral-dark hover:bg-neutral-lightest rounded has-tooltip">
+                          <button 
+                            className={`p-1.5 rounded has-tooltip ${canEdit 
+                              ? 'text-neutral-dark hover:bg-neutral-lightest' 
+                              : 'text-neutral-light cursor-not-allowed'}`}
+                            disabled={!canEdit}
+                            title={!canEdit ? "Non hai permessi per modificare" : ""}
+                          >
                             <span className="material-icons">content_copy</span>
                             <span className="tooltip -mt-10">Duplica sezione</span>
                           </button>
-                          <button className="p-1.5 text-neutral-dark hover:bg-neutral-lightest rounded has-tooltip">
+                          <button 
+                            className={`p-1.5 rounded has-tooltip ${canEdit 
+                              ? 'text-neutral-dark hover:bg-neutral-lightest' 
+                              : 'text-neutral-light cursor-not-allowed'}`}
+                            disabled={!canEdit}
+                            title={!canEdit ? "Non hai permessi per modificare" : ""}
+                          >
                             <span className="material-icons">save</span>
                             <span className="tooltip -mt-10">Salva come modulo</span>
                           </button>
                           <button 
-                            className="p-1.5 text-neutral-dark hover:bg-neutral-lightest rounded has-tooltip"
-                            onClick={() => setSectionToDelete(selectedSection.id)}
+                            className={`p-1.5 rounded has-tooltip ${canEdit 
+                              ? 'text-neutral-dark hover:bg-neutral-lightest' 
+                              : 'text-neutral-light cursor-not-allowed'}`}
+                            onClick={canEdit ? () => setSectionToDelete(selectedSection.id) : undefined}
+                            disabled={!canEdit}
+                            title={!canEdit ? "Non hai permessi per eliminare" : ""}
                           >
                             <span className="material-icons">delete</span>
                             <span className="tooltip -mt-10">Elimina sezione</span>
@@ -631,7 +647,13 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                             id="section-title"
                             value={sectionTitle}
                             onChange={(e) => setSectionTitle(e.target.value)}
-                            className="w-full p-2 border border-neutral-light rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                            className={`w-full p-2 border rounded-md ${
+                              canEdit 
+                                ? 'border-neutral-light focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary' 
+                                : 'border-neutral-light bg-neutral-lightest text-neutral-medium'
+                            }`}
+                            disabled={!canEdit}
+                            title={!canEdit ? "Non hai permessi per modificare" : ""}
                           />
                         </div>
                         
@@ -641,14 +663,26 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                             id="section-description"
                             value={sectionDescription}
                             onChange={(e) => setSectionDescription(e.target.value)}
-                            className="w-full p-2 border border-neutral-light rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                            className={`w-full p-2 border rounded-md ${
+                              canEdit 
+                                ? 'border-neutral-light focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary' 
+                                : 'border-neutral-light bg-neutral-lightest text-neutral-medium'
+                            }`}
+                            disabled={!canEdit}
+                            title={!canEdit ? "Non hai permessi per modificare" : ""}
                             rows={3}
                           />
                         </div>
                         
                         <button 
-                          className="mb-4 bg-primary hover:bg-primary-dark text-white px-4 py-1.5 rounded-md flex items-center text-sm"
-                          onClick={handleSectionUpdate}
+                          className={`mb-4 px-4 py-1.5 rounded-md flex items-center text-sm ${
+                            canEdit 
+                              ? 'bg-primary hover:bg-primary-dark text-white' 
+                              : 'bg-neutral-light text-neutral-medium cursor-not-allowed'
+                          }`}
+                          onClick={canEdit ? handleSectionUpdate : undefined}
+                          disabled={!canEdit}
+                          title={!canEdit ? "Non hai permessi per aggiornare la sezione" : ""}
                         >
                           <span className="material-icons text-sm mr-1">save</span>
                           Aggiorna sezione
@@ -664,6 +698,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                         <ModuleToolbar 
                           sectionId={selectedSection.id}
                           onModuleAdded={handleModuleAdded}
+                          disabled={!canEdit}
                         />
                         
                         {/* Content modules */}

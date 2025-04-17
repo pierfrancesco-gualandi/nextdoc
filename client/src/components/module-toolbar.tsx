@@ -11,9 +11,10 @@ import { Check, Upload } from "lucide-react";
 interface ModuleToolbarProps {
   sectionId: number;
   onModuleAdded: (module: any) => void;
+  disabled?: boolean;
 }
 
-export default function ModuleToolbar({ sectionId, onModuleAdded }: ModuleToolbarProps) {
+export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = false }: ModuleToolbarProps) {
   const { toast } = useToast();
   const [isDragging, setIsDragging] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
