@@ -109,9 +109,23 @@ export async function createWordDocument(
     }
 
     // Create Word document
+    // Prepara un array di sezioni del documento (necessario per docx)
+    const documentSections = [];
+    
+    // Aggiungi la sezione principale con il contenuto del documento
+    const mainSection = {
+      properties: {},
+      children: [],
+    };
+    
+    // Aggiungi la sezione principale all'array di sezioni
+    documentSections.push(mainSection);
+    
+    // Crea il documento Word con le sezioni
     const wordDoc = new Document({
       title: doc.title,
       description: doc.description || "",
+      sections: documentSections,
       styles: {
         paragraphStyles: [
           {
