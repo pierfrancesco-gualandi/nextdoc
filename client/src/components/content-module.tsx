@@ -1110,9 +1110,134 @@ export default function ContentModule({
         
       case "table":
         return (
-          // Implementazione: per ora non è supportata l'edizione delle tabelle in questa vista
-          <div className="text-neutral-medium italic">
-            L'editor della tabella non è ancora disponibile in questa vista.
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="table-caption">Didascalia tabella</Label>
+              <Input
+                id="table-caption"
+                value={content.caption || ""}
+                onChange={(e) => setContent({ ...content, caption: e.target.value })}
+                placeholder="Inserisci una didascalia per la tabella"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Intestazioni</Label>
+              <div className="flex gap-2 mb-2">
+                {(content.headers || []).map((header, index) => (
+                  <div key={index} className="flex-1">
+                    <Input
+                      value={header}
+                      onChange={(e) => {
+                        const newHeaders = [...(content.headers || [])];
+                        newHeaders[index] = e.target.value;
+                        setContent({ ...content, headers: newHeaders });
+                      }}
+                      placeholder={`Intestazione ${index + 1}`}
+                    />
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    const newHeaders = [...(content.headers || []), ""];
+                    setContent({ ...content, headers: newHeaders });
+                  }}
+                >
+                  <span className="material-icons">add</span>
+                </Button>
+                {(content.headers || []).length > 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      const newHeaders = [...(content.headers || [])];
+                      newHeaders.pop();
+                      
+                      // Assicurati che le righe abbiano lo stesso numero di colonne
+                      const newRows = (content.rows || []).map(row => {
+                        const newRow = [...row];
+                        if (newRow.length > newHeaders.length) {
+                          return newRow.slice(0, newHeaders.length);
+                        }
+                        return newRow;
+                      });
+                      
+                      setContent({ ...content, headers: newHeaders, rows: newRows });
+                    }}
+                  >
+                    <span className="material-icons">remove</span>
+                  </Button>
+                )}
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Dati della tabella</Label>
+              <div className="space-y-2">
+                {(content.rows || []).map((row, rowIndex) => (
+                  <div key={rowIndex} className="flex gap-2 items-center">
+                    {row.map((cell, cellIndex) => (
+                      <div key={cellIndex} className="flex-1">
+                        <Input
+                          value={cell}
+                          onChange={(e) => {
+                            const newRows = [...(content.rows || [])];
+                            newRows[rowIndex][cellIndex] = e.target.value;
+                            setContent({ ...content, rows: newRows });
+                          }}
+                          placeholder={`Riga ${rowIndex + 1}, Colonna ${cellIndex + 1}`}
+                        />
+                      </div>
+                    ))}
+                    {(content.headers || []).length > row.length && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          const newRows = [...(content.rows || [])];
+                          newRows[rowIndex].push("");
+                          setContent({ ...content, rows: newRows });
+                        }}
+                      >
+                        <span className="material-icons">add_circle_outline</span>
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        const newRows = [...(content.rows || [])];
+                        newRows.splice(rowIndex, 1);
+                        setContent({ ...content, rows: newRows });
+                      }}
+                    >
+                      <span className="material-icons">delete_outline</span>
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between mt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const headerCount = (content.headers || []).length || 1;
+                    const newRow = Array(headerCount).fill("");
+                    const newRows = [...(content.rows || []), newRow];
+                    setContent({ ...content, rows: newRows });
+                  }}
+                >
+                  <span className="material-icons mr-2">add_box</span>
+                  Aggiungi riga
+                </Button>
+              </div>
+            </div>
           </div>
         );
         
