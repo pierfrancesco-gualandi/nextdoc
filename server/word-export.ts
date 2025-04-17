@@ -319,6 +319,33 @@ async function addModulesToDocument(
         case "bom":
           await addBomModule(docElements, module);
           break;
+        case "3d-model":
+          // Nota: i modelli 3D non possono essere inclusi direttamente in Word
+          docElements.push(
+            new Paragraph({
+              text: `[Modello 3D - Questa visualizzazione è disponibile solo nel documento Web]`,
+              style: "Normal",
+            })
+          );
+          break;
+        case "pdf":
+          // Nota: i PDF non possono essere inclusi direttamente in Word
+          docElements.push(
+            new Paragraph({
+              text: `[Documento PDF - Questa visualizzazione è disponibile solo nel documento Web]`,
+              style: "Normal",
+            })
+          );
+          break;
+        case "video":
+          // Nota: i video non possono essere inclusi direttamente in Word
+          docElements.push(
+            new Paragraph({
+              text: `[Video - Questa visualizzazione è disponibile solo nel documento Web]`,
+              style: "Normal",
+            })
+          );
+          break;
         default:
           // Add a placeholder for unsupported module types
           docElements.push(
