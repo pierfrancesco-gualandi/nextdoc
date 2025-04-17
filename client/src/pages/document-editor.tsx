@@ -633,6 +633,8 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                                   level={0}
                                   languageId={selectedLanguage}
                                   highlightMissingTranslations={true}
+                                  userRole={userRole}
+                                  userId={userId}
                                 />
                               ) : (
                                 <DocumentSectionPreview 
@@ -641,6 +643,8 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                                   allSections={sections}
                                   documentId={id}
                                   level={0}
+                                  userRole={userRole}
+                                  userId={userId}
                                 />
                               )
                             ))}
