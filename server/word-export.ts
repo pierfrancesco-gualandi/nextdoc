@@ -432,9 +432,11 @@ function addTextModule(docElements: any[], module: ContentModule, translationCon
  */
 async function addImageModule(
   docElements: any[],
-  module: ContentModule
+  module: ContentModule,
+  translationContent: any = null
 ): Promise<void> {
-  const content = module.content as { src: string; alt: string; caption?: string };
+  // Usa il contenuto tradotto se disponibile
+  const content = translationContent ? translationContent : module.content as { src: string; alt: string; caption?: string };
   
   // Check if file exists and is accessible
   const imagePath = path.join(__dirname, "../uploads", path.basename(content.src));
@@ -476,8 +478,9 @@ async function addImageModule(
 /**
  * Add a table module to the document
  */
-function addTableModule(docElements: any[], module: ContentModule): void {
-  const content = module.content as {
+function addTableModule(docElements: any[], module: ContentModule, translationContent: any = null): void {
+  // Usa il contenuto tradotto se disponibile
+  const content = translationContent ? translationContent : module.content as {
     headers: string[];
     rows: string[][];
     caption?: string;
@@ -554,8 +557,9 @@ function addTableModule(docElements: any[], module: ContentModule): void {
 /**
  * Add a warning module to the document
  */
-function addWarningModule(docElements: any[], module: ContentModule): void {
-  const content = module.content as {
+function addWarningModule(docElements: any[], module: ContentModule, translationContent: any = null): void {
+  // Usa il contenuto tradotto se disponibile
+  const content = translationContent ? translationContent : module.content as {
     title: string;
     message: string;
     level: "info" | "warning" | "error";
@@ -604,8 +608,9 @@ function addWarningModule(docElements: any[], module: ContentModule): void {
 /**
  * Add a checklist module to the document
  */
-function addChecklistModule(docElements: any[], module: ContentModule): void {
-  const content = module.content as {
+function addChecklistModule(docElements: any[], module: ContentModule, translationContent: any = null): void {
+  // Usa il contenuto tradotto se disponibile
+  const content = translationContent ? translationContent : module.content as {
     items: { text: string; checked: boolean }[];
   };
 
@@ -631,9 +636,11 @@ function addChecklistModule(docElements: any[], module: ContentModule): void {
  */
 async function addBomModule(
   docElements: any[],
-  module: ContentModule
+  module: ContentModule,
+  translationContent: any = null
 ): Promise<void> {
   // Estrai il contenuto del modulo BOM
+  // I BOM non hanno traduzioni specifiche, quindi ignoriamo il parametro translationContent
   const content = module.content as {
     bomId: number;
     filter?: string;
@@ -961,8 +968,10 @@ async function addBomModule(
  */
 async function addComponentModule(
   docElements: any[],
-  module: ContentModule
+  module: ContentModule,
+  translationContent: any = null
 ): Promise<void> {
+  // I componenti non hanno traduzioni specifiche, quindi ignoriamo il parametro translationContent
   const content = module.content as { componentId: number; quantity: number };
   
   // Fetch component details
