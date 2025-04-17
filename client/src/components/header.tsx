@@ -47,24 +47,52 @@ export default function Header({
     queryKey: ['/api/users'],
   });
   
-  // Controlla se c'è un utente selezionato nel sessionStorage
+  // Stato per l'utente corrente e le sue personalizzazioni
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [displayName, setDisplayName] = useState<string>("");
+  const [userBadgeColor, setUserBadgeColor] = useState<string>("#3b82f6");
   
   useEffect(() => {
-    // Controllo se esiste un utente selezionato nel sessionStorage
+    // Recupera i dati dal sessionStorage
     const selectedUserId = sessionStorage.getItem('selectedUserId');
+    const selectedUserName = sessionStorage.getItem('selectedUserName');
+    const selectedUserColor = sessionStorage.getItem('selectedUserColor');
     
-    if (selectedUserId && users && Array.isArray(users)) {
-      const foundUser = users.find((user: any) => user.id.toString() === selectedUserId);
-      if (foundUser) {
-        setCurrentUser(foundUser);
-      } else if (users.length > 0) {
-        // Se non c'è un utente selezionato, usa il primo della lista (admin)
-        setCurrentUser(users[0]);
+    // Se ci sono dati nel sessionStorage, utilizzali
+    if (selectedUserId && selectedUserName && selectedUserColor) {
+      if (users && Array.isArray(users)) {
+        const foundUser = users.find((user: any) => user.id.toString() === selectedUserId);
+        if (foundUser) {
+          setCurrentUser(foundUser);
+          setDisplayName(selectedUserName);
+          setUserBadgeColor(selectedUserColor);
+          return;
+        }
       }
-    } else if (users && Array.isArray(users) && users.length > 0) {
-      // Se non c'è un utente selezionato, usa il primo della lista (admin)
+    }
+    
+    // Altrimenti, fallback sul primo utente disponibile
+    if (users && Array.isArray(users) && users.length > 0) {
       setCurrentUser(users[0]);
+      setDisplayName(users[0].name || users[0].username);
+      
+      // Colore predefinito in base al ruolo
+      switch (users[0].role) {
+        case 'admin':
+          setUserBadgeColor('#3b82f6'); // blu
+          break;
+        case 'editor':
+          setUserBadgeColor('#16a34a'); // verde
+          break;
+        case 'translator':
+          setUserBadgeColor('#ca8a04'); // giallo
+          break;
+        case 'reader':
+          setUserBadgeColor('#db2777'); // rosa
+          break;
+        default:
+          setUserBadgeColor('#3b82f6'); // blu predefinito
+      }
     }
   }, [users]);
 
@@ -134,9 +162,17 @@ export default function Header({
               </span>
             )}
             {currentUser && (
-              <div className="flex items-center ml-4 text-neutral-dark bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-full">
+              <div 
+                className="flex items-center ml-4 px-3 py-1 rounded-full"
+                style={{ 
+                  backgroundColor: `${userBadgeColor}20`,
+                  color: userBadgeColor,
+                  borderColor: `${userBadgeColor}40`,
+                  border: "1px solid"
+                }}
+              >
                 <User className="w-4 h-4 mr-1" />
-                <span className="text-sm font-medium">{currentUser.name || currentUser.username}</span>
+                <span className="text-sm font-medium">{displayName}</span>
               </div>
             )}
           </div>
