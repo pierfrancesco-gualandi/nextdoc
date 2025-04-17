@@ -1,19 +1,24 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import ContentModule from './content-module';
+import ReaderNotes from './reader-notes';
 
 interface DocumentSectionPreviewProps {
   section: any;
   allSections: any[];
   documentId: string;
   level: number;
+  userRole?: string;
+  userId?: number;
 }
 
 export default function DocumentSectionPreview({ 
   section, 
   allSections, 
   documentId,
-  level 
+  level,
+  userRole,
+  userId
 }: DocumentSectionPreviewProps) {
   // Ottiene i moduli per questa sezione
   const { data: modules } = useQuery({
@@ -46,7 +51,7 @@ export default function DocumentSectionPreview({
       {section.description && <p className="mb-4">{section.description}</p>}
       
       {/* Mostra i moduli della sezione */}
-      {modules && modules.length > 0 && (
+      {modules && Array.isArray(modules) && modules.length > 0 && (
         <div className="space-y-4 mb-6">
           {modules.map((module: any) => (
             <div key={module.id} className="preview-module mb-4">
@@ -62,8 +67,17 @@ export default function DocumentSectionPreview({
         </div>
       )}
       
+      {/* Componente note per i lettori */}
+      {userRole === "reader" && userId && (
+        <ReaderNotes 
+          documentId={documentId} 
+          sectionId={section.id} 
+          userId={userId} 
+        />
+      )}
+
       {/* Mostra ricorsivamente le sottosezioni */}
-      {childSections.length > 0 && (
+      {childSections && Array.isArray(childSections) && childSections.length > 0 && (
         <div className="subsections">
           {childSections.map((childSection) => (
             <DocumentSectionPreview
@@ -72,6 +86,8 @@ export default function DocumentSectionPreview({
               allSections={allSections}
               documentId={documentId}
               level={level + 1}
+              userRole={userRole}
+              userId={userId}
             />
           ))}
         </div>

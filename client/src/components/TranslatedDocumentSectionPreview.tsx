@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import TranslatedContentModule from './TranslatedContentModule';
+import ReaderNotes from './reader-notes';
 
 interface TranslatedDocumentSectionPreviewProps {
   section: any;
@@ -9,6 +10,8 @@ interface TranslatedDocumentSectionPreviewProps {
   level: number;
   languageId: string;
   highlightMissingTranslations?: boolean;
+  userRole?: string;
+  userId?: number;
 }
 
 export default function TranslatedDocumentSectionPreview({ 
@@ -17,7 +20,9 @@ export default function TranslatedDocumentSectionPreview({
   documentId,
   level,
   languageId,
-  highlightMissingTranslations = true
+  highlightMissingTranslations = true,
+  userRole,
+  userId
 }: TranslatedDocumentSectionPreviewProps) {
   // Ottiene i moduli per questa sezione
   const { data: modules } = useQuery({
@@ -82,7 +87,7 @@ export default function TranslatedDocumentSectionPreview({
       {descriptionContent && <p className="mb-4">{descriptionContent}</p>}
       
       {/* Mostra i moduli della sezione con le traduzioni se disponibili */}
-      {modules && modules.length > 0 && (
+      {modules && Array.isArray(modules) && modules.length > 0 && (
         <div className="space-y-4 mb-6">
           {modules.map((module: any) => (
             <div key={module.id} className="preview-module mb-4">

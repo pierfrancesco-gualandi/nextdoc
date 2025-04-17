@@ -25,7 +25,7 @@ export default function ReaderNotes({ documentId, sectionId, moduleId, userId }:
   });
 
   // Filtra le note per sezione e modulo se specificati
-  const filteredNotes = notes ? notes.filter((note: any) => {
+  const filteredNotes = notes && Array.isArray(notes) ? notes.filter((note: any) => {
     if (sectionId && note.sectionId !== sectionId) return false;
     if (moduleId && note.moduleId !== moduleId) return false;
     return true;
