@@ -17,6 +17,7 @@ import SectionBomSummary from "@/components/section-bom-summary";
 import DocumentSectionPreview from "@/components/DocumentSectionPreview";
 import TranslatedDocumentSectionPreview from "@/components/TranslatedDocumentSectionPreview";
 import LanguageSelector from "@/components/language-selector";
+import UserSelectorDialog from "@/components/user-selector-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -148,13 +149,27 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     }
   }, [document, id, addOpenDocument]);
   
-  // Get current user (using admin for now)
+  // State per il selettore utente e l'utente corrente
+  const [showUserSelector, setShowUserSelector] = useState<boolean>(true);
+  const [currentUserId, setCurrentUserId] = useState<number>(1);
+  const [currentUserRole, setCurrentUserRole] = useState<string>("reader");
+  
+  // Carica tutti gli utenti
   const { data: users } = useQuery({
     queryKey: ['/api/users'],
   });
   
-  const userId = users?.[0]?.id || 1; // Default to first user (admin)
-  const userRole = users?.[0]?.role || "reader"; // Per test usiamo "reader" come predefinito
+  // Gestisce la chiusura del selettore utente
+  const handleUserSelect = (userId: number, userRole: string) => {
+    setCurrentUserId(userId);
+    setCurrentUserRole(userRole);
+    setShowUserSelector(false);
+    
+    toast({
+      title: "Utente selezionato",
+      description: `Stai visualizzando il documento con i permessi di ${userRole}`,
+    });
+  };
   
   // Fetch sections when document ID is available
   const { data: sections, isLoading: sectionsLoading } = useQuery({
@@ -350,7 +365,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
         documentId: Number(id),
         version: document.version,
         content: documentData,
-        createdById: userId,
+        createdById: currentUserId,
         notes: "Salvataggio manuale"
       };
       
