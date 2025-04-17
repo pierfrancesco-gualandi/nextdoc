@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "lucide-react";
+import { useUser } from "../contexts/UserContext";
 
 interface HeaderProps {
   title?: string;
@@ -47,54 +48,8 @@ export default function Header({
     queryKey: ['/api/users'],
   });
   
-  // Stato per l'utente corrente e le sue personalizzazioni
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [displayName, setDisplayName] = useState<string>("");
-  const [userBadgeColor, setUserBadgeColor] = useState<string>("#3b82f6");
-  
-  useEffect(() => {
-    // Recupera i dati dal sessionStorage
-    const selectedUserId = sessionStorage.getItem('selectedUserId');
-    const selectedUserName = sessionStorage.getItem('selectedUserName');
-    const selectedUserColor = sessionStorage.getItem('selectedUserColor');
-    
-    // Se ci sono dati nel sessionStorage, utilizzali
-    if (selectedUserId && selectedUserName && selectedUserColor) {
-      if (users && Array.isArray(users)) {
-        const foundUser = users.find((user: any) => user.id.toString() === selectedUserId);
-        if (foundUser) {
-          setCurrentUser(foundUser);
-          setDisplayName(selectedUserName);
-          setUserBadgeColor(selectedUserColor);
-          return;
-        }
-      }
-    }
-    
-    // Altrimenti, fallback sul primo utente disponibile
-    if (users && Array.isArray(users) && users.length > 0) {
-      setCurrentUser(users[0]);
-      setDisplayName(users[0].name || users[0].username);
-      
-      // Colore predefinito in base al ruolo
-      switch (users[0].role) {
-        case 'admin':
-          setUserBadgeColor('#3b82f6'); // blu
-          break;
-        case 'editor':
-          setUserBadgeColor('#16a34a'); // verde
-          break;
-        case 'translator':
-          setUserBadgeColor('#ca8a04'); // giallo
-          break;
-        case 'reader':
-          setUserBadgeColor('#db2777'); // rosa
-          break;
-        default:
-          setUserBadgeColor('#3b82f6'); // blu predefinito
-      }
-    }
-  }, [users]);
+  // Usa il contesto utente
+  const { currentUserId, displayName, userBadgeColor, currentUserRole } = useUser();
 
   // Format status for display
   const getStatusDisplay = (status: string) => {
@@ -161,7 +116,7 @@ export default function Header({
                 {statusDisplay.label}
               </span>
             )}
-            {currentUser && (
+            {displayName && (
               <div 
                 className="flex items-center ml-4 px-3 py-1 rounded-full"
                 style={{ 

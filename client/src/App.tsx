@@ -13,6 +13,7 @@ import Translations from "@/pages/translations";
 import ModuleTranslation from "@/pages/module-translation";
 import Sidebar from "@/components/sidebar";
 import { useState, createContext, useContext, useEffect } from "react";
+import { UserProvider } from "./contexts/UserContext";
 
 // Definizione delle interfacce per i documenti aperti
 export interface OpenDocument {
@@ -171,7 +172,9 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
+      <UserProvider>
+        <Router />
+      </UserProvider>
     </QueryClientProvider>
   );
 }
