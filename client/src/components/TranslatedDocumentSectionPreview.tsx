@@ -103,8 +103,17 @@ export default function TranslatedDocumentSectionPreview({
         </div>
       )}
       
+      {/* Componente note per i lettori */}
+      {userRole === "reader" && userId && (
+        <ReaderNotes 
+          documentId={documentId} 
+          sectionId={section.id} 
+          userId={userId} 
+        />
+      )}
+      
       {/* Mostra ricorsivamente le sottosezioni con le traduzioni */}
-      {childSections.length > 0 && (
+      {childSections && Array.isArray(childSections) && childSections.length > 0 && (
         <div className="subsections">
           {childSections.map((childSection) => (
             <TranslatedDocumentSectionPreview
@@ -115,6 +124,8 @@ export default function TranslatedDocumentSectionPreview({
               level={level + 1}
               languageId={languageId}
               highlightMissingTranslations={highlightMissingTranslations}
+              userRole={userRole}
+              userId={userId}
             />
           ))}
         </div>

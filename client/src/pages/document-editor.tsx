@@ -154,6 +154,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   });
   
   const userId = users?.[0]?.id || 1; // Default to first user (admin)
+  const userRole = users?.[0]?.role || "reader"; // Per test usiamo "reader" come predefinito
   
   // Fetch sections when document ID is available
   const { data: sections, isLoading: sectionsLoading } = useQuery({
