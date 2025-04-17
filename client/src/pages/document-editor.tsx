@@ -169,7 +169,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   });
   
   // Usa il contesto utente
-  const { setUserDetails } = useUser();
+  const { setUserDetails, currentUserRole: contextUserRole } = useUser();
   
   // Gestisce la chiusura del selettore utente con selezione
   const handleUserSelect = (userId: number, userRole: string, customName: string, badgeColor: string) => {
@@ -494,6 +494,43 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     deleteSectionMutation.mutate(sectionId);
   };
   
+  // Effect to update permissions when user role changes in the context
+  useEffect(() => {
+    if (contextUserRole) {
+      console.log('User role changed to:', contextUserRole);
+      // Aggiorna le variabili di permesso in base al nuovo ruolo
+      switch(contextUserRole) {
+        case 'admin':
+          setCanEdit(true);
+          setCanManageUsers(true);
+          setCanTranslate(true);
+          break;
+        case 'editor':
+          setCanEdit(true);
+          setCanManageUsers(false);
+          setCanTranslate(false);
+          break;
+        case 'translator':
+          setCanEdit(false);
+          setCanManageUsers(false);
+          setCanTranslate(true);
+          break;
+        case 'reader':
+          setCanEdit(false);
+          setCanManageUsers(false);
+          setCanTranslate(false);
+          break;
+        default:
+          setCanEdit(false);
+          setCanManageUsers(false);
+          setCanTranslate(false);
+      }
+      
+      // Aggiorna lo stato locale per mantenerlo sincronizzato col contesto
+      setCurrentUserRole(contextUserRole);
+    }
+  }, [contextUserRole]);
+
   // Effect to handle drag events for trash bin
   useEffect(() => {
     const handleDragStart = () => setShowTrashBin(true);

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Check, Upload } from "lucide-react";
+import { useUser } from "@/contexts/UserContext";
 
 interface ModuleToolbarProps {
   sectionId: number;
