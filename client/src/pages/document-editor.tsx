@@ -455,7 +455,8 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
       {/* Dialog per selezione utente */}
       <UserSelectorDialog 
         isOpen={showUserSelector} 
-        onClose={handleUserSelect} 
+        onClose={handleUserSelect}
+        onCancel={handleUserSelectCancel}
       />
       
       <Header 
