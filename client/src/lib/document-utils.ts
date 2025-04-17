@@ -96,6 +96,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
           case 'text':
             content += `<div>${module.content.text}</div>`;
             break;
+            
           case 'image':
             content += `
               <div style="text-align: center; margin: 15px 0;">
@@ -104,6 +105,19 @@ export async function exportToHtml(documentId: string): Promise<void> {
               </div>
             `;
             break;
+            
+          case 'video':
+            content += `
+              <div style="text-align: center; margin: 15px 0;">
+                <video controls style="max-width: 100%;">
+                  <source src="${module.content.src}" type="video/${module.content.format || 'mp4'}">
+                  Il tuo browser non supporta i video HTML5.
+                </video>
+                ${module.content.caption ? `<p><em>${module.content.caption}</em></p>` : ''}
+              </div>
+            `;
+            break;
+            
           case 'warning':
             const warningColor = module.content.level === 'error' ? '#ffdddd' : 
                                  module.content.level === 'warning' ? '#fff3cd' : '#d1ecf1';
@@ -114,7 +128,98 @@ export async function exportToHtml(documentId: string): Promise<void> {
               </div>
             `;
             break;
-          // Altri tipi di modulo potrebbero essere aggiunti qui
+            
+          case 'table':
+            content += `
+              <div style="margin: 15px 0;">
+                <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
+                  <thead>
+                    <tr>
+                      ${(module.content.headers || []).map((header: string) => 
+                        `<th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f2f2f2;">${header}</th>`
+                      ).join('')}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${(module.content.rows || []).map((row: string[]) => 
+                      `<tr>
+                        ${row.map((cell: string) => 
+                          `<td style="border: 1px solid #ddd; padding: 8px;">${cell}</td>`
+                        ).join('')}
+                      </tr>`
+                    ).join('')}
+                  </tbody>
+                </table>
+                ${module.content.caption ? `<p style="text-align: center;"><em>${module.content.caption}</em></p>` : ''}
+              </div>
+            `;
+            break;
+            
+          case '3d':
+            content += `
+              <div style="text-align: center; margin: 15px 0; padding: 20px; border: 1px solid #ddd; background-color: #f9f9f9;">
+                <h4>Modello 3D</h4>
+                <p>Visualizza questo contenuto nell'applicazione originale per vedere il modello 3D:</p>
+                <p><strong>File:</strong> ${module.content.title || 'Modello 3D'}</p>
+                <p>Il contenuto 3D non può essere visualizzato in questa esportazione HTML statica.</p>
+                <p>Percorso del modello: ${module.content.src}</p>
+              </div>
+            `;
+            break;
+            
+          case 'bom':
+            content += `
+              <div style="margin: 15px 0; padding: 10px; border: 1px solid #ddd;">
+                <h4>Distinta Base (BOM)</h4>
+                <p>ID Distinta: ${module.content.bomId}</p>
+                <p>La distinta base completa è disponibile nell'applicazione originale.</p>
+              </div>
+            `;
+            break;
+            
+          case 'component':
+            content += `
+              <div style="margin: 15px 0; padding: 10px; border: 1px solid #ddd;">
+                <h4>Componente</h4>
+                <p>ID Componente: ${module.content.componentId}</p>
+                <p>Quantità: ${module.content.quantity}</p>
+                <p>I dettagli completi del componente sono disponibili nell'applicazione originale.</p>
+              </div>
+            `;
+            break;
+            
+          case 'checklist':
+            content += `
+              <div style="margin: 15px 0;">
+                <ul style="list-style-type: none; padding-left: 0;">
+                  ${(module.content.items || []).map((item: any) => 
+                    `<li style="margin-bottom: 8px;">
+                      <input type="checkbox" ${item.checked ? 'checked' : ''} disabled> 
+                      <span>${item.text}</span>
+                    </li>`
+                  ).join('')}
+                </ul>
+              </div>
+            `;
+            break;
+            
+          case 'file':
+            content += `
+              <div style="margin: 15px 0; padding: 10px; border: 1px solid #ddd;">
+                <h4>File Allegato</h4>
+                <p><strong>Nome file:</strong> ${module.content.filename || 'File'}</p>
+                <p>Questo contenuto è disponibile per il download nell'applicazione originale.</p>
+              </div>
+            `;
+            break;
+            
+          default:
+            content += `
+              <div style="margin: 15px 0; padding: 10px; border: 1px solid #ddd; background-color: #f9f9f9;">
+                <p>Modulo di tipo "${module.type}" non supportato nell'esportazione HTML.</p>
+                <p>Visualizza questo contenuto nell'applicazione originale.</p>
+              </div>
+            `;
         }
       }
     }
