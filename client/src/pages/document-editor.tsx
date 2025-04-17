@@ -157,6 +157,11 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   const [displayName, setDisplayName] = useState<string>("");
   const [userBadgeColor, setUserBadgeColor] = useState<string>("#3b82f6");
   
+  // State per i permessi basati sul ruolo
+  const [canEdit, setCanEdit] = useState<boolean>(false);
+  const [canManageUsers, setCanManageUsers] = useState<boolean>(false);
+  const [canTranslate, setCanTranslate] = useState<boolean>(false);
+  
   // Carica tutti gli utenti
   const { data: users } = useQuery({
     queryKey: ['/api/users'],
@@ -176,9 +181,45 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     sessionStorage.setItem('selectedUserName', customName);
     sessionStorage.setItem('selectedUserColor', badgeColor);
     
+    // Imposta i permessi in base al ruolo
+    switch(userRole) {
+      case 'admin':
+        setCanEdit(true);
+        setCanManageUsers(true);
+        setCanTranslate(true);
+        break;
+      case 'editor':
+        setCanEdit(true);
+        setCanManageUsers(false);
+        setCanTranslate(false);
+        break;
+      case 'translator':
+        setCanEdit(false);
+        setCanManageUsers(false);
+        setCanTranslate(true);
+        break;
+      case 'reader':
+        setCanEdit(false);
+        setCanManageUsers(false);
+        setCanTranslate(false);
+        break;
+      default:
+        setCanEdit(false);
+        setCanManageUsers(false);
+        setCanTranslate(false);
+    }
+    
+    // Visualizza il ruolo in italiano per il toast
+    const roleInItalian = {
+      'admin': 'amministratore',
+      'editor': 'editore',
+      'translator': 'traduttore',
+      'reader': 'lettore'
+    };
+    
     toast({
       title: "Utente selezionato",
-      description: `Stai visualizzando il documento con i permessi di ${userRole}`,
+      description: `Stai visualizzando il documento con i permessi di ${roleInItalian[userRole as keyof typeof roleInItalian]}`,
     });
   };
   
@@ -483,11 +524,40 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
         <DndProvider backend={HTML5Backend}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
             <TabsList className="px-4 border-b border-neutral-light">
-              <TabsTrigger value="editor">Editor</TabsTrigger>
+              {/* Tab Editor, disponibile solo per admin ed editor */}
+              <TabsTrigger 
+                value="editor" 
+                disabled={!canEdit}
+                title={!canEdit ? "Non hai permessi per modificare il contenuto" : ""}
+              >
+                Editor
+              </TabsTrigger>
+              
+              {/* Tab Anteprima, disponibile per tutti i ruoli */}
               <TabsTrigger value="preview">Anteprima</TabsTrigger>
+              
+              {/* Tab Elenco Componenti, disponibile per tutti i ruoli */}
               <TabsTrigger value="bom">Elenco Componenti</TabsTrigger>
-              <TabsTrigger value="bom-section">Associa BOM</TabsTrigger>
-              <TabsTrigger value="permissions">Permessi</TabsTrigger>
+              
+              {/* Tab Associa BOM, disponibile solo per admin ed editor */}
+              <TabsTrigger 
+                value="bom-section" 
+                disabled={!canEdit}
+                title={!canEdit ? "Non hai permessi per associare componenti" : ""}
+              >
+                Associa BOM
+              </TabsTrigger>
+              
+              {/* Tab Permessi, disponibile solo per admin */}
+              <TabsTrigger 
+                value="permissions" 
+                disabled={!canManageUsers}
+                title={!canManageUsers ? "Non hai permessi per gestire utenti" : ""}
+              >
+                Permessi
+              </TabsTrigger>
+              
+              {/* Tab Cronologia, disponibile per tutti */}
               <TabsTrigger value="history">Cronologia</TabsTrigger>
             </TabsList>
           

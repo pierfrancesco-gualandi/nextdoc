@@ -71,7 +71,15 @@ export default function UserSelectorDialog({ isOpen, onClose, onCancel }: UserSe
   // Gestisce la chiusura del dialog con conferma
   const handleConfirm = () => {
     if (selectedUserId) {
-      onClose(selectedUserId, selectedUserRole, displayName, customColor);
+      // Assicuriamoci che il displayName non sia vuoto
+      const finalDisplayName = displayName.trim() || 
+        (users && Array.isArray(users) && selectedUserId ? 
+          users.find((user: any) => user.id === selectedUserId)?.name || 
+          users.find((user: any) => user.id === selectedUserId)?.username || 
+          "Utente"
+        : "Utente");
+      
+      onClose(selectedUserId, selectedUserRole, finalDisplayName, customColor);
     }
   };
   
