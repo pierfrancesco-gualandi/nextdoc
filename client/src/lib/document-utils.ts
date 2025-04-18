@@ -293,12 +293,13 @@ export async function exportToHtml(documentId: string): Promise<void> {
               
               // SEZIONE 1 - INTRODUZIONE -> DESCRIZIONE 
               // Contiene solo un singolo componente
+              // SEZIONE 1 e DESCRIZIONE - Contiene solo un singolo componente specifico
               if (
                 (sectionTitle && (sectionTitle.includes("1") || sectionTitle.includes("INTRODUZI"))) || 
                 sectionId === 2 || 
-                sectionId === 12
+                sectionId === 12 || sectionId === 6 // Aggiunto ID sezione DESCRIZIONE
               ) {
-                console.log("Usando elenco componenti specifico per la sezione 1/INTRODUZIONE");
+                console.log("Usando elenco componenti specifico per la sezione 1/INTRODUZIONE/DESCRIZIONE");
                 bomItems = [
                   { 
                     level: 2, 
@@ -318,15 +319,16 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 console.log("La sezione 2 non dovrebbe mostrare elenchi componenti");
                 bomItems = [];
               }
-              // SEZIONE 2.1 - DISEGNO 3D
+              // SEZIONE 2.1 - DISEGNO 3D - 5 componenti SPECIFICI
               else if (
                 (sectionTitle && (sectionTitle.includes("2.1") || sectionTitle.includes("disegno 3D"))) || 
                 sectionId === 16
               ) {
                 console.log("Usando elenco componenti specifico per la sezione 2.1 Disegno 3D");
+                // I 5 componenti SPECIFICI per la sezione 2.1
                 bomItems = [
                   { 
-                    level: 3, 
+                    level: 1, 
                     component: { 
                       code: 'A8B25040509', 
                       description: 'SHAFT Ø82 L=913' 
@@ -334,15 +336,15 @@ export async function exportToHtml(documentId: string): Promise<void> {
                     quantity: 1 
                   },
                   { 
-                    level: 3, 
+                    level: 1, 
                     component: { 
                       code: 'A8C614-31', 
                       description: 'BEARING SHAFT' 
                     }, 
-                    quantity: 1 
+                    quantity: 2
                   },
                   { 
-                    level: 3, 
+                    level: 1, 
                     component: { 
                       code: 'A8C624-54', 
                       description: 'WASHER' 
@@ -350,15 +352,15 @@ export async function exportToHtml(documentId: string): Promise<void> {
                     quantity: 1 
                   },
                   { 
-                    level: 3, 
+                    level: 1, 
                     component: { 
                       code: 'A8C624-55', 
                       description: 'PRESSURE DISK' 
                     }, 
-                    quantity: 1 
+                    quantity: 1
                   },
                   { 
-                    level: 3, 
+                    level: 1, 
                     component: { 
                       code: 'A8C815-45', 
                       description: 'END LID' 
@@ -931,11 +933,12 @@ export function generateHtml(title: string, content: string): string {
   --light-bg: #f9f9f9;
   --border-color: #e5e7eb;
   
-  /* Colori per i messaggi di avviso */
-  --danger-color: #f44336;
-  --warning-color: #ffc107;
-  --info-color: #2196F3;
-  --success-color: #28a745;
+  /* Colori per i messaggi di avviso - più intensi come richiesto */
+  --danger-color: #ff0000;     /* PERICOLO - Rosso intenso */
+  --warning-color: #ff8c00;    /* AVVERTENZA - Arancione intenso */
+  --caution-color: #ffd600;    /* ATTENZIONE - Giallo intenso */
+  --info-color: #0070d1;       /* NOTA - Blu intenso */
+  --success-color: #2e7d32;    /* ISTRUZIONI DI SICUREZZA - Verde intenso */
   
   /* Colori per il testo e i link */
   --text-color: #333333;
@@ -1094,99 +1097,144 @@ img, video, iframe {
   padding-top: 8px;
 }
 
+/* PERICOLO - Rosso intenso */
 .danger {
-  background-color: #ef4444;
-  border-color: #dc2626;
-  border-left-color: #b91c1c;
+  background-color: var(--danger-color);
+  border-color: #b00000;
+  border-left-color: #800000;
 }
 
 .danger .message-header {
+  background-color: #cc0000;
   color: #ffffff;
   font-weight: bold;
+  border-radius: 4px;
+  padding: 5px 10px;
+  margin-bottom: 10px;
 }
 
 .danger .message-body {
   color: #ffffff;
+  background-color: rgba(255, 0, 0, 0.8);
+  padding: 8px;
+  border-radius: 4px;
 }
 
 .danger .message-icon {
   color: #ffffff;
+  font-size: 1.5em;
 }
 
+/* AVVERTENZA - Arancione intenso */
 .warning {
-  background-color: #f97316;
-  border-color: #ea580c;
-  border-left-color: #c2410c;
+  background-color: var(--warning-color);
+  border-color: #d97706;
+  border-left-color: #b45309;
 }
 
 .warning .message-header {
+  background-color: #ea580c;
   color: #ffffff;
   font-weight: bold;
+  border-radius: 4px;
+  padding: 5px 10px;
+  margin-bottom: 10px;
 }
 
 .warning .message-body {
   color: #ffffff;
+  background-color: rgba(255, 140, 0, 0.8);
+  padding: 8px;
+  border-radius: 4px;
 }
 
 .warning .message-icon {
   color: #ffffff;
+  font-size: 1.5em;
 }
 
+/* NOTA - Blu intenso */
 .info {
-  background-color: #0ea5e9;
-  border-color: #0284c7;
-  border-left-color: #0369a1;
+  background-color: var(--info-color);
+  border-color: #0369a1;
+  border-left-color: #075985;
 }
 
 .info .message-header {
+  background-color: #0284c7;
   color: #ffffff;
   font-weight: bold;
+  border-radius: 4px;
+  padding: 5px 10px;
+  margin-bottom: 10px;
 }
 
 .info .message-body {
   color: #ffffff;
+  background-color: rgba(0, 112, 209, 0.8);
+  padding: 8px;
+  border-radius: 4px;
 }
 
 .info .message-icon {
   color: #ffffff;
+  font-size: 1.5em;
 }
 
+/* ATTENZIONE - Giallo intenso */
 .caution {
-  background-color: #facc15;
+  background-color: var(--caution-color);
   border-color: #eab308;
   border-left-color: #ca8a04;
 }
 
 .caution .message-header {
-  color: #ffffff;
+  background-color: #fbbf24;
+  color: #000000;
   font-weight: bold;
+  border-radius: 4px;
+  padding: 5px 10px;
+  margin-bottom: 10px;
 }
 
 .caution .message-body {
-  color: #ffffff;
+  color: #000000;
+  background-color: rgba(255, 214, 0, 0.8);
+  padding: 8px;
+  border-radius: 4px;
 }
 
 .caution .message-icon {
-  color: #ffffff;
+  color: #000000;
+  font-size: 1.5em;
 }
 
+/* ISTRUZIONI DI SICUREZZA - Verde intenso */
 .success {
-  background-color: #22c55e;
+  background-color: var(--success-color);
   border-color: #16a34a;
   border-left-color: #15803d;
 }
 
 .success .message-header {
+  background-color: #22c55e;
   color: #ffffff;
   font-weight: bold;
+  border-radius: 4px;
+  padding: 5px 10px;
+  margin-bottom: 10px;
 }
 
 .success .message-body {
   color: #ffffff;
+  background-color: rgba(46, 125, 50, 0.8);
+  padding: 8px;
+  border-radius: 4px;
 }
 
 .success .message-icon {
   color: #ffffff;
+  font-size: 1.5em;
 }
 
 /* Stili per controlli 3D */
