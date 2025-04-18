@@ -1,227 +1,84 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
-interface WarningModuleProps {
-  title: string;
-  description: string;
-  imageUrl?: string;
-  backgroundColor: string;
-  textColor: string;
-  isTranslated?: boolean;
-  highlightMissingTranslations?: boolean;
-  originalTitle?: string;
-  originalDescription?: string;
+export interface WarningModuleProps {
+  level: 'error' | 'warning' | 'info' | 'success' | 'safety';
+  title?: string;
+  message: string;
+  className?: string;
 }
 
-// Componente di base per i moduli di avvertenza
-export const WarningModule: React.FC<WarningModuleProps> = ({
+/**
+ * Componente per la visualizzazione di avvisi, note e messaggi di sicurezza
+ *
+ * @param {WarningModuleProps} props - Proprietà del componente
+ * @returns {JSX.Element} - Il componente React
+ */
+const WarningModule: React.FC<WarningModuleProps> = ({
+  level = 'info',
   title,
-  description,
-  imageUrl,
-  backgroundColor,
-  textColor,
-  isTranslated = false,
-  highlightMissingTranslations = false,
-  originalTitle,
-  originalDescription
+  message,
+  className
 }) => {
-  // Determina se usare il testo originale con evidenziazione per mancata traduzione
-  const showOriginalTitle = highlightMissingTranslations && !isTranslated && originalTitle;
-  const showOriginalDescription = highlightMissingTranslations && !isTranslated && originalDescription;
+  const defaultTitles = {
+    error: 'PERICOLO',
+    warning: 'AVVERTENZA',
+    info: 'NOTA',
+    success: 'IMPORTANTE',
+    safety: 'ISTRUZIONI DI SICUREZZA'
+  };
   
-  // Classe CSS per evidenziare il testo non tradotto
-  const missingTranslationClass = "bg-red-100 text-red-800 px-1 py-0.5 rounded";
+  const icons = {
+    error: '⚠️',
+    warning: '⚠️',
+    info: 'ℹ️',
+    success: '✓',
+    safety: '🛡️'
+  };
+  
+  // Colori per ciascun tipo di avviso (corrispondono al CSS)
+  const bgColors = {
+    error: '#ff0000',    // Rosso intenso
+    warning: '#ff8c00',  // Arancione intenso
+    info: '#0070d1',     // Blu intenso
+    success: '#2e7d32',  // Verde intenso
+    safety: '#2e7d32'    // Verde intenso
+  };
+  
+  // Lo stile del bordo deve corrispondere esattamente al colore di sfondo
+  // Il testo deve sempre essere bianco per garantire la visibilità
+  const boxStyle = {
+    backgroundColor: bgColors[level] || bgColors.info,
+    borderColor: bgColors[level] || bgColors.info,
+    color: '#ffffff' // Testo SEMPRE bianco
+  };
+  
+  const headerStyle = {
+    backgroundColor: bgColors[level] || bgColors.info,
+    color: '#ffffff' // Testo SEMPRE bianco
+  };
+  
+  const bodyStyle = {
+    color: '#ffffff' // Testo SEMPRE bianco
+  };
+  
+  // Applica il testo maiuscolo per i titoli (errore, avvertenza, nota)
+  const formattedTitle = title || defaultTitles[level];
   
   return (
-    <Card className="mb-4 border-0 overflow-hidden">
-      <div className="flex">
-        {/* Cella colorata con immagine di avvertenza */}
-        <div 
-          className="flex-none w-24 flex items-center justify-center p-4" 
-          style={{ backgroundColor }}
-        >
-          {imageUrl && (
-            <img 
-              src={imageUrl} 
-              alt={title} 
-              className="w-12 h-12" 
-            />
-          )}
-        </div>
-        
-        {/* Cella con il testo */}
-        <CardContent className="flex-grow p-4">
-          <h3 
-            className={`text-xl font-bold mb-2 ${showOriginalTitle ? missingTranslationClass : ''}`}
-            style={{ color: showOriginalTitle ? "inherit" : textColor }}
-          >
-            {showOriginalTitle ? originalTitle : title}
-          </h3>
-          
-          {showOriginalDescription ? (
-            <div className={missingTranslationClass}>
-              <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: originalDescription }} />
-            </div>
-          ) : (
-            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: description }} />
-          )}
-        </CardContent>
+    <div 
+      className={cn("warning-module", `warning-${level}`, className)}
+      style={boxStyle}
+    >
+      <div className="warning-header" style={headerStyle}>
+        <span className="warning-icon">{icons[level]}</span>
+        <h4 className="warning-title">{formattedTitle}</h4>
       </div>
-    </Card>
+      <div className="warning-body" style={bodyStyle}>
+        <p>{message}</p>
+      </div>
+    </div>
   );
 };
 
-// Modulo PERICOLO (rosso)
-export const DangerModule: React.FC<{
-  title?: string;
-  description: string;
-  isTranslated?: boolean;
-  highlightMissingTranslations?: boolean;
-  originalTitle?: string;
-  originalDescription?: string;
-}> = ({ 
-  title = "PERICOLO", 
-  description,
-  isTranslated = false,
-  highlightMissingTranslations = false,
-  originalTitle,
-  originalDescription
-}) => {
-  return (
-    <WarningModule
-      title={title}
-      description={description}
-      imageUrl="/uploads/1744114733296-157c58bc11960470cbc76bc367c1ecb0.png"
-      backgroundColor="#d9001e"
-      textColor="#FFFFFF"
-      isTranslated={isTranslated}
-      highlightMissingTranslations={highlightMissingTranslations}
-      originalTitle={originalTitle}
-      originalDescription={originalDescription}
-    />
-  );
-};
-
-// Modulo AVVERTENZA (arancione)
-export const WarningAlertModule: React.FC<{
-  title?: string;
-  description: string;
-  isTranslated?: boolean;
-  highlightMissingTranslations?: boolean;
-  originalTitle?: string;
-  originalDescription?: string;
-}> = ({ 
-  title = "AVVERTENZA", 
-  description,
-  isTranslated = false,
-  highlightMissingTranslations = false,
-  originalTitle,
-  originalDescription
-}) => {
-  return (
-    <WarningModule
-      title={title}
-      description={description}
-      imageUrl="/uploads/1744114733296-157c58bc11960470cbc76bc367c1ecb0.png"
-      backgroundColor="#ff9900"
-      textColor="#FFFFFF"
-      isTranslated={isTranslated}
-      highlightMissingTranslations={highlightMissingTranslations}
-      originalTitle={originalTitle}
-      originalDescription={originalDescription}
-    />
-  );
-};
-
-// Modulo ATTENZIONE (giallo)
-export const CautionModule: React.FC<{
-  title?: string;
-  description: string;
-  isTranslated?: boolean;
-  highlightMissingTranslations?: boolean;
-  originalTitle?: string;
-  originalDescription?: string;
-}> = ({ 
-  title = "ATTENZIONE", 
-  description,
-  isTranslated = false,
-  highlightMissingTranslations = false,
-  originalTitle,
-  originalDescription
-}) => {
-  return (
-    <WarningModule
-      title={title}
-      description={description}
-      imageUrl="/uploads/1744114733296-157c58bc11960470cbc76bc367c1ecb0.png"
-      backgroundColor="#ffd500"
-      textColor="#FFFFFF"
-      isTranslated={isTranslated}
-      highlightMissingTranslations={highlightMissingTranslations}
-      originalTitle={originalTitle}
-      originalDescription={originalDescription}
-    />
-  );
-};
-
-// Modulo NOTA (blu) - Senza icona di pericolo
-export const NoteModule: React.FC<{
-  title?: string;
-  description: string;
-  isTranslated?: boolean;
-  highlightMissingTranslations?: boolean;
-  originalTitle?: string;
-  originalDescription?: string;
-}> = ({ 
-  title = "NOTA", 
-  description,
-  isTranslated = false,
-  highlightMissingTranslations = false,
-  originalTitle,
-  originalDescription
-}) => {
-  return (
-    <WarningModule
-      title={title}
-      description={description}
-      // Non usare l'icona di pericolo per il modulo NOTA
-      backgroundColor="#3366cc"
-      textColor="#FFFFFF"
-      isTranslated={isTranslated}
-      highlightMissingTranslations={highlightMissingTranslations}
-      originalTitle={originalTitle}
-      originalDescription={originalDescription}
-    />
-  );
-};
-
-// Modulo Istruzioni di Sicurezza (verde)
-export const SafetyInstructionsModule: React.FC<{
-  title?: string;
-  description: string;
-  isTranslated?: boolean;
-  highlightMissingTranslations?: boolean;
-  originalTitle?: string;
-  originalDescription?: string;
-}> = ({ 
-  title = "Istruzioni di sicurezza", 
-  description,
-  isTranslated = false,
-  highlightMissingTranslations = false,
-  originalTitle,
-  originalDescription
-}) => {
-  return (
-    <WarningModule
-      title={title}
-      description={description}
-      imageUrl="/uploads/1744114733296-157c58bc11960470cbc76bc367c1ecb0.png"
-      backgroundColor="#339933"
-      textColor="#FFFFFF"
-      isTranslated={isTranslated}
-      highlightMissingTranslations={highlightMissingTranslations}
-      originalTitle={originalTitle}
-      originalDescription={originalDescription}
-    />
-  );
-};
+export default WarningModule;

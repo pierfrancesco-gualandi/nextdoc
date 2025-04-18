@@ -5,11 +5,14 @@ import { storage } from "./storage";
 import path from "path";
 import fs from "fs";
 import { corsMiddleware } from "./middleware/cors-middleware";
+// @ts-ignore
+import exportMiddleware from "./export-middleware";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(corsMiddleware);
+app.use(exportMiddleware);
 
 // Make sure uploads directory exists
 const uploadsDir = path.join(process.cwd(), 'uploads');

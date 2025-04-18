@@ -1,5 +1,4 @@
 import { saveAs } from 'file-saver';
-import { isDisegno3DSection, generateComponentsListHtml, getSpecificComponentsForSection } from './fixComponents';
 
 /**
  * Helper function to format document status

@@ -8,6 +8,7 @@ import { handleZipUpload, handleMultiZipUpload } from "./zip-handler";
 import { handleWebGLModelUpload, initializeWebGLModelFiles } from "./webgl-model-handler";
 import { createWordDocument } from "./word-export";
 import path from "path";
+import { getComponentsForSection21 } from "./api/components";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";

@@ -1,4 +1,5 @@
 import * as docx from "docx";
+import { postProcessExportHtml, isSection21, getSection21Components } from './export-utils';
 import {
   Document,
   Paragraph,
