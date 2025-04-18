@@ -202,27 +202,40 @@ export async function exportToHtml(documentId: string): Promise<void> {
               window.location.origin + module.content.src :
               module.content.src;
             
-            // Incorpora il modello 3D
+            // Incorpora il modello 3D con controlli migliorati
             content += `
               <div class="model-container">
                 <h4>Modello 3D</h4>
-                <p><strong>File:</strong> ${module.content.title || module.content.filename || 'Modello 3D'}</p>
+                <p class="model-title"><strong>${module.content.title || module.content.filename || 'Modello 3D'}</strong></p>
+                ${module.content.description ? `<p class="model-description">${module.content.description}</p>` : ''}
                 
-                <div class="controls">
-                  <button class="btn btn-primary" onclick="rotateModel('left', ${module.id})">Ruota Sinistra</button>
-                  <button class="btn btn-primary" onclick="rotateModel('right', ${module.id})">Ruota Destra</button>
-                  <button class="btn btn-primary" onclick="zoomModel('in', ${module.id})">Zoom In</button>
-                  <button class="btn btn-primary" onclick="zoomModel('out', ${module.id})">Zoom Out</button>
-                  <button class="btn btn-danger" onclick="resetModel(${module.id})">Reset</button>
+                <div class="model-controls">
+                  <button class="control-button rotate-left" onclick="rotateModel('left', ${module.id})">
+                    <span>⟲</span> Ruota Sx
+                  </button>
+                  <button class="control-button rotate-right" onclick="rotateModel('right', ${module.id})">
+                    <span>⟳</span> Ruota Dx
+                  </button>
+                  <button class="control-button zoom-in" onclick="zoomModel('in', ${module.id})">
+                    <span>+</span> Zoom
+                  </button>
+                  <button class="control-button zoom-out" onclick="zoomModel('out', ${module.id})">
+                    <span>−</span> Zoom
+                  </button>
+                  <button class="control-button reset" onclick="resetModel(${module.id})">
+                    <span>↺</span> Reset
+                  </button>
                 </div>
                 
-                <iframe id="model-viewer-${module.id}" src="${modelSrc}" style="width: 100%; height: 400px;"></iframe>
+                <div class="model-frame-container">
+                  <iframe id="model-viewer-${module.id}" src="${modelSrc}" class="model-frame"></iframe>
+                </div>
                 
-                <p style="margin-top: 15px;">
-                  <a href="${modelDownloadPath}" download="${module.content.title || 'modello3D'}.html" class="btn btn-success">
-                    Scarica il file 3D
+                <div class="model-download">
+                  <a href="${modelDownloadPath}" download="${module.content.title || 'modello3D'}.html" class="download-button">
+                    <span class="download-icon">⬇</span> Scarica modello 3D
                   </a>
-                </p>
+                </div>
               </div>
             `;
             break;
@@ -238,66 +251,126 @@ export async function exportToHtml(documentId: string): Promise<void> {
               bomHtml = `
                 <div class="bom-container">
                   <h4>Distinta Base (BOM)</h4>
-                  <p><strong>ID Distinta:</strong> ${bomId}</p>
+                  <div class="bom-header">
+                    <p><strong>ID Distinta:</strong> ${bomId}</p>
+                    ${module.content.description ? `<p class="bom-description">${module.content.description}</p>` : ''}
+                  </div>
                   
-                  <iframe id="bom-data-${bomId}" srcdoc="
-                    <html>
-                    <head>
-                      <style>
-                        body { font-family: Arial, sans-serif; margin: 0; padding: 10px; }
-                        table { width: 100%; border-collapse: collapse; }
-                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                        th { background-color: #f2f2f2; }
-                        .level-0 { padding-left: 10px; }
-                        .level-1 { padding-left: 30px; }
-                        .level-2 { padding-left: 50px; }
-                        .level-3 { padding-left: 70px; }
-                        .level-4 { padding-left: 90px; }
-                      </style>
-                    </head>
-                    <body>
-                      <p style='color:red;'>Caricamento in corso...</p>
-                      <script>
-                        // Richiesta asincrona per caricare la BOM completa
-                        const url = '/api/boms/${bomId}/items';
-                        fetch(url)
-                          .then(response => response.json())
-                          .then(items => {
-                            if (items && items.length) {
-                              // Ordina gli elementi per livello
-                              items.sort((a, b) => a.level - b.level || a.order - b.order);
-                              
-                              // Crea la tabella
-                              let tableHtml = '<table><thead><tr>' +
-                                '<th>Livello</th>' +
-                                '<th>Codice</th>' +
-                                '<th>Descrizione</th>' +
-                                '<th>Quantità</th>' +
-                                '</tr></thead><tbody>';
-                              
-                              items.forEach(item => {
-                                const component = item.component || {};
-                                tableHtml += '<tr>' +
-                                  '<td class="level-' + (item.level || 0) + '">' + item.level + '</td>' +
-                                  '<td>' + (component.code || '-') + '</td>' +
-                                  '<td>' + (component.description || '-') + '</td>' +
-                                  '<td>' + (item.quantity || '-') + '</td>' +
-                                  '</tr>';
-                              });
-                              
-                              tableHtml += '</tbody></table>';
-                              document.body.innerHTML = tableHtml;
-                            } else {
-                              document.body.innerHTML = '<p>Nessun elemento trovato nella distinta base</p>';
-                            }
-                          })
-                          .catch(error => {
-                            document.body.innerHTML = '<p>Errore nel caricamento della distinta: ' + error.message + '</p>';
-                          });
-                      </script>
-                    </body>
-                    </html>
-                  " style="width: 100%; height: 300px; border: none;"></iframe>
+                  <div class="bom-frame-container">
+                    <iframe id="bom-data-${bomId}" srcdoc="
+                      <html>
+                      <head>
+                        <style>
+                          :root {
+                            --border-color: #e5e7eb;
+                            --header-bg: #f9fafb;
+                            --hover-bg: #f3f4f6;
+                            --text-color: #333333;
+                            --secondary-color: #6b7280;
+                          }
+                          
+                          body { 
+                            font-family: Arial, sans-serif; 
+                            margin: 0; 
+                            padding: 10px; 
+                            color: var(--text-color);
+                          }
+                          
+                          table { 
+                            width: 100%; 
+                            border-collapse: collapse;
+                            border: 1px solid var(--border-color);
+                          }
+                          
+                          th, td { 
+                            border: 1px solid var(--border-color); 
+                            padding: 8px; 
+                            text-align: left; 
+                          }
+                          
+                          th { 
+                            background-color: var(--header-bg); 
+                            font-weight: 600;
+                          }
+                          
+                          tr:hover {
+                            background-color: var(--hover-bg);
+                          }
+                          
+                          .level-0 { padding-left: 10px; font-weight: bold; }
+                          .level-1 { padding-left: 30px; }
+                          .level-2 { padding-left: 50px; }
+                          .level-3 { padding-left: 70px; }
+                          .level-4 { padding-left: 90px; }
+                          
+                          .loading {
+                            color: #2563eb;
+                            padding: 20px;
+                            text-align: center;
+                            font-style: italic;
+                          }
+                          
+                          .error {
+                            color: #ef4444;
+                            padding: 20px;
+                            text-align: center;
+                            border: 1px solid #fecaca;
+                            background-color: #fee2e2;
+                            border-radius: 4px;
+                          }
+                          
+                          .empty {
+                            color: var(--secondary-color);
+                            padding: 20px;
+                            text-align: center;
+                            font-style: italic;
+                          }
+                        </style>
+                      </head>
+                      <body>
+                        <p class="loading">Caricamento distinta base in corso...</p>
+                        <script>
+                          // Richiesta asincrona per caricare la BOM completa
+                          const url = '/api/boms/${bomId}/items';
+                          fetch(url)
+                            .then(response => response.json())
+                            .then(items => {
+                              if (items && items.length) {
+                                // Ordina gli elementi per livello e ordine
+                                items.sort((a, b) => a.level - b.level || a.order - b.order);
+                                
+                                // Crea la tabella
+                                let tableHtml = '<table><thead><tr>' +
+                                  '<th>Livello</th>' +
+                                  '<th>Codice</th>' +
+                                  '<th>Descrizione</th>' +
+                                  '<th>Quantità</th>' +
+                                  '</tr></thead><tbody>';
+                                
+                                items.forEach(item => {
+                                  const component = item.component || {};
+                                  tableHtml += '<tr>' +
+                                    '<td class="level-' + (item.level || 0) + '">' + item.level + '</td>' +
+                                    '<td>' + (component.code || '-') + '</td>' +
+                                    '<td>' + (component.description || '-') + '</td>' +
+                                    '<td>' + (item.quantity || '-') + '</td>' +
+                                    '</tr>';
+                                });
+                                
+                                tableHtml += '</tbody></table>';
+                                document.body.innerHTML = tableHtml;
+                              } else {
+                                document.body.innerHTML = '<p class="empty">Nessun elemento trovato nella distinta base</p>';
+                              }
+                            })
+                            .catch(error => {
+                              document.body.innerHTML = '<p class="error">Errore nel caricamento della distinta: ' + error.message + '</p>';
+                            });
+                        </script>
+                      </body>
+                      </html>
+                    " class="bom-iframe"></iframe>
+                  </div>
                 </div>
               `;
             } catch (e) {
@@ -356,12 +429,18 @@ export async function exportToHtml(documentId: string): Promise<void> {
               module.content.src;
             
             const filename = module.content.filename || module.content.src.split('/').pop() || 'File';
+            const fileType = module.type === 'pdf' ? 'PDF' : 'File';
             
             content += `
               <div class="file-container">
-                <h4>File Allegato</h4>
-                <p><strong>Nome file:</strong> ${filename}</p>
-                <p><a href="${fileSrc}" target="_blank" class="btn btn-primary" style="display: inline-block; padding: 8px 16px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">Scarica il file</a></p>
+                <h4>${fileType} Allegato</h4>
+                <div class="file-info">
+                  <p><strong>Nome file:</strong> ${filename}</p>
+                  <p class="file-description">${module.content.description || ''}</p>
+                  <a href="${fileSrc}" target="_blank" class="download-button">
+                    <span class="download-icon">⬇</span> Scarica ${fileType}
+                  </a>
+                </div>
               </div>
             `;
             break;
@@ -406,8 +485,13 @@ export async function exportToHtml(documentId: string): Promise<void> {
             
           case 'link':
             content += `
-              <div style="margin: 15px 0;">
-                <p><a href="${module.content.url}" target="_blank" style="color: #2563eb; text-decoration: underline;">${module.content.text || module.content.url}</a></p>
+              <div class="link-container">
+                <p>
+                  <a href="${module.content.url}" target="_blank" class="external-link">
+                    ${module.content.text || module.content.url}
+                  </a>
+                  ${module.content.description ? `<span class="link-description">${module.content.description}</span>` : ''}
+                </p>
               </div>
             `;
             break;
@@ -889,23 +973,192 @@ img, video, iframe {
 .model-container {
   background-color: var(--light-bg);
   border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
   padding: 20px;
   text-align: center;
   margin: 15px 0;
+  box-shadow: var(--box-shadow);
+}
+
+.model-title {
+  font-size: 1.1em;
+  margin: 8px 0;
+}
+
+.model-description {
+  color: var(--tertiary-color);
+  font-style: italic;
+  margin-bottom: 15px;
+}
+
+.model-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.control-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 8px 12px;
+  font-size: 0.9em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background-color 0.2s ease;
+}
+
+.control-button:hover {
+  background-color: var(--link-hover-color);
+}
+
+.control-button span {
+  font-size: 1.2em;
+}
+
+.control-button.reset {
+  background-color: var(--danger-color);
+}
+
+.control-button.reset:hover {
+  background-color: #d32f2f;
+}
+
+.model-frame-container {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 15px 0;
+}
+
+.model-frame {
+  width: 100%;
+  height: 400px;
+  border: none;
+}
+
+.model-download {
+  margin-top: 15px;
 }
 
 /* BOM container */
 .bom-container {
   border: 1px solid var(--border-color);
-  padding: 10px;
+  border-radius: var(--border-radius);
+  background-color: var(--light-bg);
+  padding: 15px;
   margin: 15px 0;
+  box-shadow: var(--box-shadow);
+}
+
+.bom-header {
+  margin-bottom: 15px;
+}
+
+.bom-description {
+  color: var(--tertiary-color);
+  font-style: italic;
+  margin: 8px 0;
+}
+
+.bom-frame-container {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: white;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.bom-iframe {
+  width: 100%;
+  height: 300px;
+  border: none;
 }
 
 /* Contenitore file */
 .file-container {
   border: 1px solid var(--border-color);
-  padding: 10px;
+  padding: 15px;
   margin: 15px 0;
+  background-color: var(--light-bg);
+  border-radius: var(--border-radius);
+}
+
+.file-info {
+  margin: 10px 0;
+}
+
+.file-description {
+  margin: 8px 0;
+  font-style: italic;
+  color: var(--tertiary-color);
+}
+
+.download-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 8px 16px;
+  border-radius: var(--border-radius);
+  text-decoration: none;
+  font-weight: 500;
+  margin-top: 10px;
+  box-shadow: var(--box-shadow);
+  transition: background-color 0.2s ease;
+}
+
+.download-button:hover {
+  background-color: var(--link-hover-color);
+  text-decoration: none;
+  color: white;
+}
+
+.download-icon {
+  font-size: 1.2em;
+}
+
+/* Link container */
+.link-container {
+  margin: 15px 0;
+}
+
+.external-link {
+  color: var(--link-color);
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  padding-right: 1.5em;
+}
+
+.external-link:hover {
+  color: var(--link-hover-color);
+  text-decoration: underline;
+}
+
+/* Aggiunge una piccola icona esterna dopo il link */
+.external-link::after {
+  content: '↗';
+  position: absolute;
+  right: 0.3em;
+  font-size: 0.8em;
+}
+
+.link-description {
+  display: block;
+  font-style: italic;
+  margin-top: 5px;
+  color: var(--tertiary-color);
+  font-size: 0.9em;
 }
 
 /* Stili per immagini con caption */
