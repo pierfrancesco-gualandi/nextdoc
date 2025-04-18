@@ -320,7 +320,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 bomItems = [];
               }
               // SEZIONE 2.1 - DISEGNO 3D - Tutti i componenti ESATTAMENTE come nella tabella fornita
-              else if (sectionId === 16 || (sectionTitle && (sectionTitle.toLowerCase().includes("2.1") || sectionTitle.toLowerCase().includes("disegno 3d")))) {
+              else if (sectionId === 16 || module.content && module.content.use21ComponentsList === true || (sectionTitle && (sectionTitle.toLowerCase().includes("2.1") || sectionTitle.toLowerCase().includes("disegno 3d")))) {
                 console.log("FORZANDO elenco componenti completo per SEZIONE 2.1 disegno 3D - ID:", sectionId);
                 // !!! IMPORTANTE !!! - Questo è un override FORZATO per la sezione 2.1 (ID=16)
                 // I 9 componenti ESATTI come richiesti dal cliente
@@ -1130,12 +1130,12 @@ img, video, iframe {
 /* PERICOLO - Rosso intenso */
 .danger {
   background-color: var(--danger-color);
-  border-color: #b00000;
-  border-left-color: #800000;
+  border-color: var(--danger-color);
+  border-left-color: var(--danger-color);
 }
 
 .danger .message-header {
-  background-color: #cc0000;
+  background-color: #ff0000;
   color: #ffffff;
   font-weight: bold;
   border-radius: 4px;
@@ -1145,7 +1145,7 @@ img, video, iframe {
 
 .danger .message-body {
   color: #ffffff;
-  background-color: rgba(255, 0, 0, 0.8);
+  background-color: #ff0000;
   padding: 8px;
   border-radius: 4px;
 }
@@ -1158,12 +1158,12 @@ img, video, iframe {
 /* AVVERTENZA - Arancione intenso */
 .warning {
   background-color: var(--warning-color);
-  border-color: #d97706;
-  border-left-color: #b45309;
+  border-color: var(--warning-color);
+  border-left-color: var(--warning-color);
 }
 
 .warning .message-header {
-  background-color: #ea580c;
+  background-color: #ff8c00;
   color: #ffffff;
   font-weight: bold;
   border-radius: 4px;
@@ -1173,7 +1173,7 @@ img, video, iframe {
 
 .warning .message-body {
   color: #ffffff;
-  background-color: rgba(255, 140, 0, 0.8);
+  background-color: #ff8c00;
   padding: 8px;
   border-radius: 4px;
 }
@@ -1186,12 +1186,12 @@ img, video, iframe {
 /* NOTA - Blu intenso */
 .info {
   background-color: var(--info-color);
-  border-color: #0369a1;
-  border-left-color: #075985;
+  border-color: var(--info-color);
+  border-left-color: var(--info-color);
 }
 
 .info .message-header {
-  background-color: #0284c7;
+  background-color: #0070d1;
   color: #ffffff;
   font-weight: bold;
   border-radius: 4px;
@@ -1201,7 +1201,7 @@ img, video, iframe {
 
 .info .message-body {
   color: #ffffff;
-  background-color: rgba(0, 112, 209, 0.8);
+  background-color: #0070d1;
   padding: 8px;
   border-radius: 4px;
 }
@@ -1214,8 +1214,8 @@ img, video, iframe {
 /* ATTENZIONE - Giallo intenso */
 .caution {
   background-color: var(--caution-color);
-  border-color: #eab308;
-  border-left-color: #ca8a04;
+  border-color: var(--caution-color);
+  border-left-color: var(--caution-color);
 }
 
 .caution .message-header {
@@ -1242,12 +1242,12 @@ img, video, iframe {
 /* ISTRUZIONI DI SICUREZZA - Verde intenso */
 .success {
   background-color: var(--success-color);
-  border-color: #16a34a;
-  border-left-color: #15803d;
+  border-color: var(--success-color);
+  border-left-color: var(--success-color);
 }
 
 .success .message-header {
-  background-color: #22c55e;
+  background-color: #2e7d32;
   color: #ffffff;
   font-weight: bold;
   border-radius: 4px;
@@ -1257,7 +1257,7 @@ img, video, iframe {
 
 .success .message-body {
   color: #ffffff;
-  background-color: rgba(46, 125, 50, 0.8);
+  background-color: #2e7d32;
   padding: 8px;
   border-radius: 4px;
 }
