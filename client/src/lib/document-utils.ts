@@ -116,32 +116,49 @@ export async function exportToHtml(documentId: string): Promise<void> {
             break;
             
           case 'image':
+            // Verifica se il percorso è relativo o assoluto
+            const imgSrc = module.content.src.startsWith('/') ? 
+              // Se è un percorso assoluto, utilizza il percorso completo
+              window.location.origin + module.content.src :
+              // Altrimenti, usa il percorso come è
+              module.content.src;
+              
             content += `
-              <div style="text-align: center; margin: 15px 0;">
-                <img src="${module.content.src}" alt="${module.content.alt || ''}" style="max-width: 100%;" />
-                ${module.content.caption ? `<p><em>${module.content.caption}</em></p>` : ''}
+              <div class="image-container">
+                <img src="${imgSrc}" alt="${module.content.alt || ''}" />
+                ${module.content.caption ? `<p class="caption">${module.content.caption}</p>` : ''}
               </div>
             `;
             break;
             
           case 'video':
+            // Verifica se il percorso è relativo o assoluto
+            const videoSrc = module.content.src.startsWith('/') ? 
+              window.location.origin + module.content.src :
+              module.content.src;
+            
             content += `
-              <div style="text-align: center; margin: 15px 0;">
-                <video controls style="max-width: 100%;">
-                  <source src="${module.content.src}" type="video/${module.content.format || 'mp4'}">
+              <div class="video-container">
+                <video controls width="100%">
+                  <source src="${videoSrc}" type="video/${module.content.format || 'mp4'}">
                   Il tuo browser non supporta i video HTML5.
                 </video>
-                ${module.content.caption ? `<p><em>${module.content.caption}</em></p>` : ''}
+                ${module.content.caption ? `<p class="caption">${module.content.caption}</p>` : ''}
               </div>
             `;
             break;
             
           case 'warning':
-            const warningColor = module.content.level === 'error' ? '#ffdddd' : 
-                                 module.content.level === 'warning' ? '#fff3cd' : '#d1ecf1';
+            let warningClass = 'info';
+            if (module.content.level === 'error') {
+              warningClass = 'danger';
+            } else if (module.content.level === 'warning') {
+              warningClass = 'warning';
+            }
+            
             content += `
-              <div style="background-color: ${warningColor}; padding: 10px; border-left: 4px solid #b22222; margin: 15px 0;">
-                <h4 style="margin: 0;">${module.content.title}</h4>
+              <div class="message ${warningClass}">
+                <h4>${module.content.title}</h4>
                 <p>${module.content.message}</p>
               </div>
             `;
@@ -175,26 +192,34 @@ export async function exportToHtml(documentId: string): Promise<void> {
             
           case '3d':
           case '3d-model':
-            // Supporto migliorato per moduli 3D
+            // Verifica se il percorso è relativo o assoluto e usa l'URL completo
+            const modelSrc = module.content.src.startsWith('/') ? 
+              window.location.origin + module.content.src :
+              module.content.src;
+            
+            // Determina il percorso per il download
+            const modelDownloadPath = module.content.src.startsWith('/') ? 
+              window.location.origin + module.content.src :
+              module.content.src;
+            
+            // Incorpora il modello 3D
             content += `
-              <div style="text-align: center; margin: 15px 0; padding: 20px; border: 1px solid #ddd; background-color: #f9f9f9;">
+              <div class="model-container">
                 <h4>Modello 3D</h4>
-                <p><strong>File:</strong> ${module.content.title || module.content.src || 'Modello 3D'}</p>
+                <p><strong>File:</strong> ${module.content.title || module.content.filename || 'Modello 3D'}</p>
                 
-                <div style="margin: 15px 0;">
-                  <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 15px;">
-                    <button onclick="rotateModel('left')" style="padding: 5px 10px; background-color: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Ruota Sinistra</button>
-                    <button onclick="rotateModel('right')" style="padding: 5px 10px; background-color: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Ruota Destra</button>
-                    <button onclick="zoomModel('in')" style="padding: 5px 10px; background-color: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Zoom In</button>
-                    <button onclick="zoomModel('out')" style="padding: 5px 10px; background-color: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Zoom Out</button>
-                    <button onclick="resetModel()" style="padding: 5px 10px; background-color: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Reset</button>
-                  </div>
+                <div class="controls">
+                  <button class="btn btn-primary" onclick="rotateModel('left', ${module.id})">Ruota Sinistra</button>
+                  <button class="btn btn-primary" onclick="rotateModel('right', ${module.id})">Ruota Destra</button>
+                  <button class="btn btn-primary" onclick="zoomModel('in', ${module.id})">Zoom In</button>
+                  <button class="btn btn-primary" onclick="zoomModel('out', ${module.id})">Zoom Out</button>
+                  <button class="btn btn-danger" onclick="resetModel(${module.id})">Reset</button>
                 </div>
                 
-                <iframe id="model-viewer-${module.id}" src="${module.content.src}" style="width: 100%; height: 400px; border: 1px solid #ddd;"></iframe>
+                <iframe id="model-viewer-${module.id}" src="${modelSrc}" style="width: 100%; height: 400px;"></iframe>
                 
                 <p style="margin-top: 15px;">
-                  <a href="${module.content.src}" download style="display: inline-block; padding: 8px 16px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">
+                  <a href="${modelDownloadPath}" download="${module.content.title || 'modello3D'}.html" class="btn btn-success">
                     Scarica il file 3D
                   </a>
                 </p>
@@ -203,38 +228,89 @@ export async function exportToHtml(documentId: string): Promise<void> {
             break;
             
           case 'bom':
-            // Supporto migliorato per BOM: prova a recuperare la distinta
+            // Carica la lista di elementi BOM direttamente dal file BOM
+            let bomHtml = '';
+            
             try {
-              content += `
-                <div style="margin: 15px 0; padding: 10px; border: 1px solid #ddd;">
+              // Utilizziamo un identificatore più specifico
+              const bomId = module.content.bomId;
+              
+              bomHtml = `
+                <div class="bom-container">
                   <h4>Distinta Base (BOM)</h4>
-                  <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd; margin-top: 10px;">
-                    <thead>
-                      <tr>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f2f2f2;">Livello</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f2f2f2;">Codice</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f2f2f2;">Descrizione</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f2f2f2;">Quantità</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;" colspan="4">
-                          La distinta completa è disponibile nell'applicazione originale (ID Distinta: ${module.content.bomId})
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  <p><strong>ID Distinta:</strong> ${bomId}</p>
+                  
+                  <iframe id="bom-data-${bomId}" srcdoc="
+                    <html>
+                    <head>
+                      <style>
+                        body { font-family: Arial, sans-serif; margin: 0; padding: 10px; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                        .level-0 { padding-left: 10px; }
+                        .level-1 { padding-left: 30px; }
+                        .level-2 { padding-left: 50px; }
+                        .level-3 { padding-left: 70px; }
+                        .level-4 { padding-left: 90px; }
+                      </style>
+                    </head>
+                    <body>
+                      <p style='color:red;'>Caricamento in corso...</p>
+                      <script>
+                        // Richiesta asincrona per caricare la BOM completa
+                        const url = '/api/boms/${bomId}/items';
+                        fetch(url)
+                          .then(response => response.json())
+                          .then(items => {
+                            if (items && items.length) {
+                              // Ordina gli elementi per livello
+                              items.sort((a, b) => a.level - b.level || a.order - b.order);
+                              
+                              // Crea la tabella
+                              let tableHtml = '<table><thead><tr>' +
+                                '<th>Livello</th>' +
+                                '<th>Codice</th>' +
+                                '<th>Descrizione</th>' +
+                                '<th>Quantità</th>' +
+                                '</tr></thead><tbody>';
+                              
+                              items.forEach(item => {
+                                const component = item.component || {};
+                                tableHtml += '<tr>' +
+                                  '<td class="level-' + (item.level || 0) + '">' + item.level + '</td>' +
+                                  '<td>' + (component.code || '-') + '</td>' +
+                                  '<td>' + (component.description || '-') + '</td>' +
+                                  '<td>' + (item.quantity || '-') + '</td>' +
+                                  '</tr>';
+                              });
+                              
+                              tableHtml += '</tbody></table>';
+                              document.body.innerHTML = tableHtml;
+                            } else {
+                              document.body.innerHTML = '<p>Nessun elemento trovato nella distinta base</p>';
+                            }
+                          })
+                          .catch(error => {
+                            document.body.innerHTML = '<p>Errore nel caricamento della distinta: ' + error.message + '</p>';
+                          });
+                      </script>
+                    </body>
+                    </html>
+                  " style="width: 100%; height: 300px; border: none;"></iframe>
                 </div>
               `;
             } catch (e) {
-              content += `
-                <div style="margin: 15px 0; padding: 10px; border: 1px solid #ddd;">
+              bomHtml = `
+                <div class="bom-container">
                   <h4>Distinta Base (BOM) - ID: ${module.content.bomId}</h4>
                   <p>La distinta base completa è disponibile nell'applicazione originale.</p>
+                  <p class="message warning">Errore nel caricamento della distinta: ${e.message}</p>
                 </div>
               `;
             }
+            
+            content += bomHtml;
             break;
             
           case 'component':
@@ -260,10 +336,10 @@ export async function exportToHtml(documentId: string): Promise<void> {
               <div style="margin: 15px 0;">
                 <h4>Lista di controllo</h4>
                 <ul style="list-style-type: none; padding-left: 0;">
-                  ${(module.content.items || []).map((item: any) => 
-                    `<li style="margin-bottom: 8px;">
-                      <input type="checkbox" ${item.checked ? 'checked' : ''} disabled> 
-                      <span>${item.text}</span>
+                  ${(module.content.items || []).map((item: any, index: number) => 
+                    `<li class="checklist-item">
+                      <input type="checkbox" id="checkbox-${module.id}-${index}" class="checklist-checkbox" ${item.checked ? 'checked' : ''}> 
+                      <label for="checkbox-${module.id}-${index}">${item.text}</label>
                     </li>`
                   ).join('')}
                 </ul>
@@ -273,12 +349,18 @@ export async function exportToHtml(documentId: string): Promise<void> {
             
           case 'file':
           case 'pdf':
-            const filename = module.content.filename || module.content.src || 'File';
+            // Verifica se il percorso è relativo o assoluto
+            const fileSrc = module.content.src.startsWith('/') ? 
+              window.location.origin + module.content.src :
+              module.content.src;
+            
+            const filename = module.content.filename || module.content.src.split('/').pop() || 'File';
+            
             content += `
-              <div style="margin: 15px 0; padding: 10px; border: 1px solid #ddd;">
+              <div class="file-container">
                 <h4>File Allegato</h4>
                 <p><strong>Nome file:</strong> ${filename}</p>
-                <p><a href="${module.content.src}" target="_blank" style="color: #2563eb; text-decoration: underline;">Scarica il file</a></p>
+                <p><a href="${fileSrc}" target="_blank" class="btn btn-primary" style="display: inline-block; padding: 8px 16px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">Scarica il file</a></p>
               </div>
             `;
             break;
@@ -286,8 +368,8 @@ export async function exportToHtml(documentId: string): Promise<void> {
           // Aggiunta di tipi di avviso specifici
           case 'danger':
             content += `
-              <div style="background-color: #ffdddd; padding: 15px; border-left: 6px solid #f44336; margin: 15px 0;">
-                <h4 style="margin-top: 0; color: #f44336;">PERICOLO</h4>
+              <div class="message danger">
+                <h4>PERICOLO</h4>
                 <p>${module.content.message || module.content.text || ''}</p>
               </div>
             `;
@@ -296,8 +378,8 @@ export async function exportToHtml(documentId: string): Promise<void> {
           case 'caution':
           case 'warning-alert':
             content += `
-              <div style="background-color: #fff3cd; padding: 15px; border-left: 6px solid #ffc107; margin: 15px 0;">
-                <h4 style="margin-top: 0; color: #856404;">AVVERTENZA</h4>
+              <div class="message warning">
+                <h4>AVVERTENZA</h4>
                 <p>${module.content.message || module.content.text || ''}</p>
               </div>
             `;
@@ -305,8 +387,8 @@ export async function exportToHtml(documentId: string): Promise<void> {
             
           case 'note':
             content += `
-              <div style="background-color: #e7f3fe; padding: 15px; border-left: 6px solid #2196F3; margin: 15px 0;">
-                <h4 style="margin-top: 0; color: #0c5460;">NOTA</h4>
+              <div class="message info">
+                <h4>NOTA</h4>
                 <p>${module.content.message || module.content.text || ''}</p>
               </div>
             `;
@@ -314,8 +396,8 @@ export async function exportToHtml(documentId: string): Promise<void> {
             
           case 'safety-instructions':
             content += `
-              <div style="background-color: #d4edda; padding: 15px; border-left: 6px solid #28a745; margin: 15px 0;">
-                <h4 style="margin-top: 0; color: #155724;">ISTRUZIONI DI SICUREZZA</h4>
+              <div class="message success">
+                <h4>ISTRUZIONI DI SICUREZZA</h4>
                 <p>${module.content.message || module.content.text || ''}</p>
               </div>
             `;
@@ -346,47 +428,80 @@ export async function exportToHtml(documentId: string): Promise<void> {
     const scriptContent = `
     <script>
       // Funzioni per il controllo dei modelli 3D
-      function rotateModel(direction) {
-        // In una implementazione reale, questo invierebbe messaggi all'iframe
-        console.log('Rotate model: ' + direction);
-        // L'ideale sarebbe usare postMessage per comunicare con l'iframe
+      function rotateModel(direction, modelId) {
+        console.log('Rotate model: ' + direction + ' for model: ' + modelId);
         try {
-          const frames = document.querySelectorAll('iframe[id^="model-viewer-"]');
-          frames.forEach(frame => {
-            frame.contentWindow.postMessage({
-              action: 'rotate',
-              direction: direction
-            }, '*');
-          });
+          if (modelId) {
+            // Ruota uno specifico modello
+            const frame = document.getElementById('model-viewer-' + modelId);
+            if (frame && frame.contentWindow) {
+              frame.contentWindow.postMessage({
+                action: 'rotate',
+                direction: direction
+              }, '*');
+            }
+          } else {
+            // Ruota tutti i modelli (retrocompatibilità)
+            const frames = document.querySelectorAll('iframe[id^="model-viewer-"]');
+            frames.forEach(frame => {
+              frame.contentWindow.postMessage({
+                action: 'rotate',
+                direction: direction
+              }, '*');
+            });
+          }
         } catch(e) {
           console.error('Failed to communicate with 3D model:', e);
         }
       }
       
-      function zoomModel(direction) {
-        console.log('Zoom model: ' + direction);
+      function zoomModel(direction, modelId) {
+        console.log('Zoom model: ' + direction + ' for model: ' + modelId);
         try {
-          const frames = document.querySelectorAll('iframe[id^="model-viewer-"]');
-          frames.forEach(frame => {
-            frame.contentWindow.postMessage({
-              action: 'zoom',
-              direction: direction
-            }, '*');
-          });
+          if (modelId) {
+            // Zoom su uno specifico modello
+            const frame = document.getElementById('model-viewer-' + modelId);
+            if (frame && frame.contentWindow) {
+              frame.contentWindow.postMessage({
+                action: 'zoom',
+                direction: direction
+              }, '*');
+            }
+          } else {
+            // Zoom su tutti i modelli (retrocompatibilità)
+            const frames = document.querySelectorAll('iframe[id^="model-viewer-"]');
+            frames.forEach(frame => {
+              frame.contentWindow.postMessage({
+                action: 'zoom',
+                direction: direction
+              }, '*');
+            });
+          }
         } catch(e) {
           console.error('Failed to communicate with 3D model:', e);
         }
       }
       
-      function resetModel() {
-        console.log('Reset model');
+      function resetModel(modelId) {
+        console.log('Reset model: ' + modelId);
         try {
-          const frames = document.querySelectorAll('iframe[id^="model-viewer-"]');
-          frames.forEach(frame => {
-            frame.contentWindow.postMessage({
-              action: 'reset'
-            }, '*');
-          });
+          if (modelId) {
+            // Reset di uno specifico modello
+            const frame = document.getElementById('model-viewer-' + modelId);
+            if (frame && frame.contentWindow) {
+              frame.contentWindow.postMessage({
+                action: 'reset'
+              }, '*');
+            }
+          } else {
+            // Reset di tutti i modelli (retrocompatibilità)
+            const frames = document.querySelectorAll('iframe[id^="model-viewer-"]');
+            frames.forEach(frame => {
+              frame.contentWindow.postMessage({
+                action: 'reset'
+              }, '*');
+            });
+          }
         } catch(e) {
           console.error('Failed to communicate with 3D model:', e);
         }
@@ -555,6 +670,264 @@ export async function exportToWord(documentId: string, languageId?: string): Pro
  * @returns Stringa HTML completa
  */
 export function generateHtml(title: string, content: string): string {
+  // Definiamo i CSS esterni in un file separato
+  const cssContent = `
+:root {
+  --primary-color: #2563eb;
+  --secondary-color: #4b5563;
+  --tertiary-color: #6b7280;
+  --light-bg: #f9f9f9;
+  --border-color: #e5e7eb;
+  --danger-color: #f44336;
+  --warning-color: #ffc107;
+  --info-color: #2196F3;
+  --success-color: #28a745;
+  --text-color: #333333;
+  --link-color: #2563eb;
+  --font-family: Arial, sans-serif;
+  --base-spacing: 20px;
+  --content-width: 800px;
+}
+
+body {
+  font-family: var(--font-family);
+  line-height: 1.6;
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: var(--base-spacing);
+  color: var(--text-color);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: calc(var(--base-spacing) * 1.5);
+  margin-bottom: var(--base-spacing);
+}
+
+h1 {
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 10px;
+  font-size: 2em;
+}
+
+h2 {
+  color: var(--secondary-color);
+  font-size: 1.5em;
+}
+
+h3 {
+  color: var(--tertiary-color);
+  font-size: 1.2em;
+}
+
+p {
+  margin: 10px 0;
+}
+
+ul, ol {
+  margin: 15px 0;
+  padding-left: 30px;
+}
+
+li {
+  margin-bottom: 8px;
+}
+
+a {
+  color: var(--link-color);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--base-spacing) 0;
+}
+
+table, th, td {
+  border: 1px solid var(--border-color);
+}
+
+th, td {
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: var(--light-bg);
+}
+
+img, video, iframe {
+  display: block;
+  max-width: 100%;
+  margin: var(--base-spacing) auto;
+}
+
+.section {
+  margin-bottom: calc(var(--base-spacing) * 2);
+}
+
+/* Moduli personalizzati */
+.module {
+  margin: var(--base-spacing) 0;
+}
+
+/* Stili per tipi di avvisi */
+.message {
+  padding: 15px;
+  margin: 15px 0;
+  border-left: 6px solid;
+}
+
+.message h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.danger {
+  background-color: #ffdddd;
+  border-color: var(--danger-color);
+}
+
+.danger h4 {
+  color: var(--danger-color);
+}
+
+.warning {
+  background-color: #fff3cd;
+  border-color: var(--warning-color);
+}
+
+.warning h4 {
+  color: #856404;
+}
+
+.info {
+  background-color: #e7f3fe;
+  border-color: var(--info-color);
+}
+
+.info h4 {
+  color: #0c5460;
+}
+
+.success {
+  background-color: #d4edda;
+  border-color: var(--success-color);
+}
+
+.success h4 {
+  color: #155724;
+}
+
+/* Stili per controlli 3D */
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.btn {
+  padding: 5px 10px;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+}
+
+.btn-danger {
+  background-color: var(--danger-color);
+}
+
+.btn-success {
+  background-color: var(--success-color);
+}
+
+/* Stili per checklist */
+.checklist-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.checklist-checkbox {
+  margin-right: 10px;
+}
+
+/* Modello 3D Container */
+.model-container {
+  background-color: var(--light-bg);
+  border: 1px solid var(--border-color);
+  padding: 20px;
+  text-align: center;
+  margin: 15px 0;
+}
+
+/* BOM container */
+.bom-container {
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  margin: 15px 0;
+}
+
+/* Contenitore file */
+.file-container {
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  margin: 15px 0;
+}
+
+/* Stili per immagini con caption */
+.image-container {
+  text-align: center;
+  margin: 15px 0;
+}
+
+.caption {
+  font-style: italic;
+  margin-top: 5px;
+  color: var(--tertiary-color);
+}
+
+/* Video container con stile corrente */
+.video-container {
+  width: 100%;
+  margin: 15px 0;
+}
+
+.video-container video {
+  width: 100%;
+  max-height: 400px;
+}
+
+/* Highlight per testi importanti */
+.highlight {
+  background-color: #fef3c7;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.step {
+  font-weight: bold;
+}
+
+.note {
+  background-color: #f3f4f6;
+  border-left: 4px solid #9ca3af;
+  padding: 10px 15px;
+  margin: 15px 0;
+}
+`;
+
   return `
 <!DOCTYPE html>
 <html lang="it">
@@ -562,60 +935,95 @@ export function generateHtml(title: string, content: string): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    h1 {
-      color: #2563eb;
-      border-bottom: 2px solid #e5e7eb;
-      padding-bottom: 10px;
-    }
-    h2 {
-      color: #4b5563;
-      margin-top: 25px;
-    }
-    h3 {
-      color: #6b7280;
-    }
-    p {
-      margin: 10px 0;
-    }
-    ul, ol {
-      margin: 15px 0;
-      padding-left: 30px;
-    }
-    li {
-      margin-bottom: 8px;
-    }
-    .highlight {
-      background-color: #fef3c7;
-      padding: 2px 4px;
-      border-radius: 4px;
-    }
-    .step {
-      font-weight: bold;
-    }
-    .note {
-      background-color: #f3f4f6;
-      border-left: 4px solid #9ca3af;
-      padding: 10px 15px;
-      margin: 15px 0;
-    }
-    .warning {
-      background-color: #fef3c7;
-      border-left: 4px solid #f59e0b;
-      padding: 10px 15px;
-      margin: 15px 0;
-    }
-  </style>
+  <style>${cssContent}</style>
 </head>
 <body>
   ${content}
+  
+  <script>
+    // Rendere interattive le checkbox
+    document.addEventListener('DOMContentLoaded', function() {
+      // Rendere i checkbox interattivi
+      const checkboxes = document.querySelectorAll('.checklist-checkbox');
+      checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function(e) {
+          // Salva lo stato del checkbox nel localStorage
+          localStorage.setItem('checkbox-' + checkbox.id, checkbox.checked);
+        });
+        
+        // Ripristina lo stato salvato
+        const savedState = localStorage.getItem('checkbox-' + checkbox.id);
+        if (savedState === 'true') {
+          checkbox.checked = true;
+        }
+      });
+      
+      // Per gli iframe dei modelli 3D
+      function setupIframeMessaging() {
+        window.addEventListener('message', function(event) {
+          // Verifica l'origine del messaggio per sicurezza se necessario
+          // if (event.origin !== "http://example.com") return;
+          
+          const iframes = document.querySelectorAll('iframe[id^="model-viewer-"]');
+          if (event.data && event.data.action) {
+            iframes.forEach(iframe => {
+              if (iframe.contentWindow === event.source) {
+                // Qui puoi gestire i messaggi ricevuti dall'iframe
+                console.log('Received message from iframe:', event.data);
+              }
+            });
+          }
+        });
+      }
+      
+      setupIframeMessaging();
+    });
+    
+    // Funzioni per il controllo dei modelli 3D
+    function rotateModel(direction, modelId) {
+      console.log('Rotate model: ' + direction + ' for model: ' + modelId);
+      try {
+        const frame = document.getElementById('model-viewer-' + modelId);
+        if (frame && frame.contentWindow) {
+          frame.contentWindow.postMessage({
+            action: 'rotate',
+            direction: direction
+          }, '*');
+        }
+      } catch(e) {
+        console.error('Failed to communicate with 3D model:', e);
+      }
+    }
+    
+    function zoomModel(direction, modelId) {
+      console.log('Zoom model: ' + direction + ' for model: ' + modelId);
+      try {
+        const frame = document.getElementById('model-viewer-' + modelId);
+        if (frame && frame.contentWindow) {
+          frame.contentWindow.postMessage({
+            action: 'zoom',
+            direction: direction
+          }, '*');
+        }
+      } catch(e) {
+        console.error('Failed to communicate with 3D model:', e);
+      }
+    }
+    
+    function resetModel(modelId) {
+      console.log('Reset model: ' + modelId);
+      try {
+        const frame = document.getElementById('model-viewer-' + modelId);
+        if (frame && frame.contentWindow) {
+          frame.contentWindow.postMessage({
+            action: 'reset'
+          }, '*');
+        }
+      } catch(e) {
+        console.error('Failed to communicate with 3D model:', e);
+      }
+    }
+  </script>
 </body>
 </html>
   `;
