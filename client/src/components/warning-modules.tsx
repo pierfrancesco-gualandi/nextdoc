@@ -81,4 +81,26 @@ const WarningModule: React.FC<WarningModuleProps> = ({
   );
 };
 
+// Componenti specializzati per diversi tipi di avvisi
+
+export const DangerModule: React.FC<Omit<WarningModuleProps, 'level'>> = (props) => (
+  <WarningModule {...props} level="error" />
+);
+
+export const WarningAlertModule: React.FC<Omit<WarningModuleProps, 'level'>> = (props) => (
+  <WarningModule {...props} level="warning" />
+);
+
+export const CautionModule: React.FC<Omit<WarningModuleProps, 'level'>> = (props) => (
+  <WarningModule {...props} level="warning" />
+);
+
+export const NoteModule: React.FC<Omit<WarningModuleProps, 'level'>> = (props) => (
+  <WarningModule {...props} level="info" />
+);
+
+export const SafetyInstructionsModule: React.FC<Omit<WarningModuleProps, 'level'>> = (props) => (
+  <WarningModule {...props} level="safety" />
+);
+
 export default WarningModule;
