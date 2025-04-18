@@ -83,15 +83,33 @@ export async function exportToHtml(documentId: string): Promise<void> {
       <p><strong>Versione:</strong> ${document.version}</p>
     `;
     
-    // Aggiungi le sezioni e i moduli
-    for (const section of document.sections) {
+    // Ordina le sezioni in base all'ordine del campo "order"
+    const sortedSections = [...document.sections].sort((a, b) => a.order - b.order);
+    
+    // Organizza le sezioni in struttura gerarchica
+    const mainSections = sortedSections.filter(s => !s.parentId);
+    const childrenMap = sortedSections.reduce((map, section) => {
+      if (section.parentId) {
+        if (!map[section.parentId]) map[section.parentId] = [];
+        map[section.parentId].push(section);
+      }
+      return map;
+    }, {} as Record<number, any[]>);
+    
+    // Definita fuori dallo scope del blocco per evitare errori in strict mode
+    const addSectionContent = (section: any, level: number = 2) => {
+      // Crea tag h appropriato in base al livello (h2, h3, h4, ecc.)
+      const headingTag = `h${Math.min(level, 6)}`;
       content += `
-        <h2>${section.title}</h2>
+        <${headingTag} id="section-${section.id}">${section.title}</${headingTag}>
         <p>${section.description || ''}</p>
       `;
       
       // Aggiungi i moduli della sezione
-      for (const module of section.modules) {
+      const modules = section.modules || [];
+      const sortedModules = [...modules].sort((a, b) => a.order - b.order);
+      
+      for (const module of sortedModules) {
         switch (module.type) {
           case 'text':
             content += `<div>${module.content.text}</div>`;
@@ -162,8 +180,24 @@ export async function exportToHtml(documentId: string): Promise<void> {
               <div style="text-align: center; margin: 15px 0; padding: 20px; border: 1px solid #ddd; background-color: #f9f9f9;">
                 <h4>Modello 3D</h4>
                 <p><strong>File:</strong> ${module.content.title || module.content.src || 'Modello 3D'}</p>
-                <iframe src="${module.content.src}" style="width: 100%; height: 400px; border: 1px solid #ddd;"></iframe>
-                <p><em>Nota: Se il modello 3D non viene visualizzato correttamente, utilizza l'applicazione originale per la visualizzazione completa.</em></p>
+                
+                <div style="margin: 15px 0;">
+                  <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 15px;">
+                    <button onclick="rotateModel('left')" style="padding: 5px 10px; background-color: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Ruota Sinistra</button>
+                    <button onclick="rotateModel('right')" style="padding: 5px 10px; background-color: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Ruota Destra</button>
+                    <button onclick="zoomModel('in')" style="padding: 5px 10px; background-color: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Zoom In</button>
+                    <button onclick="zoomModel('out')" style="padding: 5px 10px; background-color: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Zoom Out</button>
+                    <button onclick="resetModel()" style="padding: 5px 10px; background-color: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Reset</button>
+                  </div>
+                </div>
+                
+                <iframe id="model-viewer-${module.id}" src="${module.content.src}" style="width: 100%; height: 400px; border: 1px solid #ddd;"></iframe>
+                
+                <p style="margin-top: 15px;">
+                  <a href="${module.content.src}" download style="display: inline-block; padding: 8px 16px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">
+                    Scarica il file 3D
+                  </a>
+                </p>
               </div>
             `;
             break;
@@ -387,10 +421,10 @@ export async function exportToPdf(documentId: string, languageId?: string): Prom
     // Salva il file usando file-saver
     saveAs(blob, filename);
     console.log('Download PDF completato');
-  } catch (error) {
+  } catch (error: any) {
     console.error('Errore durante l\'esportazione PDF:', error);
     // Notifica l'utente che può sempre usare l'esportazione HTML come alternativa
-    alert(`Si è verificato un errore durante l'esportazione PDF: ${error.message}\n\nÈ comunque disponibile l'esportazione HTML come alternativa.`);
+    alert(`Si è verificato un errore durante l'esportazione PDF: ${error?.message || 'Errore sconosciuto'}\n\nÈ comunque disponibile l'esportazione HTML come alternativa.`);
     throw error;
   }
 }
