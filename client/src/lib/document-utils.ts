@@ -149,17 +149,30 @@ export async function exportToHtml(documentId: string): Promise<void> {
             break;
             
           case 'warning':
+            // Determina la classe e l'icona in base al livello
             let warningClass = 'info';
+            let warningIcon = '&#9432;'; // ℹ️
+            let warningTitle = module.content.title || 'Nota';
+            
             if (module.content.level === 'error') {
               warningClass = 'danger';
+              warningIcon = '&#9888;'; // ⚠️
+              warningTitle = module.content.title || 'PERICOLO';
             } else if (module.content.level === 'warning') {
               warningClass = 'warning';
+              warningIcon = '&#9888;'; // ⚠️
+              warningTitle = module.content.title || 'AVVERTENZA';
             }
             
             content += `
               <div class="message ${warningClass}">
-                <h4>${module.content.title}</h4>
-                <p>${module.content.message}</p>
+                <div class="message-header">
+                  <span class="message-icon">${warningIcon}</span>
+                  <h4>${warningTitle}</h4>
+                </div>
+                <div class="message-body">
+                  <p>${module.content.message}</p>
+                </div>
               </div>
             `;
             break;
@@ -464,12 +477,17 @@ export async function exportToHtml(documentId: string): Promise<void> {
             `;
             break;
             
-          // Aggiunta di tipi di avviso specifici
+          // Aggiunta di tipi di avviso specifici con miglioramenti visivi e icone
           case 'danger':
             content += `
               <div class="message danger">
-                <h4>PERICOLO</h4>
-                <p>${module.content.message || module.content.text || ''}</p>
+                <div class="message-header">
+                  <span class="message-icon">&#9888;</span> <!-- ⚠️ -->
+                  <h4>PERICOLO</h4>
+                </div>
+                <div class="message-body">
+                  <p>${module.content.message || module.content.text || ''}</p>
+                </div>
               </div>
             `;
             break;
@@ -478,8 +496,13 @@ export async function exportToHtml(documentId: string): Promise<void> {
           case 'warning-alert':
             content += `
               <div class="message warning">
-                <h4>AVVERTENZA</h4>
-                <p>${module.content.message || module.content.text || ''}</p>
+                <div class="message-header">
+                  <span class="message-icon">&#9888;</span> <!-- ⚠️ -->
+                  <h4>AVVERTENZA</h4>
+                </div>
+                <div class="message-body">
+                  <p>${module.content.message || module.content.text || ''}</p>
+                </div>
               </div>
             `;
             break;
@@ -487,8 +510,13 @@ export async function exportToHtml(documentId: string): Promise<void> {
           case 'note':
             content += `
               <div class="message info">
-                <h4>NOTA</h4>
-                <p>${module.content.message || module.content.text || ''}</p>
+                <div class="message-header">
+                  <span class="message-icon">&#9432;</span> <!-- ℹ️ -->
+                  <h4>NOTA</h4>
+                </div>
+                <div class="message-body">
+                  <p>${module.content.message || module.content.text || ''}</p>
+                </div>
               </div>
             `;
             break;
@@ -496,8 +524,13 @@ export async function exportToHtml(documentId: string): Promise<void> {
           case 'safety-instructions':
             content += `
               <div class="message success">
-                <h4>ISTRUZIONI DI SICUREZZA</h4>
-                <p>${module.content.message || module.content.text || ''}</p>
+                <div class="message-header">
+                  <span class="message-icon">&#10003;</span> <!-- ✓ -->
+                  <h4>ISTRUZIONI DI SICUREZZA</h4>
+                </div>
+                <div class="message-body">
+                  <p>${module.content.message || module.content.text || ''}</p>
+                </div>
               </div>
             `;
             break;
