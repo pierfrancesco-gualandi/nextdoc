@@ -1219,21 +1219,19 @@ img, video, iframe {
 }
 
 .caution .message-header {
-  background-color: rgba(255, 214, 0, 0.9);
-  color: #000000;
+  background-color: rgb(255, 214, 0);
+  color: #FFFFFF;
   font-weight: bold;
   border-radius: 4px;
   padding: 5px 10px;
   margin-bottom: 10px;
-  text-shadow: 0px 0px 3px rgba(255, 255, 255, 0.5);
 }
 
 .caution .message-body {
-  color: #000000;
-  background-color: rgba(255, 214, 0, 0.8);
+  color: #FFFFFF;
+  background-color: rgb(255, 214, 0);
   padding: 8px;
   border-radius: 4px;
-  text-shadow: 0px 0px 3px rgba(255, 255, 255, 0.5);
 }
 
 .caution .message-icon {
