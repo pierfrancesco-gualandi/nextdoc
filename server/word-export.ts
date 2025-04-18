@@ -108,7 +108,7 @@ export async function createWordDocument(
         sectionData.subSections.push({
           section: subSection,
           modules: subModules,
-        });
+        } as {section: Section, modules: ContentModule[]});
       }
 
       exportData.sections.push(sectionData);
@@ -812,14 +812,26 @@ async function addBomModule(
       };
 
       // Trova prima il componente che corrisponde esattamente al filtro
-      const parentItem = bomItems.find((item: any) => 
+      // Recuperiamo i dettagli del componente per ogni elemento BOM
+      const bomItemsWithComponents = await Promise.all(bomItems.map(async (item: any) => {
+        try {
+          const component = await storage.getComponent(item.componentId);
+          return { ...item, component };
+        } catch (e) {
+          console.error(`Errore nel recuperare il componente ${item.componentId}:`, e);
+          return item;
+        }
+      }));
+      
+      const parentItem = bomItemsWithComponents.find((item: any) => 
         item.component && 
+        item.component.code && 
         item.component.code.toLowerCase() === codeFilter.toLowerCase()
       );
       
       if (parentItem) {
         // Trova tutti i componenti figli
-        childCodes = findChildComponents(bomItems, parentItem.component.code);
+        childCodes = findChildComponents(bomItemsWithComponents, parentItem.component.code);
       }
     }
 

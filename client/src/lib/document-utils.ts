@@ -342,8 +342,81 @@ export async function exportToHtml(documentId: string): Promise<void> {
       }
     }
     
-    // Genera il documento HTML completo
-    const htmlDocument = generateHtml(document.title, content);
+    // Aggiungiamo JavaScript per i controlli dei modelli 3D
+    const scriptContent = `
+    <script>
+      // Funzioni per il controllo dei modelli 3D
+      function rotateModel(direction) {
+        // In una implementazione reale, questo invierebbe messaggi all'iframe
+        console.log('Rotate model: ' + direction);
+        // L'ideale sarebbe usare postMessage per comunicare con l'iframe
+        try {
+          const frames = document.querySelectorAll('iframe[id^="model-viewer-"]');
+          frames.forEach(frame => {
+            frame.contentWindow.postMessage({
+              action: 'rotate',
+              direction: direction
+            }, '*');
+          });
+        } catch(e) {
+          console.error('Failed to communicate with 3D model:', e);
+        }
+      }
+      
+      function zoomModel(direction) {
+        console.log('Zoom model: ' + direction);
+        try {
+          const frames = document.querySelectorAll('iframe[id^="model-viewer-"]');
+          frames.forEach(frame => {
+            frame.contentWindow.postMessage({
+              action: 'zoom',
+              direction: direction
+            }, '*');
+          });
+        } catch(e) {
+          console.error('Failed to communicate with 3D model:', e);
+        }
+      }
+      
+      function resetModel() {
+        console.log('Reset model');
+        try {
+          const frames = document.querySelectorAll('iframe[id^="model-viewer-"]');
+          frames.forEach(frame => {
+            frame.contentWindow.postMessage({
+              action: 'reset'
+            }, '*');
+          });
+        } catch(e) {
+          console.error('Failed to communicate with 3D model:', e);
+        }
+      }
+    </script>
+    `;
+    
+    // Chiamiamo la funzione ricorsiva per ogni sezione principale
+    for (const section of mainSections.sort((a, b) => a.order - b.order)) {
+      addSectionContent(section, 2);
+      
+      // Processa ricorsivamente tutte le sottosezioni
+      const processChildren = (parentId: number, level: number) => {
+        const children = childrenMap[parentId] || [];
+        // Ordina i figli in base all'ordine
+        const sortedChildren = [...children].sort((a, b) => a.order - b.order);
+        
+        for (const child of sortedChildren) {
+          addSectionContent(child, level);
+          // Processa ricorsivamente i figli di questo figlio
+          processChildren(child.id, level + 1);
+        }
+      }
+      
+      // Avvia il processamento ricorsivo per questa sezione principale
+      processChildren(section.id, 3);
+    }
+    
+    // Genera il documento HTML completo con lo script
+    const htmlDocument = generateHtml(document.title, content + scriptContent);
     
     // Scarica il file
     downloadTextFile(`${document.title.replace(/\s+/g, '_')}_v${document.version}.html`, htmlDocument, 'text/html;charset=utf-8');
