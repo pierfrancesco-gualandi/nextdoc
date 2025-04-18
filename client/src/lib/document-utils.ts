@@ -985,17 +985,18 @@ img, video, iframe {
 }
 
 .danger {
-  background-color: #fef2f2;
-  border-color: #f87171;
-  border-left-color: #dc2626;
+  background-color: #fecaca;
+  border-color: #ef4444;
+  border-left-color: #b91c1c;
 }
 
 .danger .message-header {
-  color: #b91c1c;
+  color: #9f1239;
+  font-weight: bold;
 }
 
 .danger .message-icon {
-  color: #dc2626;
+  color: #e11d48;
 }
 
 .warning {
@@ -1013,17 +1014,18 @@ img, video, iframe {
 }
 
 .info {
-  background-color: #ecfdf5;
-  border-color: #6ee7b7;
-  border-left-color: #059669;
+  background-color: #e7f3fe;
+  border-color: #90caf9;
+  border-left-color: #1976d2;
 }
 
 .info .message-header {
-  color: #065f46;
+  color: #0d47a1;
+  font-weight: bold;
 }
 
 .info .message-icon {
-  color: #059669;
+  color: #1976d2;
 }
 
 .success {
