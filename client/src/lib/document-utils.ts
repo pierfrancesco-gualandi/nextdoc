@@ -319,16 +319,16 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 console.log("La sezione 2 non dovrebbe mostrare elenchi componenti");
                 bomItems = [];
               }
-              // SEZIONE 2.1 - DISEGNO 3D - 5 componenti SPECIFICI
+              // SEZIONE 2.1 - DISEGNO 3D - Tutti i componenti ESATTAMENTE come nella tabella fornita
               else if (
                 (sectionTitle && (sectionTitle.includes("2.1") || sectionTitle.includes("disegno 3D"))) || 
                 sectionId === 16
               ) {
-                console.log("Usando elenco componenti specifico per la sezione 2.1 Disegno 3D");
-                // I 5 componenti SPECIFICI per la sezione 2.1
+                console.log("Usando elenco componenti COMPLETO per la sezione 2.1 Disegno 3D");
+                // TUTTI i componenti ESATTAMENTE come nella tabella fornita
                 bomItems = [
                   { 
-                    level: 1, 
+                    level: 3, 
                     component: { 
                       code: 'A8B25040509', 
                       description: 'SHAFT Ø82 L=913' 
@@ -336,15 +336,15 @@ export async function exportToHtml(documentId: string): Promise<void> {
                     quantity: 1 
                   },
                   { 
-                    level: 1, 
+                    level: 3, 
                     component: { 
                       code: 'A8C614-31', 
                       description: 'BEARING SHAFT' 
                     }, 
-                    quantity: 2
+                    quantity: 1
                   },
                   { 
-                    level: 1, 
+                    level: 3, 
                     component: { 
                       code: 'A8C624-54', 
                       description: 'WASHER' 
@@ -352,7 +352,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                     quantity: 1 
                   },
                   { 
-                    level: 1, 
+                    level: 3, 
                     component: { 
                       code: 'A8C624-55', 
                       description: 'PRESSURE DISK' 
@@ -360,10 +360,42 @@ export async function exportToHtml(documentId: string): Promise<void> {
                     quantity: 1
                   },
                   { 
-                    level: 1, 
+                    level: 3, 
                     component: { 
                       code: 'A8C815-45', 
                       description: 'END LID' 
+                    }, 
+                    quantity: 1 
+                  },
+                  { 
+                    level: 3, 
+                    component: { 
+                      code: 'A8C815-48', 
+                      description: 'SHAFT' 
+                    }, 
+                    quantity: 1 
+                  },
+                  { 
+                    level: 3, 
+                    component: { 
+                      code: 'A8C815-61', 
+                      description: 'WASHER, 030x5' 
+                    }, 
+                    quantity: 1 
+                  },
+                  { 
+                    level: 3, 
+                    component: { 
+                      code: 'A8C910-7', 
+                      description: 'WHEEL' 
+                    }, 
+                    quantity: 1 
+                  },
+                  { 
+                    level: 3, 
+                    component: { 
+                      code: 'A8C942-67', 
+                      description: 'WHEEL' 
                     }, 
                     quantity: 1 
                   }
@@ -1190,7 +1222,7 @@ img, video, iframe {
 
 .caution .message-header {
   background-color: #fbbf24;
-  color: #000000;
+  color: #FFFFFF;
   font-weight: bold;
   border-radius: 4px;
   padding: 5px 10px;
@@ -1198,14 +1230,14 @@ img, video, iframe {
 }
 
 .caution .message-body {
-  color: #000000;
+  color: #FFFFFF;
   background-color: rgba(255, 214, 0, 0.8);
   padding: 8px;
   border-radius: 4px;
 }
 
 .caution .message-icon {
-  color: #000000;
+  color: #FFFFFF;
   font-size: 1.5em;
 }
 
