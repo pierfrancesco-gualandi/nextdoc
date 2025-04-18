@@ -939,89 +939,95 @@ img, video, iframe {
   padding: 15px;
   margin: 15px 0;
   border-left: 6px solid;
-  border-radius: 0 var(--border-radius) var(--border-radius) 0;
-  box-shadow: var(--box-shadow);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   position: relative;
+  background-color: #f9f9f9;
+  overflow: hidden;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.message-icon {
+  font-size: 1.5em;
+  margin-right: 10px;
+  display: inline-block;
 }
 
 .message h4 {
-  margin-top: 0;
-  margin-bottom: 8px;
+  margin: 0;
   font-size: 1.1em;
-  display: flex;
-  align-items: center;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
-.message h4::before {
-  margin-right: 8px;
-  display: inline-block;
-  font-weight: bold;
-  font-family: sans-serif;
-  width: 22px;
-  height: 22px;
-  line-height: 22px;
-  text-align: center;
-  border-radius: 50%;
-  color: white;
-  font-size: 14px;
+.message-body {
+  padding-left: 2px;
+}
+
+.message-body p {
+  margin: 8px 0;
+}
 }
 
 .danger {
-  background-color: #fee2e2;
-  border-color: var(--danger-color);
+  background-color: #fef2f2;
+  border-color: #f87171;
+  border-left-color: #dc2626;
 }
 
-.danger h4 {
-  color: var(--danger-color);
+.danger .message-header {
+  color: #b91c1c;
 }
 
-.danger h4::before {
-  content: "!";
-  background-color: var(--danger-color);
+.danger .message-icon {
+  color: #dc2626;
 }
 
 .warning {
-  background-color: #fff3cd;
-  border-color: var(--warning-color);
+  background-color: #fffbeb;
+  border-color: #fbbf24;
+  border-left-color: #d97706;
 }
 
-.warning h4 {
-  color: #856404;
+.warning .message-header {
+  color: #92400e;
 }
 
-.warning h4::before {
-  content: "!";
-  background-color: var(--warning-color);
-  color: #000;
+.warning .message-icon {
+  color: #d97706;
 }
 
 .info {
-  background-color: #e7f3fe;
-  border-color: var(--info-color);
+  background-color: #ecfdf5;
+  border-color: #6ee7b7;
+  border-left-color: #059669;
 }
 
-.info h4 {
-  color: #0c5460;
+.info .message-header {
+  color: #065f46;
 }
 
-.info h4::before {
-  content: "i";
-  background-color: var(--info-color);
+.info .message-icon {
+  color: #059669;
 }
 
 .success {
-  background-color: #d4edda;
-  border-color: var(--success-color);
+  background-color: #f0fdf4;
+  border-color: #86efac;
+  border-left-color: #16a34a;
 }
 
-.success h4 {
-  color: #155724;
+.success .message-header {
+  color: #166534;
 }
 
-.success h4::before {
-  content: "✓";
-  background-color: var(--success-color);
-  font-size: 12px;
+.success .message-icon {
+  color: #16a34a;
 }
 
 /* Stili per controlli 3D */
@@ -1135,6 +1141,36 @@ img, video, iframe {
   width: 100%;
   height: 400px;
   border: none;
+}
+
+.model-placeholder {
+  background-color: #f5f7fa;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 15px 0;
+  text-align: center;
+}
+
+.model-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.model-icon {
+  font-size: 3em;
+  color: #64748b;
+}
+
+.model-instruction {
+  background-color: #fffbeb;
+  border: 1px solid #fef3c7;
+  border-radius: 6px;
+  padding: 10px;
+  margin-top: 10px;
+  font-size: 0.9em;
 }
 
 .model-download {
