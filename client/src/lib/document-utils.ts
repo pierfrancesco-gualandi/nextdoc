@@ -487,6 +487,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 </div>
                 <div class="message-body">
                   <p>${module.content.message || module.content.text || ''}</p>
+                  ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
                 </div>
               </div>
             `;
@@ -502,6 +503,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 </div>
                 <div class="message-body">
                   <p>${module.content.message || module.content.text || ''}</p>
+                  ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
                 </div>
               </div>
             `;
@@ -516,6 +518,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 </div>
                 <div class="message-body">
                   <p>${module.content.message || module.content.text || ''}</p>
+                  ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
                 </div>
               </div>
             `;
@@ -530,6 +533,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 </div>
                 <div class="message-body">
                   <p>${module.content.message || module.content.text || ''}</p>
+                  ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
                 </div>
               </div>
             `;
@@ -972,6 +976,12 @@ img, video, iframe {
 .message-body p {
   margin: 8px 0;
 }
+
+.warning-description {
+  margin-top: 10px;
+  font-style: italic;
+  border-top: 1px dashed rgba(0,0,0,0.1);
+  padding-top: 8px;
 }
 
 .danger {
