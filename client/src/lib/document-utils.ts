@@ -202,39 +202,52 @@ export async function exportToHtml(documentId: string): Promise<void> {
               window.location.origin + module.content.src :
               module.content.src;
             
-            // Incorpora il modello 3D con controlli migliorati
+            // Titolo e nome del file
+            const modelTitle = module.content.title || module.content.filename || 'Modello 3D';
+            
+            // Per l'esportazione HTML, sostituiamo l'iframe con un'alternativa
             content += `
               <div class="model-container">
                 <h4>Modello 3D</h4>
-                <p class="model-title"><strong>${module.content.title || module.content.filename || 'Modello 3D'}</strong></p>
+                <p class="model-title"><strong>${modelTitle}</strong></p>
                 ${module.content.description ? `<p class="model-description">${module.content.description}</p>` : ''}
                 
+                <!-- Visualizzazione alternativa per documenti esportati -->
+                <div class="model-placeholder">
+                  <div class="model-preview">
+                    <div class="model-icon">📐</div>
+                    <h3>Visualizzazione 3D</h3>
+                    <p>Per visualizzare il modello 3D interattivo, aprire questo documento nell'applicazione originale o scaricare il modello separatamente.</p>
+                  </div>
+                </div>
+                
+                <!-- Controlli presenti ma disabilitati nell'HTML esportato -->
                 <div class="model-controls">
-                  <button class="control-button rotate-left" onclick="rotateModel('left', ${module.id})">
+                  <button class="control-button rotate-left" disabled="disabled">
                     <span>⟲</span> Ruota Sx
                   </button>
-                  <button class="control-button rotate-right" onclick="rotateModel('right', ${module.id})">
+                  <button class="control-button rotate-right" disabled="disabled">
                     <span>⟳</span> Ruota Dx
                   </button>
-                  <button class="control-button zoom-in" onclick="zoomModel('in', ${module.id})">
+                  <button class="control-button zoom-in" disabled="disabled">
                     <span>+</span> Zoom
                   </button>
-                  <button class="control-button zoom-out" onclick="zoomModel('out', ${module.id})">
+                  <button class="control-button zoom-out" disabled="disabled">
                     <span>−</span> Zoom
                   </button>
-                  <button class="control-button reset" onclick="resetModel(${module.id})">
+                  <button class="control-button reset" disabled="disabled">
                     <span>↺</span> Reset
                   </button>
                 </div>
                 
-                <div class="model-frame-container">
-                  <iframe id="model-viewer-${module.id}" src="${modelSrc}" class="model-frame"></iframe>
-                </div>
-                
+                <!-- Link diretto al modello 3D -->
                 <div class="model-download">
-                  <a href="${modelDownloadPath}" download="${module.content.title || 'modello3D'}.html" class="download-button">
-                    <span class="download-icon">⬇</span> Scarica modello 3D
+                  <a href="${modelDownloadPath}" class="download-button" target="_blank">
+                    <span class="download-icon">⬇</span> Visualizza modello 3D
                   </a>
+                  <div class="model-instruction">
+                    <p><strong>Nota:</strong> Fare clic sul pulsante sopra per visualizzare il modello 3D interattivo in una nuova scheda.</p>
+                  </div>
                 </div>
               </div>
             `;
