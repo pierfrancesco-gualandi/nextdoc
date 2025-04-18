@@ -273,7 +273,12 @@ export async function exportToHtml(documentId: string): Promise<void> {
             try {
               // Utilizziamo un identificatore più specifico
               const bomId = module.content.bomId;
-              const sectionTitle = section.title || '';
+              
+              // Recuperiamo il titolo della sezione, se disponibile
+              let sectionTitle = '';
+              if (section && section.title) {
+                sectionTitle = section.title;
+              }
               
               // Invece di usare un iframe che potrebbe avere problemi di accesso nell'HTML esportato,
               // preleviamo i dati BOM dal server e li includiamo direttamente nell'HTML esportato
@@ -281,14 +286,18 @@ export async function exportToHtml(documentId: string): Promise<void> {
               // Definiamo gli elenchi componenti specifici per ciascuna sezione
               let bomItems = [];
               
-              // Verifica se siamo in una sezione principale (come richiesto dall'utente)
-              // Usa il titolo e l'ID per decidere quale elenco componenti mostrati
+              // ID della sezione (se disponibile)
+              const sectionId = section ? section.id : null;
               
-              console.log("Verificando sezione:", sectionTitle, "ID:", section.id);
+              console.log("Verificando sezione:", sectionTitle, "ID:", sectionId);
               
               // SEZIONE 1 - INTRODUZIONE -> DESCRIZIONE 
               // Contiene solo un singolo componente
-              if (sectionTitle.includes("1") || section.id === 2 || sectionTitle.includes("INTRODUZI") || section.id === 12) {
+              if (
+                (sectionTitle && (sectionTitle.includes("1") || sectionTitle.includes("INTRODUZI"))) || 
+                sectionId === 2 || 
+                sectionId === 12
+              ) {
                 console.log("Usando elenco componenti specifico per la sezione 1/INTRODUZIONE");
                 bomItems = [
                   { 
@@ -302,12 +311,18 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 ];
               } 
               // SEZIONE 2 - NON MOSTRARE ELENCHI
-              else if (sectionTitle.includes("2 ") || section.id === 19 || sectionTitle.includes("Sezione 2 ")) {
+              else if (
+                (sectionTitle && (sectionTitle.includes("2 ") || sectionTitle.includes("Sezione 2 "))) || 
+                sectionId === 19
+              ) {
                 console.log("La sezione 2 non dovrebbe mostrare elenchi componenti");
                 bomItems = [];
               }
               // SEZIONE 2.1 - DISEGNO 3D
-              else if (sectionTitle.includes("2.1") || section.id === 16 || sectionTitle.includes("disegno 3D")) {
+              else if (
+                (sectionTitle && (sectionTitle.includes("2.1") || sectionTitle.includes("disegno 3D"))) || 
+                sectionId === 16
+              ) {
                 console.log("Usando elenco componenti specifico per la sezione 2.1 Disegno 3D");
                 bomItems = [
                   { 
@@ -353,7 +368,10 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 ];
               }
               // SEZIONE 3
-              else if (sectionTitle.includes("3") || section.id === 20 || sectionTitle.includes("Sezione 3")) {
+              else if (
+                (sectionTitle && (sectionTitle.includes("3") || sectionTitle.includes("Sezione 3"))) || 
+                sectionId === 20
+              ) {
                 console.log("Usando elenco componenti completo per la sezione 3");
                 bomItems = [
                   { 
@@ -533,7 +551,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
           // Aggiunta di tipi di avviso specifici con miglioramenti visivi, icone e testi
           case 'danger':
             // Esempio di testo specifico: rimuovere il carter e non toccare la cinghia di trasmissione
-            const pericoloText = section.id === 20 || sectionTitle.includes("3") ? 
+            const pericoloText = section && (section.id === 20 || (section.title && section.title.includes("3"))) ? 
               "Rimuovere il carter e non toccare la cinghia di trasmissione" : 
               (module.content.message || module.content.text || 'Questo è un messaggio di PERICOLO');
               
@@ -553,7 +571,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
             
           case 'warning-alert':
             // Esempio di testo specifico per la sezione 3
-            const avvertenzaText = section.id === 20 || sectionTitle.includes("3") ? 
+            const avvertenzaText = section && (section.id === 20 || (section.title && section.title.includes("3"))) ? 
               "Non avviare la macchina con i ripari aperti o danneggiati" : 
               (module.content.message || module.content.text || 'Questo è un messaggio di AVVERTENZA');
               
@@ -573,7 +591,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
             
           case 'caution':
             // Esempio di testo specifico per la sezione 3
-            const attenzionText = section.id === 20 || sectionTitle.includes("3") ? 
+            const attenzionText = section && (section.id === 20 || (section.title && section.title.includes("3"))) ? 
               "Assicurarsi che tutti i dispositivi di sicurezza siano correttamente installati prima dell'avvio" : 
               (module.content.message || module.content.text || 'Questo è un messaggio di ATTENZIONE');
               
@@ -593,7 +611,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
             
           case 'note':
             // Esempio di testo specifico per la sezione 3
-            const notaText = section.id === 20 || sectionTitle.includes("3") ? 
+            const notaText = section && (section.id === 20 || (section.title && section.title.includes("3"))) ? 
               "Consultare il manuale tecnico per i dettagli completi di installazione" : 
               (module.content.message || module.content.text || 'Questo è un messaggio informativo');
               
@@ -613,7 +631,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
             
           case 'safety-instructions':
             // Esempio di testo specifico per la sezione 3
-            const sicurezzaText = section.id === 20 || sectionTitle.includes("3") ? 
+            const sicurezzaText = section && (section.id === 20 || (section.title && section.title.includes("3"))) ? 
               "Utilizzare sempre dispositivi di protezione individuale durante le operazioni di manutenzione" : 
               (module.content.message || module.content.text || 'Segui queste istruzioni di sicurezza');
               
