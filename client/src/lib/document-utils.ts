@@ -379,7 +379,10 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 <div class="bom-container">
                   <h4>Distinta Base (BOM) - ID: ${module.content.bomId}</h4>
                   <p>La distinta base completa è disponibile nell'applicazione originale.</p>
-                  <p class="message warning">Errore nel caricamento della distinta: ${errorMessage}</p>
+                  <div class="message warning">
+                    <h4>AVVERTENZA</h4>
+                    <p>Errore nel caricamento della distinta: ${errorMessage}</p>
+                  </div>
                 </div>
               `;
             }
