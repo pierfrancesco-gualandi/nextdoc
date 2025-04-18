@@ -887,20 +887,45 @@ img, video, iframe {
   padding: 15px;
   margin: 15px 0;
   border-left: 6px solid;
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
+  box-shadow: var(--box-shadow);
+  position: relative;
 }
 
 .message h4 {
   margin-top: 0;
   margin-bottom: 8px;
+  font-size: 1.1em;
+  display: flex;
+  align-items: center;
+}
+
+.message h4::before {
+  margin-right: 8px;
+  display: inline-block;
+  font-weight: bold;
+  font-family: sans-serif;
+  width: 22px;
+  height: 22px;
+  line-height: 22px;
+  text-align: center;
+  border-radius: 50%;
+  color: white;
+  font-size: 14px;
 }
 
 .danger {
-  background-color: #ffdddd;
+  background-color: #fee2e2;
   border-color: var(--danger-color);
 }
 
 .danger h4 {
   color: var(--danger-color);
+}
+
+.danger h4::before {
+  content: "!";
+  background-color: var(--danger-color);
 }
 
 .warning {
@@ -912,6 +937,12 @@ img, video, iframe {
   color: #856404;
 }
 
+.warning h4::before {
+  content: "!";
+  background-color: var(--warning-color);
+  color: #000;
+}
+
 .info {
   background-color: #e7f3fe;
   border-color: var(--info-color);
@@ -921,6 +952,11 @@ img, video, iframe {
   color: #0c5460;
 }
 
+.info h4::before {
+  content: "i";
+  background-color: var(--info-color);
+}
+
 .success {
   background-color: #d4edda;
   border-color: var(--success-color);
@@ -928,6 +964,12 @@ img, video, iframe {
 
 .success h4 {
   color: #155724;
+}
+
+.success h4::before {
+  content: "✓";
+  background-color: var(--success-color);
+  font-size: 12px;
 }
 
 /* Stili per controlli 3D */
