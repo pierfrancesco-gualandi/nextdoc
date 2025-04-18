@@ -166,12 +166,12 @@ export async function exportToHtml(documentId: string): Promise<void> {
             
           case 'table':
             content += `
-              <div style="margin: 15px 0;">
-                <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
+              <div class="table-container">
+                <table>
                   <thead>
                     <tr>
                       ${(module.content.headers || []).map((header: string) => 
-                        `<th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f2f2f2;">${header}</th>`
+                        `<th>${header}</th>`
                       ).join('')}
                     </tr>
                   </thead>
@@ -179,13 +179,13 @@ export async function exportToHtml(documentId: string): Promise<void> {
                     ${(module.content.rows || []).map((row: string[]) => 
                       `<tr>
                         ${row.map((cell: string) => 
-                          `<td style="border: 1px solid #ddd; padding: 8px;">${cell}</td>`
+                          `<td>${cell}</td>`
                         ).join('')}
                       </tr>`
                     ).join('')}
                   </tbody>
                 </table>
-                ${module.content.caption ? `<p style="text-align: center;"><em>${module.content.caption}</em></p>` : ''}
+                ${module.content.caption ? `<p class="caption">${module.content.caption}</p>` : ''}
               </div>
             `;
             break;
@@ -301,11 +301,12 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 </div>
               `;
             } catch (e) {
+              const errorMessage = e instanceof Error ? e.message : 'Errore sconosciuto';
               bomHtml = `
                 <div class="bom-container">
                   <h4>Distinta Base (BOM) - ID: ${module.content.bomId}</h4>
                   <p>La distinta base completa è disponibile nell'applicazione originale.</p>
-                  <p class="message warning">Errore nel caricamento della distinta: ${e.message}</p>
+                  <p class="message warning">Errore nel caricamento della distinta: ${errorMessage}</p>
                 </div>
               `;
             }
@@ -315,16 +316,16 @@ export async function exportToHtml(documentId: string): Promise<void> {
             
           case 'component':
             content += `
-              <div style="margin: 15px 0; padding: 10px; border: 1px solid #ddd;">
+              <div class="component-container">
                 <h4>Componente</h4>
-                <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd; margin-top: 10px;">
+                <table>
                   <tr>
-                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f2f2f2;">ID Componente</th>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${module.content.componentId}</td>
+                    <th>ID Componente</th>
+                    <td>${module.content.componentId}</td>
                   </tr>
                   <tr>
-                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f2f2f2;">Quantità</th>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${module.content.quantity}</td>
+                    <th>Quantità</th>
+                    <td>${module.content.quantity}</td>
                   </tr>
                 </table>
               </div>
@@ -333,9 +334,9 @@ export async function exportToHtml(documentId: string): Promise<void> {
             
           case 'checklist':
             content += `
-              <div style="margin: 15px 0;">
+              <div class="checklist-container">
                 <h4>Lista di controllo</h4>
-                <ul style="list-style-type: none; padding-left: 0;">
+                <ul class="checklist">
                   ${(module.content.items || []).map((item: any, index: number) => 
                     `<li class="checklist-item">
                       <input type="checkbox" id="checkbox-${module.id}-${index}" class="checklist-checkbox" ${item.checked ? 'checked' : ''}> 
@@ -670,32 +671,53 @@ export async function exportToWord(documentId: string, languageId?: string): Pro
  * @returns Stringa HTML completa
  */
 export function generateHtml(title: string, content: string): string {
-  // Definiamo i CSS esterni in un file separato
+  // Definiamo i CSS esterni parametrizzati per facile personalizzazione
   const cssContent = `
 :root {
+  /* Colori principali - modificabili per personalizzare il tema */
   --primary-color: #2563eb;
   --secondary-color: #4b5563;
   --tertiary-color: #6b7280;
   --light-bg: #f9f9f9;
   --border-color: #e5e7eb;
+  
+  /* Colori per i messaggi di avviso */
   --danger-color: #f44336;
   --warning-color: #ffc107;
   --info-color: #2196F3;
   --success-color: #28a745;
+  
+  /* Colori per il testo e i link */
   --text-color: #333333;
   --link-color: #2563eb;
+  --link-hover-color: #1e40af;
+  --button-text-color: #ffffff;
+  
+  /* Tipografia */
   --font-family: Arial, sans-serif;
+  --font-size-base: 16px;
+  --line-height: 1.6;
+  --heading-line-height: 1.2;
+  
+  /* Spaziatura */
   --base-spacing: 20px;
   --content-width: 800px;
+  --section-spacing: 40px;
+  
+  /* Bordi e angoli */
+  --border-radius: 4px;
+  --box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 body {
   font-family: var(--font-family);
-  line-height: 1.6;
+  font-size: var(--font-size-base);
+  line-height: var(--line-height);
   max-width: var(--content-width);
   margin: 0 auto;
   padding: var(--base-spacing);
   color: var(--text-color);
+  background-color: #ffffff;
 }
 
 h1, h2, h3, h4, h5, h6 {
