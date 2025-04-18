@@ -1,7 +1,7 @@
 /**
  * Middleware che intercetta e post-processa le esportazioni HTML
  */
-const { postProcessExportHtml } = require('./export-utils');
+import { postProcessExportHtml } from './export-utils.mjs';
 
 /**
  * Middleware che modifica le risposte del server quando servono file HTML esportati
@@ -9,7 +9,7 @@ const { postProcessExportHtml } = require('./export-utils');
  * @param {Response} res - Risposta Express
  * @param {Function} next - Funzione next middleware
  */
-function exportMiddleware(req, res, next) {
+export function exportMiddleware(req, res, next) {
   // Intercetta solo le richieste di esportazione HTML
   if (req.url.startsWith('/api/documents') && req.url.includes('/export/html')) {
     console.log('Intercepting HTML export request', req.url);
@@ -36,5 +36,3 @@ function exportMiddleware(req, res, next) {
   
   next();
 }
-
-module.exports = exportMiddleware;

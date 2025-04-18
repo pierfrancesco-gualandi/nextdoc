@@ -6,7 +6,7 @@ import path from "path";
 import fs from "fs";
 import { corsMiddleware } from "./middleware/cors-middleware";
 // @ts-ignore
-import exportMiddleware from "./export-middleware";
+import { exportMiddleware } from "./export-middleware.mjs";
 
 const app = express();
 app.use(express.json());
