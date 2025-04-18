@@ -281,9 +281,15 @@ export async function exportToHtml(documentId: string): Promise<void> {
               // Definiamo gli elenchi componenti specifici per ciascuna sezione
               let bomItems = [];
               
-              // Verifica se siamo nella sezione 1 e usa i dati specifici
-              if (sectionTitle.includes("1") || section.id === 16) {
-                console.log("Usando elenco componenti per sezione 1");
+              // Verifica se siamo in una sezione principale (come richiesto dall'utente)
+              // Usa il titolo e l'ID per decidere quale elenco componenti mostrati
+              
+              console.log("Verificando sezione:", sectionTitle, "ID:", section.id);
+              
+              // SEZIONE 1 - INTRODUZIONE -> DESCRIZIONE 
+              // Contiene solo un singolo componente
+              if (sectionTitle.includes("1") || section.id === 2 || sectionTitle.includes("INTRODUZI") || section.id === 12) {
+                console.log("Usando elenco componenti specifico per la sezione 1/INTRODUZIONE");
                 bomItems = [
                   { 
                     level: 2, 
@@ -295,9 +301,14 @@ export async function exportToHtml(documentId: string): Promise<void> {
                   }
                 ];
               } 
-              // Verifica se siamo nella sezione 2 e usa i dati specifici
-              else if (sectionTitle.includes("2") || section.id === 19) {
-                console.log("Usando elenco componenti per sezione 2");
+              // SEZIONE 2 - NON MOSTRARE ELENCHI
+              else if (sectionTitle.includes("2 ") || section.id === 19 || sectionTitle.includes("Sezione 2 ")) {
+                console.log("La sezione 2 non dovrebbe mostrare elenchi componenti");
+                bomItems = [];
+              }
+              // SEZIONE 2.1 - DISEGNO 3D
+              else if (sectionTitle.includes("2.1") || section.id === 16 || sectionTitle.includes("disegno 3D")) {
+                console.log("Usando elenco componenti specifico per la sezione 2.1 Disegno 3D");
                 bomItems = [
                   { 
                     level: 3, 
@@ -338,122 +349,12 @@ export async function exportToHtml(documentId: string): Promise<void> {
                       description: 'END LID' 
                     }, 
                     quantity: 1 
-                  },
-                  { 
-                    level: 3, 
-                    component: { 
-                      code: 'A8C815-48', 
-                      description: 'SHAFT' 
-                    }, 
-                    quantity: 1 
-                  },
-                  { 
-                    level: 3, 
-                    component: { 
-                      code: 'A8C815-61', 
-                      description: 'WASHER, 030x5' 
-                    }, 
-                    quantity: 1 
-                  },
-                  { 
-                    level: 3, 
-                    component: { 
-                      code: 'A8C910-7', 
-                      description: 'WHEEL' 
-                    }, 
-                    quantity: 1 
-                  },
-                  { 
-                    level: 3, 
-                    component: { 
-                      code: 'A8C942-67', 
-                      description: 'WHEEL' 
-                    }, 
-                    quantity: 1 
                   }
                 ];
               }
-              // Verifica se siamo nella sezione 3 e usa i dati specifici 
-              else if (sectionTitle.includes("3") || section.id === 6) {
-                console.log("Usando elenco componenti per sezione 3");
-                bomItems = [
-                  { 
-                    level: 3, 
-                    component: { 
-                      code: 'A8B25040509', 
-                      description: 'SHAFT Ø82 L=913' 
-                    }, 
-                    quantity: 1 
-                  },
-                  { 
-                    level: 3, 
-                    component: { 
-                      code: 'A8C614-31', 
-                      description: 'BEARING SHAFT' 
-                    }, 
-                    quantity: 1 
-                  },
-                  { 
-                    level: 3, 
-                    component: { 
-                      code: 'A8C624-54', 
-                      description: 'WASHER' 
-                    }, 
-                    quantity: 1 
-                  },
-                  { 
-                    level: 3, 
-                    component: { 
-                      code: 'A8C624-55', 
-                      description: 'PRESSURE DISK' 
-                    }, 
-                    quantity: 1 
-                  },
-                  { 
-                    level: 3, 
-                    component: { 
-                      code: 'A8C815-45', 
-                      description: 'END LID' 
-                    }, 
-                    quantity: 1 
-                  },
-                  { 
-                    level: 3, 
-                    component: { 
-                      code: 'A8C815-48', 
-                      description: 'SHAFT' 
-                    }, 
-                    quantity: 1 
-                  },
-                  { 
-                    level: 3, 
-                    component: { 
-                      code: 'A8C815-61', 
-                      description: 'WASHER, 030x5' 
-                    }, 
-                    quantity: 1 
-                  },
-                  { 
-                    level: 3, 
-                    component: { 
-                      code: 'A8C910-7', 
-                      description: 'WHEEL' 
-                    }, 
-                    quantity: 1 
-                  },
-                  { 
-                    level: 3, 
-                    component: { 
-                      code: 'A8C942-67', 
-                      description: 'WHEEL' 
-                    }, 
-                    quantity: 1 
-                  }
-                ];
-              }
-              // Default per altre sezioni
-              else {
-                console.log("Usando elenco componenti di default");
+              // SEZIONE 3
+              else if (sectionTitle.includes("3") || section.id === 20 || sectionTitle.includes("Sezione 3")) {
+                console.log("Usando elenco componenti completo per la sezione 3");
                 bomItems = [
                   { 
                     level: 2, 
@@ -462,8 +363,45 @@ export async function exportToHtml(documentId: string): Promise<void> {
                       description: 'INFEED ROLLER D.120 L=500' 
                     }, 
                     quantity: 1 
+                  },
+                  { 
+                    level: 3, 
+                    component: { 
+                      code: 'A8C815-48', 
+                      description: 'SHAFT' 
+                    }, 
+                    quantity: 1 
+                  },
+                  { 
+                    level: 3, 
+                    component: { 
+                      code: 'A8C815-61', 
+                      description: 'WASHER, 030x5' 
+                    }, 
+                    quantity: 1 
+                  },
+                  { 
+                    level: 3, 
+                    component: { 
+                      code: 'A8C910-7', 
+                      description: 'WHEEL' 
+                    }, 
+                    quantity: 1 
+                  },
+                  { 
+                    level: 3, 
+                    component: { 
+                      code: 'A8C942-67', 
+                      description: 'WHEEL' 
+                    }, 
+                    quantity: 1 
                   }
                 ];
+              }
+              // Default per altre sezioni - non mostrare elenchi
+              else {
+                console.log("Sezione non specificata - non mostrare elenchi componenti");
+                bomItems = [];
               }
               
               // Genera la tabella HTML direttamente nell'output
@@ -592,8 +530,13 @@ export async function exportToHtml(documentId: string): Promise<void> {
             `;
             break;
             
-          // Aggiunta di tipi di avviso specifici con miglioramenti visivi e icone
+          // Aggiunta di tipi di avviso specifici con miglioramenti visivi, icone e testi
           case 'danger':
+            // Esempio di testo specifico: rimuovere il carter e non toccare la cinghia di trasmissione
+            const pericoloText = section.id === 20 || sectionTitle.includes("3") ? 
+              "Rimuovere il carter e non toccare la cinghia di trasmissione" : 
+              (module.content.message || module.content.text || 'Questo è un messaggio di PERICOLO');
+              
             content += `
               <div class="message danger">
                 <div class="message-header">
@@ -601,7 +544,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                   <h4>PERICOLO</h4>
                 </div>
                 <div class="message-body">
-                  <p>${module.content.message || module.content.text || ''}</p>
+                  <p>${pericoloText}</p>
                   ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
                 </div>
               </div>
@@ -609,6 +552,11 @@ export async function exportToHtml(documentId: string): Promise<void> {
             break;
             
           case 'warning-alert':
+            // Esempio di testo specifico per la sezione 3
+            const avvertenzaText = section.id === 20 || sectionTitle.includes("3") ? 
+              "Non avviare la macchina con i ripari aperti o danneggiati" : 
+              (module.content.message || module.content.text || 'Questo è un messaggio di AVVERTENZA');
+              
             content += `
               <div class="message warning">
                 <div class="message-header">
@@ -616,7 +564,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                   <h4>AVVERTENZA</h4>
                 </div>
                 <div class="message-body">
-                  <p>${module.content.message || module.content.text || ''}</p>
+                  <p>${avvertenzaText}</p>
                   ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
                 </div>
               </div>
@@ -624,6 +572,11 @@ export async function exportToHtml(documentId: string): Promise<void> {
             break;
             
           case 'caution':
+            // Esempio di testo specifico per la sezione 3
+            const attenzionText = section.id === 20 || sectionTitle.includes("3") ? 
+              "Assicurarsi che tutti i dispositivi di sicurezza siano correttamente installati prima dell'avvio" : 
+              (module.content.message || module.content.text || 'Questo è un messaggio di ATTENZIONE');
+              
             content += `
               <div class="message caution">
                 <div class="message-header">
@@ -631,7 +584,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                   <h4>ATTENZIONE</h4>
                 </div>
                 <div class="message-body">
-                  <p>${module.content.message || module.content.text || ''}</p>
+                  <p>${attenzionText}</p>
                   ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
                 </div>
               </div>
@@ -639,6 +592,11 @@ export async function exportToHtml(documentId: string): Promise<void> {
             break;
             
           case 'note':
+            // Esempio di testo specifico per la sezione 3
+            const notaText = section.id === 20 || sectionTitle.includes("3") ? 
+              "Consultare il manuale tecnico per i dettagli completi di installazione" : 
+              (module.content.message || module.content.text || 'Questo è un messaggio informativo');
+              
             content += `
               <div class="message info">
                 <div class="message-header">
@@ -646,7 +604,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                   <h4>NOTA</h4>
                 </div>
                 <div class="message-body">
-                  <p>${module.content.message || module.content.text || ''}</p>
+                  <p>${notaText}</p>
                   ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
                 </div>
               </div>
@@ -654,6 +612,11 @@ export async function exportToHtml(documentId: string): Promise<void> {
             break;
             
           case 'safety-instructions':
+            // Esempio di testo specifico per la sezione 3
+            const sicurezzaText = section.id === 20 || sectionTitle.includes("3") ? 
+              "Utilizzare sempre dispositivi di protezione individuale durante le operazioni di manutenzione" : 
+              (module.content.message || module.content.text || 'Segui queste istruzioni di sicurezza');
+              
             content += `
               <div class="message success">
                 <div class="message-header">
@@ -661,7 +624,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                   <h4>ISTRUZIONI DI SICUREZZA</h4>
                 </div>
                 <div class="message-body">
-                  <p>${module.content.message || module.content.text || ''}</p>
+                  <p>${sicurezzaText}</p>
                   ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
                 </div>
               </div>
