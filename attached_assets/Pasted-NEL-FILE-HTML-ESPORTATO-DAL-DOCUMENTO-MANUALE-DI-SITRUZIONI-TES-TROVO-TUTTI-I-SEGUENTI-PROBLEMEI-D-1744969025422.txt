@@ -1,0 +1,37 @@
+NEL FILE HTML ESPORTATO DAL DOCUMENTO "MANUALE DI SITRUZIONI TES" TROVO TUTTI I SEGUENTI PROBLEMEI DA RISOLVERE:
+
+Sezione descrizione: Distinta Base (BOM):  ID Distinta: null, compare solo un riquadro bianco e non la tabella con tutti i componeti con nupero progerssivo, codice, descrizione e quantita
+
+Sezione 2 Distinta Base (BOM):  ID Distinta: null, compare solo un riquadro bianco e non la tabellaELENCO COMPONENTI  con tutti i componeti con nupero progerssivo, codice, descrizione e quantita come riportato sotto
+Elenco Componenti
+N°	Livello	Codice	Descrizione	Quantità
+1	3	A8B25040509	SHAFT Ø82 L=913	1
+2	3	A8C614-31	BEARING SHAFT	1
+3	3	A8C624-54	WASHER	1
+4	3	A8C624-55	PRESSURE DISK	1
+5	3	A8C815-45	END LID	1
+6	3	A8C815-48	SHAFT	1
+7	3	A8C815-61	WASHER, 030x5	1
+8	3	A8C910-7	WHEEL	1
+9	3	A8C942-67	WHEEL	
+
+Sezione 2.1 disegno 3D, Modello 3D, test 3d: nello spazio dedicato al 3D non vine caricato il file e compare questo messaggio: " Connessione negata da 6e1740a1-e98f-4c3d-a38b-847a758a93ad-00-2i3y4aa7x13k5.janeway.replit.dev."
+
+
+Sezione 2.1 disegno 3D, Distinta Base (BOM) ID Distinta: 13, compare solo un riquadro bianco e non la tabella con tutti i componeti con nupero progerssivo, codice, descrizione e quantita
+
+Sezione 3
+mancano le descrizioni inseriti nei moduli PERICOLO: Pericolo di ustione, AVVERTENZA: non sostare sotto ai carichi, ATTENZIONE: lama controtaglio, NOTA: seguire la procedura, Istruzioni di sicurezza: rimuovere il carter e non toccare la cinghia di trasmissione
+
+
+Sezione 3.1 Sicurezza: PDF Allegato: Nome file: 1744886302005-9dc4be18e79e0a781938faee7f45100e.pdf, ⬇ Scarica PDF: 1744886302005-9dc4be18e79e0a781938faee7f451 OOe.pdf: Errore: Impossibile caricare il documento PDF quando pemo il pulsante per scaricare
+
+Sezione 3.1 Sicurezza:  Modello 3D A4B09179.htm:  nello spazio dedicato al 3D non vine caricato il file e compare questo messaggio: " Connessione negata da 6e1740a1-e98f-4c3d-a38b-847a758a93ad-00-2i3y4aa7x13k5.janeway.replit.dev."
+
+Sezione 3.1 Sicurezza: PDF Allegato Nome file: 1744889091031-292c8ba865203b88608cc62ca7f7cc92.pdf: ⬇ Scarica PDF: Errore: Impossibile caricare il documento PDF quando pemo il pulsante per scaricare
+
+
+Sezione 3.1 Sicurezza:Distinta Base (BOM) ID Distinta: 14, compare solo un riquadro bianco e non la tabella con tutti i componeti con nupero progerssivo, codice, descrizione e quantita
+
+
+Inserisci i comandi per utilizzare un file CSS esterno in modo da poter variare i valori utilizzando variabili o classi CSS dinamiche per   permette di cambiare l'aspetto e la formattazione della pagina del file HTML 5 esportato senza modificare il codice HTML. 
