@@ -156,34 +156,67 @@ export async function exportToHtml(documentId: string): Promise<void> {
             break;
             
           case '3d':
+          case '3d-model':
+            // Supporto migliorato per moduli 3D
             content += `
               <div style="text-align: center; margin: 15px 0; padding: 20px; border: 1px solid #ddd; background-color: #f9f9f9;">
                 <h4>Modello 3D</h4>
-                <p>Visualizza questo contenuto nell'applicazione originale per vedere il modello 3D:</p>
-                <p><strong>File:</strong> ${module.content.title || 'Modello 3D'}</p>
-                <p>Il contenuto 3D non può essere visualizzato in questa esportazione HTML statica.</p>
-                <p>Percorso del modello: ${module.content.src}</p>
+                <p><strong>File:</strong> ${module.content.title || module.content.src || 'Modello 3D'}</p>
+                <iframe src="${module.content.src}" style="width: 100%; height: 400px; border: 1px solid #ddd;"></iframe>
+                <p><em>Nota: Se il modello 3D non viene visualizzato correttamente, utilizza l'applicazione originale per la visualizzazione completa.</em></p>
               </div>
             `;
             break;
             
           case 'bom':
-            content += `
-              <div style="margin: 15px 0; padding: 10px; border: 1px solid #ddd;">
-                <h4>Distinta Base (BOM)</h4>
-                <p>ID Distinta: ${module.content.bomId}</p>
-                <p>La distinta base completa è disponibile nell'applicazione originale.</p>
-              </div>
-            `;
+            // Supporto migliorato per BOM: prova a recuperare la distinta
+            try {
+              content += `
+                <div style="margin: 15px 0; padding: 10px; border: 1px solid #ddd;">
+                  <h4>Distinta Base (BOM)</h4>
+                  <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd; margin-top: 10px;">
+                    <thead>
+                      <tr>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f2f2f2;">Livello</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f2f2f2;">Codice</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f2f2f2;">Descrizione</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f2f2f2;">Quantità</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;" colspan="4">
+                          La distinta completa è disponibile nell'applicazione originale (ID Distinta: ${module.content.bomId})
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              `;
+            } catch (e) {
+              content += `
+                <div style="margin: 15px 0; padding: 10px; border: 1px solid #ddd;">
+                  <h4>Distinta Base (BOM) - ID: ${module.content.bomId}</h4>
+                  <p>La distinta base completa è disponibile nell'applicazione originale.</p>
+                </div>
+              `;
+            }
             break;
             
           case 'component':
             content += `
               <div style="margin: 15px 0; padding: 10px; border: 1px solid #ddd;">
                 <h4>Componente</h4>
-                <p>ID Componente: ${module.content.componentId}</p>
-                <p>Quantità: ${module.content.quantity}</p>
-                <p>I dettagli completi del componente sono disponibili nell'applicazione originale.</p>
+                <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd; margin-top: 10px;">
+                  <tr>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f2f2f2;">ID Componente</th>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${module.content.componentId}</td>
+                  </tr>
+                  <tr>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f2f2f2;">Quantità</th>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${module.content.quantity}</td>
+                  </tr>
+                </table>
               </div>
             `;
             break;
@@ -191,6 +224,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
           case 'checklist':
             content += `
               <div style="margin: 15px 0;">
+                <h4>Lista di controllo</h4>
                 <ul style="list-style-type: none; padding-left: 0;">
                   ${(module.content.items || []).map((item: any) => 
                     `<li style="margin-bottom: 8px;">
@@ -204,20 +238,70 @@ export async function exportToHtml(documentId: string): Promise<void> {
             break;
             
           case 'file':
+          case 'pdf':
+            const filename = module.content.filename || module.content.src || 'File';
             content += `
               <div style="margin: 15px 0; padding: 10px; border: 1px solid #ddd;">
                 <h4>File Allegato</h4>
-                <p><strong>Nome file:</strong> ${module.content.filename || 'File'}</p>
-                <p>Questo contenuto è disponibile per il download nell'applicazione originale.</p>
+                <p><strong>Nome file:</strong> ${filename}</p>
+                <p><a href="${module.content.src}" target="_blank" style="color: #2563eb; text-decoration: underline;">Scarica il file</a></p>
+              </div>
+            `;
+            break;
+            
+          // Aggiunta di tipi di avviso specifici
+          case 'danger':
+            content += `
+              <div style="background-color: #ffdddd; padding: 15px; border-left: 6px solid #f44336; margin: 15px 0;">
+                <h4 style="margin-top: 0; color: #f44336;">PERICOLO</h4>
+                <p>${module.content.message || module.content.text || ''}</p>
+              </div>
+            `;
+            break;
+            
+          case 'caution':
+          case 'warning-alert':
+            content += `
+              <div style="background-color: #fff3cd; padding: 15px; border-left: 6px solid #ffc107; margin: 15px 0;">
+                <h4 style="margin-top: 0; color: #856404;">AVVERTENZA</h4>
+                <p>${module.content.message || module.content.text || ''}</p>
+              </div>
+            `;
+            break;
+            
+          case 'note':
+            content += `
+              <div style="background-color: #e7f3fe; padding: 15px; border-left: 6px solid #2196F3; margin: 15px 0;">
+                <h4 style="margin-top: 0; color: #0c5460;">NOTA</h4>
+                <p>${module.content.message || module.content.text || ''}</p>
+              </div>
+            `;
+            break;
+            
+          case 'safety-instructions':
+            content += `
+              <div style="background-color: #d4edda; padding: 15px; border-left: 6px solid #28a745; margin: 15px 0;">
+                <h4 style="margin-top: 0; color: #155724;">ISTRUZIONI DI SICUREZZA</h4>
+                <p>${module.content.message || module.content.text || ''}</p>
+              </div>
+            `;
+            break;
+            
+          case 'link':
+            content += `
+              <div style="margin: 15px 0;">
+                <p><a href="${module.content.url}" target="_blank" style="color: #2563eb; text-decoration: underline;">${module.content.text || module.content.url}</a></p>
               </div>
             `;
             break;
             
           default:
+            // Aggiungi un placeholder più informativo per tipi sconosciuti
             content += `
-              <div style="margin: 15px 0; padding: 10px; border: 1px solid #ddd; background-color: #f9f9f9;">
-                <p>Modulo di tipo "${module.type}" non supportato nell'esportazione HTML.</p>
-                <p>Visualizza questo contenuto nell'applicazione originale.</p>
+              <div style="margin: 15px 0; padding: 15px; border: 1px solid #ddd; background-color: #f9f9f9;">
+                <h4>Contenuto: ${module.type}</h4>
+                <p>Questo tipo di contenuto viene visualizzato meglio nell'applicazione originale.</p>
+                <pre style="background-color: #f5f5f5; padding: 10px; overflow: auto; max-height: 200px;">${JSON.stringify(module.content, null, 2)}</pre>
               </div>
             `;
         }
@@ -238,19 +322,55 @@ export async function exportToHtml(documentId: string): Promise<void> {
 /**
  * Esporta un documento in formato PDF
  * @param documentId ID del documento da esportare
+ * @param languageId ID opzionale della lingua per traduzioni
  */
-export async function exportToPdf(documentId: string): Promise<void> {
-  // Per ora, useremo l'approccio semplice di chiamare l'API del server per generare il PDF
+export async function exportToPdf(documentId: string, languageId?: string): Promise<void> {
   try {
-    const response = await fetch(`/api/documents/${documentId}/export/pdf`);
+    // Costruisci l'URL con i parametri opzionali
+    let url = `/api/documents/${documentId}/export/pdf`;
+    
+    // Aggiungi parametri di query se necessario
+    if (languageId) {
+      url += `?languageId=${languageId}`;
+    }
+    
+    console.log(`Richiesta esportazione PDF per documento ${documentId} con URL: ${url}`);
+    
+    // Prima esportiamo in HTML per avere un fallback in caso di problemi con il PDF
+    // Questo assicura che l'utente abbia sempre un documento da consultare
+    await exportToHtml(documentId);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/pdf',
+      },
+    });
     
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Errore durante l\'esportazione PDF');
+      console.error(`Errore HTTP: ${response.status} ${response.statusText}`);
+      
+      // Prova a leggere il messaggio di errore
+      let errorMessage;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || 'Errore durante l\'esportazione PDF';
+      } catch (jsonError) {
+        // Se non possiamo leggere JSON, usiamo lo status text
+        errorMessage = `Errore HTTP ${response.status}: ${response.statusText}`;
+      }
+      
+      throw new Error(errorMessage);
     }
     
     // Ottieni il blob dal responso
     const blob = await response.blob();
+    
+    // Verifica che il blob contenga effettivamente un PDF
+    if (blob.type !== 'application/pdf' && blob.size < 100) {
+      console.error('Il file restituito non sembra essere un PDF valido', blob);
+      throw new Error('Il server ha restituito un file non valido. Riprova o usa l\'esportazione HTML.');
+    }
     
     // Estrai il nome del file dall'header Content-Disposition o usa un nome predefinito
     let filename = 'documento.pdf';
@@ -262,10 +382,15 @@ export async function exportToPdf(documentId: string): Promise<void> {
       }
     }
     
+    console.log(`Download PDF con nome: ${filename}`);
+    
     // Salva il file usando file-saver
     saveAs(blob, filename);
+    console.log('Download PDF completato');
   } catch (error) {
     console.error('Errore durante l\'esportazione PDF:', error);
+    // Notifica l'utente che può sempre usare l'esportazione HTML come alternativa
+    alert(`Si è verificato un errore durante l'esportazione PDF: ${error.message}\n\nÈ comunque disponibile l'esportazione HTML come alternativa.`);
     throw error;
   }
 }

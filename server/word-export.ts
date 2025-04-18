@@ -286,8 +286,21 @@ export async function createWordDocument(
       children: docElements,
     });
 
-    wordDoc.addSection({
-      properties: {},
+    // Creazione di una sezione principale con intestazione e piè di pagina standard
+    // Aggiunge una sezione al documento Word
+    (wordDoc as any).addSection({
+      properties: {
+        type: docx.SectionType.CONTINUOUS,
+        page: {
+          margin: {
+            top: 1000, // ~2cm
+            right: 1000, // ~2cm
+            bottom: 1000, // ~2cm 
+            left: 1000, // ~2cm
+          },
+        },
+      },
+      // Utilizza tutti gli elementi bambini dalle sezioni generate
       children: [...sections[0].children, ...sections[1].children],
     });
 
@@ -339,10 +352,11 @@ async function addModulesToDocument(
           if (translation && translation.content) {
             translationContent = translation.content;
             // Creiamo una copia del modulo con il contenuto tradotto
+            // Creare una copia con casting per evitare errori typescript
             translatedModule = {
               ...module,
-              translatedContent: translationContent
-            };
+              content: translationContent
+            } as ContentModule;
             console.log(`Trovata traduzione per il modulo ${module.id}, tipo: ${module.type}`);
           }
         } catch (err) {
@@ -458,33 +472,74 @@ async function addImageModule(
   // Usa il contenuto tradotto se disponibile
   const content = translationContent ? translationContent : module.content as { src: string; alt: string; caption?: string };
   
-  // Check if file exists and is accessible
-  const imagePath = path.join(__dirname, "../uploads", path.basename(content.src));
-  if (!fs.existsSync(imagePath)) {
-    throw new Error(`Image file not found: ${imagePath}`);
-  }
+  try {
+    // Check if file exists and is accessible
+    // Normalizza il percorso dell'immagine rimuovendo eventuali parametri query
+    const cleanSrc = content.src.split('?')[0];
+    const imagePath = path.join(__dirname, "../uploads", path.basename(cleanSrc));
+    
+    if (!fs.existsSync(imagePath)) {
+      console.warn(`Immagine non trovata al percorso: ${imagePath}, src originale: ${content.src}`);
+      
+      // Aggiungi un placeholder per l'immagine mancante
+      docElements.push(
+        new Paragraph({
+          text: `[Immagine non trovata: ${path.basename(content.src)}]`,
+          alignment: AlignmentType.CENTER,
+          style: "Normal",
+        })
+      );
+      return;
+    }
 
-  // Read image as base64
-  const imageData = fs.readFileSync(imagePath);
-  
-  // Add the image
-  docElements.push(
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [
-        new ImageRun({
-          data: imageData,
-          transformation: {
-            width: 400, // Adjust width as needed, maintaining aspect ratio
-            height: 300, // Adjust height as needed
-          },
-          // Aggiungi le proprietà mancanti richieste dalla libreria docx
-          type: "png", // Imposta il tipo come predefinito, anche se è un jpg funzionerà
-          altText: content.alt || "Immagine",
-        }),
-      ],
-    })
-  );
+    // Read image data
+    const imageData = fs.readFileSync(imagePath);
+    
+    // Determina il tipo di immagine in base all'estensione
+    let imageType = "png"; // default
+    const extension = path.extname(content.src).toLowerCase();
+    
+    if (extension === '.jpg' || extension === '.jpeg') {
+      imageType = "jpeg";
+    } else if (extension === '.png') {
+      imageType = "png";
+    } else if (extension === '.gif') {
+      imageType = "gif";
+    } else if (extension === '.bmp') {
+      imageType = "bmp";
+    }
+    
+    console.log(`Aggiunta immagine: ${content.src}, tipo: ${imageType}`);
+    
+    // Add the image
+    docElements.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [
+          new ImageRun({
+            data: imageData,
+            transformation: {
+              width: 400, 
+              height: 300,
+            },
+            type: imageType as any, // Necessario per evitare errori di tipo
+            altText: content.alt || "Immagine",
+          }),
+        ],
+      })
+    );
+  } catch (error) {
+    console.error(`Errore nell'elaborazione dell'immagine ${content.src}:`, error);
+    
+    // Aggiungi un placeholder per l'errore
+    docElements.push(
+      new Paragraph({
+        text: `[Errore nell'elaborazione dell'immagine: ${path.basename(content.src)}]`,
+        alignment: AlignmentType.CENTER,
+        style: "Normal",
+      })
+    );
+  }
 
   // Add caption if present
   if (content.caption) {
