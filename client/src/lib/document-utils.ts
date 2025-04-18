@@ -320,12 +320,10 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 bomItems = [];
               }
               // SEZIONE 2.1 - DISEGNO 3D - Tutti i componenti ESATTAMENTE come nella tabella fornita
-              else if (
-                (sectionTitle && (sectionTitle.includes("2.1") || sectionTitle.includes("disegno 3D"))) || 
-                sectionId === 16
-              ) {
-                console.log("Usando elenco componenti COMPLETO per la sezione 2.1 Disegno 3D");
-                // TUTTI i componenti ESATTAMENTE come nella tabella fornita
+              else if (sectionId === 16 || (sectionTitle && (sectionTitle.toLowerCase().includes("2.1") || sectionTitle.toLowerCase().includes("disegno 3d")))) {
+                console.log("Usando elenco componenti COMPLETO per la sezione 2.1 Disegno 3D - ID:", sectionId);
+                // TUTTI i componenti ESATTAMENTE come nella tabella fornita 
+                // FORZATO per ID=16
                 bomItems = [
                   { 
                     level: 3, 
@@ -1221,19 +1219,21 @@ img, video, iframe {
 }
 
 .caution .message-header {
-  background-color: #fbbf24;
-  color: #FFFFFF;
+  background-color: rgba(255, 214, 0, 0.9);
+  color: #000000;
   font-weight: bold;
   border-radius: 4px;
   padding: 5px 10px;
   margin-bottom: 10px;
+  text-shadow: 0px 0px 3px rgba(255, 255, 255, 0.5);
 }
 
 .caution .message-body {
-  color: #FFFFFF;
+  color: #000000;
   background-color: rgba(255, 214, 0, 0.8);
   padding: 8px;
   border-radius: 4px;
+  text-shadow: 0px 0px 3px rgba(255, 255, 255, 0.5);
 }
 
 .caution .message-icon {

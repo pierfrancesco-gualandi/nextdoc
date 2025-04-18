@@ -93,7 +93,7 @@ export const DangerModule: React.FC<{
       description={description}
       imageUrl="/uploads/1744114733296-157c58bc11960470cbc76bc367c1ecb0.png"
       backgroundColor="#d9001e"
-      textColor="#d9001e"
+      textColor="#FFFFFF"
       isTranslated={isTranslated}
       highlightMissingTranslations={highlightMissingTranslations}
       originalTitle={originalTitle}
@@ -155,7 +155,7 @@ export const CautionModule: React.FC<{
       description={description}
       imageUrl="/uploads/1744114733296-157c58bc11960470cbc76bc367c1ecb0.png"
       backgroundColor="#ffd500"
-      textColor="#000000"
+      textColor="#FFFFFF"
       isTranslated={isTranslated}
       highlightMissingTranslations={highlightMissingTranslations}
       originalTitle={originalTitle}
