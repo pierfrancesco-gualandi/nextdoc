@@ -124,7 +124,7 @@ export const WarningAlertModule: React.FC<{
       description={description}
       imageUrl="/uploads/1744114733296-157c58bc11960470cbc76bc367c1ecb0.png"
       backgroundColor="#ff9900"
-      textColor="#ff9900"
+      textColor="#FFFFFF"
       isTranslated={isTranslated}
       highlightMissingTranslations={highlightMissingTranslations}
       originalTitle={originalTitle}
@@ -186,7 +186,7 @@ export const NoteModule: React.FC<{
       description={description}
       // Non usare l'icona di pericolo per il modulo NOTA
       backgroundColor="#3366cc"
-      textColor="#3366cc"
+      textColor="#FFFFFF"
       isTranslated={isTranslated}
       highlightMissingTranslations={highlightMissingTranslations}
       originalTitle={originalTitle}
@@ -217,7 +217,7 @@ export const SafetyInstructionsModule: React.FC<{
       description={description}
       imageUrl="/uploads/1744114733296-157c58bc11960470cbc76bc367c1ecb0.png"
       backgroundColor="#339933"
-      textColor="#339933"
+      textColor="#FFFFFF"
       isTranslated={isTranslated}
       highlightMissingTranslations={highlightMissingTranslations}
       originalTitle={originalTitle}

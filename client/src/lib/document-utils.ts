@@ -321,9 +321,9 @@ export async function exportToHtml(documentId: string): Promise<void> {
               }
               // SEZIONE 2.1 - DISEGNO 3D - Tutti i componenti ESATTAMENTE come nella tabella fornita
               else if (sectionId === 16 || (sectionTitle && (sectionTitle.toLowerCase().includes("2.1") || sectionTitle.toLowerCase().includes("disegno 3d")))) {
-                console.log("Usando elenco componenti COMPLETO per la sezione 2.1 Disegno 3D - ID:", sectionId);
-                // TUTTI i componenti ESATTAMENTE come nella tabella fornita 
-                // FORZATO per ID=16
+                console.log("FORZANDO elenco componenti completo per SEZIONE 2.1 disegno 3D - ID:", sectionId);
+                // !!! IMPORTANTE !!! - Questo è un override FORZATO per la sezione 2.1 (ID=16)
+                // I 9 componenti ESATTI come richiesti dal cliente
                 bomItems = [
                   { 
                     level: 3, 
