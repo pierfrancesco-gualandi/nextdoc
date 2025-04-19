@@ -6,6 +6,8 @@
  * Definisce gli elenchi componenti specifici per ciascuna sezione
  */
 export function getSpecificComponentsForSection(sectionId, sectionTitle) {
+  console.log(`getSpecificComponentsForSection chiamata con sectionId=${sectionId}, sectionTitle=${sectionTitle}`);
+  
   // SEZIONE 1 - INTRODUZIONE -> DESCRIZIONE 
   // Contiene solo un singolo componente
   if (
@@ -13,6 +15,7 @@ export function getSpecificComponentsForSection(sectionId, sectionTitle) {
     sectionId === 2 || 
     sectionId === 12 || sectionId === 6
   ) {
+    console.log("Generando componenti per sezione INTRODUZIONE");
     return [
       { 
         level: 2, 
@@ -27,6 +30,7 @@ export function getSpecificComponentsForSection(sectionId, sectionTitle) {
     (sectionTitle && (sectionTitle.includes("2 ") || sectionTitle.includes("Sezione 2 "))) || 
     sectionId === 19
   ) {
+    console.log("Sezione 2 identificata - nessun componente da mostrare");
     return [];
   }
   // SEZIONE 2.1 - DISEGNO 3D - Componenti ESATTI (9)
@@ -34,6 +38,7 @@ export function getSpecificComponentsForSection(sectionId, sectionTitle) {
     sectionId === 16 || 
     (sectionTitle && (sectionTitle.toLowerCase().includes("2.1") || sectionTitle.toLowerCase().includes("disegno 3d")))
   ) {
+    console.log("Sezione 2.1 (DISEGNO 3D) identificata! Generando i 9 componenti specifici");
     return [
       { 
         level: 3, 
@@ -111,12 +116,18 @@ export function isDisegno3DSection(sectionId, sectionTitle) {
  * Genera il markup HTML per l'elenco componenti di una specifica sezione
  */
 export function generateComponentsListHtml(sectionId, sectionTitle, defaultBomItems) {
+  console.log(`generateComponentsListHtml chiamata per sezione ID=${sectionId}, titolo=${sectionTitle}`);
+  
   const items = getSpecificComponentsForSection(sectionId, sectionTitle) || defaultBomItems;
   
   if (!items || items.length === 0) {
+    console.log("Nessun elemento trovato nella distinta base per questa sezione");
     return '<p class="bom-empty">Nessun elemento trovato nella distinta base</p>';
   }
   
+  console.log(`Generando tabella con ${items.length} componenti, primo codice: ${items[0]?.code || 'N/A'}`);
+  
+  // Assicuriamoci che la colonna N° sia sempre presente
   return `
     <table class="bom-table">
       <thead>

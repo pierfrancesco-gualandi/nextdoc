@@ -124,6 +124,11 @@ export function exportDocumentHtml(document: any, sections: any[], modules: any[
               
               // Utilizziamo le funzioni di fixComponents.js per ottenere la lista componenti corretta
               const specificItems = getSpecificComponentsForSection(sectionId, sectionTitle);
+              console.log(`Elementi specifici per sezione ${sectionId}:`, specificItems ? specificItems.length : 'nessuno');
+              
+              if (specificItems) {
+                console.log(`Primo elemento:`, JSON.stringify(specificItems[0] || {}));
+              }
               
               // Convertiamo gli elementi nel formato atteso
               const bomItems = specificItems ? specificItems.map(item => ({
@@ -134,6 +139,9 @@ export function exportDocumentHtml(document: any, sections: any[], modules: any[
                 },
                 quantity: item.quantity
               })) : [];
+              
+              console.log(`Elementi BOM trasformati: ${bomItems.length} (include N°)`);
+              
               
               // Genera la tabella HTML direttamente nell'output
               let tableHtml = '';
