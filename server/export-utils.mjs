@@ -91,27 +91,174 @@ export function fixWarningModuleStyles(html) {
  * @returns {string} - HTML con tabella componenti corretta
  */
 export function fixSection21Components(html) {
-  // Trova la sezione 2.1
-  const section21Regex = /<h2[^>]*>2\.1[^<]*<\/h2>/;
-  const section21Match = html.match(section21Regex);
+  // Trova la sezione 2.1 - usa un pattern più flessibile per catturare diverse varianti
+  // Può essere <h2>2.1 Disegno 3D</h2> oppure <h3 class="section-title"><span class="section-number">2.1</span> Disegno 3D</h3>
+  const section21Patterns = [
+    /<h[1-6][^>]*>(?:\s*2\.1\s|.*?<span[^>]*>\s*2\.1\s*<\/span>).*?<\/h[1-6]>/i,
+    /<h[1-6][^>]*>.*?disegno 3d.*?<\/h[1-6]>/i,
+    /<h[1-6][^>]*>.*?sezione 2\.1.*?<\/h[1-6]>/i,
+    /<span[^>]*class="section-number"[^>]*>\s*2\.1\s*<\/span>/i
+  ];
   
-  if (!section21Match) return html;
+  let section21Match = null;
+  let section21Pos = -1;
   
-  // Posizione della sezione 2.1
-  const section21Pos = section21Match.index;
+  // Prova tutti i pattern per trovare la sezione 2.1
+  for (const pattern of section21Patterns) {
+    const match = html.match(pattern);
+    if (match) {
+      section21Match = match;
+      section21Pos = match.index;
+      console.log("Sezione 2.1 trovata con pattern:", pattern.toString());
+      break;
+    }
+  }
+  
+  // Se non troviamo la sezione 2.1 con i pattern, cerchiamo un tag section con id che contiene "2.1" o "disegno"
+  if (!section21Match) {
+    const sectionIdPattern = /<section[^>]*id="[^"]*(?:2\.1|disegno)[^"]*"[^>]*>/i;
+    const sectionMatch = html.match(sectionIdPattern);
+    if (sectionMatch) {
+      section21Match = sectionMatch;
+      section21Pos = sectionMatch.index;
+      console.log("Sezione 2.1 trovata tramite id section");
+    }
+  }
+  
+  // Se ancora non troviamo la sezione, cerchiamo una tabella con classe "bom-table"
+  if (!section21Match) {
+    const bomTablePattern = /<table[^>]*class="[^"]*bom-table[^"]*"[^>]*>/i;
+    const tableMatches = [...html.matchAll(new RegExp(bomTablePattern, 'gi'))];
+    
+    // Per ogni tabella BOM trovata
+    for (const tableMatch of tableMatches) {
+      // Prendiamo un blocco di testo prima della tabella per cercare riferimenti alla sezione 2.1
+      const startPos = Math.max(0, tableMatch.index - 500);
+      const contextBefore = html.substring(startPos, tableMatch.index);
+      
+      // Verifichiamo se questo contesto contiene riferimenti alla sezione 2.1 o disegno 3D
+      if (/\b2\.1\b|\bdisegno\s+3d\b/i.test(contextBefore)) {
+        section21Match = tableMatch;
+        section21Pos = tableMatch.index;
+        console.log("Sezione 2.1 identificata tramite contesto vicino alla tabella BOM");
+        break;
+      }
+    }
+  }
+  
+  if (!section21Match) {
+    console.log("Sezione 2.1 non trovata nell'HTML");
+    return html;
+  }
+  
+  console.log("Posizione sezione 2.1:", section21Pos);
   
   // Cerca la tabella dei componenti dopo questa posizione
-  const tableRegex = /<table[^>]*class="[^"]*component-table[^"]*"[^>]*>([\s\S]*?)<\/table>/g;
-  tableRegex.lastIndex = section21Pos;
+  // Usiamo pattern più flessibili per trovare le tabelle BOM
+  const tablePatterns = [
+    /<table[^>]*class="[^"]*bom-table[^"]*"[^>]*>([\s\S]*?)<\/table>/i,
+    /<table[^>]*class="[^"]*component-table[^"]*"[^>]*>([\s\S]*?)<\/table>/i,
+    /<div[^>]*class="[^"]*bom-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i
+  ];
   
-  const tableMatch = tableRegex.exec(html);
-  if (!tableMatch) return html;
+  let tableMatch = null;
+  
+  // Cerca solo nel contenuto dopo la posizione della sezione 2.1
+  // e limita la ricerca a 2000 caratteri dopo quella posizione
+  const searchSegment = html.substring(section21Pos, section21Pos + 3000);
+  
+  for (const pattern of tablePatterns) {
+    const regex = new RegExp(pattern, 'i');
+    const match = searchSegment.match(regex);
+    if (match) {
+      tableMatch = {
+        index: section21Pos + match.index,
+        [0]: match[0],
+        length: match[0].length
+      };
+      console.log("Tabella BOM trovata con pattern:", pattern.toString());
+      break;
+    }
+  }
+  
+  if (!tableMatch) {
+    console.log("Tabella dei componenti non trovata dopo la sezione 2.1");
+    
+    // Se non troviamo una tabella BOM esistente, cerchiamo il punto dove inserirla
+    // Cerca un punto adatto dopo la sezione 2.1 per inserire la tabella
+    const insertPoints = [
+      /<\/section>\s*(?=<)/i,  // Fine di un tag section
+      /<\/div>\s*(?=<div)/i,   // Fine di un div seguito da un altro div
+      /<\/p>\s*(?=<)/i         // Fine di un paragrafo
+    ];
+    
+    let insertPoint = -1;
+    const searchArea = html.substring(section21Pos, section21Pos + 1000);
+    
+    for (const pattern of insertPoints) {
+      const match = searchArea.match(pattern);
+      if (match) {
+        insertPoint = section21Pos + match.index + match[0].length;
+        console.log("Punto di inserimento trovato:", insertPoint);
+        break;
+      }
+    }
+    
+    // Se non troviamo un punto di inserimento, inseriamo alla fine della sezione 2.1
+    if (insertPoint === -1) {
+      insertPoint = section21Pos + section21Match[0].length;
+      console.log("Usando punto di inserimento predefinito:", insertPoint);
+    }
+    
+    // Crea la tabella con i componenti fissi
+    const components = getSection21Components();
+    let newTable = `
+    <div class="bom-container">
+      <h4 class="bom-title">Elenco Componenti Sezione 2.1</h4>
+      <div class="bom-content">
+        <table class="bom-table" style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+          <thead>
+            <tr style="background-color: #f5f5f5;">
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">N°</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Livello</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Codice</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Descrizione</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Quantità</th>
+            </tr>
+          </thead>
+          <tbody>`;
+    
+    components.forEach((comp, index) => {
+      newTable += `
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">${index + 1}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">3</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${comp.code}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${comp.description}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${comp.quantity}</td>
+        </tr>`;
+    });
+    
+    newTable += `
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+    
+    // Inserisce la nuova tabella
+    return html.substring(0, insertPoint) + newTable + html.substring(insertPoint);
+  }
+  
+  // Se abbiamo trovato una tabella esistente, la sostituiamo
+  console.log("Sostituendo la tabella esistente con i componenti fissi");
   
   // Crea la tabella di sostituzione con i componenti fissi
   const components = getSection21Components();
-  let replacementTable = `<table class="component-table" style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+  let replacementTable = `<table class="bom-table" style="width: 100%; border-collapse: collapse; margin: 15px 0;">
     <thead>
-      <tr style="background-color: #f3f3f3;">
+      <tr style="background-color: #f5f5f5;">
+        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">N°</th>
+        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Livello</th>
         <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Codice</th>
         <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Descrizione</th>
         <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Quantità</th>
@@ -119,9 +266,11 @@ export function fixSection21Components(html) {
     </thead>
     <tbody>`;
   
-  components.forEach(comp => {
+  components.forEach((comp, index) => {
     replacementTable += `
       <tr>
+        <td style="border: 1px solid #ddd; padding: 8px;">${index + 1}</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">3</td>
         <td style="border: 1px solid #ddd; padding: 8px;">${comp.code}</td>
         <td style="border: 1px solid #ddd; padding: 8px;">${comp.description}</td>
         <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${comp.quantity}</td>
