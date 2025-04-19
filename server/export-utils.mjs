@@ -158,7 +158,10 @@ export function fixSection21Components(html) {
   const tablePatterns = [
     /<table[^>]*class="[^"]*bom-table[^"]*"[^>]*>([\s\S]*?)<\/table>/i,
     /<table[^>]*class="[^"]*component-table[^"]*"[^>]*>([\s\S]*?)<\/table>/i,
-    /<div[^>]*class="[^"]*bom-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i
+    /<div[^>]*class="[^"]*bom-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+    /<table[^>]*>([\s\S]*?)<th[^>]*>Livello<\/th>([\s\S]*?)<\/table>/i,
+    /<table[^>]*>([\s\S]*?)<th[^>]*>Codice<\/th>([\s\S]*?)<\/table>/i,
+    /<table[^>]*>([\s\S]*?)<tbody[^>]*>([\s\S]*?)<\/tbody>([\s\S]*?)<\/table>/i
   ];
   
   let tableMatch = null;
@@ -177,6 +180,9 @@ export function fixSection21Components(html) {
         length: match[0].length
       };
       console.log("Tabella BOM trovata con pattern:", pattern.toString());
+      // Mostra un anteprima della tabella trovata (limitata a 100 caratteri)
+      const tablePreview = match[0].substring(0, 100).replace(/\n/g, '').trim() + "...";
+      console.log("Anteprima tabella trovata:", tablePreview);
       break;
     }
   }
@@ -245,6 +251,9 @@ export function fixSection21Components(html) {
       </div>
     </div>`;
     
+    // Log informativo
+    console.log("Creando nuova tabella BOM per sezione 2.1 con colonna N°");
+    
     // Inserisce la nuova tabella
     return html.substring(0, insertPoint) + newTable + html.substring(insertPoint);
   }
@@ -280,6 +289,10 @@ export function fixSection21Components(html) {
   replacementTable += `
     </tbody>
   </table>`;
+  
+  // Debug info
+  console.log(`Sostituzione tabella: indice ${tableMatch.index}, lunghezza ${tableMatch[0].length}`);
+  console.log("Nuova tabella creata con componenti specifici e colonna N°");
   
   // Sostituisce la tabella originale con quella fissa
   return html.substring(0, tableMatch.index) + replacementTable + html.substring(tableMatch.index + tableMatch[0].length);

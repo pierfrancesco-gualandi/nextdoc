@@ -95,11 +95,21 @@ function getSection21ComponentsHtml() {
  * Funzione che controlla se un modulo è nella sezione 2.1 (disegno 3D)
  */
 function isSection21Component(sectionId, sectionTitle) {
-  return sectionId === 16 || 
+  // Log per il debug
+  console.log(`Controllo sezione 2.1: ID=${sectionId}, Titolo=${sectionTitle}`);
+  
+  // Verifica se si tratta della sezione 2.1 (ID specifico o testo nel titolo)
+  const isSection21 = sectionId === 16 || 
     (sectionTitle && (
       sectionTitle.toLowerCase().includes("2.1") || 
       sectionTitle.toLowerCase().includes("disegno 3d")
     ));
+    
+  if (isSection21) {
+    console.log(`Sezione 2.1 identificata: ID=${sectionId}, Titolo=${sectionTitle}`);
+  }
+  
+  return isSection21;
 }
 
 module.exports = {
