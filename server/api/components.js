@@ -78,6 +78,5 @@ function getComponentsForSection21() {
   ];
 }
 
-module.exports = {
-  getComponentsForSection21
-};
+// Esportazione ESM
+export { getComponentsForSection21 };

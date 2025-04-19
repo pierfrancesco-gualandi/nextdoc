@@ -1,6 +1,10 @@
 /**
  * Utility per la correzione dell'elenco componenti
+ * Esportazioni definite sia per ESM (export) che per CommonJS (module.exports)
  */
+
+// Verifico se è un ambiente CommonJS 
+const isCommonJS = typeof module !== 'undefined' && module.exports;
 
 /**
  * Definisce gli elenchi componenti specifici per ciascuna sezione
@@ -152,4 +156,55 @@ export function generateComponentsListHtml(sectionId, sectionTitle, defaultBomIt
       </tbody>
     </table>
   `;
+}
+
+// Esportiamo per CommonJS se necessario
+if (isCommonJS) {
+  module.exports = {
+    getSpecificComponentsForSection,
+    isDisegno3DSection,
+    generateComponentsListHtml,
+    isSection21Component: function(sectionId, sectionTitle) {
+      return isDisegno3DSection(sectionId, sectionTitle);
+    },
+    getSection21ComponentsHtml: function() {
+      const items = getSpecificComponentsForSection(16, "2.1 DISEGNO 3D");
+      console.log("getSection21ComponentsHtml - Generando i 9 componenti specifici");
+      
+      if (!items || items.length === 0) {
+        return '<p class="bom-empty">Nessun elemento trovato nella distinta base per la sezione 2.1</p>';
+      }
+      
+      return `
+        <div class="bom-container">
+          <h4 class="bom-title">Elenco Componenti - Disegno 3D</h4>
+          
+          <div class="bom-content">
+            <table class="bom-table">
+              <thead>
+                <tr>
+                  <th>N°</th>
+                  <th>Livello</th>
+                  <th>Codice</th>
+                  <th>Descrizione</th>
+                  <th>Quantità</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${items.map((item, index) => `
+                  <tr>
+                    <td>${index + 1}</td>
+                    <td class="level-${item.level}">${item.level}</td>
+                    <td>${item.code || ''}</td>
+                    <td>${item.description || ''}</td>
+                    <td>${item.quantity || ''}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+  };
 }

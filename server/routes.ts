@@ -8,7 +8,9 @@ import { handleZipUpload, handleMultiZipUpload } from "./zip-handler";
 import { handleWebGLModelUpload, initializeWebGLModelFiles } from "./webgl-model-handler";
 import { createWordDocument } from "./word-export";
 import path from "path";
-import { getComponentsForSection21 } from "./api/components";
+// Importazioni dirette ESM
+import { getComponentsForSection21 } from './api/components.js';
+import { getSection21ComponentsHtml, isSection21Component } from './api/section21components.js';
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
@@ -51,6 +53,44 @@ function validateBody(schema: any, data: any) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Endpoint per la lista componenti della sezione 2.1
+  app.get("/api/section21/components", (req: Request, res: Response) => {
+    try {
+      console.log("API section21/components chiamata");
+      const htmlContent = getSection21ComponentsHtml();
+      console.log("HTML generato:", htmlContent.substring(0, 100) + "...");
+      res.send(htmlContent);
+    } catch (error) {
+      console.error("Errore nell'API section21/components:", error);
+      res.status(500).send("Errore nel recupero dei componenti specifici per la sezione 2.1");
+    }
+  });
+  
+  // Endpoint per verificare il riconoscimento della sezione 2.1
+  app.get("/api/section21/check/:sectionId/:sectionTitle?", (req: Request, res: Response) => {
+    try {
+      const sectionId = parseInt(req.params.sectionId);
+      const sectionTitle = req.params.sectionTitle || '';
+      
+      console.log(`Verifica sezione 2.1: ID=${sectionId}, Titolo=${sectionTitle}`);
+      
+      // Usa la funzione in section21components.js per verificare
+      const result = isSection21Component(sectionId, sectionTitle);
+      
+      res.json({
+        sectionId,
+        sectionTitle,
+        isSection21: !!isSection21,
+        components: isSection21 ? getComponentsForSection21() : []
+      });
+    } catch (error) {
+      console.error("Errore nella verifica della sezione 2.1:", error);
+      res.status(500).json({ 
+        error: "Errore nella verifica della sezione 2.1",
+        message: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
   // User routes
   app.get("/api/users", async (req: Request, res: Response) => {
     try {

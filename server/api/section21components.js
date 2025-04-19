@@ -112,7 +112,5 @@ function isSection21Component(sectionId, sectionTitle) {
   return isSection21;
 }
 
-module.exports = {
-  getSection21ComponentsHtml,
-  isSection21Component
-};
+// Esportazione ESM
+export { getSection21ComponentsHtml, isSection21Component };
