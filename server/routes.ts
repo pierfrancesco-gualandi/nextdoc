@@ -77,10 +77,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Usa la funzione in section21components.js per verificare
       const result = isSection21Component(sectionId, sectionTitle);
       
+      // Usiamo la variabile result che contiene il risultato della verifica
+      const isSection21 = !!result;
       res.json({
         sectionId,
         sectionTitle,
-        isSection21: !!isSection21,
+        isSection21: isSection21,
         components: isSection21 ? getComponentsForSection21() : []
       });
     } catch (error) {
