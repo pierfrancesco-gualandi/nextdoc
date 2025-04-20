@@ -63,29 +63,47 @@ export function applyPostProcessing(document, sections, html) {
       // Ottieni i componenti specifici per la sezione 2.1
       const section21Components = getSpecificComponentsForSection21();
       
+      // Log dei componenti per debug
+      console.log("Componenti sezione 2.1:", JSON.stringify(section21Components).substring(0, 100) + "...");
+      
       if (section21Components && section21Components.length > 0) {
         // Genera la tabella HTML per i 9 componenti specifici
         const componentsTableHtml = generateComponentsTable(section21Components);
         
-        // Invece di cercare la sezione, iniettiamo direttamente la tabella prima di </body>
+        // Strategia radicalmente semplificata: iniettiamo la tabella direttamente prima di </body>
         console.log("Inserisco la tabella dei componenti sezione 2.1 direttamente nel documento");
         
-        // Mettiamo il contenuto prima di </body>
-        const bodyCloseIndex = html.lastIndexOf('</body>');
-        
-        if (bodyCloseIndex !== -1) {
-          // Creiamo una sezione dedicata per i componenti
-          const componentSection = `
-            <div class="disegno3d-components-section">
-              <h3>Componenti Disegno 3D (Sezione 2.1)</h3>
-              ${componentsTableHtml}
-            </div>
-          `;
-          
-          // Iniettiamo la sezione
-          html = html.substring(0, bodyCloseIndex) + componentSection + html.substring(bodyCloseIndex);
-          console.log("Tabella componenti iniettata con successo");
-          
+        try {
+          // Mettiamo il contenuto prima di </body>
+          if (html.includes('</body>')) {
+            const bodyCloseIndex = html.lastIndexOf('</body>');
+            console.log(`Trovato tag </body> alla posizione ${bodyCloseIndex}`);
+            
+            // Creiamo una sezione dedicata per i componenti con stile in-line per garantire la visualizzazione corretta
+            const componentSection = `
+              <div style="margin: 40px 0; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
+                <h3 style="margin-bottom: 20px; font-size: 18px; font-weight: bold; color: #333;">Componenti Disegno 3D (Sezione 2.1)</h3>
+                ${componentsTableHtml}
+              </div>
+            `;
+            
+            // Iniettiamo la sezione e confermiamo che è stata inserita correttamente
+            const newHtml = html.substring(0, bodyCloseIndex) + componentSection + html.substring(bodyCloseIndex);
+            console.log("Tabella componenti iniettata con successo");
+            console.log(`Lunghezza HTML originale: ${html.length}, Lunghezza HTML modificato: ${newHtml.length}`);
+            
+            // Salva l'HTML modificato per debug
+            const debugFilePath = path.join(process.cwd(), 'exports', 'debug_html.html');
+            fs.writeFileSync(debugFilePath, newHtml, 'utf8');
+            console.log(`HTML modificato salvato in ${debugFilePath} per debug`);
+            
+            return newHtml;
+          } else {
+            console.error("Tag </body> non trovato nel documento HTML");
+            return html;
+          }
+        } catch (error) {
+          console.error("Errore durante l'inserimento della tabella:", error);
           return html;
         }
         
