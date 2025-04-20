@@ -4,7 +4,7 @@ import { isDisegno3DSection, generateComponentsListHtml, getSpecificComponentsFo
 /**
  * Esporta un documento in formato HTML
  */
-export function exportDocumentHtml(document: any, sections: any[], modules: any[]) {
+export async function exportDocumentHtml(document: any, sections: any[], modules: any[]) {
   const title = document?.title || 'Documento Esportato';
   
   try {
@@ -22,8 +22,8 @@ export function exportDocumentHtml(document: any, sections: any[], modules: any[
       childrenMap[parentId].push(section);
     });
     
-    // Funzione per generare ricorsivamente l'HTML delle sezioni
-    function buildSectionHtml(sectionId: number, level: number = 1): string {
+    // Dichiarazione della funzione ricorsiva all'esterno del blocco try
+    const buildSectionHtml = (sectionId: number, level: number = 1): string => {
       const section = sectionsMap[sectionId];
       if (!section) return '';
       
@@ -131,7 +131,7 @@ export function exportDocumentHtml(document: any, sections: any[], modules: any[
               }
               
               // Convertiamo gli elementi nel formato atteso
-              const bomItems = specificItems ? specificItems.map(item => ({
+              const bomItems = specificItems ? specificItems.map((item: any) => ({
                 level: item.level,
                 component: {
                   code: item.code,
@@ -158,7 +158,7 @@ export function exportDocumentHtml(document: any, sections: any[], modules: any[
                       </tr>
                     </thead>
                     <tbody>
-                      ${bomItems.map((item, index) => {
+                      ${bomItems.map((item: any, index: number) => {
                         const component = item.component || {};
                         return `
                           <tr>
@@ -803,16 +803,47 @@ export function exportDocumentHtml(document: any, sections: any[], modules: any[
       </html>
     `;
     
-    // Crea un blob con l'HTML generato
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    
-    // Nome del file
-    const filename = `${document.title.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
-    
-    // Scarica il file
-    saveAs(blob, filename);
-    
-    return html;
+    // Invia l'HTML al server per il post-processing (sostituisce la tabella della sezione 2.1)
+    console.log("Invio HTML al server per post-processing...");
+    try {
+      const response = await fetch(`/api/documents/${document.id}/export/html`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ html })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Errore durante il post-processing: ${response.status} ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log("Post-processing completato:", result);
+      
+      // Usa l'HTML processato
+      const processedHtml = result.html;
+      
+      // Crea un blob con l'HTML processato
+      const blob = new Blob([processedHtml], { type: 'text/html;charset=utf-8' });
+      
+      // Nome del file
+      const filename = `${document.title.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
+      
+      // Scarica il file
+      saveAs(blob, filename);
+      
+      return processedHtml;
+    } catch (error) {
+      console.error("Errore nel post-processing, utilizzo versione originale:", error);
+      
+      // In caso di errore, usa la versione originale
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const filename = `${document.title.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
+      saveAs(blob, filename);
+      
+      return html;
+    }
   } catch (error) {
     console.error('Errore durante l\'esportazione HTML:', error);
     alert('Si è verificato un errore durante l\'esportazione HTML.');

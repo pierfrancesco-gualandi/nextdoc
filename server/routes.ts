@@ -10,7 +10,7 @@ import { createWordDocument } from "./word-export";
 import path from "path";
 // Importazioni dirette ESM
 import { getComponentsForSection21 } from './api/components.js';
-import { getSection21ComponentsHtml, isSection21Component } from './api/section21components.js';
+import { getSpecificComponentsForSection21 } from './api/section21components.js';
 import { applyPostProcessing, saveExportedHtml } from './export-utils.mjs';
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -58,7 +58,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/section21/components", (req: Request, res: Response) => {
     try {
       console.log("API section21/components chiamata");
-      const htmlContent = getSection21ComponentsHtml();
+      const components = getSpecificComponentsForSection21();
+      
+      // Genera l'HTML per la tabella dei componenti
+      const htmlContent = `
+        <div class="bom-container">
+          <h4 class="bom-title">Elenco Componenti Disegno 3D</h4>
+          <div class="bom-content">
+            <table class="bom-table">
+              <thead>
+                <tr>
+                  <th>N°</th>
+                  <th>Codice</th>
+                  <th>Descrizione</th>
+                  <th>Quantità</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${components.map((item, index) => `
+                  <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.code || '-'}</td>
+                    <td>${item.description || '-'}</td>
+                    <td>${item.quantity || 1}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+      
       console.log("HTML generato:", htmlContent.substring(0, 100) + "...");
       res.send(htmlContent);
     } catch (error) {
@@ -75,16 +105,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Verifica sezione 2.1: ID=${sectionId}, Titolo=${sectionTitle}`);
       
-      // Usa la funzione in section21components.js per verificare
-      const result = isSection21Component(sectionId, sectionTitle);
+      // Determina se è la sezione 2.1 (DISEGNO 3D)
+      const isSection21 = (
+        sectionId === 16 || 
+        sectionId === 21 ||
+        (sectionTitle && sectionTitle.includes('DISEGNO 3D')) ||
+        sectionTitle.includes('2.1')
+      );
       
-      // Usiamo la variabile result che contiene il risultato della verifica
-      const isSection21 = !!result;
       res.json({
         sectionId,
         sectionTitle,
         isSection21: isSection21,
-        components: isSection21 ? getComponentsForSection21() : []
+        components: isSection21 ? getSpecificComponentsForSection21() : []
       });
     } catch (error) {
       console.error("Errore nella verifica della sezione 2.1:", error);
