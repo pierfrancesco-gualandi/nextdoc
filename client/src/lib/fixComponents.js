@@ -39,8 +39,13 @@ export function getSpecificComponentsForSection(sectionId, sectionTitle) {
   }
   // SEZIONE 2.1 - DISEGNO 3D - Componenti ESATTI (9)
   else if (
-    sectionId === 16 || sectionId === 21 || 
-    (sectionTitle && (sectionTitle.toLowerCase().includes("2.1") || sectionTitle.toLowerCase().includes("disegno 3d")))
+    sectionId === 16 || sectionId === 21 || sectionId === 10 || sectionId === 11 || 
+    (sectionTitle && (
+      sectionTitle.toLowerCase().includes("2.1") || 
+      sectionTitle.toLowerCase().includes("disegno 3d") ||
+      sectionTitle.toLowerCase().includes("gruppo principale") ||
+      sectionTitle.toLowerCase().includes("riduttore")
+    ))
   ) {
     console.log("Sezione 2.1 (DISEGNO 3D) identificata! Generando i 9 componenti specifici");
     return [
@@ -109,10 +114,12 @@ export function getSpecificComponentsForSection(sectionId, sectionTitle) {
  * Verifica se una sezione è la sezione del disegno 3D (2.1)
  */
 export function isDisegno3DSection(sectionId, sectionTitle) {
-  return sectionId === 16 || sectionId === 21 || 
+  return sectionId === 16 || sectionId === 21 || sectionId === 10 || sectionId === 11 || 
     (sectionTitle && (
       sectionTitle.toLowerCase().includes("2.1") || 
-      sectionTitle.toLowerCase().includes("disegno 3d")
+      sectionTitle.toLowerCase().includes("disegno 3d") ||
+      sectionTitle.toLowerCase().includes("gruppo principale") ||
+      sectionTitle.toLowerCase().includes("riduttore")
     ));
 }
 
