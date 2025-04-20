@@ -39,7 +39,7 @@ export function getSpecificComponentsForSection(sectionId, sectionTitle) {
   }
   // SEZIONE 2.1 - DISEGNO 3D - Componenti ESATTI (9)
   else if (
-    sectionId === 16 || 
+    sectionId === 16 || sectionId === 21 || 
     (sectionTitle && (sectionTitle.toLowerCase().includes("2.1") || sectionTitle.toLowerCase().includes("disegno 3d")))
   ) {
     console.log("Sezione 2.1 (DISEGNO 3D) identificata! Generando i 9 componenti specifici");
@@ -109,7 +109,7 @@ export function getSpecificComponentsForSection(sectionId, sectionTitle) {
  * Verifica se una sezione è la sezione del disegno 3D (2.1)
  */
 export function isDisegno3DSection(sectionId, sectionTitle) {
-  return sectionId === 16 || 
+  return sectionId === 16 || sectionId === 21 || 
     (sectionTitle && (
       sectionTitle.toLowerCase().includes("2.1") || 
       sectionTitle.toLowerCase().includes("disegno 3d")
@@ -168,7 +168,7 @@ if (isCommonJS) {
       return isDisegno3DSection(sectionId, sectionTitle);
     },
     getSection21ComponentsHtml: function() {
-      const items = getSpecificComponentsForSection(16, "2.1 DISEGNO 3D");
+      const items = getSpecificComponentsForSection(21, "2.1 DISEGNO 3D");
       console.log("getSection21ComponentsHtml - Generando i 9 componenti specifici");
       
       if (!items || items.length === 0) {
