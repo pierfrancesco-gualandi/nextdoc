@@ -11,6 +11,7 @@ import path from "path";
 // Importazioni dirette ESM
 import { getComponentsForSection21 } from './api/components.js';
 import { getSection21ComponentsHtml, isSection21Component } from './api/section21components.js';
+import { applyPostProcessing, saveExportedHtml } from './export-utils.mjs';
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
@@ -2243,6 +2244,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Invia il file
     res.sendFile(filePath);
+  });
+  
+  // Endpoint specifico per l'esportazione HTML con post-processing
+  app.post("/api/documents/:id/export/html", async (req: Request, res: Response) => {
+    try {
+      const documentId = Number(req.params.id);
+      const document = await storage.getDocument(documentId);
+      
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      // Recupera tutte le sezioni del documento
+      const sections = await storage.getSectionsByDocumentId(documentId);
+      
+      // Recupera i moduli di contenuto delle sezioni
+      const allModules: any[] = [];
+      for (const section of sections) {
+        const modules = await storage.getContentModulesBySectionId(section.id);
+        allModules.push(...modules);
+      }
+      
+      // Ottiene l'HTML fornito dal client (generato nel frontend)
+      const { html } = req.body;
+      
+      if (!html) {
+        return res.status(400).json({ message: "HTML content is missing" });
+      }
+      
+      // Applica il post-processing all'HTML
+      const processedHtml = applyPostProcessing(document, sections, html);
+      
+      // Salva l'HTML processato (per riferimento)
+      const timestamp = new Date().getTime();
+      const filename = `document_${documentId}_${timestamp}.html`;
+      saveExportedHtml(processedHtml, filename);
+      
+      // Restituisci l'HTML processato
+      res.status(200).json({ 
+        html: processedHtml,
+        filename,
+        exportUrl: `/api/exports/${filename}`
+      });
+    } catch (error) {
+      console.error("Error exporting document to HTML:", error);
+      res.status(500).json({ message: "Failed to export document to HTML" });
+    }
   });
 
   app.use("/uploads", (req: Request, res: Response, next: NextFunction) => {
