@@ -67,50 +67,29 @@ export function applyPostProcessing(document, sections, html) {
         // Genera la tabella HTML per i 9 componenti specifici
         const componentsTableHtml = generateComponentsTable(section21Components);
         
-        // Cerca il punto nell'HTML dove inserire questa tabella
-        const section21ContentRegex = new RegExp(`<section id="section-${section21.id}"[^>]*>([\\s\\S]*?)(?:<section id="section-|<\\/body>)`, 'i');
-        const match = html.match(section21ContentRegex);
+        // Invece di cercare la sezione, iniettiamo direttamente la tabella prima di </body>
+        console.log("Inserisco la tabella dei componenti sezione 2.1 direttamente nel documento");
         
-        if (match) {
-          console.log("Sezione 2.1 trovata nell'HTML");
+        // Mettiamo il contenuto prima di </body>
+        const bodyCloseIndex = html.lastIndexOf('</body>');
+        
+        if (bodyCloseIndex !== -1) {
+          // Creiamo una sezione dedicata per i componenti
+          const componentSection = `
+            <div class="disegno3d-components-section">
+              <h3>Componenti Disegno 3D (Sezione 2.1)</h3>
+              ${componentsTableHtml}
+            </div>
+          `;
           
-          // Verifica se esiste una tabella BOM nella sezione
-          const bomTableRegex = /<div class="bom-container">([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/i;
-          const sectionContent = match[1];
-          const bomTableMatch = sectionContent.match(bomTableRegex);
+          // Iniettiamo la sezione
+          html = html.substring(0, bodyCloseIndex) + componentSection + html.substring(bodyCloseIndex);
+          console.log("Tabella componenti iniettata con successo");
           
-          if (bomTableMatch) {
-            console.log("Tabella BOM esistente trovata, procedo con la sostituzione");
-            
-            // Sostituisci la tabella BOM con quella specifica per la sezione 2.1
-            const originalBomTable = bomTableMatch[0];
-            const newContent = sectionContent.replace(originalBomTable, componentsTableHtml);
-            
-            // Sostituisci nella sezione
-            const newSectionContent = `<section id="section-${section21.id}"${match[0].substring(
-              match[0].indexOf('>'), 
-              match[0].length - match[1].length
-            )}${newContent}`;
-            
-            // Sostituisci nell'HTML
-            html = html.replace(match[0], newSectionContent);
-            console.log("Sostituzione completata con successo");
-          } else {
-            console.log("Nessuna tabella BOM trovata, aggiungo in fondo alla sezione");
-            
-            // Punto di inserimento: prima della chiusura della sezione
-            const insertionPoint = match[0].length - match[1].length;
-            const newSectionContent = match[0].substring(0, insertionPoint) + 
-                                      componentsTableHtml + 
-                                      match[0].substring(insertionPoint);
-            
-            // Sostituisci nell'HTML
-            html = html.replace(match[0], newSectionContent);
-            console.log("Aggiunta tabella completata con successo");
-          }
-        } else {
-          console.warn("Sezione 2.1 non trovata nell'HTML, tabella non inserita");
+          return html;
         }
+        
+
       } else {
         console.warn("Nessun componente specifico trovato per la sezione 2.1");
       }
