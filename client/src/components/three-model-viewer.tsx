@@ -357,35 +357,11 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
           </div>
           <div style={{ fontSize: '14px', color: '#666', maxWidth: '80%', margin: '0 auto' }}>
             Questo modello 3D richiede file esterni specifici per funzionare correttamente.
-            Utilizza i pulsanti qui sotto per visualizzare o scaricare il modello completo.
+            Utilizza il pulsante qui sotto per visualizzare il modello con tutti i componenti.
           </div>
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-          <a
-            href={directUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              backgroundColor: '#2171b5',
-              color: 'white',
-              padding: '12px 24px',
-              borderRadius: '4px',
-              fontWeight: 'bold',
-              textDecoration: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-              transition: 'all 0.2s ease',
-              fontSize: '15px',
-              textAlign: 'center',
-              width: '100%',
-              justifyContent: 'center'
-            }}
-          >
-            Visualizza modello 3D selezionato
-          </a>
-          
           <a
             href={a4b09778Url}
             target="_blank"
