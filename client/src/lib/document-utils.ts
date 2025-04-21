@@ -226,32 +226,14 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 <p class="model-title"><strong>${modelTitle}</strong></p>
                 ${module.content.description ? `<p class="model-description">${module.content.description}</p>` : ''}
                 
-                <!-- Visualizzazione alternativa per documenti esportati -->
+                <!-- Visualizzazione alternativa per documenti esportati con anteprima -->
                 <div class="model-placeholder">
                   <div class="model-preview">
-                    <div class="model-icon">📐</div>
-                    <h3>Visualizzazione 3D</h3>
-                    <p>Per visualizzare il modello 3D interattivo, aprire questo documento nell'applicazione originale o scaricare il modello separatamente.</p>
+                    <div style="max-width: 300px; margin: 0 auto;">
+                      <img src="/uploads/A4B09778/preview.jpg" alt="Anteprima modello 3D" style="width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 viewBox=%220 0 100 100%22><rect fill=%22%23f0f0f0%22 width=%22100%22 height=%22100%22/><path d=%22M30,20 L70,20 L70,80 L30,80 Z%22 stroke=%22%23aaa%22 fill=%22none%22 stroke-width=%222%22/><path d=%22M30,20 L50,10 L70,20%22 stroke=%22%23aaa%22 fill=%22none%22 stroke-width=%222%22/></svg>'; this.style.padding='20px';">
+                    </div>
+                    <h3>Modello 3D</h3>
                   </div>
-                </div>
-                
-                <!-- Controlli presenti ma disabilitati nell'HTML esportato -->
-                <div class="model-controls">
-                  <button class="control-button rotate-left" disabled="disabled">
-                    <span>⟲</span> Ruota Sx
-                  </button>
-                  <button class="control-button rotate-right" disabled="disabled">
-                    <span>⟳</span> Ruota Dx
-                  </button>
-                  <button class="control-button zoom-in" disabled="disabled">
-                    <span>+</span> Zoom
-                  </button>
-                  <button class="control-button zoom-out" disabled="disabled">
-                    <span>−</span> Zoom
-                  </button>
-                  <button class="control-button reset" disabled="disabled">
-                    <span>↺</span> Reset
-                  </button>
                 </div>
                 
                 <!-- Link diretto al modello 3D -->
