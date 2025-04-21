@@ -231,24 +231,36 @@ export async function exportToHtml(documentId: string): Promise<void> {
                   <div class="model-preview">
                     <div class="model-icon">📐</div>
                     <h3>Visualizzazione 3D</h3>
-                    <p>Il modello 3D è disponibile come file separato. Seguire le istruzioni qui sotto.</p>
+                    <p>Per visualizzare il modello 3D interattivo, aprire questo documento nell'applicazione originale o scaricare il modello separatamente.</p>
                   </div>
                 </div>
                 
-                <!-- Link ai file scaricabili del modello 3D -->
+                <!-- Controlli presenti ma disabilitati nell'HTML esportato -->
+                <div class="model-controls">
+                  <button class="control-button rotate-left" disabled="disabled">
+                    <span>⟲</span> Ruota Sx
+                  </button>
+                  <button class="control-button rotate-right" disabled="disabled">
+                    <span>⟳</span> Ruota Dx
+                  </button>
+                  <button class="control-button zoom-in" disabled="disabled">
+                    <span>+</span> Zoom
+                  </button>
+                  <button class="control-button zoom-out" disabled="disabled">
+                    <span>−</span> Zoom
+                  </button>
+                  <button class="control-button reset" disabled="disabled">
+                    <span>↺</span> Reset
+                  </button>
+                </div>
+                
+                <!-- Link diretto al modello 3D -->
                 <div class="model-download">
-                  <!-- Il pulsante di download verrà gestito dal middleware di esportazione -->
-                  <a href="A4B09778.zip" class="download-button" target="_blank" style="background-color: #0d7855;">
-                    <span class="download-icon">⬇</span> Scarica il modello 3D completo
+                  <a href="/uploads/A4B09778/A4B09778.htm" class="download-button" target="_blank" style="background-color: #0d7855;">
+                    <span class="download-icon">⬇</span> Visualizza modello 3D con tutti i componenti
                   </a>
                   <div class="model-instruction">
-                    <p><strong>Istruzioni per visualizzare il modello 3D:</strong></p>
-                    <ol style="text-align: left; margin-left: 20px;">
-                      <li>Scaricare il file ZIP cliccando sul pulsante verde sopra</li>
-                      <li>Estrarre tutti i file in una cartella sul proprio computer</li>
-                      <li>Aprire il file "index.html" nel browser per visualizzare il modello 3D interattivo</li>
-                    </ol>
-                    <p style="margin-top: 10px; color: #666; font-style: italic;">Nota: Il file ZIP contiene tutti i componenti necessari per la visualizzazione 3D interattiva.</p>
+                    <p><strong>Nota:</strong> Fare clic sul pulsante verde sopra per visualizzare il modello 3D interattivo completo.</p>
                   </div>
                 </div>
               </div>

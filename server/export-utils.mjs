@@ -39,56 +39,9 @@ export function saveExportedHtml(html, filename) {
  * @param {string} html HTML originale
  * @returns {string} HTML processato
  */
-/**
- * Modifica i link ai modelli 3D nell'HTML esportato
- * @param {string} html Contenuto HTML
- * @returns {string} HTML con i link corretti
- */
-export function fixThreeDModels(html) {
-  try {
-    console.log("Correzione link modelli 3D nell'HTML esportato...");
-    
-    // Copia il file ZIP modificato nella cartella exports quando viene generato l'HTML
-    // Utilizziamo il file modificato che include index.html
-    const modelZipPath = path.join(process.cwd(), 'uploads', 'A4B09778_mod.zip');
-    const destinationZipPath = path.join(process.cwd(), 'exports', 'A4B09778.zip');
-    
-    if (fs.existsSync(modelZipPath)) {
-      // Copia il file zip nella cartella exports con il nome A4B09778.zip (lo stesso usato nel link)
-      try {
-        fs.copyFileSync(modelZipPath, destinationZipPath);
-        console.log(`File ZIP del modello 3D copiato in: ${destinationZipPath}`);
-      } catch (err) {
-        console.error("Errore durante la copia del file ZIP del modello 3D:", err);
-      }
-    } else {
-      console.warn(`File ZIP del modello 3D non trovato in: ${modelZipPath}`);
-      
-      // Piano B: usa il file ZIP originale se disponibile
-      const originalZipPath = path.join(process.cwd(), 'uploads', 'A4B09778.zip');
-      if (fs.existsSync(originalZipPath)) {
-        try {
-          fs.copyFileSync(originalZipPath, destinationZipPath);
-          console.log(`File ZIP originale del modello 3D copiato in: ${destinationZipPath}`);
-        } catch (err) {
-          console.error("Errore durante la copia del file ZIP originale del modello 3D:", err);
-        }
-      }
-    }
-    
-    return html;
-  } catch (error) {
-    console.error("Errore durante la correzione dei link ai modelli 3D:", error);
-    return html;  // Ritorna l'HTML originale in caso di errore
-  }
-}
-
 export function applyPostProcessing(document, sections, html) {
   try {
     console.log("Applico post-processing all'HTML...");
-    
-    // Applica la correzione per i link ai modelli 3D
-    html = fixThreeDModels(html);
     
     // Trova la sezione 2.1 Disegno 3D
     const section21 = sections.find(section => {
