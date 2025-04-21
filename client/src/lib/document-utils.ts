@@ -256,11 +256,11 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 
                 <!-- Link diretto al modello 3D -->
                 <div class="model-download">
-                  <a href="${modelDownloadPath}" class="download-button" target="_blank">
-                    <span class="download-icon">⬇</span> Visualizza modello 3D
+                  <a href="/uploads/A4B09778/A4B09778.htm" class="download-button" target="_blank" style="background-color: #0d7855;">
+                    <span class="download-icon">⬇</span> Visualizza modello 3D con tutti i componenti
                   </a>
                   <div class="model-instruction">
-                    <p><strong>Nota:</strong> Fare clic sul pulsante sopra per visualizzare il modello 3D interattivo in una nuova scheda.</p>
+                    <p><strong>Nota:</strong> Fare clic sul pulsante verde sopra per visualizzare il modello 3D interattivo completo.</p>
                   </div>
                 </div>
               </div>
