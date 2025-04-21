@@ -14,6 +14,36 @@ export const exportMiddleware = (req, res, next) => {
 };
 
 /**
+ * Adatta i link ai modelli 3D per funzionare anche in formato HTML esportato
+ * @param {string} html - HTML completo
+ * @returns {string} - HTML con link corretti
+ */
+export const fixThreeDModels = (html) => {
+  if (!html) return html;
+  
+  // Pattern per trovare i link al modello 3D
+  const modelLinkPattern = /<a\s+href="[^"]*\/uploads\/A4B09778\/[^"]*"\s+class="download-button"[^>]*>[\s\S]*?Visualizza modello 3D[^<]*<\/a>/g;
+  
+  // Sostituisci con link al file ZIP e istruzioni
+  const replacement = `
+    <a href="A4B09778.zip" class="download-button" target="_blank" style="background-color: #0d7855;">
+      <span class="download-icon">⬇</span> Scarica il modello 3D completo
+    </a>
+    <div class="model-instruction" style="margin-top: 10px;">
+      <p><strong>Istruzioni:</strong></p>
+      <ol style="text-align: left; margin-left: 20px;">
+        <li>Scarica il file ZIP</li>
+        <li>Estrai tutti i file in una cartella</li>
+        <li>Apri il file "index.html" per visualizzare il modello</li>
+      </ol>
+    </div>
+  `;
+  
+  // Sostituisci tutti i link
+  return html.replace(modelLinkPattern, replacement);
+};
+
+/**
  * Processa l'HTML di una sezione specifica durante l'esportazione
  * @param {Object} sectionData - Dati della sezione
  * @param {string} html - HTML generato per la sezione 

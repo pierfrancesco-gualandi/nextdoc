@@ -254,13 +254,17 @@ export async function exportToHtml(documentId: string): Promise<void> {
                   </button>
                 </div>
                 
-                <!-- Link diretto al modello 3D -->
+                <!-- Link ai file scaricabili del modello 3D -->
                 <div class="model-download">
-                  <a href="/uploads/A4B09778/A4B09778.htm" class="download-button" target="_blank" style="background-color: #0d7855;">
-                    <span class="download-icon">⬇</span> Visualizza modello 3D con tutti i componenti
+                  <a href="${window.location.protocol}//${window.location.host}/uploads/A4B09778.zip" class="download-button" target="_blank" style="background-color: #0d7855;">
+                    <span class="download-icon">⬇</span> Scarica il modello 3D completo
                   </a>
                   <div class="model-instruction">
-                    <p><strong>Nota:</strong> Fare clic sul pulsante verde sopra per visualizzare il modello 3D interattivo completo.</p>
+                    <p><strong>Istruzioni:</strong> 
+                      1. Scarica il file ZIP.
+                      2. Estrai tutti i file in una cartella.
+                      3. Apri il file "index.html" per visualizzare il modello 3D interattivo.
+                    </p>
                   </div>
                 </div>
               </div>
