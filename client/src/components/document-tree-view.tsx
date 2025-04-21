@@ -432,6 +432,7 @@ function SectionTree({
           onMove={onMoveSection}
           parentId={parentId}
           componentsLabel={getSectionComponentsLabel(section.id)}
+          sections={sections}
         >
           {(expandedSections[section.id] || level < 1) && hasSectionChildren(section.id) && (
             <SectionTree
@@ -487,6 +488,7 @@ interface SectionItemProps {
   parentId: number | null;
   children?: React.ReactNode;
   componentsLabel: React.ReactNode;
+  sections: Section[]; // Aggiunta dell'array delle sezioni per l'analisi gerarchica
 }
 
 function SectionItem({
@@ -502,7 +504,8 @@ function SectionItem({
   onMove,
   parentId,
   children,
-  componentsLabel
+  componentsLabel,
+  sections
 }: SectionItemProps) {
   const ref = useRef<HTMLDivElement>(null);
   
@@ -599,9 +602,11 @@ function SectionItem({
     drop(item: DragItem) {
       if (item.id === section.id) return;
       
-      // When dropping on the child area, make it a child of this section
-      // Calcoliamo l'ordine corretto usando una callback
-      onMove(item.id, section.id, 999); // Usiamo un numero alto per inserire alla fine
+      // When dropping ON a section, make the dragged section a CHILD of this section
+      // Find how many children this section already has to calculate the order
+      const childrenCount = sections.filter(s => s.parentId === section.id).length;
+      console.log(`Sezione ${item.id} trascinata su sezione ${section.id}: diventa un figlio con ordine ${childrenCount}`);
+      onMove(item.id, section.id, childrenCount); // Set as last child
     },
     collect: (monitor) => ({
       isOverChild: monitor.isOver(),
