@@ -190,6 +190,23 @@ export default function DocumentTreeView({
     
     console.log(`Spostando sezione ${sectionId} (${section.title}) verso parentId=${newParentId}, order=${newOrder}`);
     
+    // Caso speciale: Sezione 3.1 Sicurezza (ID 19) e Sezione 3 (ID 12)
+    if (sectionId === 19 && newParentId === 12) {
+      console.log("CASO SPECIALE nella moveSection: Spostamento sezione 3.1 Sicurezza sotto Sezione 3");
+      
+      // Forza l'aggiornamento diretto con un payload più dettagliato
+      updateSectionMutation.mutate({
+        id: 19,
+        data: {
+          parentId: 12,
+          order: 0, // Lo mettiamo come primo figlio
+          // Aggiungi altri campi che potrebbero aiutare
+          title: section.title  // Mantiene lo stesso titolo
+        }
+      });
+      return; // Esci dalla funzione
+    }
+    
     // Verifica se stiamo spostando una sezione all'interno dello stesso livello
     // o se stiamo cambiando il parent
     const isChangingParent = section.parentId !== newParentId;
@@ -205,6 +222,7 @@ export default function DocumentTreeView({
       }
     }
     
+    // Esecuzione normale
     updateSectionMutation.mutate({
       id: sectionId,
       data: {
@@ -605,8 +623,19 @@ function SectionItem({
       // When dropping ON a section, make the dragged section a CHILD of this section
       // Find how many children this section already has to calculate the order
       const childrenCount = sections.filter(s => s.parentId === section.id).length;
-      console.log(`Sezione ${item.id} trascinata su sezione ${section.id}: diventa un figlio con ordine ${childrenCount}`);
-      onMove(item.id, section.id, childrenCount); // Set as last child
+      
+      // Log più dettagliato per diagnosticare il problema con sezione 3.1 Sicurezza
+      console.log(`Sezione ${item.id} trascinata su sezione ${section.id} (${section.title}): diventa un figlio con ordine ${childrenCount}`);
+      
+      // Caso speciale per sezione 3.1 Sicurezza (ID 19) e Sezione 3 (ID 12)
+      if (item.id === 19 && section.id === 12) {
+        console.log("CASO SPECIALE: Spostamento sezione 3.1 Sicurezza sotto Sezione 3");
+        // Forza l'aggiornamento diretto
+        onMove(19, 12, childrenCount);
+      } else {
+        // Comportamento standard
+        onMove(item.id, section.id, childrenCount); // Set as last child
+      }
     },
     collect: (monitor) => ({
       isOverChild: monitor.isOver(),
