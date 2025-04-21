@@ -190,23 +190,6 @@ export default function DocumentTreeView({
     
     console.log(`Spostando sezione ${sectionId} (${section.title}) verso parentId=${newParentId}, order=${newOrder}`);
     
-    // Caso speciale: Sezione 3.1 Sicurezza (ID 19) e Sezione 3 (ID 12)
-    if (sectionId === 19 && newParentId === 12) {
-      console.log("CASO SPECIALE nella moveSection: Spostamento sezione 3.1 Sicurezza sotto Sezione 3");
-      
-      // Forza l'aggiornamento diretto con un payload più dettagliato
-      updateSectionMutation.mutate({
-        id: 19,
-        data: {
-          parentId: 12,
-          order: 0, // Lo mettiamo come primo figlio
-          // Aggiungi altri campi che potrebbero aiutare
-          title: section.title  // Mantiene lo stesso titolo
-        }
-      });
-      return; // Esci dalla funzione
-    }
-    
     // Verifica se stiamo spostando una sezione all'interno dello stesso livello
     // o se stiamo cambiando il parent
     const isChangingParent = section.parentId !== newParentId;
@@ -216,10 +199,47 @@ export default function DocumentTreeView({
       // Troviamo tutte le sezioni che sono allo stesso livello della destinazione
       const destinationSiblings = sections.filter(s => s.parentId === newParentId);
       
+      // Verifica se c'è già una sezione con lo stesso order a quel livello
+      const hasSameOrder = destinationSiblings.some(s => s.order === newOrder && s.id !== sectionId);
+      
+      if (hasSameOrder) {
+        // Se c'è un conflitto di ordine, imposta l'ordine alla fine
+        newOrder = destinationSiblings.length;
+        console.log(`Rilevato conflitto di ordine, nuovo ordine: ${newOrder}`);
+      }
+      
       // Aggiorniamo gli ordini di tutte le sezioni che verranno dopo la sezione spostata
       if (destinationSiblings.length > 0) {
         console.log(`Destinazione ha ${destinationSiblings.length} fratelli. Ricalcolo ordini.`);
       }
+    }
+    
+    // Verifica se stiamo tentando di rendere una sezione figlio di se stessa (ciclo)
+    if (sectionId === newParentId) {
+      console.error("Non è possibile rendere una sezione figlio di se stessa");
+      toast({
+        title: "Operazione non consentita",
+        description: "Non è possibile rendere una sezione figlio di se stessa",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Caso speciale: qualsiasi sezione che diventa figlio di una sezione con lo stesso order
+    const targetSection = sections.find(s => s.id === newParentId);
+    if (targetSection && section.order === targetSection.order) {
+      console.log(`Caso speciale: spostamento tra sezioni con stesso ordine (${section.order})`);
+      
+      // In questo caso forziamo un ordine più specifico
+      updateSectionMutation.mutate({
+        id: sectionId,
+        data: {
+          parentId: newParentId,
+          order: 0, // Diventa il primo figlio
+          title: section.title // Mantiene lo stesso titolo
+        }
+      });
+      return;
     }
     
     // Esecuzione normale
