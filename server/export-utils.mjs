@@ -48,12 +48,13 @@ export function fixThreeDModels(html) {
   try {
     console.log("Correzione link modelli 3D nell'HTML esportato...");
     
-    // Copia il file ZIP nella cartella exports quando viene generato l'HTML
-    const modelZipPath = path.join(process.cwd(), 'uploads', 'A4B09778.zip');
+    // Copia il file ZIP modificato nella cartella exports quando viene generato l'HTML
+    // Utilizziamo il file modificato che include index.html
+    const modelZipPath = path.join(process.cwd(), 'uploads', 'A4B09778_mod.zip');
     const destinationZipPath = path.join(process.cwd(), 'exports', 'A4B09778.zip');
     
     if (fs.existsSync(modelZipPath)) {
-      // Copia il file zip nella cartella exports
+      // Copia il file zip nella cartella exports con il nome A4B09778.zip (lo stesso usato nel link)
       try {
         fs.copyFileSync(modelZipPath, destinationZipPath);
         console.log(`File ZIP del modello 3D copiato in: ${destinationZipPath}`);
@@ -62,6 +63,17 @@ export function fixThreeDModels(html) {
       }
     } else {
       console.warn(`File ZIP del modello 3D non trovato in: ${modelZipPath}`);
+      
+      // Piano B: usa il file ZIP originale se disponibile
+      const originalZipPath = path.join(process.cwd(), 'uploads', 'A4B09778.zip');
+      if (fs.existsSync(originalZipPath)) {
+        try {
+          fs.copyFileSync(originalZipPath, destinationZipPath);
+          console.log(`File ZIP originale del modello 3D copiato in: ${destinationZipPath}`);
+        } catch (err) {
+          console.error("Errore durante la copia del file ZIP originale del modello 3D:", err);
+        }
+      }
     }
     
     return html;
