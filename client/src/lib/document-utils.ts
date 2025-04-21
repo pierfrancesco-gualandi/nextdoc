@@ -256,7 +256,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 
                 <!-- Link diretto al modello 3D -->
                 <div class="model-download">
-                  <a href="/uploads/A4B09778/A4B09778.htm" class="download-button" target="_blank" style="background-color: #0d7855;">
+                  <a href="https://6e1740a1-e98f-4c3d-a38b-847a758a93ad-00-2i3y4aa7x13k5.janeway.replit.dev/uploads/A4B09778/A4B09778.htm" class="download-button" target="_blank" style="background-color: #0d7855;">
                     <span class="download-icon">⬇</span> Visualizza modello 3D con tutti i componenti
                   </a>
                   <div class="model-instruction">
