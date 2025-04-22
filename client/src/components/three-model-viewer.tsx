@@ -328,33 +328,9 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
     // URL diretto al modello HTML/WebGL
     const directUrl = modelData.src;
     
-    // Ottieni il percorso diretto al file caricato
-    const directSrc = modelData.src; // Esempio: /uploads/1745334834336-0ecec331a834cfa1e74e1f63d2751776.htm
-
-    // Estrai il nome del file dal percorso di origine o dal titolo
-    let fileName = '';
-    if (modelData.title && modelData.title.endsWith('.htm')) {
-      // Se il titolo termina con .htm, è probabilmente il nome del file originale
-      fileName = modelData.title;
-    } else {
-      // Altrimenti estrai dal src URL
-      fileName = directSrc.split('/').pop() || '';
-      fileName = fileName.replace(/^\d+-[a-f0-9]+\.(.+)$/, '$1');
-    }
-    
-    // Estrai la parte di base del nome file (senza estensione)
-    const baseFileName = fileName.split('.')[0];
-    
-    // Usa il nome della cartella indicato nelle proprietà o usa il nome base del file
-    const folderName = modelData.folderPath || modelData.folderName || baseFileName;
-    
-    // Costruisci l'URL finale nel formato /uploads/NOME_CARTELLA/NOME_CARTELLA.htm
-    // Ma come fallback usiamo il percorso diretto al file
-    const idealUrl = `/uploads/${folderName}/${folderName}.htm`;
-    
-    // Per ora, visto che il file nella cartella potrebbe non essere presente, 
-    // utilizziamo direttamente il file caricato originale
-    const modelUrl = directSrc;
+    // URL per il file stesso caricato nella sua cartella
+    // Usando il percorso diretto al file A4B09778.htm dalla cartella A4B09778
+    const a4b09778Url = '/uploads/A4B09778/A4B09778.htm';
     
     // Utilizziamo un pulsante per aprire il modello 3D in una nuova finestra,
     // poiché il modello richiede file esterni nella stessa cartella
@@ -387,7 +363,7 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
           <a
-            href={modelUrl}
+            href={a4b09778Url}
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -413,7 +389,7 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
         
         <div style={{ marginTop: '15px', fontSize: '13px', color: '#777', textAlign: 'center' }}>
           <a 
-            href={`/uploads/${folderName}.zip`}
+            href="/uploads/A4B09778.zip" 
             style={{
               display: 'inline-block',
               marginTop: '10px',
