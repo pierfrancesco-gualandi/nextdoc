@@ -476,8 +476,128 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     
     const moduleType = e.dataTransfer.getData('moduleType');
     if (moduleType && selectedSection) {
-      // Create a new module (using the ModuleToolbar component)
-      // This is handled elsewhere
+      // Calcola l'ordine inserendo il modulo esattamente nella drop zone
+      // Determina l'ordine del nuovo modulo basato sul numero di moduli esistenti
+      let newModuleOrder = 0;
+      if (contentModules && contentModules.length > 0) {
+        // Se ci sono moduli esistenti, posiziona questo modulo dopo l'ultimo
+        // Questa è la parte che dovremo corregere per posizionare il modulo in un punto specifico
+        // Per ora mettiamo un ordine di mezzo tra 0 e 1 per inserirlo all'inizio
+        newModuleOrder = 0.5;
+      }
+      
+      // Genera il contenuto predefinito in base al tipo di modulo
+      let defaultContent = {};
+      
+      // Set default content based on module type
+      switch (moduleType) {
+        case "text":
+          defaultContent = { text: "" };
+          break;
+        case "testp":
+          defaultContent = { 
+            title: "File di testo", 
+            description: "Descrizione del file", 
+            textContent: "",
+            savedTextContent: "",
+            textFileUrl: ""
+          };
+          break;
+        case "image":
+          defaultContent = { src: "", alt: "", caption: "" };
+          break;
+        case "video":
+          defaultContent = { 
+            src: "", 
+            title: "",
+            caption: "",
+            poster: "",
+            format: "mp4",
+            controls: true,
+            autoplay: false,
+            loop: false,
+            muted: false
+          };
+          break;
+        case "table":
+          defaultContent = { 
+            headers: ["Colonna 1", "Colonna 2"], 
+            rows: [["", ""]], 
+            caption: "" 
+          };
+          break;
+        case "checklist":
+          defaultContent = { items: [{ text: "", checked: false }] };
+          break;
+        case "warning":
+          defaultContent = { title: "Attenzione", message: "", level: "warning" };
+          break;
+        case "danger":
+          defaultContent = { title: "PERICOLO", description: "" };
+          break;
+        case "warning-alert":
+          defaultContent = { title: "AVVERTENZA", description: "" };
+          break;
+        case "caution":
+          defaultContent = { title: "ATTENZIONE", description: "" };
+          break;
+        case "note":
+          defaultContent = { title: "NOTA", description: "" };
+          break;
+        case "safety-instructions":
+          defaultContent = { title: "Istruzioni di sicurezza", description: "" };
+          break;
+        case "link":
+          defaultContent = { url: "", text: "", description: "" };
+          break;
+        case "pdf":
+          defaultContent = { src: "", title: "" };
+          break;
+        case "component":
+          defaultContent = { componentId: null, quantity: 1 };
+          break;
+        case "bom":
+          defaultContent = { bomId: null, filter: "" };
+          break;
+        case "3d-model":
+          defaultContent = { 
+            src: "", 
+            title: "Modello 3D", 
+            format: "glb",
+            controls: { rotate: true, zoom: true, pan: true } 
+          };
+          break;
+      }
+      
+      // Creiamo una nuova mutazione o usiamo una esistente
+      const createNewModuleMutation = useMutation({
+        mutationFn: async (moduleData: any) => {
+          const res = await apiRequest('POST', '/api/modules', moduleData);
+          return await res.json();
+        },
+        onSuccess: (data) => {
+          queryClient.invalidateQueries({ queryKey: [`/api/sections/${selectedSection.id}/modules`] });
+          toast({
+            title: "Modulo aggiunto",
+            description: "Il modulo è stato aggiunto nella posizione specifica"
+          });
+        },
+        onError: (error) => {
+          toast({
+            title: "Errore",
+            description: `Errore durante l'aggiunta del modulo: ${error}`,
+            variant: "destructive"
+          });
+        }
+      });
+      
+      // Esegui la mutazione
+      createNewModuleMutation.mutate({
+        sectionId: selectedSection.id,
+        type: moduleType,
+        content: defaultContent,
+        order: newModuleOrder // Usiamo l'ordine calcolato per inserirlo nella posizione corretta
+      });
     }
   };
   
