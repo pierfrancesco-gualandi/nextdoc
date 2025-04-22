@@ -71,31 +71,12 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
     }
   });
 
-  // Funzione helper per calcolare l'ordine corretto
-  const getModuleOrderAtEnd = async () => {
-    try {
-      const res = await apiRequest('GET', `/api/sections/${sectionId}/modules`);
-      const modules = await res.json();
-      
-      let newOrder = 0;
-      if (modules && modules.length > 0) {
-        // Se ci sono moduli esistenti, posiziona questo modulo dopo l'ultimo
-        const lastModule = [...modules].sort((a, b) => a.order - b.order).pop();
-        newOrder = lastModule ? lastModule.order + 1 : 0;
-      }
-      return newOrder;
-    } catch (error) {
-      console.error("Errore nel calcolo dell'ordine:", error);
-      return 999; // Fallback in caso di errore
-    }
-  };
-
   const uploadFileMutation = useMutation({
     mutationFn: async (formData: FormData) => {
       const res = await apiUploadRequest('POST', '/api/upload', formData);
       return await res.json();
     },
-    onSuccess: async (data) => {
+    onSuccess: (data) => {
       // Dopo l'upload, crea il modulo con il file caricato
       let moduleContent = {};
       
@@ -185,15 +166,11 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
           break;
       }
       
-      // Calcola l'ordine per aggiungere alla fine
-      const newOrder = await getModuleOrderAtEnd();
-      
-      // Crea il modulo con l'ordine calcolato
       createModuleMutation.mutate({
         sectionId,
         type: uploadType,
         content: moduleContent,
-        order: newOrder // Aggiungi alla fine della sezione
+        order: 999 // Will be reordered after creation
       });
       
       // Reset state
@@ -220,7 +197,7 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
       const res = await apiUploadRequest('POST', '/api/upload-folder', formData);
       return await res.json();
     },
-    onSuccess: async (data) => {
+    onSuccess: (data) => {
       // Dopo l'upload, crea il modulo con i file caricati
       // Assicuriamoci di avere sempre un folderName/folderPath valido
       let folderName = data.folderName;
@@ -254,14 +231,11 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
         structureKeys: Object.keys(data.fileStructure || {}).length
       });
       
-      // Calcola l'ordine per aggiungere alla fine
-      const newOrder = await getModuleOrderAtEnd();
-      
       createModuleMutation.mutate({
         sectionId,
         type: uploadType,
         content: moduleContent,
-        order: newOrder // Aggiungi alla fine della sezione
+        order: 999 // Will be reordered after creation
       });
       
       // Reset state
@@ -287,7 +261,7 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
     }
   });
 
-  const handleAddModule = async (type: string) => {
+  const handleAddModule = (type: string) => {
     // Se è disabilitato o l'utente non ha permesso di modifica, non fare nulla
     if (disabled || (currentUserRole !== 'admin' && currentUserRole !== 'editor')) {
       toast({
@@ -383,15 +357,41 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
         break;
     }
     
-    // Calcola l'ordine per aggiungere alla fine
-    const newOrder = await getModuleOrderAtEnd();
+    // Calcola l'ordine per aggiungere sempre alla fine
+    // Per i moduli dalla toolbar dobbiamo recuperare gli altri moduli
+    // e poi calcolare l'ordine corretto in base a quelli esistenti
+    const getExistingModules = async () => {
+      try {
+        const res = await apiRequest('GET', `/api/sections/${sectionId}/modules`);
+        const modules = await res.json();
+        
+        let newOrder = 0;
+        if (modules && modules.length > 0) {
+          // Se ci sono moduli esistenti, posiziona questo modulo dopo l'ultimo
+          const lastModule = [...modules].sort((a, b) => a.order - b.order).pop();
+          newOrder = lastModule ? lastModule.order + 1 : 0;
+        }
+        
+        // Crea il nuovo modulo con l'ordine calcolato
+        createModuleMutation.mutate({
+          sectionId,
+          type,
+          content: defaultContent,
+          order: newOrder // Aggiungi alla fine della sezione
+        });
+      } catch (error) {
+        console.error("Errore nel calcolo dell'ordine:", error);
+        // Fallback con ordine 999 in caso di errore
+        createModuleMutation.mutate({
+          sectionId,
+          type,
+          content: defaultContent,
+          order: 999 // Fallback in caso di errore
+        });
+      }
+    };
     
-    createModuleMutation.mutate({
-      sectionId,
-      type,
-      content: defaultContent,
-      order: newOrder // Aggiungi alla fine della sezione
-    });
+    getExistingModules();
   };
   
   const handleDragStart = (e: React.DragEvent, type: string) => {
@@ -678,99 +678,155 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
         </div>
       </div>
       
-      {/* Dialog per upload file */}
+      {/* File Upload Dialog */}
       <Dialog open={showFileUpload} onOpenChange={setShowFileUpload}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {uploadType === "image" ? "Carica immagine" :
-               uploadType === "video" ? "Carica video" :
-               uploadType === "pdf" ? "Carica PDF" :
-               "Carica modello 3D"}
+              Carica {uploadType === "image" ? "immagine" : 
+                       uploadType === "video" ? "video" : 
+                       uploadType === "3d-model" ? "modello 3D" : 
+                       "PDF"}
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="space-y-4 py-2">
+            {/* File uploader */}
             <div 
-              className="border-2 border-dashed rounded-lg p-6 cursor-pointer hover:border-primary/50 transition-colors"
+              className={`border-2 border-dashed rounded-md p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors ${selectedFile ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}
               onClick={triggerFileInput}
             >
-              {renderFilePreview()}
               <input
-                ref={fileInputRef}
                 type="file"
+                id="file-upload"
+                ref={fileInputRef}
                 className="hidden"
                 accept={getAcceptedFileTypes()}
                 onChange={handleFileChange}
               />
+              {renderFilePreview()}
             </div>
             
-            {uploadType === "3d-model" && selectedFile && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="folder-files">File aggiuntivi (cartella)</Label>
-                  <button
-                    type="button"
-                    className="text-xs text-primary"
-                    onClick={() => setShowFolderUpload(!showFolderUpload)}
-                  >
-                    {showFolderUpload ? "Nascondi" : "Mostra"} opzioni avanzate
-                  </button>
-                </div>
-                
-                {showFolderUpload && (
-                  <div className="space-y-2">
-                    <div className="text-xs text-neutral-medium mb-1">
-                      Per modelli 3D HTML che richiedono file aggiuntivi, seleziona anche i file della cartella.
-                    </div>
-                    <input
-                      ref={folderFilesInputRef}
-                      type="file"
-                      className="w-full text-xs"
-                      multiple
-                      // @ts-ignore - webkitdirectory è una proprietà non standard
-                      webkitdirectory=""
-                      directory=""
-                      onChange={handleFolderFilesChange}
-                    />
-                    <div className="text-xs text-neutral-medium">
-                      {selectedFolderFiles ? `${selectedFolderFiles.length} file selezionati` : 'Seleziona una cartella'}
-                    </div>
-                    <Button 
-                      type="button" 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={uploadFolder}
-                      disabled={uploadingFile || !selectedFolderFiles}
-                    >
-                      {uploadingFile ? "Caricamento in corso..." : "Carica cartella"}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            <div className="space-y-2">
-              <Label htmlFor="description">Descrizione (opzionale)</Label>
+            {/* Descrizione/caption */}
+            <div className="grid gap-2">
+              <Label htmlFor="description">
+                {uploadType === "image" ? "Didascalia immagine" : 
+                 uploadType === "video" ? "Descrizione video" : 
+                 uploadType === "3d-model" ? "Titolo modello 3D" :
+                 "Titolo documento"}
+              </Label>
               <Input
                 id="description"
-                placeholder="Descrizione del file..."
+                placeholder={uploadType === "image" ? "Inserisci una didascalia per l'immagine" : 
+                             uploadType === "video" ? "Inserisci una descrizione per il video" : 
+                             uploadType === "3d-model" ? "Inserisci un titolo per il modello 3D" :
+                             "Inserisci un titolo per il documento"}
                 value={fileDescription}
                 onChange={(e) => setFileDescription(e.target.value)}
               />
             </div>
+            
+            {/* Sezione speciale per i file HTML WebGL o ZIP - consente di caricare file aggiuntivi */}
+            {uploadType === "3d-model" && selectedFile && (
+              selectedFile.name.toLowerCase().endsWith('.html') || 
+              selectedFile.name.toLowerCase().endsWith('.htm') || 
+              selectedFile.name.toLowerCase().endsWith('.zip')
+            ) && (
+              <div className="mt-4 space-y-4 border border-blue-200 bg-blue-50 p-4 rounded-md">
+                <div className="font-medium text-blue-600 flex items-center">
+                  <span className="material-icons text-sm mr-1">info</span>
+                  {selectedFile?.name.toLowerCase().endsWith('.zip') ? 
+                    'File ZIP (WebGL) rilevato' : 
+                    'File HTML WebGL rilevato'}
+                </div>
+                
+                <div className="text-sm text-gray-700">
+                  {selectedFile?.name.toLowerCase().endsWith('.zip') ? 
+                    'I file ZIP contengono già tutti i file necessari e verranno estratti automaticamente sul server.' :
+                    'Questo modello WebGL potrebbe richiedere file aggiuntivi. È possibile caricare tutti i file necessari insieme.'}
+                </div>
+                
+                {selectedFile?.name.toLowerCase().endsWith('.zip') && (
+                  <div className="mt-2 p-2 bg-green-100 border border-green-200 rounded-md text-sm text-green-700">
+                    <strong>Consiglio:</strong> Il file ZIP verrà estratto automaticamente e tutti i file al suo interno saranno disponibili per il modello WebGL.
+                  </div>
+                )}
+                
+                {!selectedFile?.name.toLowerCase().endsWith('.zip') && (
+                  <>
+                    <div className="grid gap-2">
+                      <Label htmlFor="folder-files" className="font-medium">File aggiuntivi (js, css, texture, ecc.)</Label>
+                      <div className="space-y-2">
+                        <Input
+                          id="folder-files"
+                          type="file"
+                          multiple
+                          ref={folderFilesInputRef}
+                          onChange={handleFolderFilesChange}
+                        />
+                        <p className="text-xs text-gray-500">
+                          Seleziona tutti i file di supporto necessari per il modello WebGL
+                        </p>
+                      </div>
+                      
+                      {/* Input per selezionare una cartella intera */}
+                      <div className="mt-3 border-t pt-3 border-blue-200">
+                        <Label htmlFor="directory-input" className="font-medium">OPPURE seleziona una cartella intera</Label>
+                        <div className="relative mt-1">
+                          <Input
+                            id="directory-input"
+                            type="file"
+                            // @ts-ignore
+                            webkitdirectory="true"
+                            directory="true"
+                            onChange={handleFolderFilesChange}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Seleziona la cartella contenente tutti i file del modello WebGL
+                        </p>
+                      </div>
+                      
+                      {selectedFolderFiles && selectedFolderFiles.length > 0 && (
+                        <div className="text-sm text-blue-600 mt-2 flex items-center">
+                          <span className="material-icons text-sm mr-1">check_circle</span>
+                          {selectedFolderFiles.length} file aggiuntivi selezionati
+                        </div>
+                      )}
+                    </div>
+                    
+                    <Button 
+                      type="button"
+                      variant="secondary" 
+                      className="w-full"
+                      onClick={uploadFolder}
+                      disabled={!selectedFolderFiles || selectedFolderFiles.length === 0 || uploadingFile}
+                    >
+                      {uploadingFile ? 'Caricamento in corso...' : 'Carica modello con i file aggiuntivi'}
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
           
-          <DialogFooter className="flex justify-between sm:justify-between">
-            <Button variant="outline" onClick={() => setShowFileUpload(false)}>
+          <DialogFooter className="flex justify-between">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowFileUpload(false);
+                setSelectedFile(null);
+                setFileDescription('');
+              }}
+              disabled={uploadingFile}
+            >
               Annulla
             </Button>
             <Button 
-              type="button" 
               onClick={uploadFile}
-              disabled={uploadingFile || !selectedFile}
+              disabled={!selectedFile || uploadingFile}
             >
-              {uploadingFile ? "Caricamento in corso..." : "Carica file"}
+              {uploadingFile ? 'Caricamento in corso...' : 'Carica'}
             </Button>
           </DialogFooter>
         </DialogContent>
