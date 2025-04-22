@@ -331,12 +331,16 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
     // Costruisci l'URL corretto per il file dalla cartella effettiva
     // Determina il nome del file e della cartella dal percorso caricato
     let fileName = modelData.src.split('/').pop() || '';
-    // Rimuovi l'ID univoco dal nome del file (parte numerica e hash)
+    
+    // Ottieni il nome del modello senza l'ID univoco del caricamento
     const cleanFileName = fileName.replace(/^\d+-[a-f0-9]+\.(.+)$/, '$1');
-    // Determina il nome della cartella dalle proprietà o dal nome del file
+    
+    // Determina il nome della cartella dalle proprietà o dal nome del file senza estensione
     const folderName = modelData.folderPath || modelData.folderName || cleanFileName.split('.')[0];
-    // Costruisci l'URL finale per il file nella sua cartella
-    const modelUrl = `/uploads/${folderName}/${cleanFileName}`;
+    
+    // Costruisci l'URL finale diretto per il file nella sua cartella
+    // formato: /uploads/NOME_CARTELLA/NOME_FILE.htm
+    const modelUrl = `/uploads/${folderName}/${folderName}.${cleanFileName.split('.').pop()}`;
     
     // Utilizziamo un pulsante per aprire il modello 3D in una nuova finestra,
     // poiché il modello richiede file esterni nella stessa cartella
