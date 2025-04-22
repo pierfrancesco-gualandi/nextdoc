@@ -302,6 +302,12 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
     if (type === "image" || type === "video" || type === "pdf" || type === "3d-model") {
       setUploadType(type as "image" | "video" | "pdf" | "3d-model");
       setShowFileUpload(true);
+      
+      // Per i modelli 3D, mostra sempre l'opzione per caricare la cartella
+      if (type === "3d-model") {
+        setShowFolderUpload(true);
+      }
+      
       return;
     }
     
@@ -423,6 +429,18 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
         variant: "destructive"
       });
       return;
+    }
+    
+    // Verifica se è un file HTML/HTM e siamo in modalità caricamento 3D
+    const isHtmlFile = selectedFile.name.toLowerCase().endsWith('.html') || selectedFile.name.toLowerCase().endsWith('.htm');
+    if (isHtmlFile && uploadType === "3d-model" && (!selectedFolderFiles || selectedFolderFiles.length === 0)) {
+      toast({
+        title: "Attenzione: File HTML senza cartella di supporto",
+        description: "Per un corretto funzionamento del modello 3D HTML, è necessario caricare anche i file associati. Seleziona la cartella contenente tutti i file.",
+        duration: 8000
+      });
+      // Non blocchiamo il caricamento, ma evidenziamo la necessità di caricare la cartella
+      setShowFolderUpload(true);
     }
     
     setUploadingFile(true);
