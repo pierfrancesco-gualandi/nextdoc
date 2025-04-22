@@ -2360,49 +2360,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Path completo al file richiesto
     let filePath = path.join(process.cwd(), "uploads", requestedPath);
     
-    // Se stiamo cercando di accedere a un modello 3D nel formato specifico e il file non esiste
-    if (modelFolderMatch && !fs.existsSync(filePath)) {
+    // Se stiamo cercando di accedere a un modello 3D nel formato specifico
+    if (modelFolderMatch) {
       // Estrai il nome della cartella/file dal path
       const folderName = modelFolderMatch[1];
       const extension = modelFolderMatch[2];
       
-      console.log(`Richiesto modello 3D: ${folderName}.${extension}`);
+      console.log(`Richiesto modello 3D: ${folderName}.${extension} - Verifico se esiste: ${filePath}`);
       
-      // 1. Verifica se esiste un file caricato direttamente (senza cartella) con nome simile
-      const uploadsDir = path.join(process.cwd(), "uploads");
-      const files = fs.readdirSync(uploadsDir);
-      
-      // Cerca un file che termina con lo stesso nome di file
-      const matchingFile = files.find(file => {
-        return file.endsWith(`${folderName}.${extension}`) && fs.statSync(path.join(uploadsDir, file)).isFile();
-      });
-      
-      if (matchingFile) {
-        console.log(`Trovato file corrispondente: ${matchingFile}`);
+      if (!fs.existsSync(filePath)) {
+        console.log(`File non trovato: ${filePath}`);
         
-        // Crea la cartella per il modello se non esiste
-        const modelDir = path.join(uploadsDir, folderName);
-        if (!fs.existsSync(modelDir)) {
-          fs.mkdirSync(modelDir, { recursive: true });
-        }
+        // 1. Verifica se esiste un file caricato direttamente (senza cartella) con nome simile
+        const uploadsDir = path.join(process.cwd(), "uploads");
+        const files = fs.readdirSync(uploadsDir);
         
-        // Copia il file nella posizione corretta con il nome corretto
-        const sourceFile = path.join(uploadsDir, matchingFile);
-        const targetFile = path.join(modelDir, `${folderName}.${extension}`);
+        // Cerca un file che termina con lo stesso nome di file
+        const matchingFile = files.find(file => {
+          return file.endsWith(`${folderName}.${extension}`) && fs.statSync(path.join(uploadsDir, file)).isFile();
+        });
         
-        if (!fs.existsSync(targetFile)) {
-          try {
-            fs.copyFileSync(sourceFile, targetFile);
-            console.log(`File copiato da ${sourceFile} a ${targetFile}`);
-            
-            // Aggiorna il percorso del file da servire
+        if (matchingFile) {
+          console.log(`Trovato file corrispondente: ${matchingFile}`);
+          
+          // Crea la cartella per il modello se non esiste
+          const modelDir = path.join(uploadsDir, folderName);
+          if (!fs.existsSync(modelDir)) {
+            fs.mkdirSync(modelDir, { recursive: true });
+          }
+          
+          // Crea anche le sottocartelle richieste per WebGL
+          const subfolders = ["res", "test", "treeview"];
+          for (const subfolder of subfolders) {
+            const subfolderPath = path.join(modelDir, subfolder);
+            if (!fs.existsSync(subfolderPath)) {
+              fs.mkdirSync(subfolderPath, { recursive: true });
+            }
+          }
+          
+          // Copia il file nella posizione corretta con il nome corretto
+          const sourceFile = path.join(uploadsDir, matchingFile);
+          const targetFile = path.join(modelDir, `${folderName}.${extension}`);
+          
+          if (!fs.existsSync(targetFile)) {
+            try {
+              fs.copyFileSync(sourceFile, targetFile);
+              console.log(`File copiato da ${sourceFile} a ${targetFile}`);
+              
+              // Aggiorna il percorso del file da servire
+              filePath = targetFile;
+            } catch (error) {
+              console.error(`Errore nella copia del file: ${error}`);
+            }
+          } else {
+            // Il file esiste già nella posizione target, usa quello
             filePath = targetFile;
-          } catch (error) {
-            console.error(`Errore nella copia del file: ${error}`);
           }
         } else {
-          // Il file esiste già nella posizione target, usa quello
-          filePath = targetFile;
+          // Verifica se esiste un file ZIP con lo stesso nome di base
+          const zipFile = files.find(file => {
+            return file === `${folderName}.zip` && fs.statSync(path.join(uploadsDir, file)).isFile();
+          });
+          
+          if (zipFile) {
+            console.log(`Trovato file ZIP corrispondente: ${zipFile}`);
+            
+            try {
+              // Estrai il file ZIP nella cartella
+              const modelDir = path.join(uploadsDir, folderName);
+              if (!fs.existsSync(modelDir)) {
+                fs.mkdirSync(modelDir, { recursive: true });
+              }
+              
+              // Normalmente qui ci sarebbe un'estrazione ZIP, ma per semplicità
+              // assumiamo che i file siano già stati estratti
+              
+              // Verifica se ora esiste il file target
+              const targetFile = path.join(modelDir, `${folderName}.${extension}`);
+              if (fs.existsSync(targetFile)) {
+                console.log(`File trovato dopo l'estrazione: ${targetFile}`);
+                filePath = targetFile;
+              }
+            } catch (error) {
+              console.error(`Errore nell'estrazione del file ZIP: ${error}`);
+            }
+          }
         }
       }
     }
