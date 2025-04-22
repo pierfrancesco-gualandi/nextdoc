@@ -1074,24 +1074,38 @@ function SectionItem({
                     if (s.id === section.id) return false;
                     
                     // Funzione per controllare se una sezione è antenata di un'altra
-                    // Questa funzione contiene un limite di profondità per evitare ricorsione infinita
-                    const isAncestorOf = (parentId: number | null, childId: number, depth = 0): boolean => {
-                      // Limite di sicurezza per prevenire stack overflow
-                      if (depth > 20) {
-                        console.warn("Raggiunto limite di profondità nella ricerca gerarchica");
-                        return false;
-                      }
-                      
+                    // Implementazione non ricorsiva che evita stack overflow
+                    const isAncestorOf = (parentId: number | null, childId: number): boolean => {
                       // Controlli di base
                       if (!parentId) return false;
                       if (parentId === childId) return true;
                       
-                      // Cerca il parent nella lista di sezioni
-                      const parent = sections.find(s => s.id === parentId);
-                      if (!parent || parent.parentId === null) return false;
+                      // Implementazione iterativa invece che ricorsiva
+                      let currentParentId = parentId;
+                      const visited = new Set<number>(); // Per evitare cicli infiniti
                       
-                      // Verifica ricorsiva con incremento della profondità
-                      return isAncestorOf(parent.parentId, childId, depth + 1);
+                      while (currentParentId) {
+                        // Se abbiamo già visitato questo nodo, usciamo per evitare cicli
+                        if (visited.has(currentParentId)) {
+                          console.warn("Ciclo rilevato nella gerarchia delle sezioni durante la ricerca di antenati");
+                          break;
+                        }
+                        
+                        // Aggiungiamo il nodo corrente ai visitati
+                        visited.add(currentParentId);
+                        
+                        // Se questo parent è il childId che stiamo cercando, abbiamo trovato un antenato
+                        if (currentParentId === childId) return true;
+                        
+                        // Troviamo il parent di currentParentId
+                        const parentSection = sections.find(s => s.id === currentParentId);
+                        if (!parentSection || !parentSection.parentId) break;
+                        
+                        // Passiamo al parent del parent
+                        currentParentId = parentSection.parentId;
+                      }
+                      
+                      return false;
                     };
                     
                     // Non mostrare le sottosezioni della sezione corrente per evitare cicli
@@ -1099,17 +1113,29 @@ function SectionItem({
                   })
                   .sort((a, b) => {
                     // Prima ordina per livello gerarchico, poi per order
-                    const getLevel = (sectionId: number, depth = 0): number => {
-                      // Limite di sicurezza per prevenire stack overflow
-                      if (depth > 10) {
-                        console.warn(`Raggiunto limite di profondità (${depth}) nel calcolo del livello`);
-                        return depth;
+                    // Implementazione iterativa invece che ricorsiva
+                    const getLevel = (sectionId: number): number => {
+                      let level = 0;
+                      let currentId = sectionId;
+                      const visited = new Set<number>(); // Per evitare cicli infiniti
+                      
+                      while (true) {
+                        // Controllo di sicurezza per prevenire loop infiniti
+                        if (visited.has(currentId)) {
+                          console.warn("Ciclo rilevato nella gerarchia durante il calcolo del livello");
+                          break;
+                        }
+                        visited.add(currentId);
+                        
+                        const section = sections.find(s => s.id === currentId);
+                        if (!section || !section.parentId) break;
+                        
+                        // Incrementiamo il livello e passiamo al parent
+                        level++;
+                        currentId = section.parentId;
                       }
                       
-                      const section = sections.find(s => s.id === sectionId);
-                      if (!section) return depth;
-                      
-                      return section.parentId ? getLevel(section.parentId, depth + 1) : depth;
+                      return level;
                     };
                     
                     const levelA = getLevel(a.id);
@@ -1120,19 +1146,37 @@ function SectionItem({
                   })
                   .map(targetSection => {
                     // Calcoliamo il percorso completo per la sezione (utile per le sottosezioni)
-                    const getPath = (sectionId: number, depth = 0): string => {
-                      // Limite di sicurezza per prevenire stack overflow
-                      if (depth > 10) {
-                        console.warn(`Raggiunto limite di profondità (${depth}) nel calcolo del percorso`);
-                        return "...";
+                    // Implementazione iterativa invece che ricorsiva
+                    const getPath = (sectionId: number): string => {
+                      // Implementazione non ricorsiva per evitare overflow
+                      const pathParts: string[] = [];
+                      let currentId = sectionId;
+                      const visited = new Set<number>(); // Per evitare cicli infiniti
+                      
+                      // Raccogliamo tutti i titoli risalendo l'albero
+                      while (currentId) {
+                        // Controllo di sicurezza per prevenire loop infiniti
+                        if (visited.has(currentId)) {
+                          console.warn("Ciclo rilevato nella gerarchia durante il calcolo del percorso");
+                          break;
+                        }
+                        visited.add(currentId);
+                        
+                        const section = sections.find(s => s.id === currentId);
+                        if (!section) break;
+                        
+                        // Aggiungiamo il titolo all'inizio dell'array (perché risaliamo dal basso verso l'alto)
+                        pathParts.unshift(section.title);
+                        
+                        // Se non abbiamo un parent, abbiamo raggiunto la radice
+                        if (!section.parentId) break;
+                        
+                        // Passiamo al parent
+                        currentId = section.parentId;
                       }
                       
-                      const section = sections.find(s => s.id === sectionId);
-                      if (!section) return "";
-                      if (!section.parentId) return section.title;
-                      
-                      // Chiamata ricorsiva con controllo di profondità
-                      return `${getPath(section.parentId, depth + 1)} > ${section.title}`;
+                      // Uniamo i titoli con il separatore
+                      return pathParts.join(" > ");
                     };
                     
                     return (
