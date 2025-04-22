@@ -328,19 +328,25 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
     // URL diretto al modello HTML/WebGL
     const directUrl = modelData.src;
     
-    // Costruisci l'URL corretto per il file dalla cartella effettiva
-    // Determina il nome del file e della cartella dal percorso caricato
-    let fileName = modelData.src.split('/').pop() || '';
+    // Estrai il nome del file dal percorso di origine
+    let fileName = '';
+    if (modelData.title && modelData.title.endsWith('.htm')) {
+      // Se il titolo termina con .htm, è probabilmente il nome del file originale
+      fileName = modelData.title;
+    } else {
+      // Altrimenti estrai dal src URL
+      fileName = modelData.src.split('/').pop() || '';
+      fileName = fileName.replace(/^\d+-[a-f0-9]+\.(.+)$/, '$1');
+    }
     
-    // Ottieni il nome del modello senza l'ID univoco del caricamento
-    const cleanFileName = fileName.replace(/^\d+-[a-f0-9]+\.(.+)$/, '$1');
+    // Estrai la parte di base del nome file (senza estensione)
+    const baseFileName = fileName.split('.')[0];
     
-    // Determina il nome della cartella dalle proprietà o dal nome del file senza estensione
-    const folderName = modelData.folderPath || modelData.folderName || cleanFileName.split('.')[0];
+    // Usa il nome della cartella indicato nelle proprietà o usa il nome base del file
+    const folderName = modelData.folderPath || modelData.folderName || baseFileName;
     
-    // Costruisci l'URL finale diretto per il file nella sua cartella
-    // formato: /uploads/NOME_CARTELLA/NOME_FILE.htm
-    const modelUrl = `/uploads/${folderName}/${folderName}.${cleanFileName.split('.').pop()}`;
+    // Costruisci l'URL finale nel formato corretto: /uploads/NOME_CARTELLA/NOME_CARTELLA.htm
+    const modelUrl = `/uploads/${folderName}/${folderName}.htm`;
     
     // Utilizziamo un pulsante per aprire il modello 3D in una nuova finestra,
     // poiché il modello richiede file esterni nella stessa cartella
