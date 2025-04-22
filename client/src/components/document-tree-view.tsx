@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useDrag, useDrop } from "react-dnd";
 import { 
   AlertDialog,
@@ -410,6 +410,25 @@ function SectionTree({
   const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({});
   const dropAreaRef = useRef<HTMLDivElement>(null);
   
+  // Aggiungiamo la mutation per gli aggiornamenti diretti delle sezioni
+  const updateSectionMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number, data: any }) => {
+      const res = await apiRequest('PUT', `/api/sections/${id}`, data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/documents/${documentId}/sections`] });
+    },
+    onError: (error: any) => {
+      console.error("Errore durante l'aggiornamento della sezione:", error);
+      toast({
+        title: "Errore",
+        description: `Errore durante l'aggiornamento della sezione: ${error}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
   // Handle component links
   const { data: sectionComponents } = useQuery<SectionComponentLink[]>({
     queryKey: [`/api/sections/${parentId}/components`],
@@ -454,7 +473,25 @@ function SectionTree({
       // Usa l'ultimo ordine disponibile (lunghezza totale delle sezioni a questo livello)
       const newOrder = numSectionsAtThisLevel;
       console.log(`Drop in area vuota: inserimento alla fine con order=${newOrder}, parentId=${parentId}`);
-      onMoveSection(item.id, parentId, newOrder);
+      
+      // Otteniamo la sezione che stiamo spostando
+      const draggedSection = sections.find(s => s.id === item.id);
+      if (draggedSection) {
+        console.log(`Sezione trascinata: ${draggedSection.title} (ID: ${draggedSection.id})`);
+        console.log(`Spostando nell'area vuota - parametri: id=${item.id}, parentId=${parentId}, order=${newOrder}`);
+        
+        // Aggiorniamo direttamente usando la mutation per assicurarci che l'aggiornamento non venga sovrascritto
+        updateSectionMutation.mutate({
+          id: item.id,
+          data: {
+            parentId,
+            order: newOrder
+          }
+        });
+      } else {
+        // Fallback alla funzione originale
+        onMoveSection(item.id, parentId, newOrder);
+      }
     },
     collect: (monitor) => ({
       isOverEmptyArea: monitor.isOver(),
@@ -554,6 +591,29 @@ function SectionItem({
   sections
 }: SectionItemProps) {
   const ref = useRef<HTMLDivElement>(null);
+  
+  // Otteniamo il documentId usando il pattern di acquisizione dalla sezione genitore
+  const documentId = section.documentId.toString();
+  
+  // Aggiungiamo la mutation per gli aggiornamenti diretti delle sezioni
+  const updateSectionMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number, data: any }) => {
+      const res = await apiRequest('PUT', `/api/sections/${id}`, data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      // Invalidiamo le query per forzare il refresh dei dati
+      queryClient.invalidateQueries({ queryKey: [`/api/documents/${documentId}/sections`] });
+    },
+    onError: (error: any) => {
+      console.error("Errore durante l'aggiornamento della sezione:", error);
+      toast({
+        title: "Errore",
+        description: `Errore durante l'aggiornamento della sezione: ${error}`,
+        variant: "destructive"
+      });
+    }
+  });
   
   // Set up drag and drop
   const [{ isDragging }, drag] = useDrag({
@@ -698,11 +758,28 @@ function SectionItem({
         const newOrder = targetChildren.length;
         console.log(`Posizionamento gerarchico: parentId=${targetSection.id}, order=${newOrder}`);
         
-        // Applica lo spostamento con posizionamento gerarchico
-        onMove(item.id, targetSection.id, newOrder);
+        // CORREZIONE: Aggiorniamo direttamente usando la mutation per assicurarci che l'aggiornamento non venga sovrascritto
+        const mutationData = {
+          id: draggedSection.id,
+          data: {
+            parentId: targetSection.id,
+            order: newOrder
+          }
+        };
+        console.log('Esecuzione diretta updateSectionMutation con:', mutationData);
+        
+        // Il componente ha accesso alla mutation attraverso i prop
+        // Questo aggiorna il database direttamente con i parametri corretti
+        updateSectionMutation.mutate(mutationData);
       } else {
-        // Fallback al comportamento normale
-        onMove(item.id, section.id, childrenCount);
+        // Fallback al comportamento normale - anche questo usa la mutation diretta
+        updateSectionMutation.mutate({
+          id: item.id,
+          data: {
+            parentId: section.id,
+            order: childrenCount
+          }
+        });
       }
       
       // Forza l'espansione
