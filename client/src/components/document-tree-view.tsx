@@ -787,11 +787,37 @@ function SectionItem({
       
       // Verifica che non stiamo cercando di spostare un padre come figlio di un suo figlio
       // che creerebbe un ciclo nella gerarchia
-      const isParentOf = (parentId: number | null, childId: number): boolean => {
-        if (!parentId) return false;
-        const child = sections.find(s => s.id === childId);
-        if (!child) return false;
-        return child.id === parentId || isParentOf(child.parentId, parentId);
+      const isParentOf = (potentialParentId: number, childId: number): boolean => {
+        // Implementazione non ricorsiva che evita stack overflow
+        // Partendo dal figlio, risaliamo l'albero per vedere se troviamo il potenziale parent
+        let currentId = childId;
+        let visited = new Set<number>(); // Per evitare cicli infiniti
+        
+        while (currentId) {
+          // Aggiungiamo l'ID corrente ai nodi visitati
+          visited.add(currentId);
+          
+          // Troviamo la sezione corrente
+          const currentSection = sections.find(s => s.id === currentId);
+          if (!currentSection) break;
+          
+          // Se il parent della sezione corrente è il potenziale parent, abbiamo trovato un ciclo
+          if (currentSection.parentId === potentialParentId) return true;
+          
+          // Se non ci sono più parent, usciamo
+          if (!currentSection.parentId) break;
+          
+          // Preveniamo loop infiniti
+          if (visited.has(currentSection.parentId)) {
+            console.warn("Ciclo rilevato nella gerarchia delle sezioni");
+            break;
+          }
+          
+          // Passiamo al parent
+          currentId = currentSection.parentId;
+        }
+        
+        return false;
       };
       
       if (isParentOf(item.id, section.id)) {
@@ -1048,11 +1074,24 @@ function SectionItem({
                     if (s.id === section.id) return false;
                     
                     // Funzione per controllare se una sezione è antenata di un'altra
-                    const isAncestorOf = (parentId: number | null, childId: number): boolean => {
+                    // Questa funzione contiene un limite di profondità per evitare ricorsione infinita
+                    const isAncestorOf = (parentId: number | null, childId: number, depth = 0): boolean => {
+                      // Limite di sicurezza per prevenire stack overflow
+                      if (depth > 20) {
+                        console.warn("Raggiunto limite di profondità nella ricerca gerarchica");
+                        return false;
+                      }
+                      
+                      // Controlli di base
                       if (!parentId) return false;
                       if (parentId === childId) return true;
+                      
+                      // Cerca il parent nella lista di sezioni
                       const parent = sections.find(s => s.id === parentId);
-                      return parent ? isAncestorOf(parent.parentId, childId) : false;
+                      if (!parent || parent.parentId === null) return false;
+                      
+                      // Verifica ricorsiva con incremento della profondità
+                      return isAncestorOf(parent.parentId, childId, depth + 1);
                     };
                     
                     // Non mostrare le sottosezioni della sezione corrente per evitare cicli
@@ -1060,9 +1099,17 @@ function SectionItem({
                   })
                   .sort((a, b) => {
                     // Prima ordina per livello gerarchico, poi per order
-                    const getLevel = (sectionId: number): number => {
+                    const getLevel = (sectionId: number, depth = 0): number => {
+                      // Limite di sicurezza per prevenire stack overflow
+                      if (depth > 10) {
+                        console.warn(`Raggiunto limite di profondità (${depth}) nel calcolo del livello`);
+                        return depth;
+                      }
+                      
                       const section = sections.find(s => s.id === sectionId);
-                      return section?.parentId ? 1 + getLevel(section.parentId) : 0;
+                      if (!section) return depth;
+                      
+                      return section.parentId ? getLevel(section.parentId, depth + 1) : depth;
                     };
                     
                     const levelA = getLevel(a.id);
@@ -1073,11 +1120,19 @@ function SectionItem({
                   })
                   .map(targetSection => {
                     // Calcoliamo il percorso completo per la sezione (utile per le sottosezioni)
-                    const getPath = (sectionId: number): string => {
+                    const getPath = (sectionId: number, depth = 0): string => {
+                      // Limite di sicurezza per prevenire stack overflow
+                      if (depth > 10) {
+                        console.warn(`Raggiunto limite di profondità (${depth}) nel calcolo del percorso`);
+                        return "...";
+                      }
+                      
                       const section = sections.find(s => s.id === sectionId);
                       if (!section) return "";
                       if (!section.parentId) return section.title;
-                      return `${getPath(section.parentId)} > ${section.title}`;
+                      
+                      // Chiamata ricorsiva con controllo di profondità
+                      return `${getPath(section.parentId, depth + 1)} > ${section.title}`;
                     };
                     
                     return (
