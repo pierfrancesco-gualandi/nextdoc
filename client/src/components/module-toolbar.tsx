@@ -357,12 +357,41 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
         break;
     }
     
-    createModuleMutation.mutate({
-      sectionId,
-      type,
-      content: defaultContent,
-      order: 999 // Will be reordered after creation
-    });
+    // Calcola l'ordine per aggiungere sempre alla fine
+    // Per i moduli dalla toolbar dobbiamo recuperare gli altri moduli
+    // e poi calcolare l'ordine corretto in base a quelli esistenti
+    const getExistingModules = async () => {
+      try {
+        const res = await apiRequest('GET', `/api/sections/${sectionId}/modules`);
+        const modules = await res.json();
+        
+        let newOrder = 0;
+        if (modules && modules.length > 0) {
+          // Se ci sono moduli esistenti, posiziona questo modulo dopo l'ultimo
+          const lastModule = [...modules].sort((a, b) => a.order - b.order).pop();
+          newOrder = lastModule ? lastModule.order + 1 : 0;
+        }
+        
+        // Crea il nuovo modulo con l'ordine calcolato
+        createModuleMutation.mutate({
+          sectionId,
+          type,
+          content: defaultContent,
+          order: newOrder // Aggiungi alla fine della sezione
+        });
+      } catch (error) {
+        console.error("Errore nel calcolo dell'ordine:", error);
+        // Fallback con ordine 999 in caso di errore
+        createModuleMutation.mutate({
+          sectionId,
+          type,
+          content: defaultContent,
+          order: 999 // Fallback in caso di errore
+        });
+      }
+    };
+    
+    getExistingModules();
   };
   
   const handleDragStart = (e: React.DragEvent, type: string) => {
