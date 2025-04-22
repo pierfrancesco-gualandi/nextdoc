@@ -769,9 +769,13 @@ function SectionItem({
         onToggleExpand();
       }
       
-      // Solo quando si è esattamente sopra l'area figlio, si attiva l'indicatore
-      // Imposta una variabile globale per tracciare l'ID della sezione attualmente illuminata
-      if (monitor.isOver({ shallow: true })) {
+      // PROBLEMI DI DEBUG: Aggiungiamo log per capire cosa sta succedendo
+      console.log(`Hover su sezione ${section.id} (${section.title})`);
+      
+      // IMPORTANTE: la chiamata a isOver deve essere SENZA shallow: true
+      // altrimenti non funziona per sezioni annidate come 3.1
+      if (monitor.isOver()) {
+        console.log(`ATTIVATO DROP TARGET su sezione ${section.id} (${section.title})`);
         window._highlightedDropTarget = section.id;
       }
     },
