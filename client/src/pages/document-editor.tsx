@@ -500,14 +500,13 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     
     const moduleType = e.dataTransfer.getData('moduleType');
     if (moduleType && selectedSection) {
-      // Calcola l'ordine inserendo il modulo esattamente nella drop zone
+      // Calcola l'ordine inserendo il modulo esattamente alla fine della sezione
       // Determina l'ordine del nuovo modulo basato sul numero di moduli esistenti
       let newModuleOrder = 0;
       if (contentModules && contentModules.length > 0) {
         // Se ci sono moduli esistenti, posiziona questo modulo dopo l'ultimo
-        // Questa è la parte che dovremo corregere per posizionare il modulo in un punto specifico
-        // Per ora mettiamo un ordine di mezzo tra 0 e 1 per inserirlo all'inizio
-        newModuleOrder = 0.5;
+        const lastModule = [...contentModules].sort((a, b) => a.order - b.order).pop();
+        newModuleOrder = lastModule ? lastModule.order + 1 : 0;
       }
       
       // Genera il contenuto predefinito in base al tipo di modulo
@@ -894,7 +893,13 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                               // o iniziamo con un tipo di modulo predefinito (text)
                               if (selectedSection) {
                                 const moduleType = "text"; // Predefinito per ora - si potrebbe fare un menu
-                                const newModuleOrder = 0.5;
+                                // Calcola l'ordine corretto per aggiungere alla fine
+                                let newModuleOrder = 0;
+                                if (contentModules && contentModules.length > 0) {
+                                  // Se ci sono moduli esistenti, posiziona questo modulo dopo l'ultimo
+                                  const lastModule = [...contentModules].sort((a, b) => a.order - b.order).pop();
+                                  newModuleOrder = lastModule ? lastModule.order + 1 : 0;
+                                }
                                 const defaultContent = { text: "" };
                                 
                                 createModuleAtPositionMutation.mutate({
