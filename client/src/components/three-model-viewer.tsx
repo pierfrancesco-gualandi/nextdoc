@@ -328,14 +328,17 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
     // URL diretto al modello HTML/WebGL
     const directUrl = modelData.src;
     
-    // Estrai il nome del file dal percorso di origine
+    // Ottieni il percorso diretto al file caricato
+    const directSrc = modelData.src; // Esempio: /uploads/1745334834336-0ecec331a834cfa1e74e1f63d2751776.htm
+
+    // Estrai il nome del file dal percorso di origine o dal titolo
     let fileName = '';
     if (modelData.title && modelData.title.endsWith('.htm')) {
       // Se il titolo termina con .htm, è probabilmente il nome del file originale
       fileName = modelData.title;
     } else {
       // Altrimenti estrai dal src URL
-      fileName = modelData.src.split('/').pop() || '';
+      fileName = directSrc.split('/').pop() || '';
       fileName = fileName.replace(/^\d+-[a-f0-9]+\.(.+)$/, '$1');
     }
     
@@ -345,8 +348,13 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
     // Usa il nome della cartella indicato nelle proprietà o usa il nome base del file
     const folderName = modelData.folderPath || modelData.folderName || baseFileName;
     
-    // Costruisci l'URL finale nel formato corretto: /uploads/NOME_CARTELLA/NOME_CARTELLA.htm
-    const modelUrl = `/uploads/${folderName}/${folderName}.htm`;
+    // Costruisci l'URL finale nel formato /uploads/NOME_CARTELLA/NOME_CARTELLA.htm
+    // Ma come fallback usiamo il percorso diretto al file
+    const idealUrl = `/uploads/${folderName}/${folderName}.htm`;
+    
+    // Per ora, visto che il file nella cartella potrebbe non essere presente, 
+    // utilizziamo direttamente il file caricato originale
+    const modelUrl = directSrc;
     
     // Utilizziamo un pulsante per aprire il modello 3D in una nuova finestra,
     // poiché il modello richiede file esterni nella stessa cartella
