@@ -409,6 +409,8 @@ function SectionTree({
 }: SectionTreeProps) {
   const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({});
   const dropAreaRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+  const queryClientHook = useQueryClient();
   
   // Aggiungiamo la mutation per gli aggiornamenti diretti delle sezioni
   const updateSectionMutation = useMutation({
@@ -417,7 +419,7 @@ function SectionTree({
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/documents/${documentId}/sections`] });
+      queryClientHook.invalidateQueries({ queryKey: [`/api/documents/${documentId}/sections`] });
     },
     onError: (error: any) => {
       console.error("Errore durante l'aggiornamento della sezione:", error);
@@ -591,6 +593,8 @@ function SectionItem({
   sections
 }: SectionItemProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+  const queryClientHook = useQueryClient();
   
   // Otteniamo il documentId usando il pattern di acquisizione dalla sezione genitore
   const documentId = section.documentId.toString();
@@ -603,7 +607,7 @@ function SectionItem({
     },
     onSuccess: () => {
       // Invalidiamo le query per forzare il refresh dei dati
-      queryClient.invalidateQueries({ queryKey: [`/api/documents/${documentId}/sections`] });
+      queryClientHook.invalidateQueries({ queryKey: [`/api/documents/${documentId}/sections`] });
     },
     onError: (error: any) => {
       console.error("Errore durante l'aggiornamento della sezione:", error);
