@@ -469,21 +469,33 @@ function SectionTree({
   // Add a drop area for root level in empty areas
   const [{ isOverEmptyArea }, dropEmptyArea] = useDrop({
     accept: 'SECTION',
-    drop(item: DragItem) {
+    drop(item: DragItem, monitor) {
+      // Verifica se un drop figlio è già avvenuto
+      if (window._lastDrop && window._lastDrop.childDropTriggered) {
+        console.log('⚠️ Drop in area vuota ignorato: drop figlio già elaborato');
+        // Resetta lo stato
+        window._lastDrop = undefined;
+        return;
+      }
+      
       // Calcola quante sezioni ci sono a questo livello per inserire alla fine
       const numSectionsAtThisLevel = sections.filter(s => s.parentId === parentId).length;
       // Usa l'ultimo ordine disponibile (lunghezza totale delle sezioni a questo livello)
       const newOrder = numSectionsAtThisLevel;
-      console.log(`Drop in area vuota: inserimento alla fine con order=${newOrder}, parentId=${parentId}`);
+      
+      // Messaggio di log chiaro
+      console.log(`⚠️ DROP IN AREA VUOTA: Sezione ${item.id} → Diventa figlio di ${parentId ? parentId : 'ROOT'}, ordine=${newOrder}`);
       
       // Aggiorniamo direttamente usando la mutation per assicurarci che l'aggiornamento non venga sovrascritto
-      updateSectionMutation.mutate({
-        id: item.id,
-        data: {
-          parentId,
-          order: newOrder
-        }
-      });
+      setTimeout(() => {
+        updateSectionMutation.mutate({
+          id: item.id,
+          data: {
+            parentId,
+            order: newOrder
+          }
+        });
+      }, 50);
     },
     collect: (monitor) => ({
       isOverEmptyArea: monitor.isOver(),
@@ -637,7 +649,15 @@ function SectionItem({
       // Don't allow a section to become its own child
       // This would be needed if we were to allow drop on the section rather than between sections
     },
-    drop(item: DragItem) {
+    drop(item: DragItem, monitor) {
+      // Verifica se un drop figlio è già avvenuto
+      if (window._lastDrop && window._lastDrop.childDropTriggered) {
+        console.log('⚠️ Drop ignorato: drop figlio già elaborato');
+        // Resetta lo stato
+        window._lastDrop = undefined;
+        return;
+      }
+      
       if (item.id === section.id) return;
       
       // When dropping on a section, place it as the next sibling
@@ -671,7 +691,15 @@ function SectionItem({
       
       if (hoverClientY > hoverMiddleY) return;
     },
-    drop(item: DragItem) {
+    drop(item: DragItem, monitor) {
+      // Verifica se un drop figlio è già avvenuto
+      if (window._lastDrop && window._lastDrop.childDropTriggered) {
+        console.log('⚠️ Drop sopra ignorato: drop figlio già elaborato');
+        // Resetta lo stato
+        window._lastDrop = undefined;
+        return;
+      }
+      
       if (item.id === section.id) return;
       
       // When dropping above a section, place it as the previous sibling
@@ -702,7 +730,15 @@ function SectionItem({
       
       if (hoverClientY < hoverMiddleY) return;
     },
-    drop(item: DragItem) {
+    drop(item: DragItem, monitor) {
+      // Verifica se un drop figlio è già avvenuto
+      if (window._lastDrop && window._lastDrop.childDropTriggered) {
+        console.log('⚠️ Drop sotto ignorato: drop figlio già elaborato');
+        // Resetta lo stato
+        window._lastDrop = undefined;
+        return;
+      }
+      
       if (item.id === section.id) return;
       
       // When dropping below a section, place it as the next sibling
@@ -730,6 +766,9 @@ function SectionItem({
       }
     },
     drop(item: DragItem, monitor) {
+      // FERMA LA PROPAGAZIONE: impedisce che altri dropHandler vengano chiamati
+      monitor.didDrop = () => true;
+      
       if (item.id === section.id) return;
       
       // Verifica che non stiamo cercando di spostare un padre come figlio di un suo figlio
@@ -746,63 +785,60 @@ function SectionItem({
         return;
       }
       
-      // When dropping ON a section, make the dragged section a CHILD of this section
-      // Find how many children this section already has to calculate the order
-      const childrenCount = sections.filter(s => s.parentId === section.id).length;
-      
-      // For this specific section, make sure to do a direct database update
-      console.log(`Sezione ${item.id} trascinata su sezione ${section.id} (${section.title}): diventa un figlio con ordine ${childrenCount}`);
-      
       // Ottieni le informazioni delle sezioni coinvolte
       const draggedSection = sections.find(s => s.id === item.id);
       const targetSection = section;
       
-      // Registra i dettagli per debug
-      console.log(`Sezione ${draggedSection?.title} (ID: ${item.id}) trascinata su sezione ${targetSection.title} (ID: ${targetSection.id})`);
+      if (!draggedSection || !targetSection) {
+        console.error("Impossibile trovare sezione di origine o destinazione");
+        return;
+      }
       
-      if (draggedSection && targetSection) {
-        // Determina l'ordine ottimale per la sezione spostata
-        // Otteniamo tutte le sezioni figlie correnti dell'obiettivo
-        const targetChildren = sections.filter(s => s.parentId === targetSection.id);
-        
-        // Per sicurezza, assicuriamoci che l'elemento non sia aggiunto duplicato
-        if (targetChildren.some(child => child.id === draggedSection.id)) {
-          console.log("La sezione è già un figlio della sezione target");
-          return; // Evita duplicati
-        }
-        
-        // Aggiungiamo come ultimo elemento
-        const newOrder = targetChildren.length;
-        console.log(`Posizionamento gerarchico: parentId=${targetSection.id}, order=${newOrder}`);
-        
-        // CORREZIONE: Aggiorniamo direttamente usando la mutation per assicurarci che l'aggiornamento non venga sovrascritto
-        const mutationData = {
+      // Determina l'ordine ottimale per la sezione spostata
+      const targetChildren = sections.filter(s => s.parentId === targetSection.id);
+      
+      // Per sicurezza, assicuriamoci che l'elemento non sia aggiunto duplicato
+      if (targetChildren.some(child => child.id === draggedSection.id)) {
+        console.log("La sezione è già un figlio della sezione target");
+        return; // Evita duplicati
+      }
+      
+      // MOLTO IMPORTANTE: Indica esplicitamente che stiamo usando il drop interno
+      // e blocchiamo qualsiasi altra elaborazione
+      const dropData = {
+        targetId: targetSection.id,
+        childDropTriggered: true
+      };
+      
+      // Memorizza questo stato globalmente per evitare double-handling
+      window._lastDrop = dropData;
+      
+      // Aggiungiamo come ultimo elemento
+      const newOrder = targetChildren.length;
+      
+      // Messaggio di log chiaro
+      console.log(
+        `⚠️ DROP INTERNO: Sezione ${draggedSection.title} (${item.id}) → Diventa figlio di ${targetSection.title} (${targetSection.id}), ordine=${newOrder}`
+      );
+      
+      // CORREZIONE: Update diretto con timeout per assicurarsi che sia eseguito dopo altri eventi
+      setTimeout(() => {
+        updateSectionMutation.mutate({
           id: draggedSection.id,
           data: {
             parentId: targetSection.id,
             order: newOrder
           }
-        };
-        console.log('Esecuzione diretta updateSectionMutation con:', mutationData);
-        
-        // Il componente ha accesso alla mutation attraverso i prop
-        // Questo aggiorna il database direttamente con i parametri corretti
-        updateSectionMutation.mutate(mutationData);
-      } else {
-        // Fallback al comportamento normale - anche questo usa la mutation diretta
-        updateSectionMutation.mutate({
-          id: item.id,
-          data: {
-            parentId: section.id,
-            order: childrenCount
-          }
         });
-      }
+        
+        // Forza l'espansione per mostrare il nuovo elemento
+        if (!isExpanded) {
+          onToggleExpand();
+        }
+      }, 50);
       
-      // Forza l'espansione
-      if (!isExpanded) {
-        onToggleExpand();
-      }
+      // Interrompe il bubbling dell'evento per evitare che vengano attivati altri handler
+      return;
     },
     collect: (monitor) => ({
       isOverChild: monitor.isOver(),
@@ -1079,4 +1115,14 @@ function SectionItem({
       )}
     </div>
   );
+}
+
+// Aggiungi una dichiarazione globale per il tipo _lastDrop
+declare global {
+  interface Window {
+    _lastDrop?: {
+      targetId: number;
+      childDropTriggered: boolean;
+    };
+  }
 }
