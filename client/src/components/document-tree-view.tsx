@@ -897,12 +897,26 @@ function SectionItem({
           onClick={onSelect}
         >
           <div 
+            ref={dropChild}
             className={`
               flex items-center flex-grow min-w-[180px] relative 
-              ${isOverChild && window._highlightedDropTarget === section.id ? 'bg-blue-100 rounded-sm px-1 border border-blue-300' : ''}
+              ${window._highlightedDropTarget === section.id ? 'bg-blue-100 rounded-sm px-1 border-2 border-blue-500 shadow-sm' : ''}
               ${isOverChild && window._highlightedDropTarget !== section.id ? 'bg-gray-100 rounded-sm px-1 border border-gray-300' : ''}
               transition-all
+              cursor-pointer
+              hover:bg-blue-50
+              drop-target-${section.id}
             `}
+            onMouseEnter={() => {
+              console.log(`Mouse ENTER su ${section.title} (${section.id})`);
+              window._highlightedDropTarget = section.id;
+            }}
+            onMouseLeave={() => {
+              console.log(`Mouse LEAVE da ${section.title} (${section.id})`);
+              if (window._highlightedDropTarget === section.id) {
+                window._highlightedDropTarget = undefined;
+              }
+            }}
           >
             {hasChildren && (
               <button
@@ -933,7 +947,7 @@ function SectionItem({
               ${isOverChild ? 'text-blue-800 font-medium' : ''}
             `}>
               {section.title}
-              {isOverChild && (window._highlightedDropTarget === section.id) && 
+              {window._highlightedDropTarget === section.id && 
                 <span className="ml-1 text-xs bg-blue-600 text-white px-1 py-0.5 rounded-sm whitespace-nowrap">
                   Rilascia qui
                 </span>
@@ -1105,7 +1119,6 @@ function SectionItem({
             1. Fully displayed when expanded 
             2. Hidden but still droppable when collapsed */}
         <div 
-          ref={dropChild}
           className={`
             ${isExpanded ? 'mt-1 pl-6 border-l-2 min-h-[20px]' : 'h-0 overflow-hidden'}
             ${isOverChild ? 'border-primary bg-primary-light/20' : 'border-gray-200'}
