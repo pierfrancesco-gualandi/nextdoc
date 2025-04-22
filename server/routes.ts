@@ -2351,7 +2351,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.use("/uploads", (req: Request, res: Response, next: NextFunction) => {
-    const filePath = path.join(process.cwd(), "uploads", req.path);
+    // Path richiesto originale
+    const requestedPath = req.path;
+    
+    // Verifica se il path richiesto è nella forma /NOME_CARTELLA/NOME_CARTELLA.htm
+    const modelFolderMatch = requestedPath.match(/^\/([^\/]+)\/\1\.(htm|html)$/i);
+    
+    // Path completo al file richiesto
+    let filePath = path.join(process.cwd(), "uploads", requestedPath);
+    
+    // Se stiamo cercando di accedere a un modello 3D nel formato specifico e il file non esiste
+    if (modelFolderMatch && !fs.existsSync(filePath)) {
+      // Estrai il nome della cartella/file dal path
+      const folderName = modelFolderMatch[1];
+      const extension = modelFolderMatch[2];
+      
+      console.log(`Richiesto modello 3D: ${folderName}.${extension}`);
+      
+      // 1. Verifica se esiste un file caricato direttamente (senza cartella) con nome simile
+      const uploadsDir = path.join(process.cwd(), "uploads");
+      const files = fs.readdirSync(uploadsDir);
+      
+      // Cerca un file che termina con lo stesso nome di file
+      const matchingFile = files.find(file => {
+        return file.endsWith(`${folderName}.${extension}`) && fs.statSync(path.join(uploadsDir, file)).isFile();
+      });
+      
+      if (matchingFile) {
+        console.log(`Trovato file corrispondente: ${matchingFile}`);
+        
+        // Crea la cartella per il modello se non esiste
+        const modelDir = path.join(uploadsDir, folderName);
+        if (!fs.existsSync(modelDir)) {
+          fs.mkdirSync(modelDir, { recursive: true });
+        }
+        
+        // Copia il file nella posizione corretta con il nome corretto
+        const sourceFile = path.join(uploadsDir, matchingFile);
+        const targetFile = path.join(modelDir, `${folderName}.${extension}`);
+        
+        if (!fs.existsSync(targetFile)) {
+          try {
+            fs.copyFileSync(sourceFile, targetFile);
+            console.log(`File copiato da ${sourceFile} a ${targetFile}`);
+            
+            // Aggiorna il percorso del file da servire
+            filePath = targetFile;
+          } catch (error) {
+            console.error(`Errore nella copia del file: ${error}`);
+          }
+        } else {
+          // Il file esiste già nella posizione target, usa quello
+          filePath = targetFile;
+        }
+      }
+    }
+    
+    // Verifica l'esistenza del file
     fs.access(filePath, fs.constants.F_OK, (err) => {
       if (err) {
         return res.status(404).json({ message: "File not found" });
@@ -2378,7 +2434,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Configurazione CORS per consentire l'accesso da iframe
       res.setHeader('Access-Control-Allow-Origin', '*');
-      next();
+      
+      // Servi il file direttamente senza passare a express.static
+      res.sendFile(filePath);
     });
   }, express.static(path.join(process.cwd(), "uploads"), {
     // Opzioni aggiuntive per express.static
