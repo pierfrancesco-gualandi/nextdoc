@@ -84,12 +84,14 @@ export const contentModules = pgTable("content_modules", {
   order: integer("order").notNull(),
 });
 
-export const insertContentModuleSchema = createInsertSchema(contentModules).pick({
-  sectionId: true,
-  type: true,
-  content: true,
-  order: true,
-});
+export const insertContentModuleSchema = createInsertSchema(contentModules)
+  .pick({
+    sectionId: true,
+    type: true,
+    content: true,
+    order: true,
+  })
+  .partial({ order: true }); // Rende il campo 'order' opzionale
 
 // Document version schema
 export const documentVersions = pgTable("document_versions", {
