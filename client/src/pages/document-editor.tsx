@@ -467,6 +467,30 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     }
   };
   
+  // Create new module mutation (dichiarata a livello del componente)
+  const createModuleAtPositionMutation = useMutation({
+    mutationFn: async (moduleData: any) => {
+      const res = await apiRequest('POST', '/api/modules', moduleData);
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      if (selectedSection) {
+        queryClient.invalidateQueries({ queryKey: [`/api/sections/${selectedSection.id}/modules`] });
+      }
+      toast({
+        title: "Modulo aggiunto",
+        description: "Il modulo è stato aggiunto nella posizione specifica"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore",
+        description: `Errore durante l'aggiunta del modulo: ${error}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
   // Handle drop for adding new modules
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -569,30 +593,8 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
           break;
       }
       
-      // Creiamo una nuova mutazione o usiamo una esistente
-      const createNewModuleMutation = useMutation({
-        mutationFn: async (moduleData: any) => {
-          const res = await apiRequest('POST', '/api/modules', moduleData);
-          return await res.json();
-        },
-        onSuccess: (data) => {
-          queryClient.invalidateQueries({ queryKey: [`/api/sections/${selectedSection.id}/modules`] });
-          toast({
-            title: "Modulo aggiunto",
-            description: "Il modulo è stato aggiunto nella posizione specifica"
-          });
-        },
-        onError: (error) => {
-          toast({
-            title: "Errore",
-            description: `Errore durante l'aggiunta del modulo: ${error}`,
-            variant: "destructive"
-          });
-        }
-      });
-      
       // Esegui la mutazione
-      createNewModuleMutation.mutate({
+      createModuleAtPositionMutation.mutate({
         sectionId: selectedSection.id,
         type: moduleType,
         content: defaultContent,
@@ -882,11 +884,27 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                           {/* Drop zone for new modules */}
                           <div 
                             ref={dropZoneRef}
-                            className="border border-dashed border-neutral-light rounded-md p-4 text-center hover:bg-neutral-lightest transition cursor-pointer"
+                            className="border border-dashed border-neutral-light rounded-md p-4 text-center hover:bg-neutral-lightest transition cursor-pointer drag-zone"
                             onDragOver={handleDragOver}
                             onDragLeave={handleDragLeave}
                             onDrop={handleDrop}
-                            onClick={() => {/* Show module options */}}
+                            onClick={() => {
+                              // Implementiamo anche la funzionalità di click per aggiungere moduli
+                              // Lo faremo mostrando un menu a tendina con i tipi di moduli disponibili
+                              // o iniziamo con un tipo di modulo predefinito (text)
+                              if (selectedSection) {
+                                const moduleType = "text"; // Predefinito per ora - si potrebbe fare un menu
+                                const newModuleOrder = 0.5;
+                                const defaultContent = { text: "" };
+                                
+                                createModuleAtPositionMutation.mutate({
+                                  sectionId: selectedSection.id,
+                                  type: moduleType,
+                                  content: defaultContent,
+                                  order: newModuleOrder
+                                });
+                              }
+                            }}
                           >
                             <span className="material-icons text-neutral-medium">add_circle_outline</span>
                             <p className="text-neutral-medium text-sm mt-1">Trascina un modulo qui o clicca per aggiungere</p>

@@ -13,6 +13,11 @@
 }
 
 @layer components {
+  /* Stile per la zona di drop durante il drag */
+  .drag-over {
+    @apply bg-blue-50 border-primary;
+  }
+  
   /* Scrollbar personalizzata per overflow */
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
