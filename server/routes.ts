@@ -428,9 +428,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: error });
       }
       
-      const module = await storage.createContentModule(data);
-      res.status(201).json(module);
+      // Calcola automaticamente l'ordine se non è specificato
+      if (data.order === undefined) {
+        try {
+          // Ottieni tutti i moduli esistenti nella sezione
+          const existingModules = await storage.getContentModulesBySectionId(data.sectionId);
+          
+          // Trova l'ordine più alto e aggiungi 1
+          const highestOrder = existingModules.length > 0 
+            ? Math.max(...existingModules.map(m => m.order)) 
+            : -1;
+            
+          data.order = highestOrder + 1;
+        } catch (err) {
+          console.error("Errore nel calcolo dell'ordine automatico:", err);
+          data.order = 100; // Valore di fallback
+        }
+      }
+      
+      try {
+        const module = await storage.createContentModule(data);
+        res.status(201).json(module);
+      } catch (err) {
+        console.error("Errore nella creazione del modulo:", err);
+        res.status(500).json({ message: "Failed to create content module", error: err.message });
+      }
     } catch (error) {
+      console.error("Errore generico:", error);
       res.status(500).json({ message: "Failed to create content module" });
     }
   });
