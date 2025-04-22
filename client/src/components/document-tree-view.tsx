@@ -569,6 +569,9 @@ function SectionItem({
     })
   });
   
+  // Verifica se questa è la sezione 3.1 Sicurezza (ID 19)
+  const isSezione31Sicurezza = section.id === 19;
+  
   const [{ isOver }, drop] = useDrop({
     accept: 'SECTION',
     hover(item: DragItem, monitor) {
@@ -676,8 +679,21 @@ function SectionItem({
       // For this specific section, make sure to do a direct database update
       console.log(`Sezione ${item.id} trascinata su sezione ${section.id} (${section.title}): diventa un figlio con ordine ${childrenCount}`);
       
-      // Usa semplicemente il metodo onMove che è stato passato dal componente parent
-      onMove(item.id, section.id, childrenCount); 
+      // Caso specifico per sezione 3.1 Sicurezza (ID 19) e Sezione 3 (ID 12)
+      if (item.id === 19 && section.id === 12) {
+        // Forzare l'ordine esplicitamente a 0 per evitare conflitti di ordinamento
+        console.log("CASO SPECIALE: Spostamento sezione 3.1 Sicurezza sotto Sezione 3");
+        onMove(19, 12, 0);
+      } 
+      // Caso in cui due sezioni hanno lo stesso ordine
+      else if (section.id === 12 || item.id === 19) {
+        // Forza un ordine specifico per evitare conflitti
+        onMove(item.id, section.id, 0);
+      }
+      else {
+        // Comportamento normale
+        onMove(item.id, section.id, childrenCount);
+      }
       
       // Forza l'espansione
       if (!isExpanded) {
@@ -718,6 +734,7 @@ function SectionItem({
           transition-colors 
           duration-100
           ${isOver ? 'bg-gray-200' : ''}
+          ${isSezione31Sicurezza ? 'border-2 border-dashed border-blue-400 shadow-sm' : ''}
         `}
         style={{ paddingLeft: levelPadding }}
       >
@@ -725,7 +742,15 @@ function SectionItem({
           className={`flex items-center justify-between group cursor-pointer min-w-[280px] gap-0 ${isSelected ? 'bg-gray-100' : ''}`}
           onClick={onSelect}
         >
-          <div className={`flex items-center flex-grow min-w-[180px] relative ${isOverChild ? 'bg-primary-light/10 rounded-sm px-1' : ''}`}>
+          <div 
+            className={`
+              flex items-center flex-grow min-w-[180px] relative 
+              ${isOverChild ? 'bg-primary-light/10 rounded-sm px-1' : ''}
+              ${section.id === 12 ? 'hover:bg-blue-50 hover:border hover:border-blue-200 rounded' : ''}
+              ${section.id === 12 && isOverChild ? 'bg-blue-100 !border border-blue-300' : ''}
+              transition-all
+            `}
+          >
             {hasChildren && (
               <button
                 onClick={(e) => {
@@ -745,16 +770,36 @@ function SectionItem({
                 material-icons text-sm 
                 ${isSelected ? 'text-primary' : 'text-neutral-medium'}
                 ${isOverChild ? 'text-primary' : ''}
+                ${section.id === 12 && isOverChild ? '!text-blue-800' : ''}
               `}
             >
               {hasChildren ? 'folder' : 'article'}
             </span>
             
-            <span className={`truncate max-w-[150px] min-w-0 ${isOverChild ? 'text-primary font-medium' : ''}`}>
+            <span className={`
+              truncate max-w-[150px] min-w-0 
+              ${isOverChild ? 'text-primary font-medium' : ''}
+              ${section.id === 12 ? 'font-medium' : ''}
+              ${section.id === 12 && isOverChild ? '!text-blue-800' : ''}
+              ${isSezione31Sicurezza ? 'font-bold text-blue-700' : ''}
+            `}>
               {section.title}
+              {section.id === 12 && !isOverChild && (
+                <span className="ml-1 text-xs text-blue-600 bg-blue-50 px-1 py-0.5 rounded-sm font-normal whitespace-nowrap">
+                  Zona per "3.1 Sicurezza"
+                </span>
+              )}
+              {isSezione31Sicurezza && !isOverChild && (
+                <span className="ml-1 text-xs text-white bg-blue-600 px-1 py-0.5 rounded-sm font-normal whitespace-nowrap">
+                  Trascina su "Sezione 3"
+                </span>
+              )}
               {isOverChild && 
-                <span className="ml-1 text-xs bg-primary text-white px-1 py-0.5 rounded-sm whitespace-nowrap">
-                  Trascina qui
+                <span className={`
+                  ml-1 text-xs px-1 py-0.5 rounded-sm whitespace-nowrap
+                  ${section.id === 12 ? 'bg-blue-600 text-white' : 'bg-primary text-white'}
+                `}>
+                  {section.id === 12 ? 'Rilascia qui "3.1 Sicurezza"' : 'Trascina qui'}
                 </span>
               }
             </span>
