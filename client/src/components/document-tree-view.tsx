@@ -476,24 +476,14 @@ function SectionTree({
       const newOrder = numSectionsAtThisLevel;
       console.log(`Drop in area vuota: inserimento alla fine con order=${newOrder}, parentId=${parentId}`);
       
-      // Otteniamo la sezione che stiamo spostando
-      const draggedSection = sections.find(s => s.id === item.id);
-      if (draggedSection) {
-        console.log(`Sezione trascinata: ${draggedSection.title} (ID: ${draggedSection.id})`);
-        console.log(`Spostando nell'area vuota - parametri: id=${item.id}, parentId=${parentId}, order=${newOrder}`);
-        
-        // Aggiorniamo direttamente usando la mutation per assicurarci che l'aggiornamento non venga sovrascritto
-        updateSectionMutation.mutate({
-          id: item.id,
-          data: {
-            parentId,
-            order: newOrder
-          }
-        });
-      } else {
-        // Fallback alla funzione originale
-        onMoveSection(item.id, parentId, newOrder);
-      }
+      // Aggiorniamo direttamente usando la mutation per assicurarci che l'aggiornamento non venga sovrascritto
+      updateSectionMutation.mutate({
+        id: item.id,
+        data: {
+          parentId,
+          order: newOrder
+        }
+      });
     },
     collect: (monitor) => ({
       isOverEmptyArea: monitor.isOver(),
@@ -652,7 +642,16 @@ function SectionItem({
       
       // When dropping on a section, place it as the next sibling
       const newOrder = index;
-      onMove(item.id, parentId, newOrder);
+      
+      // CORREZIONE: Aggiorniamo direttamente usando la mutation
+      console.log(`Drop sulla sezione: spostamento di ${item.id} a parentId=${parentId}, order=${newOrder}`);
+      updateSectionMutation.mutate({
+        id: item.id,
+        data: {
+          parentId,
+          order: newOrder
+        }
+      });
     },
     collect: (monitor) => ({
       isOver: monitor.isOver(),
@@ -676,7 +675,14 @@ function SectionItem({
       if (item.id === section.id) return;
       
       // When dropping above a section, place it as the previous sibling
-      onMove(item.id, parentId, index);
+      console.log(`Drop sopra la sezione: spostamento di ${item.id} a parentId=${parentId}, order=${index}`);
+      updateSectionMutation.mutate({
+        id: item.id,
+        data: {
+          parentId,
+          order: index
+        }
+      });
     },
     collect: (monitor) => ({
       isOverTop: monitor.isOver(),
@@ -700,7 +706,14 @@ function SectionItem({
       if (item.id === section.id) return;
       
       // When dropping below a section, place it as the next sibling
-      onMove(item.id, parentId, index + 1);
+      console.log(`Drop sotto la sezione: spostamento di ${item.id} a parentId=${parentId}, order=${index + 1}`);
+      updateSectionMutation.mutate({
+        id: item.id,
+        data: {
+          parentId,
+          order: index + 1 
+        }
+      });
     },
     collect: (monitor) => ({
       isOverBottom: monitor.isOver(),
@@ -884,9 +897,14 @@ function SectionItem({
               className="text-neutral-medium hover:text-neutral-dark p-0.5"
               onClick={(e) => {
                 e.stopPropagation();
-                // Sposta la sezione verso l'alto (diminuisci order)
+                // Sposta la sezione verso l'alto (diminuisci order) utilizzando mutation
                 if (index > 0) {
-                  onMove(section.id, parentId, index - 1);
+                  updateSectionMutation.mutate({
+                    id: section.id,
+                    data: {
+                      order: index - 1
+                    }
+                  });
                 }
               }}
               title="Sposta in alto"
@@ -898,8 +916,13 @@ function SectionItem({
               className="text-neutral-medium hover:text-neutral-dark p-0.5"
               onClick={(e) => {
                 e.stopPropagation();
-                // Sposta la sezione verso il basso (aumenta order)
-                onMove(section.id, parentId, index + 1);
+                // Sposta la sezione verso il basso (aumenta order) utilizzando mutation
+                updateSectionMutation.mutate({
+                  id: section.id,
+                  data: {
+                    order: index + 1
+                  }
+                });
               }}
               title="Sposta in basso"
             >
@@ -928,28 +951,19 @@ function SectionItem({
                 <DropdownMenuLabel>Sposta sezione</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 
-                {/* Opzione speciale per lo spostamento sotto la Sezione 3 */}
-                <DropdownMenuItem 
-                  onClick={() => {
-                    const sezione3 = sections.find(s => s.id === 12); // Sezione 3 ha ID 12
-                    if (sezione3) {
-                      // Conteggio sezioni figlie esistenti
-                      const figliSezione3 = sections.filter(s => s.parentId === 12);
-                      onMove(section.id, 12, figliSezione3.length);
-                    }
-                  }}
-                  className="cursor-pointer flex items-center"
-                >
-                  <span className="material-icons text-sm mr-2">input</span>
-                  Sposta sotto "Sezione 3"
-                </DropdownMenuItem>
-                
                 {level > 0 && (
                   <DropdownMenuItem 
                     onClick={() => {
                       // Sposta fuori dalla gerarchia attuale (livello superiore)
                       const sezioniPrincipali = sections.filter(s => !s.parentId);
-                      onMove(section.id, null, sezioniPrincipali.length);
+                      // CORREZIONE: Aggiorniamo direttamente usando la mutation
+                      updateSectionMutation.mutate({
+                        id: section.id,
+                        data: {
+                          parentId: null,
+                          order: sezioniPrincipali.length
+                        }
+                      });
                     }}
                     className="cursor-pointer flex items-center"
                   >
@@ -958,25 +972,71 @@ function SectionItem({
                   </DropdownMenuItem>
                 )}
                 
-                {/* Opzioni per spostare sotto altre sezioni principali */}
+                {/* Opzioni per spostare sotto tutte le sezioni (principali e sottosezioni) */}
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel>Sposta sotto...</DropdownMenuLabel>
+                
+                {/* Mostriamo tutte le sezioni disponibili, eccetto la sezione corrente e le sue sottosezioni */}
                 {sections
-                  .filter(s => !s.parentId && s.id !== section.id)
-                  .sort((a, b) => a.order - b.order)
-                  .map(targetSection => (
-                    <DropdownMenuItem 
-                      key={targetSection.id}
-                      onClick={() => {
-                        const figliTargetSection = sections.filter(s => s.parentId === targetSection.id);
-                        onMove(section.id, targetSection.id, figliTargetSection.length);
-                      }}
-                      className="cursor-pointer flex items-center"
-                    >
-                      <span className="material-icons text-sm mr-2">subdirectory_arrow_right</span>
-                      {targetSection.title}
-                    </DropdownMenuItem>
-                  ))}
+                  .filter(s => {
+                    // Non mostriamo la sezione stessa
+                    if (s.id === section.id) return false;
+                    
+                    // Funzione per controllare se una sezione è antenata di un'altra
+                    const isAncestorOf = (parentId: number | null, childId: number): boolean => {
+                      if (!parentId) return false;
+                      if (parentId === childId) return true;
+                      const parent = sections.find(s => s.id === parentId);
+                      return parent ? isAncestorOf(parent.parentId, childId) : false;
+                    };
+                    
+                    // Non mostrare le sottosezioni della sezione corrente per evitare cicli
+                    return !isAncestorOf(s.parentId, section.id);
+                  })
+                  .sort((a, b) => {
+                    // Prima ordina per livello gerarchico, poi per order
+                    const getLevel = (sectionId: number): number => {
+                      const section = sections.find(s => s.id === sectionId);
+                      return section?.parentId ? 1 + getLevel(section.parentId) : 0;
+                    };
+                    
+                    const levelA = getLevel(a.id);
+                    const levelB = getLevel(b.id);
+                    
+                    if (levelA !== levelB) return levelA - levelB;
+                    return a.order - b.order;
+                  })
+                  .map(targetSection => {
+                    // Calcoliamo il percorso completo per la sezione (utile per le sottosezioni)
+                    const getPath = (sectionId: number): string => {
+                      const section = sections.find(s => s.id === sectionId);
+                      if (!section) return "";
+                      if (!section.parentId) return section.title;
+                      return `${getPath(section.parentId)} > ${section.title}`;
+                    };
+                    
+                    return (
+                      <DropdownMenuItem 
+                        key={targetSection.id}
+                        onClick={() => {
+                          const figliTargetSection = sections.filter(s => s.parentId === targetSection.id);
+                          // CORREZIONE: Aggiorniamo direttamente usando la mutation
+                          updateSectionMutation.mutate({
+                            id: section.id,
+                            data: {
+                              parentId: targetSection.id,
+                              order: figliTargetSection.length
+                            }
+                          });
+                        }}
+                        className="cursor-pointer flex items-center"
+                      >
+                        <span className="material-icons text-sm mr-2">subdirectory_arrow_right</span>
+                        {/* Mostriamo il percorso completo per le sottosezioni */}
+                        {targetSection.parentId ? getPath(targetSection.id) : targetSection.title}
+                      </DropdownMenuItem>
+                    );
+                  })}
               </DropdownMenuContent>
             </DropdownMenu>
             
