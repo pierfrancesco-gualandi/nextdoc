@@ -569,9 +569,6 @@ function SectionItem({
     })
   });
   
-  // Verifica se questa è la sezione 3.1 Sicurezza (ID 19)
-  const isSezione31Sicurezza = section.id === 19;
-  
   const [{ isOver }, drop] = useDrop({
     accept: 'SECTION',
     hover(item: DragItem, monitor) {
@@ -679,19 +676,32 @@ function SectionItem({
       // For this specific section, make sure to do a direct database update
       console.log(`Sezione ${item.id} trascinata su sezione ${section.id} (${section.title}): diventa un figlio con ordine ${childrenCount}`);
       
-      // Caso specifico per sezione 3.1 Sicurezza (ID 19) e Sezione 3 (ID 12)
-      if (item.id === 19 && section.id === 12) {
-        // Forzare l'ordine esplicitamente a 0 per evitare conflitti di ordinamento
-        console.log("CASO SPECIALE: Spostamento sezione 3.1 Sicurezza sotto Sezione 3");
-        onMove(19, 12, 0);
-      } 
-      // Caso in cui due sezioni hanno lo stesso ordine
-      else if (section.id === 12 || item.id === 19) {
-        // Forza un ordine specifico per evitare conflitti
-        onMove(item.id, section.id, 0);
-      }
-      else {
-        // Comportamento normale
+      // Ottieni le informazioni delle sezioni coinvolte
+      const draggedSection = sections.find(s => s.id === item.id);
+      const targetSection = section;
+      
+      // Registra i dettagli per debug
+      console.log(`Sezione ${draggedSection?.title} (ID: ${item.id}) trascinata su sezione ${targetSection.title} (ID: ${targetSection.id})`);
+      
+      if (draggedSection && targetSection) {
+        // Determina l'ordine ottimale per la sezione spostata
+        // Otteniamo tutte le sezioni figlie correnti dell'obiettivo
+        const targetChildren = sections.filter(s => s.parentId === targetSection.id);
+        
+        // Per sicurezza, assicuriamoci che l'elemento non sia aggiunto duplicato
+        if (targetChildren.some(child => child.id === draggedSection.id)) {
+          console.log("La sezione è già un figlio della sezione target");
+          return; // Evita duplicati
+        }
+        
+        // Aggiungiamo come ultimo elemento
+        const newOrder = targetChildren.length;
+        console.log(`Posizionamento gerarchico: parentId=${targetSection.id}, order=${newOrder}`);
+        
+        // Applica lo spostamento con posizionamento gerarchico
+        onMove(item.id, targetSection.id, newOrder);
+      } else {
+        // Fallback al comportamento normale
         onMove(item.id, section.id, childrenCount);
       }
       
@@ -734,7 +744,7 @@ function SectionItem({
           transition-colors 
           duration-100
           ${isOver ? 'bg-gray-200' : ''}
-          ${isSezione31Sicurezza ? 'border-2 border-dashed border-blue-400 shadow-sm' : ''}
+          ${isDragging ? 'border-2 border-dashed border-blue-400 shadow-sm' : ''}
         `}
         style={{ paddingLeft: levelPadding }}
       >
@@ -745,9 +755,7 @@ function SectionItem({
           <div 
             className={`
               flex items-center flex-grow min-w-[180px] relative 
-              ${isOverChild ? 'bg-primary-light/10 rounded-sm px-1' : ''}
-              ${section.id === 12 ? 'hover:bg-blue-50 hover:border hover:border-blue-200 rounded' : ''}
-              ${section.id === 12 && isOverChild ? 'bg-blue-100 !border border-blue-300' : ''}
+              ${isOverChild ? 'bg-blue-100 rounded-sm px-1 border border-blue-300' : ''}
               transition-all
             `}
           >
@@ -769,8 +777,7 @@ function SectionItem({
               className={`
                 material-icons text-sm 
                 ${isSelected ? 'text-primary' : 'text-neutral-medium'}
-                ${isOverChild ? 'text-primary' : ''}
-                ${section.id === 12 && isOverChild ? '!text-blue-800' : ''}
+                ${isOverChild ? 'text-blue-800' : ''}
               `}
             >
               {hasChildren ? 'folder' : 'article'}
@@ -778,28 +785,12 @@ function SectionItem({
             
             <span className={`
               truncate max-w-[150px] min-w-0 
-              ${isOverChild ? 'text-primary font-medium' : ''}
-              ${section.id === 12 ? 'font-medium' : ''}
-              ${section.id === 12 && isOverChild ? '!text-blue-800' : ''}
-              ${isSezione31Sicurezza ? 'font-bold text-blue-700' : ''}
+              ${isOverChild ? 'text-blue-800 font-medium' : ''}
             `}>
               {section.title}
-              {section.id === 12 && !isOverChild && (
-                <span className="ml-1 text-xs text-blue-600 bg-blue-50 px-1 py-0.5 rounded-sm font-normal whitespace-nowrap">
-                  Zona per "3.1 Sicurezza"
-                </span>
-              )}
-              {isSezione31Sicurezza && !isOverChild && (
-                <span className="ml-1 text-xs text-white bg-blue-600 px-1 py-0.5 rounded-sm font-normal whitespace-nowrap">
-                  Trascina su "Sezione 3"
-                </span>
-              )}
               {isOverChild && 
-                <span className={`
-                  ml-1 text-xs px-1 py-0.5 rounded-sm whitespace-nowrap
-                  ${section.id === 12 ? 'bg-blue-600 text-white' : 'bg-primary text-white'}
-                `}>
-                  {section.id === 12 ? 'Rilascia qui "3.1 Sicurezza"' : 'Trascina qui'}
+                <span className="ml-1 text-xs bg-blue-600 text-white px-1 py-0.5 rounded-sm whitespace-nowrap">
+                  Rilascia qui
                 </span>
               }
             </span>
