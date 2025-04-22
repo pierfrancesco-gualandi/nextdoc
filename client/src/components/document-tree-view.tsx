@@ -637,24 +637,43 @@ function SectionItem({
   
   const [{ isOverChild }, dropChild] = useDrop({
     accept: 'SECTION',
-    drop(item: DragItem) {
+    hover() {
+      // Se la sezione non è espansa ma stiamo trascinando su di essa,
+      // la espandiamo automaticamente per facilitare il drop
+      if (!isExpanded) {
+        onToggleExpand();
+      }
+    },
+    drop(item: DragItem, monitor) {
       if (item.id === section.id) return;
+      
+      // Verifica che non stiamo cercando di spostare un padre come figlio di un suo figlio
+      // che creerebbe un ciclo nella gerarchia
+      const isParentOf = (parentId: number | null, childId: number): boolean => {
+        if (!parentId) return false;
+        const child = sections.find(s => s.id === childId);
+        if (!child) return false;
+        return child.id === parentId || isParentOf(child.parentId, parentId);
+      };
+      
+      if (isParentOf(item.id, section.id)) {
+        console.error("Non puoi spostare una sezione come figlio di una sua sottosezione");
+        return;
+      }
       
       // When dropping ON a section, make the dragged section a CHILD of this section
       // Find how many children this section already has to calculate the order
       const childrenCount = sections.filter(s => s.parentId === section.id).length;
       
-      // Log più dettagliato per diagnosticare il problema con sezione 3.1 Sicurezza
+      // For this specific section, make sure to do a direct database update
       console.log(`Sezione ${item.id} trascinata su sezione ${section.id} (${section.title}): diventa un figlio con ordine ${childrenCount}`);
       
-      // Caso speciale per sezione 3.1 Sicurezza (ID 19) e Sezione 3 (ID 12)
-      if (item.id === 19 && section.id === 12) {
-        console.log("CASO SPECIALE: Spostamento sezione 3.1 Sicurezza sotto Sezione 3");
-        // Forza l'aggiornamento diretto
-        onMove(19, 12, childrenCount);
-      } else {
-        // Comportamento standard
-        onMove(item.id, section.id, childrenCount); // Set as last child
+      // Usa semplicemente il metodo onMove che è stato passato dal componente parent
+      onMove(item.id, section.id, childrenCount); 
+      
+      // Forza l'espansione
+      if (!isExpanded) {
+        onToggleExpand();
       }
     },
     collect: (monitor) => ({
@@ -698,7 +717,7 @@ function SectionItem({
           className={`flex items-center justify-between group cursor-pointer min-w-[280px] gap-0 ${isSelected ? 'bg-gray-100' : ''}`}
           onClick={onSelect}
         >
-          <div className="flex items-center flex-grow min-w-[180px]">
+          <div className={`flex items-center flex-grow min-w-[180px] relative ${isOverChild ? 'bg-primary-light/10 rounded-sm px-1' : ''}`}>
             {hasChildren && (
               <button
                 onClick={(e) => {
@@ -717,12 +736,20 @@ function SectionItem({
               className={`
                 material-icons text-sm 
                 ${isSelected ? 'text-primary' : 'text-neutral-medium'}
+                ${isOverChild ? 'text-primary' : ''}
               `}
             >
               {hasChildren ? 'folder' : 'article'}
             </span>
             
-            <span className="truncate max-w-[150px] min-w-0">{section.title}</span>
+            <span className={`truncate max-w-[150px] min-w-0 ${isOverChild ? 'text-primary font-medium' : ''}`}>
+              {section.title}
+              {isOverChild && 
+                <span className="ml-1 text-xs bg-primary text-white px-1 py-0.5 rounded-sm whitespace-nowrap">
+                  Trascina qui
+                </span>
+              }
+            </span>
             
             {componentsLabel}
           </div>
@@ -770,20 +797,24 @@ function SectionItem({
           </div>
         </div>
         
-        {/* Child drop zone - only show when expanded and can accept children */}
-        {isExpanded && (
-          <div 
-            ref={dropChild}
-            className={`
-              mt-1 pl-6 
-              border-l-2 
-              min-h-[20px]
-              ${isOverChild ? 'border-primary bg-primary-light/20' : 'border-gray-200'}
-            `}
-          >
-            {children}
-          </div>
-        )}
+        {/* Child drop zone - shown in two ways:
+            1. Fully displayed when expanded 
+            2. Hidden but still droppable when collapsed */}
+        <div 
+          ref={dropChild}
+          className={`
+            ${isExpanded ? 'mt-1 pl-6 border-l-2 min-h-[20px]' : 'h-0 overflow-hidden'}
+            ${isOverChild ? 'border-primary bg-primary-light/20' : 'border-gray-200'}
+            ${!isExpanded && isOverChild ? 'border-primary bg-primary-light/20 h-4 overflow-visible' : ''}
+          `}
+        >
+          {isExpanded && children}
+          {!isExpanded && isOverChild && (
+            <div className="p-1 text-xs text-primary font-medium">
+              Diventerà figlio di questa sezione
+            </div>
+          )}
+        </div>
       </div>
       
       {/* Drop zone indicator for bottom */}
