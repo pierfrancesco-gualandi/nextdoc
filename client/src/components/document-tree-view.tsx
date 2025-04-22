@@ -14,6 +14,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Trash2 } from "lucide-react";
 
 interface Section {
@@ -787,6 +795,74 @@ function SectionItem({
             >
               <span className="material-icons text-sm">add</span>
             </button>
+            
+            {/* Menu contestuale per lo spostamento delle sezioni */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button 
+                  className="text-neutral-medium hover:text-neutral-dark p-0.5 focus:outline-none"
+                  onClick={(e) => e.stopPropagation()}
+                  title="Opzioni di spostamento"
+                >
+                  <span className="material-icons text-sm">more_vert</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <DropdownMenuLabel>Sposta sezione</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                {/* Opzione speciale per lo spostamento sotto la Sezione 3 */}
+                <DropdownMenuItem 
+                  onClick={() => {
+                    const sezione3 = sections.find(s => s.id === 12); // Sezione 3 ha ID 12
+                    if (sezione3) {
+                      // Conteggio sezioni figlie esistenti
+                      const figliSezione3 = sections.filter(s => s.parentId === 12);
+                      onMove(section.id, 12, figliSezione3.length);
+                    }
+                  }}
+                  className="cursor-pointer flex items-center"
+                >
+                  <span className="material-icons text-sm mr-2">input</span>
+                  Sposta sotto "Sezione 3"
+                </DropdownMenuItem>
+                
+                {level > 0 && (
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      // Sposta fuori dalla gerarchia attuale (livello superiore)
+                      const sezioniPrincipali = sections.filter(s => !s.parentId);
+                      onMove(section.id, null, sezioniPrincipali.length);
+                    }}
+                    className="cursor-pointer flex items-center"
+                  >
+                    <span className="material-icons text-sm mr-2">output</span>
+                    Sposta al livello principale
+                  </DropdownMenuItem>
+                )}
+                
+                {/* Opzioni per spostare sotto altre sezioni principali */}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Sposta sotto...</DropdownMenuLabel>
+                {sections
+                  .filter(s => !s.parentId && s.id !== section.id)
+                  .sort((a, b) => a.order - b.order)
+                  .map(targetSection => (
+                    <DropdownMenuItem 
+                      key={targetSection.id}
+                      onClick={() => {
+                        const figliTargetSection = sections.filter(s => s.parentId === targetSection.id);
+                        onMove(section.id, targetSection.id, figliTargetSection.length);
+                      }}
+                      className="cursor-pointer flex items-center"
+                    >
+                      <span className="material-icons text-sm mr-2">subdirectory_arrow_right</span>
+                      {targetSection.title}
+                    </DropdownMenuItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
             <button 
               className="text-neutral-medium hover:text-neutral-dark p-0.5 cursor-move"
               onClick={(e) => e.stopPropagation()}
