@@ -328,9 +328,22 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
     // URL diretto al modello HTML/WebGL
     const directUrl = modelData.src;
     
-    // URL per il file stesso caricato nella sua cartella
-    // Usando il percorso diretto al file A4B09778.htm dalla cartella A4B09778
-    const a4b09778Url = '/uploads/A4B09778/A4B09778.htm';
+    // Ottieni il nome del file dal percorso
+    const fileName = modelData.src.split('/').pop() || '';
+    
+    // Ottieni il nome della cartella dal folderName o dal nome del file senza estensione
+    const folderName = modelData.folderName || modelData.folderPath || fileName.split('.')[0];
+    
+    // Costruisci il percorso corretto nella struttura delle cartelle
+    // Formato: /uploads/NOME_CARTELLA/NOME_FILE.htm
+    const fullModelUrl = `/uploads/${folderName}/${fileName}`;
+    
+    console.log("URL modello 3D costruito:", fullModelUrl, "Dati modello:", {
+      folderName,
+      fileName,
+      originalSrc: modelData.src,
+      folderPath: modelData.folderPath
+    });
     
     // Utilizziamo un pulsante per aprire il modello 3D in una nuova finestra,
     // poiché il modello richiede file esterni nella stessa cartella
@@ -363,7 +376,7 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
           <a
-            href={a4b09778Url}
+            href={fullModelUrl}
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -389,7 +402,7 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
         
         <div style={{ marginTop: '15px', fontSize: '13px', color: '#777', textAlign: 'center' }}>
           <a 
-            href="/uploads/A4B09778.zip" 
+            href={`/uploads/${folderName}.zip`}
             style={{
               display: 'inline-block',
               marginTop: '10px',
