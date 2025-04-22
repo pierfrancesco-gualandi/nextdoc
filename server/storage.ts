@@ -490,6 +490,19 @@ export class MemStorage implements IStorage {
   }
 
   async createContentModule(module: InsertContentModule): Promise<ContentModule> {
+    // Se l'ordine non è specificato, calcola l'ordine in base ai moduli esistenti nella sezione
+    if (module.order === undefined) {
+      const existingModules = Array.from(this.contentModules.values())
+        .filter(m => m.sectionId === module.sectionId);
+      
+      // Trova l'ordine più alto e aggiungi 1 per mettere il nuovo modulo in coda
+      const highestOrder = existingModules.length > 0 
+        ? Math.max(...existingModules.map(m => m.order)) 
+        : -1;
+        
+      module.order = highestOrder + 1;
+    }
+    
     const id = this.currentContentModuleId++;
     const newModule: ContentModule = { ...module, id };
     this.contentModules.set(id, newModule);
