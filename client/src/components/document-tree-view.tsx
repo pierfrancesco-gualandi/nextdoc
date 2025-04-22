@@ -630,6 +630,10 @@ function SectionItem({
       originalParentId: section.parentId,
       originalIndex: index
     },
+    end: () => {
+      // Reset la variabile globale quando il trascinamento termina
+      window._highlightedDropTarget = undefined;
+    },
     collect: (monitor) => ({
       isDragging: monitor.isDragging()
     })
@@ -758,11 +762,17 @@ function SectionItem({
   
   const [{ isOverChild }, dropChild] = useDrop({
     accept: 'SECTION',
-    hover() {
+    hover(item: DragItem, monitor) {
       // Se la sezione non è espansa ma stiamo trascinando su di essa,
       // la espandiamo automaticamente per facilitare il drop
       if (!isExpanded) {
         onToggleExpand();
+      }
+      
+      // Solo quando si è esattamente sopra l'area figlio, si attiva l'indicatore
+      // Imposta una variabile globale per tracciare l'ID della sezione attualmente illuminata
+      if (monitor.isOver({ shallow: true })) {
+        window._highlightedDropTarget = section.id;
       }
     },
     drop(item: DragItem, monitor) {
@@ -885,7 +895,8 @@ function SectionItem({
           <div 
             className={`
               flex items-center flex-grow min-w-[180px] relative 
-              ${isOverChild ? 'bg-blue-100 rounded-sm px-1 border border-blue-300' : ''}
+              ${isOverChild && window._highlightedDropTarget === section.id ? 'bg-blue-100 rounded-sm px-1 border border-blue-300' : ''}
+              ${isOverChild && window._highlightedDropTarget !== section.id ? 'bg-gray-100 rounded-sm px-1 border border-gray-300' : ''}
               transition-all
             `}
           >
@@ -918,7 +929,7 @@ function SectionItem({
               ${isOverChild ? 'text-blue-800 font-medium' : ''}
             `}>
               {section.title}
-              {isOverChild && 
+              {isOverChild && (window._highlightedDropTarget === section.id) && 
                 <span className="ml-1 text-xs bg-blue-600 text-white px-1 py-0.5 rounded-sm whitespace-nowrap">
                   Rilascia qui
                 </span>
@@ -1124,5 +1135,12 @@ declare global {
       targetId: number;
       childDropTriggered: boolean;
     };
+  }
+}
+
+// Aggiungi una dichiarazione globale per il tipo _highlightedDropTarget
+declare global {
+  interface Window {
+    _highlightedDropTarget?: number;
   }
 }
