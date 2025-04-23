@@ -421,14 +421,15 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
   };
   
   // Gestisce la creazione di una nuova cartella per il modello
-  const handleCreateFolder = async () => {
-    if (!newFolderName) {
+  const handleCreateFolder = async (folderName: string, sourceFolderName?: string): Promise<boolean> => {
+    const nameToUse = folderName || newFolderName;
+    if (!nameToUse) {
       toast({
         title: "Nome cartella richiesto",
         description: "Inserisci un nome per la cartella",
         variant: "destructive",
       });
-      return;
+      return false;
     }
     
     setIsUploading(true);
@@ -441,8 +442,8 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          folderName: newFolderName,
-          sourceModelName: currentValues.sourceModelName || null,
+          folderName: nameToUse,
+          sourceModelName: sourceFolderName || currentValues.sourceModelName || null,
         }),
       });
       
@@ -454,7 +455,7 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
       
       // Imposta i campi del form con i valori corretti tornati dal server
       setValue('src', data.fileUrl);
-      setValue('folderPath', newFolderName);
+      setValue('folderPath', nameToUse);
       setValue('format', 'html');
       
       // Aggiorna l'anteprima
@@ -462,11 +463,12 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
       
       toast({
         title: "Cartella modello creata",
-        description: `La cartella ${newFolderName} è stata creata con successo`,
+        description: `La cartella ${nameToUse} è stata creata con successo`,
       });
       
       // Chiudi il dialogo
       setIsCreateFolderDialogOpen(false);
+      return true;
     } catch (error) {
       console.error('Errore creazione cartella:', error);
       toast({
@@ -474,6 +476,7 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
         description: error instanceof Error ? error.message : "Si è verificato un errore",
         variant: "destructive",
       });
+      return false;
     } finally {
       setIsUploading(false);
     }
@@ -946,7 +949,7 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
           </Button>
           <Button 
             type="button" 
-            onClick={handleCreateFolder}
+            onClick={() => handleCreateFolder(newFolderName, currentValues.sourceModelName)}
             disabled={isUploading || !newFolderName}
           >
             {isUploading ? 'Creazione...' : 'Crea cartella'}
@@ -955,6 +958,6 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
       </DialogContent>
     </Dialog>
   );
-}
+};
 
 export default ThreeModelEditor;
