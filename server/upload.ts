@@ -130,6 +130,50 @@ export const upload = multer({
   }
 });
 
+// Estrae il nome del modello 3D dal nome del file
+const extract3DModelName = (filename: string): string | null => {
+  // Pattern per identificare i nomi dei modelli 3D (es. A4B10789.htm, A5B43041.htm)
+  const modelPattern = /^([A-Z]\d[A-Z]\d+)\.(?:htm|html)$/i;
+  const match = filename.match(modelPattern);
+  return match ? match[1] : null;
+};
+
+// Gestisce la preparazione della cartella per modelli 3D WebGL
+const prepare3DModelFolder = (modelName: string, originalFilePath: string): string | null => {
+  try {
+    console.log(`Preparazione cartella per modello 3D: ${modelName}`);
+    
+    // Crea la cartella per il modello 3D
+    const modelDir = path.join(uploadsDir, modelName);
+    if (!fs.existsSync(modelDir)) {
+      fs.mkdirSync(modelDir, { recursive: true });
+    }
+    
+    // Crea le sottocartelle necessarie per i modelli WebGL
+    const subfolders = ["res", "test", "treeview"];
+    for (const subfolder of subfolders) {
+      const subfolderPath = path.join(modelDir, subfolder);
+      if (!fs.existsSync(subfolderPath)) {
+        fs.mkdirSync(subfolderPath, { recursive: true });
+      }
+    }
+    
+    // Copia il file HTML nella cartella del modello
+    const htmlFileName = `${modelName}.htm`;
+    const targetPath = path.join(modelDir, htmlFileName);
+    
+    if (!fs.existsSync(targetPath)) {
+      fs.copyFileSync(originalFilePath, targetPath);
+      console.log(`File HTML copiato in: ${targetPath}`);
+    }
+    
+    return path.join(modelName, htmlFileName);
+  } catch (error) {
+    console.error(`Errore nella preparazione della cartella per il modello 3D ${modelName}:`, error);
+    return null;
+  }
+};
+
 // Middleware per salvare le informazioni del file nel database
 export const saveFileInfo = async (req: Request, res: Response, next: NextFunction) => {
   if (!req.file && (!req.files || Object.keys(req.files || {}).length === 0)) {
@@ -141,14 +185,37 @@ export const saveFileInfo = async (req: Request, res: Response, next: NextFuncti
     
     // Gestisce un singolo file
     if (req.file) {
+      // Verifica se si tratta di un file HTML di modello 3D
+      const is3DModel = req.file.originalname.toLowerCase().match(/\.(html|htm)$/i) && 
+                         (req.body.webglModel === 'true' || req.body.is3DModel === 'true');
+      
+      let folderName = req.body.folderName || null;
+      let targetFilename = req.file.filename;
+      
+      // Se è un modello 3D, gestisci la preparazione della cartella
+      if (is3DModel) {
+        const modelName = extract3DModelName(req.file.originalname);
+        
+        if (modelName) {
+          folderName = modelName;
+          console.log(`Rilevato modello 3D: ${modelName} da file ${req.file.originalname}`);
+          
+          // Prepara la cartella per il modello 3D
+          const relativePath = prepare3DModelFolder(modelName, req.file.path);
+          if (relativePath) {
+            targetFilename = relativePath;
+          }
+        }
+      }
+      
       const fileData: InsertUploadedFile = {
-        filename: req.file.filename,
+        filename: targetFilename,
         originalName: req.file.originalname,
         path: req.file.path,
         mimetype: req.file.mimetype,
         size: req.file.size,
         uploadedById: userId,
-        folderName: req.body.folderName || null
+        folderName: folderName
       };
 
       // Salva le informazioni nel database
@@ -157,19 +224,77 @@ export const saveFileInfo = async (req: Request, res: Response, next: NextFuncti
       // Aggiunge le informazioni del file alla request
       req.uploadedFile = newFile;
       
+      // Se è un modello 3D, aggiungi l'informazione
+      if (is3DModel && folderName) {
+        req.is3DModel = true;
+        req.modelFolderName = folderName;
+      }
+      
       next();
     } 
-    // Gestisce array di file
+    // Gestisce array di file (upload multiplo)
     else if (req.files && Array.isArray(req.files)) {
       const fileInfos: InsertUploadedFile[] = [];
       const savedFiles = [];
       
-      // Crea un nome di cartella basato sul timestamp se non è fornito
-      const folderName = req.body.folderName || `folder_${Date.now()}`;
+      // Verifica se c'è un file HTML di modello 3D
+      const htmlFile = (req.files as Express.Multer.File[]).find(file => 
+        file.originalname.toLowerCase().match(/\.(html|htm)$/i)
+      );
       
+      // Se è specificato un modello 3D o c'è un file HTML, cerchiamo di estrarre il nome del modello
+      let folderName = req.body.folderName;
+      let modelName = null;
+      
+      if ((req.body.webglModel === 'true' || req.body.is3DModel === 'true') && htmlFile) {
+        modelName = extract3DModelName(htmlFile.originalname);
+        if (modelName) {
+          folderName = modelName;
+          console.log(`Rilevato modello 3D in upload multiplo: ${modelName}`);
+        }
+      }
+      
+      // Se non abbiamo un nome di cartella, creiamone uno basato sul timestamp
+      if (!folderName) {
+        folderName = `folder_${Date.now()}`;
+      }
+      
+      // Prepara la cartella principale
+      const folderBasePath = path.join(uploadsDir, folderName);
+      if (!fs.existsSync(folderBasePath)) {
+        fs.mkdirSync(folderBasePath, { recursive: true });
+      }
+      
+      // Se è un modello 3D, prepara anche le sottocartelle
+      if (modelName) {
+        const subfolders = ["res", "test", "treeview"];
+        for (const subfolder of subfolders) {
+          const subfolderPath = path.join(folderBasePath, subfolder);
+          if (!fs.existsSync(subfolderPath)) {
+            fs.mkdirSync(subfolderPath, { recursive: true });
+          }
+        }
+      }
+      
+      // Processa tutti i file
       for (const file of req.files as Express.Multer.File[]) {
+        let targetFilename = file.filename;
+        
+        // Se è il file HTML principale del modello 3D
+        if (modelName && file === htmlFile) {
+          const htmlFileName = `${modelName}.htm`;
+          const targetPath = path.join(folderBasePath, htmlFileName);
+          
+          if (!fs.existsSync(targetPath)) {
+            fs.copyFileSync(file.path, targetPath);
+            console.log(`File HTML copiato in: ${targetPath}`);
+          }
+          
+          targetFilename = path.join(folderName, htmlFileName);
+        }
+        
         const fileData: InsertUploadedFile = {
-          filename: file.filename,
+          filename: targetFilename,
           originalName: file.originalname,
           path: file.path,
           mimetype: file.mimetype,
@@ -186,8 +311,8 @@ export const saveFileInfo = async (req: Request, res: Response, next: NextFuncti
         savedFiles.push(...await db.insert(uploadedFiles).values(fileInfos).returning());
       }
       
-      // Se c'è un file HTML, memorizzalo come file principale
-      const htmlFile = savedFiles.find(file => 
+      // Trova il file HTML (se esiste)
+      const mainHtmlFile = savedFiles.find(file => 
         file.originalName.endsWith('.html') || file.originalName.endsWith('.htm')
       );
       
@@ -197,58 +322,54 @@ export const saveFileInfo = async (req: Request, res: Response, next: NextFuncti
         try {
           fileStructureData = JSON.parse(req.body.fileStructure) as Record<string, string>;
           console.log("Struttura cartelle ricevuta:", fileStructureData);
+          
+          // Sposta i file nelle sottocartelle appropriate
+          for (const file of savedFiles) {
+            const relativePath = fileStructureData[file.originalName];
+            if (relativePath) {
+              // Estrae il percorso della cartella dal percorso relativo
+              const dirPath = path.dirname(relativePath);
+              if (dirPath && dirPath !== '.') {
+                const targetDir = path.join(folderBasePath, dirPath);
+                if (!fs.existsSync(targetDir)) {
+                  fs.mkdirSync(targetDir, { recursive: true });
+                }
+                
+                // Sposta il file nella sottocartella
+                const currentPath = path.join(uploadsDir, file.filename);
+                const newFileName = path.basename(relativePath);
+                const newPath = path.join(targetDir, newFileName);
+                
+                try {
+                  // Copia il file nella sottocartella
+                  fs.copyFileSync(currentPath, newPath);
+                  console.log(`File spostato in: ${newPath}`);
+                  
+                  // Aggiorna il percorso nel database
+                  file.path = newPath;
+                  file.filename = path.join(folderName, dirPath, newFileName);
+                } catch (e) {
+                  console.error(`Errore nello spostamento del file ${file.originalName}:`, e);
+                }
+              }
+            }
+          }
         } catch (e) {
           console.error("Errore nel parsing di fileStructure:", e);
         }
       }
       
-      // Crea sottocartelle se necessario per i file con percorsi relativi
-      if (Object.keys(fileStructureData).length > 0) {
-        const folderBasePath = path.join(uploadsDir, folderName);
-        if (!fs.existsSync(folderBasePath)) {
-          fs.mkdirSync(folderBasePath, { recursive: true });
-        }
-        
-        // Sposta i file nelle sottocartelle appropriate
-        for (const file of savedFiles) {
-          const relativePath = fileStructureData[file.originalName];
-          if (relativePath) {
-            // Estrae il percorso della cartella dal percorso relativo
-            const dirPath = path.dirname(relativePath);
-            if (dirPath && dirPath !== '.') {
-              const targetDir = path.join(folderBasePath, dirPath);
-              if (!fs.existsSync(targetDir)) {
-                fs.mkdirSync(targetDir, { recursive: true });
-              }
-              
-              // Sposta il file nella sottocartella
-              const currentPath = path.join(uploadsDir, file.filename);
-              const newFileName = path.basename(relativePath);
-              const newPath = path.join(targetDir, newFileName);
-              
-              try {
-                // Copia il file nella sottocartella
-                fs.copyFileSync(currentPath, newPath);
-                console.log(`File spostato in: ${newPath}`);
-                
-                // Aggiorna il percorso nel database
-                file.path = newPath;
-                file.filename = path.join(folderName, dirPath, newFileName);
-                
-                // Non eliminare l'originale, potrebbe essere necessario per riferimenti diretti
-              } catch (e) {
-                console.error(`Errore nello spostamento del file ${file.originalName}:`, e);
-              }
-            }
-          }
-        }
-      }
-      
       // Aggiunge le informazioni dei file alla request
       req.uploadedFiles = savedFiles;
-      req.uploadedFile = htmlFile || savedFiles[0]; // Usa il file HTML o il primo file
+      req.uploadedFile = mainHtmlFile || savedFiles[0]; // Usa il file HTML o il primo file
       req.folderName = folderName;
       req.fileStructure = fileStructureData;
+      
+      // Se è un modello 3D, aggiungi l'informazione
+      if (modelName) {
+        req.is3DModel = true;
+        req.modelFolderName = modelName;
+      }
       
       next();
     } else {
@@ -286,6 +407,8 @@ declare global {
       uploadedFiles?: any[];
       folderName?: string;
       fileStructure?: Record<string, string>;
+      is3DModel?: boolean;
+      modelFolderName?: string;
     }
   }
 }

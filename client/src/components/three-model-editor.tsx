@@ -81,6 +81,23 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
           format = 'gltf';
         } else if (file.name.endsWith('.html') || file.name.endsWith('.htm')) {
           format = 'html';
+          
+          // Estrai il nome del modello 3D dal nome del file per i file HTML/HTM
+          const modelPattern = /^([A-Z]\d[A-Z]\d+)\.(?:htm|html)$/i;
+          const match = file.name.match(modelPattern);
+          
+          if (match) {
+            const modelName = match[1];
+            console.log(`Rilevato modello 3D WebGL: ${modelName}`);
+            
+            // Imposta automaticamente il campo folderPath
+            setValue('folderPath', modelName);
+            
+            toast({
+              title: "Modello 3D rilevato",
+              description: `Rilevato modello con codice ${modelName}. Il sistema gestirà automaticamente la creazione delle cartelle necessarie.`
+            });
+          }
         }
         
         setValue('format', format);
@@ -177,9 +194,29 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
         return result;
       }
       
+      // Verifica se è un modello 3D standard (A4B10789.htm)
+      const modelPattern = /^([A-Z]\d[A-Z]\d+)\.(?:htm|html)$/i;
+      const match = selectedFile.name.match(modelPattern);
+      let is3DModel = false;
+      let modelName = '';
+      
+      if (match && (selectedFile.name.endsWith('.html') || selectedFile.name.endsWith('.htm'))) {
+        is3DModel = true;
+        modelName = match[1];
+        console.log(`Caricamento modello 3D WebGL: ${modelName}`);
+      }
+      
       // Caricamento normale di un singolo file
       const formData = new FormData();
       formData.append('file', selectedFile);
+      
+      // Se è un modello 3D, imposta il flag
+      if (is3DModel) {
+        formData.append('webglModel', 'true');
+        formData.append('folderName', modelName);
+        
+        console.log('Aggiungendo parametri per modello 3D:', { webglModel: true, folderName: modelName });
+      }
       
       const response = await fetch('/api/upload', {
         method: 'POST',
@@ -195,19 +232,30 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
       // Imposta l'URL del file caricato
       setValue('src', `/uploads/${data.filename}`);
       
-      // Se è un file HTML senza file di supporto, imposta il folderPath come il nome del file senza estensione
+      // Se è un file HTML, imposta il folderPath
       if (selectedFile.name.endsWith('.html') || selectedFile.name.endsWith('.htm')) {
-        const folderName = selectedFile.name.split('.')[0];
+        let folderName;
+        
+        if (is3DModel) {
+          folderName = modelName;
+          // Per un modello 3D standard, usa il percorso corretto
+          setValue('src', `/uploads/${modelName}/${modelName}.htm`);
+        } else {
+          folderName = selectedFile.name.split('.')[0];
+        }
+        
         setValue('folderPath', folderName);
         
         toast({
           title: "File HTML caricato con successo",
-          description: "Il modello WebGL è stato caricato correttamente",
+          description: is3DModel 
+            ? `Il modello WebGL ${modelName} è stato caricato correttamente con la struttura di cartelle necessaria`
+            : "Il modello WebGL è stato caricato correttamente",
         });
         
         setIsUploadDialogOpen(false);
         return {
-          src: `/uploads/${data.filename}`,
+          src: is3DModel ? `/uploads/${modelName}/${modelName}.htm` : `/uploads/${data.filename}`,
           folderPath: folderName
         };
       }
