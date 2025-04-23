@@ -883,8 +883,10 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
       isOpen={isFileExplorerOpen}
       onClose={() => setIsFileExplorerOpen(false)}
       onSelectFile={handleSelectFile}
+      onCreateFolder={handleCreateFolder}
       initialPath="/uploads"
       allowSelectFile={true}
+      allowCreateFolder={true}
       title="Seleziona modello 3D"
     />
 

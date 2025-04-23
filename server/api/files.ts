@@ -231,12 +231,26 @@ export const createModelFolder = async (req: Request, res: Response) => {
     
     // Se non abbiamo copiato i file, creiamo dei segnaposto
     if (!filesCopied) {
-      // File segnaposto per i file di supporto richiesti
+      // Copia treeicons.png dalla cartella di riferimento A4B09778
+      // Questo file è essenziale per il funzionamento del visualizzatore
+      const referenceTreeIconsPath = path.join(uploadsPath, 'A4B09778', 'treeicons.png');
+      const treeiconsDestPath = path.join(newFolderPath, 'treeicons.png');
+      
+      if (fs.existsSync(referenceTreeIconsPath)) {
+        try {
+          // Copia il file di riferimento
+          fs.copyFileSync(referenceTreeIconsPath, treeiconsDestPath);
+          console.log('File treeicons.png copiato dalla cartella di riferimento');
+        } catch (err) {
+          console.error('Errore nella copia di treeicons.png:', err);
+        }
+      }
+      
+      // File segnaposto per gli altri file di supporto richiesti
       const placeholderFiles = [
         { path: 'iv3d.js', content: '// File di supporto iv3d.js mancante - Il modello potrebbe non funzionare correttamente' },
         { path: 'ivstyles.css', content: '/* File di supporto ivstyles.css mancante - Il modello potrebbe non funzionare correttamente */' },
         { path: 'scene.iv3d', content: '<!-- File di supporto scene.iv3d mancante - Il modello potrebbe non funzionare correttamente -->' },
-        { path: 'treeicons.png', content: '' }, // File binario vuoto
         { path: 'res/viewaxis.iv3d', content: '<!-- File di supporto viewaxis.iv3d mancante - Il modello potrebbe non funzionare correttamente -->' },
         { path: 'test/checkmark.png', content: '' }, // File binario vuoto
         { path: 'test/cogwheel.png', content: '' }, // File binario vuoto
