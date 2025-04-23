@@ -37,7 +37,6 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
     { id: "video", icon: "smart_display", label: "Video" },
     { id: "table", icon: "table_chart", label: "Tabella" },
     { id: "checklist", icon: "checklist", label: "Checklist" },
-    { id: "warning", icon: "warning", label: "Avviso" },
     { id: "danger", icon: "error", label: "PERICOLO" },
     { id: "warning-alert", icon: "warning_amber", label: "AVVERTENZA" },
     { id: "caution", icon: "report_problem", label: "ATTENZIONE" },
@@ -349,9 +348,7 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
       case "checklist":
         defaultContent = { items: [{ text: "Elemento 1", checked: false }] };
         break;
-      case "warning":
-        defaultContent = { title: "Attenzione", message: "", level: "warning" };
-        break;
+      // Rimosso il caso "warning" non più utilizzato
       case "danger":
         defaultContent = { title: "PERICOLO", description: "" };
         break;

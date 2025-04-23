@@ -289,14 +289,14 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               (module.content.message || module.content.text || 'Questo è un messaggio di PERICOLO');
               
             content += `
-              <div class="message danger">
-                <div class="message-header">
-                  <span class="message-icon">&#9888;</span> <!-- ⚠️ -->
-                  <h4>PERICOLO</h4>
+              <div class="message danger" style="background-color: #ff0000; color: white; border: none;">
+                <div class="message-header" style="color: white;">
+                  <span class="message-icon" style="color: white;">&#9888;</span> <!-- ⚠️ -->
+                  <h4 style="color: white;">PERICOLO</h4>
                 </div>
-                <div class="message-body">
-                  <p>${pericoloText}</p>
-                  ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
+                <div class="message-body" style="color: white;">
+                  <p style="color: white;">${pericoloText}</p>
+                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
                 </div>
               </div>
             `;
@@ -309,14 +309,14 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               (module.content.message || module.content.text || 'Questo è un messaggio di AVVERTENZA');
               
             content += `
-              <div class="message warning">
-                <div class="message-header">
-                  <span class="message-icon">&#9888;</span> <!-- ⚠️ -->
-                  <h4>AVVERTENZA</h4>
+              <div class="message warning" style="background-color: #ff8c00; color: white; border: none;">
+                <div class="message-header" style="color: white;">
+                  <span class="message-icon" style="color: white;">&#9888;</span> <!-- ⚠️ -->
+                  <h4 style="color: white;">AVVERTENZA</h4>
                 </div>
-                <div class="message-body">
-                  <p>${avvertenzaText}</p>
-                  ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
+                <div class="message-body" style="color: white;">
+                  <p style="color: white;">${avvertenzaText}</p>
+                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
                 </div>
               </div>
             `;
@@ -329,14 +329,14 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               (module.content.message || module.content.text || 'Questo è un messaggio di ATTENZIONE');
               
             content += `
-              <div class="message caution">
-                <div class="message-header">
-                  <span class="message-icon">&#9888;</span> <!-- ⚠️ -->
-                  <h4>ATTENZIONE</h4>
+              <div class="message caution" style="background-color: #ffd600; color: white; border: none;">
+                <div class="message-header" style="color: white;">
+                  <span class="message-icon" style="color: white;">&#9888;</span> <!-- ⚠️ -->
+                  <h4 style="color: white;">ATTENZIONE</h4>
                 </div>
-                <div class="message-body">
-                  <p>${attenzionText}</p>
-                  ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
+                <div class="message-body" style="color: white;">
+                  <p style="color: white;">${attenzionText}</p>
+                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
                 </div>
               </div>
             `;
@@ -349,14 +349,14 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               (module.content.message || module.content.text || 'Questo è un messaggio informativo');
               
             content += `
-              <div class="message info">
-                <div class="message-header">
-                  <span class="message-icon">&#9432;</span> <!-- ℹ️ -->
-                  <h4>NOTA</h4>
+              <div class="message info" style="background-color: #0070d1; color: white; border: none;">
+                <div class="message-header" style="color: white;">
+                  <span class="message-icon" style="color: white;">&#9432;</span> <!-- ℹ️ -->
+                  <h4 style="color: white;">NOTA</h4>
                 </div>
-                <div class="message-body">
-                  <p>${notaText}</p>
-                  ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
+                <div class="message-body" style="color: white;">
+                  <p style="color: white;">${notaText}</p>
+                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
                 </div>
               </div>
             `;
@@ -369,14 +369,14 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               (module.content.message || module.content.text || 'Segui queste istruzioni di sicurezza');
               
             content += `
-              <div class="message success">
-                <div class="message-header">
-                  <span class="message-icon">&#10003;</span> <!-- ✓ -->
-                  <h4>ISTRUZIONI DI SICUREZZA</h4>
+              <div class="message success" style="background-color: #2e7d32; color: white; border: none;">
+                <div class="message-header" style="color: white;">
+                  <span class="message-icon" style="color: white;">&#10003;</span> <!-- ✓ -->
+                  <h4 style="color: white;">ISTRUZIONI DI SICUREZZA</h4>
                 </div>
-                <div class="message-body">
-                  <p>${sicurezzaText}</p>
-                  ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
+                <div class="message-body" style="color: white;">
+                  <p style="color: white;">${sicurezzaText}</p>
+                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
                 </div>
               </div>
             `;
