@@ -269,100 +269,159 @@ export async function exportToHtml(documentId: string): Promise<void> {
               // Utilizziamo un identificatore più specifico
               const bomId = module.content.bomId;
               
-              // Se il modulo contiene dati items, li utilizziamo direttamente
-              let bomItems = [];
-              
               console.log("Modulo BOM:", module.id, "nella Sezione:", section?.title || "sconosciuta", "ID sezione:", section?.id || "N/A");
               
-              // Stampa elementi bomId e items per debug
-              console.log("BOM ID:", module.content.bomId, "Items presenti:", module.content.items ? module.content.items.length : 0);
-              
-              if (module.content.items && Array.isArray(module.content.items) && module.content.items.length > 0) {
-                // Gli item sono già presenti nel modulo, li utilizziamo direttamente
-                bomItems = module.content.items;
-                console.log("UTILIZZANDO ITEMS DAL MODULO:", bomItems.length, "per sezione", section?.title, "(ID:", section?.id, ")");
-                // Stampa prima riga di items per verifica
-                if (bomItems.length > 0) {
-                  console.log("Primo item:", JSON.stringify(bomItems[0]));
-                }
-              } else {
-                // Altrimenti recuperiamo il titolo della sezione
-                let sectionTitle = '';
-                if (section && section.title) {
-                  sectionTitle = section.title;
-                }
+              // IMPORTANTE: Trattamento speciale per la sezione "Descrizione" (ID 6)
+              if (section && section.id === 6) {
+                console.log("ℹ️ Sto processando un modulo BOM nella sezione Descrizione (ID 6)");
                 
-                // ID della sezione (se disponibile)
-                const sectionId = section ? section.id : null;
+                // Sezione Descrizione: Manteniamo esattamente la struttura originale
+                // Utilizziamo gli stessi elementi che sono nel modulo, senza manipolazioni
+                let itemsToUse = [];
                 
-                console.log("Verificando sezione per BOM:", sectionTitle, "ID:", sectionId);
-                
-                // Utilizziamo le funzioni di fixComponents.js per ottenere la lista componenti corretta
-                console.log("Cerco items dal file fixComponents per sezione:", sectionTitle, "ID:", sectionId);
-                const specificItems = getSpecificComponentsForSection(sectionId, sectionTitle);
-                if (specificItems && specificItems.length > 0) {
-                  console.log("TROVATI", specificItems.length, "ITEMS da fixComponents per sezione", sectionTitle);
+                if (module.content.items && Array.isArray(module.content.items) && module.content.items.length > 0) {
+                  itemsToUse = module.content.items;
+                  console.log("✅ SEZIONE DESCRIZIONE: Usando items direttamente dal modulo:", itemsToUse.length);
+                  if (itemsToUse.length > 0) {
+                    console.log("Primo elemento:", JSON.stringify(itemsToUse[0]));
+                  }
                 } else {
-                  console.log("NESSUN ITEM trovato in fixComponents per sezione", sectionTitle);
+                  console.log("⚠️ SEZIONE DESCRIZIONE: Nessun item trovato nel modulo");
                 }
                 
-                // Convertiamo gli elementi nel formato atteso
-                bomItems = specificItems ? specificItems.map(item => ({
-                  level: item.level,
-                  component: {
-                    code: item.code,
-                    description: item.description
-                  },
-                  quantity: item.quantity
-                })) : [];
-              }
-              
-              // Genera la tabella HTML direttamente nell'output
-              let tableHtml = '';
-              if (bomItems.length > 0) {
-                tableHtml = `
-                  <table class="bom-table">
-                    <thead>
-                      <tr>
-                        <th>N°</th>
-                        <th>Livello</th>
-                        <th>Codice</th>
-                        <th>Descrizione</th>
-                        <th>Quantità</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${bomItems.map((item, index) => {
-                        const component = item.component || {};
-                        return `
-                          <tr>
-                            <td>${index + 1}</td>
-                            <td class="level-${item.level || 0}">${item.level}</td>
-                            <td>${component.code || '-'}</td>
-                            <td>${component.description || '-'}</td>
-                            <td>${item.quantity || '-'}</td>
-                          </tr>
-                        `;
-                      }).join('')}
-                    </tbody>
-                  </table>
+                // Genera la tabella HTML
+                let tableHtml = '';
+                if (itemsToUse.length > 0) {
+                  tableHtml = `
+                    <table class="bom-table">
+                      <thead>
+                        <tr>
+                          <th>N°</th>
+                          <th>Livello</th>
+                          <th>Codice</th>
+                          <th>Descrizione</th>
+                          <th>Quantità</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${itemsToUse.map((item: any, index: number) => {
+                          const component = item.component || {};
+                          return `
+                            <tr>
+                              <td>${index + 1}</td>
+                              <td class="level-${item.level || 0}">${item.level}</td>
+                              <td>${component.code || '-'}</td>
+                              <td>${component.description || '-'}</td>
+                              <td>${item.quantity || '-'}</td>
+                            </tr>
+                          `;
+                        }).join('')}
+                      </tbody>
+                    </table>
+                  `;
+                } else {
+                  tableHtml = `<p class="bom-empty">Nessun elemento trovato nella distinta base</p>`;
+                }
+                
+                bomHtml = `
+                  <div class="bom-container">
+                    <h4 class="bom-title">Elenco Componenti</h4>
+                    <div class="bom-header">
+                      ${module.content.description ? `<p class="bom-description">${module.content.description}</p>` : ''}
+                    </div>
+                    
+                    <div class="bom-content">
+                      ${tableHtml}
+                    </div>
+                  </div>
                 `;
               } else {
-                tableHtml = `<p class="bom-empty">Nessun elemento trovato nella distinta base</p>`;
-              }
-              
-              bomHtml = `
-                <div class="bom-container">
-                  <h4 class="bom-title">Elenco Componenti</h4>
-                  <div class="bom-header">
-                    ${module.content.description ? `<p class="bom-description">${module.content.description}</p>` : ''}
-                  </div>
+                // Per tutte le altre sezioni, gestione standard
+                let bomItems = [];
+                
+                if (module.content.items && Array.isArray(module.content.items) && module.content.items.length > 0) {
+                  // Gli item sono già presenti nel modulo, li utilizziamo direttamente
+                  bomItems = module.content.items;
+                  console.log("UTILIZZANDO ITEMS DAL MODULO:", bomItems.length, "per sezione", section?.title, "(ID:", section?.id, ")");
+                } else {
+                  // Altrimenti recuperiamo il titolo della sezione
+                  let sectionTitle = '';
+                  if (section && section.title) {
+                    sectionTitle = section.title;
+                  }
                   
-                  <div class="bom-content">
-                    ${tableHtml}
+                  // ID della sezione (se disponibile)
+                  const sectionId = section ? section.id : null;
+                  
+                  console.log("Verificando sezione per BOM:", sectionTitle, "ID:", sectionId);
+                  
+                  // Utilizziamo le funzioni di fixComponents.js per ottenere la lista componenti corretta
+                  console.log("Cerco items dal file fixComponents per sezione:", sectionTitle, "ID:", sectionId);
+                  const specificItems = getSpecificComponentsForSection(sectionId, sectionTitle);
+                  if (specificItems && specificItems.length > 0) {
+                    console.log("TROVATI", specificItems.length, "ITEMS da fixComponents per sezione", sectionTitle);
+                  } else {
+                    console.log("NESSUN ITEM trovato in fixComponents per sezione", sectionTitle);
+                  }
+                  
+                  // Convertiamo gli elementi nel formato atteso
+                  bomItems = specificItems ? specificItems.map((item: any) => ({
+                    level: item.level,
+                    component: {
+                      code: item.code,
+                      description: item.description
+                    },
+                    quantity: item.quantity
+                  })) : [];
+                }
+                
+                // Genera la tabella HTML direttamente nell'output
+                let tableHtml = '';
+                if (bomItems.length > 0) {
+                  tableHtml = `
+                    <table class="bom-table">
+                      <thead>
+                        <tr>
+                          <th>N°</th>
+                          <th>Livello</th>
+                          <th>Codice</th>
+                          <th>Descrizione</th>
+                          <th>Quantità</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${bomItems.map((item: any, index: number) => {
+                          const component = item.component || {};
+                          return `
+                            <tr>
+                              <td>${index + 1}</td>
+                              <td class="level-${item.level || 0}">${item.level}</td>
+                              <td>${component.code || '-'}</td>
+                              <td>${component.description || '-'}</td>
+                              <td>${item.quantity || '-'}</td>
+                            </tr>
+                          `;
+                        }).join('')}
+                      </tbody>
+                    </table>
+                  `;
+                } else {
+                  tableHtml = `<p class="bom-empty">Nessun elemento trovato nella distinta base</p>`;
+                }
+                
+                bomHtml = `
+                  <div class="bom-container">
+                    <h4 class="bom-title">Elenco Componenti</h4>
+                    <div class="bom-header">
+                      ${module.content.description ? `<p class="bom-description">${module.content.description}</p>` : ''}
+                    </div>
+                    
+                    <div class="bom-content">
+                      ${tableHtml}
+                    </div>
                   </div>
-                </div>
-              `;
+                `;
+              }
             } catch (e) {
               const errorMessage = e instanceof Error ? e.message : 'Errore sconosciuto';
               bomHtml = `
