@@ -145,7 +145,7 @@ export const handleWebGLModelUpload = async (req: Request, res: Response, next: 
   }
 };
 
-// Genera una struttura di file segnaposto se mancano file richiesti per modelli WebGL
+// Cerca i file di supporto per i modelli 3D e li copia nella cartella di destinazione
 export const initializeWebGLModelFiles = (folderName: string): void => {
   const modelDir = path.join(uploadsDir, folderName);
   
@@ -154,17 +154,151 @@ export const initializeWebGLModelFiles = (folderName: string): void => {
     return;
   }
   
+  // Prima di tutto, cerca nella cartella utente per file di supporto esistenti
+  // In caso di caricamento file singolo, se ci sono già file supporto nella cartella,
+  // li usiamo invece di creare segnaposto
+  
+  // Verifica se la cartella contenente `folderName` esiste nella directory dei file caricati
+  const userDir = path.dirname(path.dirname(modelDir));
+  const possibleSourceDir = path.join(userDir, folderName);
+  
+  // Verifica se esiste una cartella con lo stesso nome nella directory uploads
+  if (fs.existsSync(possibleSourceDir) && possibleSourceDir !== modelDir) {
+    console.log(`Trovata potenziale cartella di origine con lo stesso nome: ${possibleSourceDir}`);
+    
+    try {
+      // Copia i file dalla cartella di origine alla cartella di destinazione
+      const sourceFiles = fs.readdirSync(possibleSourceDir, { withFileTypes: true });
+      
+      for (const dirent of sourceFiles) {
+        const sourcePath = path.join(possibleSourceDir, dirent.name);
+        const destPath = path.join(modelDir, dirent.name);
+        
+        // Salta il file .htm principale che è già stato copiato
+        if (dirent.name === `${folderName}.htm`) {
+          continue;
+        }
+        
+        if (dirent.isDirectory()) {
+          // Copia ricorsivamente le directory
+          if (!fs.existsSync(destPath)) {
+            fs.mkdirSync(destPath, { recursive: true });
+          }
+          
+          const nestedFiles = fs.readdirSync(sourcePath, { withFileTypes: true });
+          for (const nestedFile of nestedFiles) {
+            const nestedSourcePath = path.join(sourcePath, nestedFile.name);
+            const nestedDestPath = path.join(destPath, nestedFile.name);
+            
+            if (nestedFile.isFile()) {
+              fs.copyFileSync(nestedSourcePath, nestedDestPath);
+              console.log(`Copiato file di supporto: ${nestedSourcePath} -> ${nestedDestPath}`);
+            }
+          }
+        } else if (dirent.isFile()) {
+          // Copia i file
+          fs.copyFileSync(sourcePath, destPath);
+          console.log(`Copiato file di supporto: ${sourcePath} -> ${destPath}`);
+        }
+      }
+      
+      console.log(`File di supporto copiati da ${possibleSourceDir} a ${modelDir}`);
+      return;
+    } catch (err) {
+      console.error(`Errore durante la copia dei file dalla cartella di origine: ${err}`);
+    }
+  }
+  
   // File richiesti per un modello WebGL
   const requiredFiles = [
-    { path: 'iv3d.js', isText: true, content: '// Placeholder for iv3d.js' },
-    { path: 'ivstyles.css', isText: true, content: '/* Placeholder for ivstyles.css */' },
-    { path: 'scene.iv3d', isText: true, content: '<!-- Placeholder for scene.iv3d -->' },
+    { path: 'iv3d.js', isText: true, content: '// File di supporto iv3d.js mancante - Il modello potrebbe non funzionare correttamente' },
+    { path: 'ivstyles.css', isText: true, content: '/* File di supporto ivstyles.css mancante - Il modello potrebbe non funzionare correttamente */' },
+    { path: 'scene.iv3d', isText: true, content: '<!-- File di supporto scene.iv3d mancante - Il modello potrebbe non funzionare correttamente -->' },
     { path: 'treeicons.png', isText: false },
-    { path: 'res/viewaxis.iv3d', isText: true, content: '<!-- Placeholder for viewaxis.iv3d -->' },
+    { path: 'res/viewaxis.iv3d', isText: true, content: '<!-- File di supporto viewaxis.iv3d mancante - Il modello potrebbe non funzionare correttamente -->' },
     { path: 'test/checkmark.png', isText: false },
     { path: 'test/cogwheel.png', isText: false },
-    { path: 'test/ivtest.css', isText: true, content: '/* Placeholder for ivtest.css */' }
+    { path: 'test/ivtest.css', isText: true, content: '/* File di supporto ivtest.css mancante - Il modello potrebbe non funzionare correttamente */' }
   ];
+  
+  // Verifica anche in tutte le cartelle upload se esiste un modello compatibile
+  // e copia i file di supporto
+  try {
+    const entries = fs.readdirSync(uploadsDir, { withFileTypes: true });
+    
+    for (const entry of entries) {
+      // Salta la cartella corrente
+      if (entry.name === folderName) continue;
+      
+      // Verifica se è una directory e se contiene file .htm o .js compatibili
+      if (entry.isDirectory()) {
+        const otherModelDir = path.join(uploadsDir, entry.name);
+        const iv3dJsPath = path.join(otherModelDir, 'iv3d.js');
+        
+        // Se esiste un file iv3d.js sostanziale in questa cartella, copialo
+        if (fs.existsSync(iv3dJsPath)) {
+          try {
+            const stats = fs.statSync(iv3dJsPath);
+            
+            // Se il file è più grande di 1KB, probabilmente è un file valido e non un placeholder
+            if (stats.size > 1024) {
+              console.log(`Trovato file iv3d.js valido in ${otherModelDir}, lo copio nel modello corrente`);
+              
+              // Copia i file dalla cartella di origine alla cartella di destinazione
+              const sourceFiles = fs.readdirSync(otherModelDir, { withFileTypes: true });
+              
+              for (const dirent of sourceFiles) {
+                const sourcePath = path.join(otherModelDir, dirent.name);
+                const destPath = path.join(modelDir, dirent.name);
+                
+                // Salta il file .htm principale che è già stato copiato o creato
+                if (dirent.name.endsWith('.htm') || dirent.name.endsWith('.html')) {
+                  continue;
+                }
+                
+                if (dirent.isDirectory()) {
+                  // Copia ricorsivamente le directory
+                  if (!fs.existsSync(destPath)) {
+                    fs.mkdirSync(destPath, { recursive: true });
+                  }
+                  
+                  try {
+                    const nestedFiles = fs.readdirSync(sourcePath, { withFileTypes: true });
+                    for (const nestedFile of nestedFiles) {
+                      const nestedSourcePath = path.join(sourcePath, nestedFile.name);
+                      const nestedDestPath = path.join(destPath, nestedFile.name);
+                      
+                      if (nestedFile.isFile()) {
+                        fs.copyFileSync(nestedSourcePath, nestedDestPath);
+                        console.log(`Copiato file di supporto: ${nestedSourcePath} -> ${nestedDestPath}`);
+                      }
+                    }
+                  } catch (e) {
+                    console.error(`Errore durante la copia dei file annidati: ${e}`);
+                  }
+                } else if (dirent.isFile()) {
+                  // Copia i file
+                  fs.copyFileSync(sourcePath, destPath);
+                  console.log(`Copiato file di supporto: ${sourcePath} -> ${destPath}`);
+                }
+              }
+              
+              console.log(`File di supporto copiati da ${otherModelDir} a ${modelDir}`);
+              return;
+            }
+          } catch (e) {
+            console.error(`Errore durante l'analisi di iv3d.js in ${otherModelDir}: ${e}`);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error(`Errore durante la ricerca di modelli compatibili: ${e}`);
+  }
+  
+  // Se non abbiamo trovato file di supporto appropriati, creiamo segnaposto
+  // ma con messaggi di avviso chiari
+  console.log(`Nessun file di supporto trovato per il modello ${folderName}, creazione segnaposto`);
   
   // Crea i file mancanti
   for (const file of requiredFiles) {
