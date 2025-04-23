@@ -32,7 +32,7 @@ const defaultModelContent: ThreeDModelModuleContent = {
   },
 };
 
-export const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
+const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
   initialValue = defaultModelContent,
   onSave,
   onCancel,
