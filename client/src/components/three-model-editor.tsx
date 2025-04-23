@@ -202,32 +202,33 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
         folderName = `folder_${Date.now()}`;
       }
       
+      // Aggiungi il nome della cartella al FormData
       formData.append('folderName', folderName);
       
-      // Se abbiamo un file HTML principale, aggiungiamolo come primo file
+      // Aggiungi il file principale
       if (selectedFile) {
-        formData.append('files', selectedFile);
+        formData.append('mainFile', selectedFile);
       }
       
-      // Aggiungi tutti i file al formData
+      // Aggiungi tutti i file di supporto al formData
       Array.from(folderFiles).forEach((file) => {
         // Evita di caricare duplicati se il file principale è già nel formData
         if (selectedFile && file.name === selectedFile.name) {
           return;
         }
-        formData.append('files', file);
+        formData.append('supportFiles', file);
       });
       
-      console.log(`Caricamento cartella ${folderName} con ${folderFiles.length} file...`);
+      console.log(`Caricamento modello 3D ${folderName} con ${folderFiles.length} file di supporto...`);
       
-      // Carica i file come cartella
-      const response = await fetch('/api/upload-folder', {
+      // Usa l'endpoint dedicato per il caricamento dei modelli 3D
+      const response = await fetch('/api/upload-3d-model', {
         method: 'POST',
         body: formData,
       });
       
       if (!response.ok) {
-        throw new Error('Errore durante il caricamento della cartella');
+        throw new Error('Errore durante il caricamento del modello 3D');
       }
       
       const data = await response.json();
@@ -239,8 +240,8 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
       setValue('folderPath', data.folderName);
       
       toast({
-        title: "Cartella caricata con successo",
-        description: `${data.filesCount || data.allFiles?.length || 0} file caricati correttamente`,
+        title: "Modello 3D caricato con successo",
+        description: `${data.filesCount || 0} file caricati correttamente`,
       });
       
       return {
@@ -248,10 +249,10 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
         folderPath: data.folderName
       };
     } catch (error) {
-      console.error('Errore di upload cartella:', error);
+      console.error('Errore di upload modello 3D:', error);
       toast({
         title: "Errore di caricamento",
-        description: "Errore durante il caricamento della cartella",
+        description: "Si è verificato un errore durante il caricamento del modello 3D",
         variant: "destructive",
       });
       return null;

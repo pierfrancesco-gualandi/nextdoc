@@ -7,6 +7,7 @@ import { upload, saveFileInfo, getFileUrl } from "./upload";
 import { handleZipUpload, handleMultiZipUpload } from "./zip-handler";
 import { handleWebGLModelUpload, initializeWebGLModelFiles } from "./webgl-model-handler";
 import { upload as folderUpload, processUploadedFolder, extractZipFile } from "./api/upload-folder";
+import { upload3DModel, handle3DModelUpload } from "./api/upload-3d-model";
 import { createWordDocument } from "./word-export";
 import path from "path";
 // Importazioni dirette ESM
@@ -2232,6 +2233,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Route per caricare una cartella di file (per modelli 3D con HTML)
   app.post("/api/upload-folder", folderUpload, extractZipFile, processUploadedFolder);
+  
+  // Endpoint dedicato per l'upload di modelli 3D
+  app.post("/api/upload-3d-model", upload3DModel, handle3DModelUpload);
   
   /* Vecchia implementazione mantenuta come riferimento */
   app.post("/api/upload-folder-old", upload.array("files", 50), saveFileInfo, (req: Request, res: Response) => {
