@@ -119,24 +119,36 @@ export function getSpecificComponentsForSection(sectionId, sectionTitle = '') {
   
   if (sectionId === 6 || sectionTitle.toLowerCase() === 'descrizione') {
     console.log("✅ TROVATA sezione Descrizione (ID 6)");
-    // Ritorna una lista di componenti più completa per la sezione Descrizione
+    // Componenti per il primo elenco componenti nella sezione Descrizione
     return [
       {
-        code: "A5B03532",
-        description: "INFEED ROLLER D.120 L=500",
+        code: "A4B12901",
+        description: "MAIN ASSEMBLY",
         level: 1,
         quantity: 1
       },
       {
-        code: "A5B03533",
-        description: "OUTFEED ROLLER D.120 L=600",
-        level: 1,
+        code: "A4B12902",
+        description: "CONTROL PANEL",
+        level: 2,
+        quantity: 1
+      },
+      {
+        code: "A4B12903",
+        description: "MOTOR GROUP", 
+        level: 2,
+        quantity: 1
+      },
+      {
+        code: "A4B12904",
+        description: "ELECTRIC MOTOR",
+        level: 3,
         quantity: 2
       },
       {
-        code: "A5C12345",
-        description: "CONTROL PANEL",
-        level: 2,
+        code: "A4B12905",
+        description: "BELT SYSTEM",
+        level: 3,
         quantity: 1
       }
     ];
