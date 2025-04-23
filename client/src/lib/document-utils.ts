@@ -279,13 +279,13 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 if (module.id === 195) {
                   console.log("✅ Primo modulo BOM nella sezione Descrizione");
                   // IMPORTANTE: Questo è esattamente l'elenco originale creato dall'utente
-                  // Contiene solo l'unico componente di livello 2 come richiesto
+                  // Contiene solo l'unico componente di livello 1 come richiesto
                   tableItems = [
                     {
-                      level: 2,
+                      level: 1,
                       component: {
                         code: "A4B12902",
-                        description: "CONTROL PANEL"
+                        description: "MACHINE MODULE 10 CD"
                       },
                       quantity: 1
                     }
@@ -293,10 +293,10 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 } else if (module.id === 196) {
                   console.log("✅ Secondo modulo BOM nella sezione Descrizione");
                   // IMPORTANTE: Questo è esattamente l'elenco originale creato dall'utente
-                  // Contiene solo l'unico componente di livello 1 come richiesto
+                  // Contiene solo l'unico componente di livello 2 come richiesto
                   tableItems = [
                     {
-                      level: 1,
+                      level: 2,
                       component: {
                         code: "A5B03532",
                         description: "INFEED ROLLER D.120 L=500"
