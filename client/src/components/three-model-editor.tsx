@@ -376,6 +376,109 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
     }
   };
   
+  // Gestisce la selezione di un file dall'esplora file
+  const handleSelectFile = (filePath: string) => {
+    console.log('File selezionato:', filePath);
+    
+    // Controllo se è un percorso valido
+    if (!filePath || !filePath.startsWith('/uploads/')) {
+      toast({
+        title: "Percorso file non valido",
+        description: "Il file deve essere nella cartella uploads",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Imposta l'URL del file nel form
+    setValue('src', filePath);
+    
+    // Chiudi il dialogo dell'esplora file
+    setIsFileExplorerOpen(false);
+    
+    // Se è un file WebGL/HTML, estrai il nome della cartella
+    if (filePath.endsWith('.htm') || filePath.endsWith('.html')) {
+      // Estrai il nome del modello dal percorso
+      const parts = filePath.split('/');
+      if (parts.length >= 3) {
+        const folderName = parts[parts.length - 2];
+        setValue('folderPath', folderName);
+        setValue('format', 'html');
+        
+        toast({
+          title: "Modello WebGL selezionato",
+          description: `Cartella modello: ${folderName}`,
+        });
+      }
+    } else if (filePath.endsWith('.glb')) {
+      setValue('format', 'glb');
+    } else if (filePath.endsWith('.gltf')) {
+      setValue('format', 'gltf');
+    }
+    
+    // Aggiorna l'anteprima
+    setPreviewUrl(filePath);
+  };
+  
+  // Gestisce la creazione di una nuova cartella per il modello
+  const handleCreateFolder = async () => {
+    if (!newFolderName) {
+      toast({
+        title: "Nome cartella richiesto",
+        description: "Inserisci un nome per la cartella",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsUploading(true);
+    
+    try {
+      // Chiamata API per creare la cartella del modello
+      const response = await fetch('/api/files/create-model-folder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          folderName: newFolderName,
+          sourceModelName: currentValues.sourceModelName || null,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Errore durante la creazione della cartella');
+      }
+      
+      const data = await response.json();
+      
+      // Imposta i campi del form con i valori corretti tornati dal server
+      setValue('src', data.mainFilePath);
+      setValue('folderPath', newFolderName);
+      setValue('format', 'html');
+      
+      // Aggiorna l'anteprima
+      setPreviewUrl(data.mainFilePath);
+      
+      toast({
+        title: "Cartella modello creata",
+        description: `La cartella ${newFolderName} è stata creata con successo`,
+      });
+      
+      // Chiudi il dialogo
+      setIsCreateFolderDialogOpen(false);
+    } catch (error) {
+      console.error('Errore creazione cartella:', error);
+      toast({
+        title: "Errore creazione cartella",
+        description: error instanceof Error ? error.message : "Si è verificato un errore",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+  
   const onSubmit = async (data: ThreeDModelModuleContent) => {
     // Se c'è un file selezionato ma non ancora caricato, caricalo
     if (selectedFile && !data.src) {
@@ -485,8 +588,7 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                       <DialogTrigger asChild>
                         <Button type="button" variant="secondary">Carica</Button>
                       </DialogTrigger>
-                      
-                    <DialogContent>
+                      <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Carica modello 3D</DialogTitle>
                       </DialogHeader>
