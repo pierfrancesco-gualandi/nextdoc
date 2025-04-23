@@ -6,6 +6,7 @@ import { fromZodError } from "zod-validation-error";
 import { upload, saveFileInfo, getFileUrl } from "./upload";
 import { handleZipUpload, handleMultiZipUpload } from "./zip-handler";
 import { handleWebGLModelUpload, initializeWebGLModelFiles } from "./webgl-model-handler";
+import { upload as folderUpload, processUploadedFolder, extractZipFile } from "./api/upload-folder";
 import { createWordDocument } from "./word-export";
 import path from "path";
 // Importazioni dirette ESM
