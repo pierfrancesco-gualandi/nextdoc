@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ThreeDModelModuleContent } from '@shared/schema';
 import ThreeModelViewer from './three-model-viewer';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { FileExplorer } from './file-explorer';
 import { Folder, FolderOpen, FolderPlus, FileEdit } from 'lucide-react';
@@ -485,6 +485,7 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                       <DialogTrigger asChild>
                         <Button type="button" variant="secondary">Carica</Button>
                       </DialogTrigger>
+                      
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Carica modello 3D</DialogTitle>
