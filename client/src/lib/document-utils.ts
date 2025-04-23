@@ -272,11 +272,19 @@ export async function exportToHtml(documentId: string): Promise<void> {
               // Se il modulo contiene dati items, li utilizziamo direttamente
               let bomItems = [];
               
-              console.log("Modulo BOM:", module.id, "Contenuto:", module.content);
+              console.log("Modulo BOM:", module.id, "nella Sezione:", section?.title || "sconosciuta", "ID sezione:", section?.id || "N/A");
+              
+              // Stampa elementi bomId e items per debug
+              console.log("BOM ID:", module.content.bomId, "Items presenti:", module.content.items ? module.content.items.length : 0);
+              
               if (module.content.items && Array.isArray(module.content.items) && module.content.items.length > 0) {
                 // Gli item sono già presenti nel modulo, li utilizziamo direttamente
                 bomItems = module.content.items;
-                console.log("Utilizzando items direttamente dal modulo:", bomItems.length, "per sezione ID:", section?.id, "Titolo:", section?.title);
+                console.log("UTILIZZANDO ITEMS DAL MODULO:", bomItems.length, "per sezione", section?.title, "(ID:", section?.id, ")");
+                // Stampa prima riga di items per verifica
+                if (bomItems.length > 0) {
+                  console.log("Primo item:", JSON.stringify(bomItems[0]));
+                }
               } else {
                 // Altrimenti recuperiamo il titolo della sezione
                 let sectionTitle = '';
@@ -290,7 +298,13 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 console.log("Verificando sezione per BOM:", sectionTitle, "ID:", sectionId);
                 
                 // Utilizziamo le funzioni di fixComponents.js per ottenere la lista componenti corretta
+                console.log("Cerco items dal file fixComponents per sezione:", sectionTitle, "ID:", sectionId);
                 const specificItems = getSpecificComponentsForSection(sectionId, sectionTitle);
+                if (specificItems && specificItems.length > 0) {
+                  console.log("TROVATI", specificItems.length, "ITEMS da fixComponents per sezione", sectionTitle);
+                } else {
+                  console.log("NESSUN ITEM trovato in fixComponents per sezione", sectionTitle);
+                }
                 
                 // Convertiamo gli elementi nel formato atteso
                 bomItems = specificItems ? specificItems.map(item => ({

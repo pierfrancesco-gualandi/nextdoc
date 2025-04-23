@@ -10,18 +10,24 @@
  * @returns {boolean} true se è la sezione 2.1
  */
 export function isDisegno3DSection(sectionId, sectionTitle = '') {
+  // Log per debug
+  console.log("isDisegno3DSection check - ID:", sectionId, "Titolo:", sectionTitle);
+  
   // Verifica il titolo contiene "DISEGNO 3D" o è di tipo 2.1
   if (sectionTitle && (sectionTitle.includes('DISEGNO 3D') || sectionTitle.includes('2.1'))) {
+    console.log("Sezione 3D identificata tramite titolo:", sectionTitle);
     return true;
   }
   
   // Verifica per ID noti per la sezione 2.1
   if (sectionId === 16 || sectionId === 21) {
+    console.log("Sezione 3D identificata tramite ID:", sectionId);
     return true;
   }
   
   // Verifica numerazione personalizzata
   if (sectionId === 2.1 || String(sectionId) === '2.1') {
+    console.log("Sezione 3D identificata tramite numerazione 2.1");
     return true;
   }
   
@@ -96,12 +102,41 @@ export function getSpecificComponentsForSection(sectionId, sectionTitle = '') {
   }
   
   // Sezione 1 (INTRODUZIONE > DESCRIZIONE)
-  if (sectionId === 1 || sectionTitle.includes('INTRODUZIONE') || sectionTitle.includes('DESCRIZIONE')) {
+  if (sectionId === 1 || sectionTitle.includes('INTRODUZIONE')) {
     return [
       {
         code: "A5B03532",
         description: "INFEED ROLLER D.120 L=500",
         level: 1,
+        quantity: 1
+      }
+    ];
+  }
+  
+  // Sezione 6 (Descrizione)
+  // Log per debug
+  console.log("Verifica sezione Descrizione - ID:", sectionId, "Titolo:", sectionTitle);
+  
+  if (sectionId === 6 || sectionTitle.toLowerCase() === 'descrizione') {
+    console.log("✅ TROVATA sezione Descrizione (ID 6)");
+    // Ritorna una lista di componenti più completa per la sezione Descrizione
+    return [
+      {
+        code: "A5B03532",
+        description: "INFEED ROLLER D.120 L=500",
+        level: 1,
+        quantity: 1
+      },
+      {
+        code: "A5B03533",
+        description: "OUTFEED ROLLER D.120 L=600",
+        level: 1,
+        quantity: 2
+      },
+      {
+        code: "A5C12345",
+        description: "CONTROL PANEL",
+        level: 2,
         quantity: 1
       }
     ];
