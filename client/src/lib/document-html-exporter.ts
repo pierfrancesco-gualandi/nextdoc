@@ -247,6 +247,18 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             
           case 'file':
           case 'pdf':
+            // Verifica se esiste un percorso src prima di utilizzarlo
+            if (!module.content?.src) {
+              console.warn('File/PDF senza percorso src:', module);
+              content += `
+                <div class="file-container">
+                  <h4>${module.type === 'pdf' ? 'PDF' : 'File'} Allegato</h4>
+                  <p class="file-error">Errore: Percorso del file mancante</p>
+                </div>
+              `;
+              break;
+            }
+            
             // Verifica se il percorso è relativo o assoluto
             const fileSrc = module.content.src.startsWith('/') ? 
               window.location.origin + module.content.src :

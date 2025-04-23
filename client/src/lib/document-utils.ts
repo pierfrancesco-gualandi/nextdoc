@@ -206,6 +206,18 @@ export async function exportToHtml(documentId: string): Promise<void> {
             
           case '3d':
           case '3d-model':
+            // Verifica se esiste un percorso src prima di utilizzarlo
+            if (!module.content?.src) {
+              console.warn('Modello 3D senza percorso src:', module);
+              content += `
+                <div class="model-container">
+                  <h4>Modello 3D</h4>
+                  <p class="model-error">Errore: Percorso del modello 3D mancante</p>
+                </div>
+              `;
+              break;
+            }
+            
             // Verifica se il percorso è relativo o assoluto e usa l'URL completo
             const modelSrc = module.content.src.startsWith('/') ? 
               window.location.origin + module.content.src :
