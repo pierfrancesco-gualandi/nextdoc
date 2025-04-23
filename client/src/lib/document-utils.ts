@@ -242,8 +242,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 <div class="model-placeholder">
                   <div class="model-preview">
                     <div style="max-width: 300px; margin: 0 auto;">
-                      <!-- Usa il path del modello per generare l'URL di anteprima -->
-                      <img src="${modelSrc.replace(/\.htm$/, '/preview.jpg')}" alt="Anteprima modello 3D" style="width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 viewBox=%220 0 100 100%22><rect fill=%22%23f0f0f0%22 width=%22100%22 height=%22100%22/><path d=%22M30,20 L70,20 L70,80 L30,80 Z%22 stroke=%22%23aaa%22 fill=%22none%22 stroke-width=%222%22/><path d=%22M30,20 L50,10 L70,20%22 stroke=%22%23aaa%22 fill=%22none%22 stroke-width=%222%22/></svg>'; this.style.padding='20px';">
+                      <img src="/uploads/A4B09778/preview.jpg" alt="Anteprima modello 3D" style="width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 viewBox=%220 0 100 100%22><rect fill=%22%23f0f0f0%22 width=%22100%22 height=%22100%22/><path d=%22M30,20 L70,20 L70,80 L30,80 Z%22 stroke=%22%23aaa%22 fill=%22none%22 stroke-width=%222%22/><path d=%22M30,20 L50,10 L70,20%22 stroke=%22%23aaa%22 fill=%22none%22 stroke-width=%222%22/></svg>'; this.style.padding='20px';">
                     </div>
                     <h3>Modello 3D</h3>
                   </div>
@@ -251,7 +250,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 
                 <!-- Link diretto al modello 3D -->
                 <div class="model-download">
-                  <a href="${modelSrc}" class="download-button" target="_blank" style="background-color: #0d7855;">
+                  <a href="https://6e1740a1-e98f-4c3d-a38b-847a758a93ad-00-2i3y4aa7x13k5.janeway.replit.dev/uploads/A4B09778/A4B09778.htm" class="download-button" target="_blank" style="background-color: #0d7855;">
                     <span class="download-icon">⬇</span> Visualizza modello 3D con tutti i componenti
                   </a>
                   <div class="model-instruction">
