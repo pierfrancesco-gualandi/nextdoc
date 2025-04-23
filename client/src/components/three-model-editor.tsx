@@ -296,7 +296,17 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
         formData.append('webglModel', 'true');
         formData.append('folderName', modelName);
         
-        console.log('Aggiungendo parametri per modello 3D:', { webglModel: true, folderName: modelName });
+        // Aggiungi la cartella di origine per i file di supporto se specificata
+        if (currentValues.sourceModelName) {
+          formData.append('sourceModelName', currentValues.sourceModelName);
+          console.log('Aggiungendo cartella di origine per i file di supporto:', currentValues.sourceModelName);
+        }
+        
+        console.log('Aggiungendo parametri per modello 3D:', { 
+          webglModel: true, 
+          folderName: modelName,
+          sourceModelName: currentValues.sourceModelName || 'non specificato'
+        });
       }
       
       const response = await fetch('/api/upload', {
@@ -521,6 +531,27 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                                     {currentValues.folderPath ? 
                                       `I file verranno organizzati nella cartella '${currentValues.folderPath}'` : 
                                       "Il sistema creerà automaticamente una cartella basata sul nome del file"}
+                                  </p>
+                                </div>
+                                
+                                <div>
+                                  <Label htmlFor="source-model-name">Cartella di origine per i file di supporto</Label>
+                                  <Select 
+                                    onValueChange={(value) => setValue('sourceModelName', value)}
+                                    defaultValue={currentValues.sourceModelName || ''}
+                                  >
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="Seleziona la cartella di origine per i file di supporto" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="">Nessuna cartella di origine (segnaposto)</SelectItem>
+                                      <SelectItem value="A4B09778">A4B09778</SelectItem>
+                                      <SelectItem value="A4B09179">A4B09179</SelectItem>
+                                      <SelectItem value="A4B10823">A4B10823</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Specifica la cartella da cui copiare i file di supporto (come iv3d.js e altri)
                                   </p>
                                 </div>
                                 
