@@ -953,6 +953,6 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
+}
 
 export default ThreeModelEditor;
