@@ -269,29 +269,39 @@ export async function exportToHtml(documentId: string): Promise<void> {
               // Utilizziamo un identificatore più specifico
               const bomId = module.content.bomId;
               
-              // Recuperiamo il titolo della sezione, se disponibile
-              let sectionTitle = '';
-              if (section && section.title) {
-                sectionTitle = section.title;
+              // Se il modulo contiene dati items, li utilizziamo direttamente
+              let bomItems = [];
+              
+              console.log("Modulo BOM:", module.id, "Contenuto:", module.content);
+              if (module.content.items && Array.isArray(module.content.items) && module.content.items.length > 0) {
+                // Gli item sono già presenti nel modulo, li utilizziamo direttamente
+                bomItems = module.content.items;
+                console.log("Utilizzando items direttamente dal modulo:", bomItems.length, "per sezione ID:", section?.id, "Titolo:", section?.title);
+              } else {
+                // Altrimenti recuperiamo il titolo della sezione
+                let sectionTitle = '';
+                if (section && section.title) {
+                  sectionTitle = section.title;
+                }
+                
+                // ID della sezione (se disponibile)
+                const sectionId = section ? section.id : null;
+                
+                console.log("Verificando sezione per BOM:", sectionTitle, "ID:", sectionId);
+                
+                // Utilizziamo le funzioni di fixComponents.js per ottenere la lista componenti corretta
+                const specificItems = getSpecificComponentsForSection(sectionId, sectionTitle);
+                
+                // Convertiamo gli elementi nel formato atteso
+                bomItems = specificItems ? specificItems.map(item => ({
+                  level: item.level,
+                  component: {
+                    code: item.code,
+                    description: item.description
+                  },
+                  quantity: item.quantity
+                })) : [];
               }
-              
-              // ID della sezione (se disponibile)
-              const sectionId = section ? section.id : null;
-              
-              console.log("Verificando sezione per BOM:", sectionTitle, "ID:", sectionId);
-              
-              // Utilizziamo le funzioni di fixComponents.js per ottenere la lista componenti corretta
-              const specificItems = getSpecificComponentsForSection(sectionId, sectionTitle);
-              
-              // Convertiamo gli elementi nel formato atteso
-              const bomItems = specificItems ? specificItems.map(item => ({
-                level: item.level,
-                component: {
-                  code: item.code,
-                  description: item.description
-                },
-                quantity: item.quantity
-              })) : [];
               
               // Genera la tabella HTML direttamente nell'output
               let tableHtml = '';
