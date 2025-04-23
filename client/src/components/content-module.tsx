@@ -529,7 +529,7 @@ export default function ContentModule({
         
       case "3d-model":
         // Verifica se l'URL è un ID di file caricato o un URL diretto
-        const modelUrl = content.url && content.url.startsWith('/uploads') 
+        let modelUrl = content.url && content.url.startsWith('/uploads') 
           ? content.url 
           : content.fileId 
             ? `/uploads/${content.fileId}` 
@@ -537,9 +537,18 @@ export default function ContentModule({
               ? content.src 
               : "";
               
+        // Se l'URL è vuoto ma abbiamo un folderPath, proviamo a costruire l'URL standard
+        if ((!modelUrl || modelUrl === "") && content.folderPath) {
+          // L'URL ideale è nella forma /uploads/NOME_CARTELLA/NOME_CARTELLA.htm
+          const folderName = content.folderPath;
+          const fileExtension = "htm"; // Estensione predefinita per i modelli WebGL
+          modelUrl = `/uploads/${folderName}/${folderName}.${fileExtension}`;
+          console.log(`URL modello 3D generato da folderPath: ${modelUrl}`);
+        }
+              
         console.log("URL modello 3D:", modelUrl, "Content:", content);
         
-        // Controlla se l'URL è vuoto
+        // Controlla se l'URL è ancora vuoto dopo i nostri tentativi
         if (!modelUrl || modelUrl === "") {
           return (
             <div className="my-2 p-4 border border-red-300 bg-red-50 text-red-800 rounded-md text-center">

@@ -297,8 +297,17 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
 
   // Renderizzazione diversa in base al formato
   if (modelData && (modelData.format === 'html' || modelData.format === 'webgl')) {
+    // Otteniamo l'URL del modello
+    let modelSrc = modelData.src || "";
+    
+    // Se l'URL è vuoto ma abbiamo un folderPath, costruiamo l'URL corretto
+    if ((!modelSrc || modelSrc === "") && modelData.folderPath) {
+      modelSrc = `/uploads/${modelData.folderPath}/${modelData.folderPath}.htm`;
+      console.log(`Generato URL modello 3D da folderPath: ${modelSrc}`);
+    }
+    
     // Verifica se abbiamo un URL valido
-    if (!modelData.src) {
+    if (!modelSrc) {
       return (
         <div 
           style={{
@@ -322,6 +331,12 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
         </div>
       );
     }
+    
+    // Aggiorna modelData.src per usare il nuovo URL generato se necessario
+    modelData = {
+      ...modelData,
+      src: modelSrc
+    };
     
     console.log("Visualizzazione modello HTML WebGL:", modelData.src);
     
