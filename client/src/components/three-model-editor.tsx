@@ -453,12 +453,12 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
       const data = await response.json();
       
       // Imposta i campi del form con i valori corretti tornati dal server
-      setValue('src', data.mainFilePath);
+      setValue('src', data.fileUrl);
       setValue('folderPath', newFolderName);
       setValue('format', 'html');
       
       // Aggiorna l'anteprima
-      setPreviewUrl(data.mainFilePath);
+      setPreviewUrl(data.fileUrl);
       
       toast({
         title: "Cartella modello creata",
