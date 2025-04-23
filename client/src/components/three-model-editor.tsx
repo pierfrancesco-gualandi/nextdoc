@@ -11,6 +11,8 @@ import { ThreeDModelModuleContent } from '@shared/schema';
 import ThreeModelViewer from './three-model-viewer';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { FileExplorer } from './file-explorer';
+import { Folder, FolderOpen, FolderPlus, FileEdit } from 'lucide-react';
 
 interface ThreeModelEditorProps {
   initialValue?: ThreeDModelModuleContent;
@@ -40,6 +42,9 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isFileExplorerOpen, setIsFileExplorerOpen] = useState(false);
+  const [isCreateFolderDialogOpen, setIsCreateFolderDialogOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
   const { toast } = useToast();
 
   const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<ThreeDModelModuleContent>({

@@ -8,6 +8,7 @@ import { handleZipUpload, handleMultiZipUpload } from "./zip-handler";
 import { handleWebGLModelUpload, initializeWebGLModelFiles } from "./webgl-model-handler";
 import { upload as folderUpload, processUploadedFolder, extractZipFile } from "./api/upload-folder";
 import { upload3DModel, handle3DModelUpload } from "./api/upload-3d-model";
+import { listFiles, createModelFolder } from "./api/files";
 import { createWordDocument } from "./word-export";
 import path from "path";
 // Importazioni dirette ESM
@@ -2194,6 +2195,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // File explorer and management endpoints
+  app.get("/api/files", listFiles);
+  app.post("/api/files/create-model-folder", createModelFolder);
+  
   // File upload routes
   app.post("/api/upload", upload.single("file"), handleWebGLModelUpload, handleZipUpload, saveFileInfo, (req: Request, res: Response) => {
     // Se il file è stato estratto da un ZIP e abbiamo un URL del visualizzatore, aggiungiamolo alla risposta
