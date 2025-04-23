@@ -347,6 +347,7 @@ export type ThreeDModelModuleContent = {
   folderPath?: string;  // Percorso alla cartella contenente tutti i file necessari
   folderName?: string;  // Nome della cartella principale per modelli WebGL
   fileStructure?: Record<string, string>;  // Struttura dei file con percorsi relativi
+  sourceModelName?: string;  // Nome della cartella da cui copiare i file di supporto
   allFiles?: Array<{  // Elenco di tutti i file nella cartella con i loro URL
     id: number;
     filename: string;

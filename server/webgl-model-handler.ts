@@ -115,8 +115,23 @@ export const handleWebGLModelUpload = async (req: Request, res: Response, next: 
       req.folderName = folderName;
       req.viewerUrl = `/uploads/${relativeModelPath}`;
       
-      // Genera file segnaposto
-      initializeWebGLModelFiles(folderName);
+      // Controlla se è stata specificata una cartella di origine per i file di supporto
+      let sourceDir: string | undefined;
+      
+      if (req.body.sourceModelName && typeof req.body.sourceModelName === 'string') {
+        // Costruisci un percorso alla cartella di origine specificata
+        sourceDir = path.join(uploadsDir, req.body.sourceModelName);
+        
+        console.log(`Cartella di origine specificata: ${req.body.sourceModelName}`);
+        
+        if (!fs.existsSync(sourceDir)) {
+          console.warn(`La cartella di origine specificata non esiste: ${sourceDir}`);
+          sourceDir = undefined;
+        }
+      }
+      
+      // Genera file segnaposto o copia i file di supporto dalla cartella di origine
+      initializeWebGLModelFiles(folderName, sourceDir);
       
       // Passa avanti per il salvataggio nel database
       next();
