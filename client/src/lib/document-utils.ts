@@ -278,15 +278,9 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 // Per i moduli specifici nella sezione Descrizione
                 if (module.id === 195) {
                   console.log("✅ Primo modulo BOM nella sezione Descrizione");
+                  // IMPORTANTE: Questo è esattamente l'elenco originale creato dall'utente
+                  // Contiene solo l'unico componente di livello 2 come richiesto
                   tableItems = [
-                    {
-                      level: 1,
-                      component: {
-                        code: "A4B12901",
-                        description: "MAIN ASSEMBLY"
-                      },
-                      quantity: 1
-                    },
                     {
                       level: 2,
                       component: {
@@ -294,56 +288,18 @@ export async function exportToHtml(documentId: string): Promise<void> {
                         description: "CONTROL PANEL"
                       },
                       quantity: 1
-                    },
-                    {
-                      level: 2,
-                      component: {
-                        code: "A4B12903",
-                        description: "MOTOR GROUP"
-                      },
-                      quantity: 1
-                    },
-                    {
-                      level: 3,
-                      component: {
-                        code: "A4B12904",
-                        description: "ELECTRIC MOTOR"
-                      },
-                      quantity: 2
-                    },
-                    {
-                      level: 3,
-                      component: {
-                        code: "A4B12905",
-                        description: "BELT SYSTEM"
-                      },
-                      quantity: 1
                     }
                   ];
                 } else if (module.id === 196) {
                   console.log("✅ Secondo modulo BOM nella sezione Descrizione");
+                  // IMPORTANTE: Questo è esattamente l'elenco originale creato dall'utente
+                  // Contiene solo l'unico componente di livello 1 come richiesto
                   tableItems = [
                     {
                       level: 1,
                       component: {
                         code: "A5B03532",
                         description: "INFEED ROLLER D.120 L=500"
-                      },
-                      quantity: 1
-                    },
-                    {
-                      level: 1,
-                      component: {
-                        code: "A5B03533",
-                        description: "OUTFEED ROLLER D.120 L=600"
-                      },
-                      quantity: 2
-                    },
-                    {
-                      level: 2,
-                      component: {
-                        code: "A5C12345",
-                        description: "CONTROL PANEL"
                       },
                       quantity: 1
                     }
