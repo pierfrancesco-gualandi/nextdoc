@@ -2231,7 +2231,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Route per caricare una cartella di file (per modelli 3D con HTML)
-  app.post("/api/upload-folder", upload.array("files", 50), saveFileInfo, (req: Request, res: Response) => {
+  app.post("/api/upload-folder", folderUpload, extractZipFile, processUploadedFolder);
+  
+  /* Vecchia implementazione mantenuta come riferimento */
+  app.post("/api/upload-folder-old", upload.array("files", 50), saveFileInfo, (req: Request, res: Response) => {
     if (!req.uploadedFile || !req.uploadedFiles) {
       return res.status(400).json({ message: "Upload failed, no files information available" });
     }
