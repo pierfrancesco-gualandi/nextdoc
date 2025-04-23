@@ -116,10 +116,58 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
     if (e.target.files && e.target.files.length > 0) {
       setSelectedFolderFiles(e.target.files);
       
-      toast({
-        title: "File aggiuntivi selezionati",
-        description: `${e.target.files.length} file selezionati per il modello WebGL`,
-      });
+      // Analizza i file selezionati per informazioni utili
+      const filesList = Array.from(e.target.files);
+      let hasDirStructure = false;
+      
+      // Controlla se c'è struttura di cartelle (webkitRelativePath)
+      for (const file of filesList) {
+        // @ts-ignore - webkitRelativePath è proprietà specifica per input directory
+        if (file.webkitRelativePath && file.webkitRelativePath.includes('/')) {
+          hasDirStructure = true;
+          break;
+        }
+      }
+      
+      // Controlla se ci sono file HTML che potrebbero essere il file principale
+      const htmlFiles = filesList.filter(file => 
+        file.name.toLowerCase().endsWith('.htm') || 
+        file.name.toLowerCase().endsWith('.html')
+      );
+      
+      // Messaggio diverso in base ai risultati
+      if (hasDirStructure) {
+        toast({
+          title: "Cartella selezionata",
+          description: `${e.target.files.length} file da caricare con la struttura di cartelle originale`,
+        });
+      } else if (htmlFiles.length > 0) {
+        toast({
+          title: "File HTML e supporto selezionati",
+          description: `Trovati ${htmlFiles.length} file HTML tra i ${e.target.files.length} file selezionati`,
+        });
+        
+        // Se non c'è un file principale selezionato, usa il primo HTML come file principale
+        if (!selectedFile && htmlFiles.length > 0) {
+          setSelectedFile(htmlFiles[0]);
+          
+          // Estrai il nome del modello 3D dal nome del file per i file HTML/HTM
+          const modelPattern = /^([A-Z]\d[A-Z]\d+)\.(?:htm|html)$/i;
+          const match = htmlFiles[0].name.match(modelPattern);
+          
+          if (match) {
+            const modelName = match[1];
+            console.log(`Impostato file principale automaticamente: ${htmlFiles[0].name} (${modelName})`);
+            setValue('format', 'html');
+            setValue('folderPath', modelName);
+          }
+        }
+      } else {
+        toast({
+          title: "File aggiuntivi selezionati",
+          description: `${e.target.files.length} file selezionati per il modello WebGL`,
+        });
+      }
     }
   };
 
@@ -133,14 +181,44 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
       // Crea un FormData con tutti i file
       const formData = new FormData();
       
-      // Usa il nome della cartella basata sul nome del file principale
-      const folderName = selectedFile?.name.split('.')[0] || `folder_${Date.now()}`;
+      // Ottieni il nome modello dal file HTML principale (se possibile)
+      let folderName = '';
+      
+      // Verifica se il file selezionato è un modello 3D standard (A4B10789.htm)
+      if (selectedFile) {
+        const modelPattern = /^([A-Z]\d[A-Z]\d+)\.(?:htm|html)$/i;
+        const match = selectedFile.name.match(modelPattern);
+        
+        if (match) {
+          // Usa il nome del modello estratto (es. A4B10789)
+          folderName = match[1];
+          console.log(`Rilevato modello 3D standard: ${folderName}`);
+        } else {
+          // Fallback al nome del file senza estensione
+          folderName = selectedFile.name.split('.')[0];
+        }
+      } else {
+        // Se non c'è un file principale, usa un timestamp
+        folderName = `folder_${Date.now()}`;
+      }
+      
       formData.append('folderName', folderName);
+      
+      // Se abbiamo un file HTML principale, aggiungiamolo come primo file
+      if (selectedFile) {
+        formData.append('files', selectedFile);
+      }
       
       // Aggiungi tutti i file al formData
       Array.from(folderFiles).forEach((file) => {
+        // Evita di caricare duplicati se il file principale è già nel formData
+        if (selectedFile && file.name === selectedFile.name) {
+          return;
+        }
         formData.append('files', file);
       });
+      
+      console.log(`Caricamento cartella ${folderName} con ${folderFiles.length} file...`);
       
       // Carica i file come cartella
       const response = await fetch('/api/upload-folder', {
@@ -154,17 +232,19 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
       
       const data = await response.json();
       
-      // Imposta i campi del form
-      setValue('src', `/uploads/${data.filename}`);
+      console.log('Risposta server:', data);
+      
+      // Imposta i campi del form con i valori corretti tornati dal server
+      setValue('src', data.url);
       setValue('folderPath', data.folderName);
       
       toast({
         title: "Cartella caricata con successo",
-        description: `${data.totalFiles} file caricati correttamente`,
+        description: `${data.filesCount || data.allFiles?.length || 0} file caricati correttamente`,
       });
       
       return {
-        src: `/uploads/${data.filename}`,
+        src: data.url,
         folderPath: data.folderName
       };
     } catch (error) {
@@ -384,61 +464,126 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                         <DialogTitle>Carica modello 3D</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
-                        <div className="grid w-full max-w-sm items-center gap-1.5">
-                          <Label htmlFor="model-file">File 3D</Label>
-                          <Input
-                            id="model-file"
-                            type="file"
-                            accept=".glb,.gltf,.html,.htm"
-                            onChange={handleFileChange}
-                          />
-                          <p className="text-sm text-gray-500">
-                            Formati supportati: .glb, .gltf, .html (WebGL)
-                          </p>
-                        </div>
-                        
-                        {selectedFile && (
-                          <div className="text-sm">
-                            <p>File selezionato: {selectedFile.name}</p>
-                            <p>Dimensione: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                        <div className="space-y-5">
+                          <div className="grid w-full max-w-sm items-center gap-1.5">
+                            <Label htmlFor="model-file">File modello 3D principale</Label>
+                            <Input
+                              id="model-file"
+                              type="file"
+                              accept=".glb,.gltf,.html,.htm"
+                              onChange={handleFileChange}
+                            />
+                            <p className="text-sm text-gray-500">
+                              Formati supportati: .glb, .gltf, .html (WebGL)
+                            </p>
                           </div>
-                        )}
-                        
-                        {selectedFile && (selectedFile.name.endsWith('.html') || selectedFile.name.endsWith('.htm')) && (
-                          <div className="mt-4 space-y-4">
-                            <div>
-                              <Label htmlFor="dialog-folder-path">Percorso cartella (opzionale)</Label>
-                              <Input 
-                                id="dialog-folder-path" 
-                                placeholder="Percorso alla cartella contenente i file necessari"
-                                value={currentValues.folderPath || ''}
-                                onChange={(e) => setValue('folderPath', e.target.value)}
-                              />
-                              <p className="text-sm text-gray-500 mt-1">
-                                Specifica solo se il modello WebGL richiede file aggiuntivi in una cartella
-                              </p>
+                          
+                          {selectedFile && (
+                            <div className="text-sm mt-2 p-3 border rounded-md bg-gray-50">
+                              <div className="flex items-center gap-2">
+                                <div className="h-6 w-6 rounded-full bg-green-100 flex items-center justify-center">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-600">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                  </svg>
+                                </div>
+                                <div>
+                                  <p className="font-medium">{selectedFile.name}</p>
+                                  <p className="text-gray-500">Dimensione: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                                </div>
+                              </div>
                             </div>
+                          )}
+                          
+                          <div className="border-t pt-4 mt-4">
+                            <div className="font-medium mb-2">Modalità di caricamento</div>
                             
-                            <div>
-                              <Label htmlFor="folder-files">File aggiuntivi per il modello</Label>
-                              <Input
-                                id="folder-files"
-                                type="file"
-                                multiple
-                                onChange={handleFolderFilesChange}
-                              />
-                              <p className="text-sm text-gray-500 mt-1">
-                                Seleziona tutti i file aggiuntivi necessari al modello HTML
-                              </p>
-                              
-                              {selectedFolderFiles && (
-                                <p className="text-sm text-blue-500 mt-2">
-                                  {selectedFolderFiles.length} file aggiuntivi selezionati
+                            {selectedFile && (selectedFile.name.endsWith('.html') || selectedFile.name.endsWith('.htm')) ? (
+                              <div className="space-y-4">
+                                <div className="p-3 bg-blue-50 rounded-md border border-blue-100">
+                                  <p className="text-sm text-blue-800 font-medium">
+                                    Rilevato file HTML/WebGL che potrebbe richiedere file aggiuntivi
+                                  </p>
+                                  <p className="text-sm text-blue-600 mt-1">
+                                    Per i modelli 3D WebGL, è necessario caricare tutti i file di supporto necessari
+                                  </p>
+                                </div>
+                                
+                                <div>
+                                  <Label htmlFor="dialog-folder-path">Nome della cartella</Label>
+                                  <Input 
+                                    id="dialog-folder-path" 
+                                    placeholder="Nome della cartella per i file del modello"
+                                    value={currentValues.folderPath || ''}
+                                    onChange={(e) => setValue('folderPath', e.target.value)}
+                                  />
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {currentValues.folderPath ? 
+                                      `I file verranno organizzati nella cartella '${currentValues.folderPath}'` : 
+                                      "Il sistema creerà automaticamente una cartella basata sul nome del file"}
+                                  </p>
+                                </div>
+                                
+                                <div>
+                                  <div className="flex items-center justify-between">
+                                    <Label htmlFor="folder-files">File aggiuntivi per il modello</Label>
+                                    {selectedFolderFiles && (
+                                      <span className="text-xs font-medium px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                                        {selectedFolderFiles.length} file
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="mt-2 border-2 border-dashed rounded-md p-6 text-center hover:bg-gray-50 transition-colors">
+                                    <Input
+                                      id="folder-files"
+                                      type="file"
+                                      multiple
+                                      className="hidden"
+                                      onChange={handleFolderFilesChange}
+                                    />
+                                    <label htmlFor="folder-files" className="cursor-pointer block">
+                                      <div className="mx-auto h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center mb-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500">
+                                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                          <polyline points="17 8 12 3 7 8"></polyline>
+                                          <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                      </div>
+                                      <div className="text-sm font-medium">Fare clic per selezionare i file</div>
+                                      <div className="text-xs text-gray-500 mt-1">
+                                        O trascinare i file qui
+                                      </div>
+                                    </label>
+                                  </div>
+                                  
+                                  {selectedFolderFiles && selectedFolderFiles.length > 0 && (
+                                    <div className="mt-2 max-h-40 overflow-y-auto p-2 border rounded-md bg-gray-50">
+                                      <p className="text-xs font-medium text-gray-700 mb-1">File selezionati:</p>
+                                      {Array.from(selectedFolderFiles).slice(0, 10).map((file, index) => (
+                                        <div key={index} className="text-xs text-gray-600 truncate">
+                                          {index + 1}. {file.name}
+                                        </div>
+                                      ))}
+                                      {selectedFolderFiles.length > 10 && (
+                                        <div className="text-xs text-gray-500 mt-1">
+                                          ...e altri {selectedFolderFiles.length - 10} file
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="p-3 bg-gray-50 rounded-md">
+                                <p className="text-sm text-gray-800">
+                                  Caricamento file singolo (formato {selectedFile?.name.split('.').pop() || 'non selezionato'})
                                 </p>
-                              )}
-                            </div>
+                                <p className="text-xs text-gray-600 mt-1">
+                                  I modelli in formato GLB/GLTF vengono caricati direttamente come file singolo
+                                </p>
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
                         
                         <div className="flex justify-end gap-2">
                           <Button
