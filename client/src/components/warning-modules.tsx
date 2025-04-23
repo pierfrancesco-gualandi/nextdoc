@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 
 export interface WarningModuleProps {
-  level: 'error' | 'warning' | 'info' | 'success' | 'safety';
+  level: 'error' | 'warning' | 'caution' | 'info' | 'success' | 'safety';
   title?: string;
   message: string;
   className?: string;
@@ -23,6 +23,7 @@ const WarningModule: React.FC<WarningModuleProps> = ({
   const defaultTitles = {
     error: 'PERICOLO',
     warning: 'AVVERTENZA',
+    caution: 'ATTENZIONE',
     info: 'NOTA',
     success: 'IMPORTANTE',
     safety: 'ISTRUZIONI DI SICUREZZA'
@@ -31,6 +32,7 @@ const WarningModule: React.FC<WarningModuleProps> = ({
   const icons = {
     error: '⚠️',
     warning: '⚠️',
+    caution: '⚠️',
     info: 'ℹ️',
     success: '✓',
     safety: '🛡️'
@@ -38,11 +40,12 @@ const WarningModule: React.FC<WarningModuleProps> = ({
   
   // Colori per ciascun tipo di avviso (corrispondono al CSS)
   const bgColors = {
-    error: '#ff0000',    // Rosso intenso
-    warning: '#ff8c00',  // Arancione intenso
-    info: '#0070d1',     // Blu intenso
-    success: '#2e7d32',  // Verde intenso
-    safety: '#2e7d32'    // Verde intenso
+    error: '#ff0000',    // PERICOLO: Rosso intenso
+    warning: '#ff8c00',  // AVVERTENZA: Arancione intenso
+    caution: '#ffd600',  // ATTENZIONE: Giallo intenso
+    info: '#0070d1',     // NOTA: Blu intenso
+    success: '#2e7d32',  // IMPORTANTE: Verde intenso
+    safety: '#2e7d32'    // ISTRUZIONI DI SICUREZZA: Verde intenso
   };
   
   // Lo stile del bordo deve corrispondere esattamente al colore di sfondo
@@ -92,7 +95,7 @@ export const WarningAlertModule: React.FC<Omit<WarningModuleProps, 'level'>> = (
 );
 
 export const CautionModule: React.FC<Omit<WarningModuleProps, 'level'>> = (props) => (
-  <WarningModule {...props} level="warning" />
+  <WarningModule {...props} level="caution" />
 );
 
 export const NoteModule: React.FC<Omit<WarningModuleProps, 'level'>> = (props) => (

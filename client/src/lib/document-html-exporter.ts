@@ -569,8 +569,9 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
         margin: 20px 0;
         padding: 15px;
         border-radius: 5px;
-        border-width: 2px;
+        border-width: 0;
         border-style: solid;
+        color: white;
       }
       
       .message-header {
@@ -578,44 +579,56 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
         align-items: center;
         margin-bottom: 10px;
         font-weight: bold;
+        color: white;
       }
       
       .message-icon {
         font-size: 1.5em;
         margin-right: 10px;
+        color: white;
       }
       
       .message-body {
         font-size: 0.95em;
+        color: white;
       }
       
+      .message-body p {
+        color: white;
+      }
+      
+      .warning-description {
+        color: white;
+        font-style: italic;
+      }
+      
+      /* PERICOLO: Rosso intenso */
       .message.danger {
         background-color: #ff0000;
-        color: white;
         border-color: #ff0000;
       }
       
+      /* AVVERTENZA: Arancione intenso */
       .message.warning {
         background-color: #ff8c00;
-        color: white;
         border-color: #ff8c00;
       }
       
+      /* ATTENZIONE: Giallo intenso */
       .message.caution {
         background-color: #ffd600;
-        color: white;
         border-color: #ffd600;
       }
       
+      /* NOTA: Blu intenso */
       .message.info {
         background-color: #0070d1;
-        color: white;
         border-color: #0070d1;
       }
       
+      /* ISTRUZIONI DI SICUREZZA: Verde intenso */
       .message.success {
         background-color: #2e7d32;
-        color: white;
         border-color: #2e7d32;
       }
       
