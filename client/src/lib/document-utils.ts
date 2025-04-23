@@ -242,7 +242,8 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 <div class="model-placeholder">
                   <div class="model-preview">
                     <div style="max-width: 300px; margin: 0 auto;">
-                      <img src="/uploads/A4B09778/preview.jpg" alt="Anteprima modello 3D" style="width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 viewBox=%220 0 100 100%22><rect fill=%22%23f0f0f0%22 width=%22100%22 height=%22100%22/><path d=%22M30,20 L70,20 L70,80 L30,80 Z%22 stroke=%22%23aaa%22 fill=%22none%22 stroke-width=%222%22/><path d=%22M30,20 L50,10 L70,20%22 stroke=%22%23aaa%22 fill=%22none%22 stroke-width=%222%22/></svg>'; this.style.padding='20px';">
+                      <!-- Usa il path del modello per generare l'URL di anteprima -->
+                      <img src="${modelSrc.replace(/\.htm$/, '/preview.jpg')}" alt="Anteprima modello 3D" style="width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 viewBox=%220 0 100 100%22><rect fill=%22%23f0f0f0%22 width=%22100%22 height=%22100%22/><path d=%22M30,20 L70,20 L70,80 L30,80 Z%22 stroke=%22%23aaa%22 fill=%22none%22 stroke-width=%222%22/><path d=%22M30,20 L50,10 L70,20%22 stroke=%22%23aaa%22 fill=%22none%22 stroke-width=%222%22/></svg>'; this.style.padding='20px';">
                     </div>
                     <h3>Modello 3D</h3>
                   </div>
@@ -250,7 +251,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 
                 <!-- Link diretto al modello 3D -->
                 <div class="model-download">
-                  <a href="https://6e1740a1-e98f-4c3d-a38b-847a758a93ad-00-2i3y4aa7x13k5.janeway.replit.dev/uploads/A4B09778/A4B09778.htm" class="download-button" target="_blank" style="background-color: #0d7855;">
+                  <a href="${modelSrc}" class="download-button" target="_blank" style="background-color: #0d7855;">
                     <span class="download-icon">⬇</span> Visualizza modello 3D con tutti i componenti
                   </a>
                   <div class="model-instruction">
@@ -345,13 +346,13 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 <div class="bom-container">
                   <h4 class="bom-title">Elenco Componenti</h4>
                   <p>La distinta base completa è disponibile nell'applicazione originale.</p>
-                  <div class="message warning">
-                    <div class="message-header">
-                      <span class="message-icon">&#9888;</span>
-                      <h4>AVVERTENZA</h4>
+                  <div class="message warning" style="background-color: #ff8c00; color: white; border-width: 0;">
+                    <div class="message-header" style="color: white;">
+                      <span class="message-icon" style="color: white;">&#9888;</span>
+                      <h4 style="color: white;">AVVERTENZA</h4>
                     </div>
-                    <div class="message-body">
-                      <p>Errore nel caricamento della distinta: ${errorMessage}</p>
+                    <div class="message-body" style="color: white;">
+                      <p style="color: white;">Errore nel caricamento della distinta: ${errorMessage}</p>
                     </div>
                   </div>
                 </div>
@@ -427,14 +428,14 @@ export async function exportToHtml(documentId: string): Promise<void> {
               (module.content.message || module.content.text || 'Questo è un messaggio di PERICOLO');
               
             content += `
-              <div class="message danger">
-                <div class="message-header">
-                  <span class="message-icon">&#9888;</span> <!-- ⚠️ -->
-                  <h4>PERICOLO</h4>
+              <div class="message danger" style="background-color: #ff0000; color: white; border-width: 0;">
+                <div class="message-header" style="color: white;">
+                  <span class="message-icon" style="color: white;">&#9888;</span> <!-- ⚠️ -->
+                  <h4 style="color: white;">PERICOLO</h4>
                 </div>
-                <div class="message-body">
-                  <p>${pericoloText}</p>
-                  ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
+                <div class="message-body" style="color: white;">
+                  <p style="color: white;">${pericoloText}</p>
+                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
                 </div>
               </div>
             `;
@@ -447,14 +448,14 @@ export async function exportToHtml(documentId: string): Promise<void> {
               (module.content.message || module.content.text || 'Questo è un messaggio di AVVERTENZA');
               
             content += `
-              <div class="message warning">
-                <div class="message-header">
-                  <span class="message-icon">&#9888;</span> <!-- ⚠️ -->
-                  <h4>AVVERTENZA</h4>
+              <div class="message warning" style="background-color: #ff8c00; color: white; border-width: 0;">
+                <div class="message-header" style="color: white;">
+                  <span class="message-icon" style="color: white;">&#9888;</span> <!-- ⚠️ -->
+                  <h4 style="color: white;">AVVERTENZA</h4>
                 </div>
-                <div class="message-body">
-                  <p>${avvertenzaText}</p>
-                  ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
+                <div class="message-body" style="color: white;">
+                  <p style="color: white;">${avvertenzaText}</p>
+                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
                 </div>
               </div>
             `;
@@ -467,14 +468,14 @@ export async function exportToHtml(documentId: string): Promise<void> {
               (module.content.message || module.content.text || 'Questo è un messaggio di ATTENZIONE');
               
             content += `
-              <div class="message caution">
-                <div class="message-header">
-                  <span class="message-icon">&#9888;</span> <!-- ⚠️ -->
-                  <h4>ATTENZIONE</h4>
+              <div class="message caution" style="background-color: #ffd600; color: white; border-width: 0;">
+                <div class="message-header" style="color: white;">
+                  <span class="message-icon" style="color: white;">&#9888;</span> <!-- ⚠️ -->
+                  <h4 style="color: white;">ATTENZIONE</h4>
                 </div>
-                <div class="message-body">
-                  <p>${attenzionText}</p>
-                  ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
+                <div class="message-body" style="color: white;">
+                  <p style="color: white;">${attenzionText}</p>
+                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
                 </div>
               </div>
             `;
@@ -487,14 +488,14 @@ export async function exportToHtml(documentId: string): Promise<void> {
               (module.content.message || module.content.text || 'Questo è un messaggio informativo');
               
             content += `
-              <div class="message info">
-                <div class="message-header">
-                  <span class="message-icon">&#9432;</span> <!-- ℹ️ -->
-                  <h4>NOTA</h4>
+              <div class="message info" style="background-color: #0070d1; color: white; border-width: 0;">
+                <div class="message-header" style="color: white;">
+                  <span class="message-icon" style="color: white;">&#9432;</span> <!-- ℹ️ -->
+                  <h4 style="color: white;">NOTA</h4>
                 </div>
-                <div class="message-body">
-                  <p>${notaText}</p>
-                  ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
+                <div class="message-body" style="color: white;">
+                  <p style="color: white;">${notaText}</p>
+                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
                 </div>
               </div>
             `;
@@ -507,14 +508,14 @@ export async function exportToHtml(documentId: string): Promise<void> {
               (module.content.message || module.content.text || 'Segui queste istruzioni di sicurezza');
               
             content += `
-              <div class="message success">
-                <div class="message-header">
-                  <span class="message-icon">&#10003;</span> <!-- ✓ -->
-                  <h4>ISTRUZIONI DI SICUREZZA</h4>
+              <div class="message success" style="background-color: #2e7d32; color: white; border-width: 0;">
+                <div class="message-header" style="color: white;">
+                  <span class="message-icon" style="color: white;">&#10003;</span> <!-- ✓ -->
+                  <h4 style="color: white;">ISTRUZIONI DI SICUREZZA</h4>
                 </div>
-                <div class="message-body">
-                  <p>${sicurezzaText}</p>
-                  ${module.content.description ? `<p class="warning-description">${module.content.description}</p>` : ''}
+                <div class="message-body" style="color: white;">
+                  <p style="color: white;">${sicurezzaText}</p>
+                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
                 </div>
               </div>
             `;
