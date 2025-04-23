@@ -135,6 +135,7 @@ const extract3DModelName = (filename: string): string | null => {
   // Pattern per identificare i nomi dei modelli 3D (es. A4B10789.htm, A5B43041.htm)
   const modelPattern = /^([A-Z]\d[A-Z]\d+)\.(?:htm|html)$/i;
   const match = filename.match(modelPattern);
+  console.log("Estrazione nome modello da:", filename, "risultato:", match ? match[1] : "null");
   return match ? match[1] : null;
 };
 
@@ -185,12 +186,32 @@ export const saveFileInfo = async (req: Request, res: Response, next: NextFuncti
     
     // Gestisce un singolo file
     if (req.file) {
-      // Verifica se si tratta di un file HTML di modello 3D
-      const is3DModel = req.file.originalname.toLowerCase().match(/\.(html|htm)$/i) && 
-                         (req.body.webglModel === 'true' || req.body.is3DModel === 'true');
+      // Verifica se il nome del file corrisponde a un modello 3D standard
+      const modelNameFromFileName = extract3DModelName(req.file.originalname);
+      
+      // Determina se il file è un modello 3D in base ai flag o al nome del file
+      const isHtmlFile = req.file.originalname.toLowerCase().match(/\.(html|htm)$/i);
+      const hasModelFlag = req.body.webglModel === 'true' || req.body.is3DModel === 'true';
+      const isStandardModelName = modelNameFromFileName !== null;
+      
+      // Un file è un modello 3D se è HTML E (ha il flag oppure ha un nome standard)
+      const is3DModel = isHtmlFile && (hasModelFlag || isStandardModelName);
+      
+      if (isStandardModelName && isHtmlFile) {
+        console.log(`Rilevato automaticamente modello 3D: ${modelNameFromFileName} dal nome file ${req.file.originalname}`);
+      }
       
       let folderName = req.body.folderName || null;
       let targetFilename = req.file.filename;
+      
+      console.log("Upload file singolo:", {
+        originalName: req.file.originalname,
+        is3DModel: is3DModel,
+        webglModel: req.body.webglModel,
+        is3DModelParam: req.body.is3DModel,
+        folderName: folderName,
+        modelNameFromFileName: modelNameFromFileName
+      });
       
       // Se è un modello 3D, gestisci la preparazione della cartella
       if (is3DModel) {
@@ -204,7 +225,12 @@ export const saveFileInfo = async (req: Request, res: Response, next: NextFuncti
           const relativePath = prepare3DModelFolder(modelName, req.file.path);
           if (relativePath) {
             targetFilename = relativePath;
+            console.log(`Path relativo modello: ${relativePath}`);
+          } else {
+            console.error(`Errore nella preparazione della cartella per il modello ${modelName}`);
           }
+        } else {
+          console.log("Nessun nome modello valido trovato nel nome del file:", req.file.originalname);
         }
       }
       
@@ -246,11 +272,16 @@ export const saveFileInfo = async (req: Request, res: Response, next: NextFuncti
       let folderName = req.body.folderName;
       let modelName = null;
       
-      if ((req.body.webglModel === 'true' || req.body.is3DModel === 'true') && htmlFile) {
-        modelName = extract3DModelName(htmlFile.originalname);
-        if (modelName) {
+      // Verifica se c'è un file HTML e se contiene un nome modello standard
+      if (htmlFile) {
+        const detectedModelName = extract3DModelName(htmlFile.originalname);
+        
+        // Se abbiamo trovato un nome modello valido o è stato specificato il flag del modello 3D
+        if (detectedModelName || (req.body.webglModel === 'true' || req.body.is3DModel === 'true')) {
+          // Usa il nome rilevato o crea un nome generico
+          modelName = detectedModelName || htmlFile.originalname.split('.')[0];
           folderName = modelName;
-          console.log(`Rilevato modello 3D in upload multiplo: ${modelName}`);
+          console.log(`Rilevato modello 3D in upload multiplo: ${modelName} (Auto-rilevato: ${!!detectedModelName})`);
         }
       }
       
