@@ -758,6 +758,7 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                 {errors.src && (
                   <p className="text-red-500 text-sm mt-1">L'URL del modello è obbligatorio</p>
                 )}
+                </div>
               </div>
               
               {(currentValues.format === 'html' || currentValues.format === 'webgl') && (
