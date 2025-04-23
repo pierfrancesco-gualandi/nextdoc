@@ -1,0 +1,210 @@
+body {
+    overflow:hidden;
+    margin: 0px;
+}
+.treeframe
+{
+ float:left;
+ background:white;
+ overflow-y:auto;
+}
+.vdivider
+{
+ float:left;
+ background:#f6f6f6;
+ overflow-y:auto;
+    width: 4px;
+    cursor: col-resize;
+}
+.vdivider:hover
+{
+    background:#f0f0f0;
+}
+.viewframe{
+    position: relative;
+    float:left;
+}
+.fileHeader
+{
+    
+    background:#f6f6f6;
+    height:50px;
+    border-bottom: #f0f0f0 solid;
+    width:100%;
+}
+.toolbar, .toolbar-right, .toolbar-left, .button, .button-checked{
+  margin-top:15px;
+  margin-top:15px;
+  border: #e0e0e0 1px solid;
+  background: #f0f0f0 ;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: "Segoe UI","Trebuchet MS", Tahoma, Arial, Helvetica;
+  font-weight: 600;
+}
+.toolbar, .toolbar-right, .toolbar-left{
+  width:200px;
+}
+.toolbar{
+  float: right;
+ margin-right:10px;
+}
+.toolbar-left{
+  float: left;
+  margin-left:10px;
+}
+.toolbar-right{
+ float: right;
+ margin-right:40px;
+}
+.button,.button-checked
+{
+  float:left;
+  margin-left: 6px;
+  height: 26px;
+  line-height: 26px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+.button-checked
+{
+  background: #404040 ;
+  color: white;
+}
+.button:hover {
+  background-color: #C6C6C6 ;
+}
+.button-checked:hover
+{
+  background-color: #C6C6C6 ;
+}
+
+.ivmenu {
+ margin: 0px;
+ padding: 0px;
+ font-size: 12px;
+ font-family: "Segoe UI","Trebuchet MS", Tahoma, Arial, Helvetica;
+    display: inline;
+    cursor: pointer;
+}
+.ivmenu ul {
+ background: #f0f0f0;
+ height: 26px;
+ list-style: none;
+ margin: 0;
+ padding: 0;
+ float: right;
+  min-width: 200px;
+}
+.ivmenu li {
+ float: left;
+ padding: 0px;
+ list-style: none;
+ margin-left: 0px;
+ width: 200px;
+ text-align: left;
+}
+.ivmenu img {
+ margin-top:0px;
+ margin-bottom:0px;
+}
+.ivmenu li a {
+  background: #f0f0f0 ;
+ display: block;
+ line-height: 26px;
+ margin: 0px;
+ padding: 0px 10px 0px 30px;
+ list-style: none;
+  text-decoration: none;
+}
+.toolbar-right .ivmenu li a {
+    background-image: url("cogwheel.png");
+    background-repeat: no-repeat;
+    background-position:  top left;
+}
+.ivmenu > ul > li > a {
+  color: #000000;
+}
+.ivmenu ul ul a {
+  color: #000000;
+}
+.ivmenu li > a:hover,
+.ivmenu ul li:hover > a {
+  background-color: #C6C6C6 ;
+  text-decoration: none;
+}
+.ivmenu li ul {
+  background: #fff;
+  display: none;
+  height: auto;
+  padding: 0px;
+  margin: 0px;
+  border: 1px solid #CfCfCf;
+  position: absolute;
+  width: 225px;
+  z-index: 200;
+  box-shadow: 0px 1px 5px #d0d0d0;
+}
+.ivmenu li:hover ul {
+  display: block;
+}
+.ivmenu li li {
+  display: block;
+  float: none;
+  margin: 0px;
+  padding: 0px;
+  width: 225px;
+}
+.ivmenu li:hover li a {
+  background: none;
+}
+.ivmenu li ul a {
+  display: block;
+  height: 26px;
+  font-size: 12px;
+  font-style: normal;
+  margin: 0px;
+  padding: 0px 10px 0px 5px;
+  text-align: left;
+  
+}
+.ivmenu li.Header
+{
+  display: block;
+  height: 22px;
+  font-size: 12px;
+  font-style: normal;
+  text-align: left;
+  background: #f5f5f5;
+  padding-top: 6px;
+}
+.ivmenu li.Header span
+{
+   padding-left: 20px;
+  font-weight: 600;
+}
+.ivmenu .separator
+{
+  height:1px;
+  background: #cfcfcf;
+  
+  border: 3px solid white;
+  width:90%;
+}
+.ivmenu li ul a img{
+  padding-top: 4px;
+}
+.ivmenu li ul a span{
+  position:absolute;
+  left: 26px;
+}
+.ivmenu li ul a:hover,
+.ivmenu li ul li:hover > a {
+  background: #0074E8;
+  border: 0px;
+  color: #ffffff;
+  text-decoration: none;
+}
+.ivmenu p {
+  clear: left;
+}
