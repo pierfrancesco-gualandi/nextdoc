@@ -471,10 +471,20 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                       />
                     )}
                   />
-                  <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button type="button" variant="secondary">Carica</Button>
-                    </DialogTrigger>
+                  <div className="flex gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setIsFileExplorerOpen(true)}
+                      title="Sfoglia file esistenti"
+                    >
+                      <Folder className="w-4 h-4 mr-2" />
+                      Sfoglia
+                    </Button>
+                    <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button type="button" variant="secondary">Carica</Button>
+                      </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Carica modello 3D</DialogTitle>
@@ -649,7 +659,19 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
               
               {(currentValues.format === 'html' || currentValues.format === 'webgl') && (
                 <div className="pt-2">
-                  <Label htmlFor="folderPath">Percorso cartella (opzionale)</Label>
+                  <div className="flex justify-between items-center mb-1">
+                    <Label htmlFor="folderPath">Percorso cartella (opzionale)</Label>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setIsCreateFolderDialogOpen(true)}
+                      className="h-8 px-2 text-xs"
+                    >
+                      <FolderPlus className="w-4 h-4 mr-1" />
+                      Crea cartella modello
+                    </Button>
+                  </div>
                   <Controller
                     name="folderPath"
                     control={control}
@@ -751,6 +773,81 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
         </form>
       </CardContent>
     </Card>
+
+    {/* File Explorer Dialog */}
+    <FileExplorer
+      isOpen={isFileExplorerOpen}
+      onClose={() => setIsFileExplorerOpen(false)}
+      onSelectFile={handleSelectFile}
+      initialPath="/uploads"
+      allowSelectFile={true}
+      title="Seleziona modello 3D"
+    />
+
+    {/* Create Folder Dialog */}
+    <Dialog open={isCreateFolderDialogOpen} onOpenChange={setIsCreateFolderDialogOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Crea nuova cartella modello</DialogTitle>
+          <DialogDescription>
+            Inserisci il nome della cartella per il modello 3D. Verranno creati tutti i file necessari.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="new-folder-name">Nome cartella:</Label>
+            <Input
+              id="new-folder-name"
+              placeholder="es. A4B12345"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+            />
+            <p className="text-sm text-gray-500">
+              Verrà creato il file {newFolderName || 'NOMECARTELLA'}.htm e tutti i file di supporto necessari.
+            </p>
+          </div>
+          
+          <div className="grid gap-2">
+            <Label htmlFor="source-model">Cartella di origine (opzionale):</Label>
+            <Select 
+              onValueChange={(value) => setValue('sourceModelName', value)}
+              defaultValue={currentValues.sourceModelName || ''}
+            >
+              <SelectTrigger id="source-model">
+                <SelectValue placeholder="Copia file da modello esistente" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nessuna cartella di origine</SelectItem>
+                <SelectItem value="A4B09778">A4B09778</SelectItem>
+                <SelectItem value="A4B09179">A4B09179</SelectItem>
+                <SelectItem value="A4B10823">A4B10823</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-gray-500">
+              Selezionando un modello esistente, i file di supporto saranno copiati da esso.
+            </p>
+          </div>
+        </div>
+        
+        <DialogFooter className="sm:justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsCreateFolderDialogOpen(false)}
+          >
+            Annulla
+          </Button>
+          <Button 
+            type="button" 
+            onClick={handleCreateFolder}
+            disabled={isUploading || !newFolderName}
+          >
+            {isUploading ? 'Creazione...' : 'Crea cartella'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
