@@ -989,6 +989,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     module={module}
                     translation={moduleTranslations[module.id]}
                     documentId={documentId}
+                    isPreview={true}
                   />
                 ) : (
                   <ContentModule

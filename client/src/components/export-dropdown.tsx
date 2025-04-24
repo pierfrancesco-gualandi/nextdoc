@@ -113,13 +113,22 @@ export function ExportDropdown({ documentId, selectedLanguage }: ExportDropdownP
           <div className="border-t border-neutral-light my-1"></div>
           
           {documentId && (
-            <Link 
-              href={`/document/${documentId}/export-translations`}
-              className="block w-full text-left px-4 py-2 text-sm hover:bg-neutral-lightest"
-            >
-              <span className="material-icons text-sm mr-2">translate</span>
-              Esporta/Importa Traduzioni
-            </Link>
+            <>
+              <Link 
+                href={`/document/${documentId}/translate`}
+                className="block w-full text-left px-4 py-2 text-sm hover:bg-neutral-lightest"
+              >
+                <FileTextIcon className="inline-block h-4 w-4 mr-2" />
+                Traduci documento
+              </Link>
+              <Link 
+                href={`/document/${documentId}/export-translations`}
+                className="block w-full text-left px-4 py-2 text-sm hover:bg-neutral-lightest"
+              >
+                <span className="material-icons text-sm mr-2">translate</span>
+                Esporta/Importa Traduzioni
+              </Link>
+            </>
           )}
         </div>
       )}
