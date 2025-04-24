@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { exportToHtml, exportToPdf, exportToWord } from "@/lib/document-utils";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
+import { FileTextIcon } from "lucide-react";
 
 interface ExportDropdownProps {
   documentId?: string;
@@ -85,7 +87,7 @@ export function ExportDropdown({ documentId, selectedLanguage }: ExportDropdownP
         <span className="material-icons text-sm ml-1">arrow_drop_down</span>
       </Button>
       {isOpen && (
-        <div className="absolute right-0 mt-2 bg-white rounded shadow-lg z-50 min-w-[160px]">
+        <div className="absolute right-0 mt-2 bg-white rounded shadow-lg z-50 min-w-[200px]">
           <button 
             onClick={() => handleExport('html')}
             className="block w-full text-left px-4 py-2 text-sm hover:bg-neutral-lightest"
@@ -107,6 +109,18 @@ export function ExportDropdown({ documentId, selectedLanguage }: ExportDropdownP
             <span className="material-icons text-sm mr-2">description</span>
             Word
           </button>
+          
+          <div className="border-t border-neutral-light my-1"></div>
+          
+          {documentId && (
+            <Link 
+              href={`/document/${documentId}/export-translations`}
+              className="block w-full text-left px-4 py-2 text-sm hover:bg-neutral-lightest"
+            >
+              <span className="material-icons text-sm mr-2">translate</span>
+              Esporta/Importa Traduzioni
+            </Link>
+          )}
         </div>
       )}
     </div>

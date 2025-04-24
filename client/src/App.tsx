@@ -11,6 +11,7 @@ import BomComparison from "@/pages/bom-comparison";
 import Users from "@/pages/users";
 import Translations from "@/pages/translations";
 import ModuleTranslation from "@/pages/module-translation";
+import DocumentTranslationExport from "@/pages/document-translation-export";
 import Sidebar from "@/components/sidebar";
 import { useState, createContext, useContext, useEffect } from "react";
 import { UserProvider } from "./contexts/UserContext";
@@ -160,6 +161,7 @@ function Router() {
             <Route path="/users" component={() => <Users toggleSidebar={toggleSidebar} />} />
             <Route path="/translations" component={() => <Translations toggleSidebar={toggleSidebar} />} />
             <Route path="/module-translation/:id" component={({ params }) => <ModuleTranslation toggleSidebar={toggleSidebar} />} />
+            <Route path="/document/:id/export-translations" component={({ params }) => <DocumentTranslationExport />} />
             <Route component={NotFound} />
           </Switch>
         </div>
