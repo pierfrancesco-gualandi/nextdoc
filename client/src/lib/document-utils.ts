@@ -1705,46 +1705,77 @@ img, video, iframe {
     for (const match of sectionMatches) {
       const level = parseInt(match[1], 10);
       const id = match[2];
-      const title = match[3].replace(/<[^>]*>/g, ''); // Rimuove eventuali tag HTML nel titolo
-      sections.push({ level, id, title });
+      // Estrae il numero di sezione se presente (es. "1.2.3 Titolo sezione")
+      const fullTitle = match[3].replace(/<[^>]*>/g, '');
+      const sectionNumberMatch = fullTitle.match(/^(\d+(\.\d+)*)\s+(.*)/);
+      
+      const sectionNumber = sectionNumberMatch ? sectionNumberMatch[1] : "";
+      const title = sectionNumberMatch ? sectionNumberMatch[3] : fullTitle;
+      
+      sections.push({ 
+        level, 
+        id, 
+        title,
+        fullTitle,
+        sectionNumber
+      });
     }
     
-    // Funzione ricorsiva per generare l'albero
-    function generateSectionTree(sections, startIndex = 0, level = 1) {
-      let html = '';
-      for (let i = startIndex; i < sections.length; i++) {
-        const section = sections[i];
-        if (section.level === level) {
-          // Cerca i figli di questa sezione
-          const children = [];
-          let j = i + 1;
-          while (j < sections.length && sections[j].level > level) {
-            if (sections[j].level === level + 1) {
-              children.push(j);
-            }
-            j++;
+    // Organizza le sezioni in una gerarchia appropriata
+    function organizeHierarchy(sections) {
+      const sectionIds = {};
+      const rootSections = [];
+      
+      // Prima, indicizzo tutte le sezioni per ID
+      sections.forEach((section, index) => {
+        section.index = index;
+        section.children = [];
+        sectionIds[section.id] = section;
+      });
+      
+      // Ora, costruisco la gerarchia
+      for (let i = 0; i < sections.length; i++) {
+        const currentSection = sections[i];
+        
+        // Se è una sezione di primo livello, aggiungila alle radici
+        if (currentSection.level === 1) {
+          rootSections.push(currentSection);
+          continue;
+        }
+        
+        // Altrimenti, cerca il genitore appropriato
+        for (let j = i - 1; j >= 0; j--) {
+          const potentialParent = sections[j];
+          if (potentialParent.level < currentSection.level) {
+            potentialParent.children.push(currentSection);
+            break;
           }
-          
-          const hasChildren = children.length > 0;
-          const childrenHtml = hasChildren ? generateSectionTree(sections, i + 1, level + 1) : '';
-          
-          html += `
-            <li class="section-item${hasChildren ? ' has-children' : ''}">
-              <div class="section-header">
-                ${hasChildren ? '<span class="toggle-icon">►</span>' : '<span class="toggle-spacer"></span>'}
-                <a href="#${section.id}" class="section-link">${section.title}</a>
-              </div>
-              ${hasChildren ? `<ul class="section-children">${childrenHtml}</ul>` : ''}
-            </li>
-          `;
-          
-          // Salta i figli già processati
-          i = j - 1;
-        } else if (section.level < level) {
-          // Torniamo al livello superiore
-          break;
         }
       }
+      
+      return { sectionIds, rootSections };
+    }
+    
+    const hierarchy = organizeHierarchy(sections);
+    
+    // Funzione ricorsiva per generare l'albero - versione migliorata
+    function generateSectionTree(sections, currentSections = hierarchy.rootSections) {
+      let html = '';
+      
+      for (const section of currentSections) {
+        const hasChildren = section.children && section.children.length > 0;
+        
+        html += `
+          <li class="section-item${hasChildren ? ' has-children' : ''}">
+            <div class="section-header">
+              ${hasChildren ? '<span class="toggle-icon">►</span>' : '<span class="toggle-spacer"></span>'}
+              <a href="#${section.id}" class="section-link">${section.sectionNumber ? `${section.sectionNumber} ` : ''}${section.title}</a>
+            </div>
+            ${hasChildren ? `<ul class="section-children">${generateSectionTree(sections, section.children)}</ul>` : ''}
+          </li>
+        `;
+      }
+      
       return html;
     }
     
@@ -1940,12 +1971,15 @@ img, video, iframe {
       overflow-y: auto;
       padding: 20px;
       box-sizing: border-box;
-      transition: transform 0.3s ease;
+      transition: all 0.3s ease;
       z-index: 50;
+      left: 0;
     }
     
     .sidebar.hidden {
-      transform: translateX(-100%);
+      left: -300px; /* Nasconde completamente la sidebar */
+      opacity: 0;
+      visibility: hidden;
     }
     
     .main-content {
