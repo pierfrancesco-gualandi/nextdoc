@@ -997,7 +997,10 @@ export function generateHtml(title: string, content: string): string {
   /* Bordi e angoli */
   --border-radius: 4px;
   --box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  
 }
+
+
 
 body {
   font-family: var(--font-family);
@@ -1624,7 +1627,7 @@ img, video, iframe {
   margin: 15px 0;
 }
 `;
-
+  
   // Crea un file CSS esterno che può essere scaricato separatamente
   const externalCssFilename = `${title.replace(/\s+/g, '_')}_style.css`;
   // Prepara un link per scaricare il CSS separatamente
@@ -1657,7 +1660,59 @@ img, video, iframe {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
-  <style id="document-css">${cssContent}</style>
+  <style id="document-css">
+    ${cssContent}
+    
+    /* Stili per il tree view delle sezioni */
+    .document-toc { 
+      background-color: #f8f9fa; 
+      padding: 15px; 
+      border-radius: 4px; 
+      margin-bottom: 2em;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .tree-view { margin-top: 10px; }
+    .section-tree { 
+      list-style-type: none; 
+      padding-left: 0; 
+      margin: 0;
+    }
+    .section-item { 
+      margin-bottom: 5px; 
+    }
+    .section-header { 
+      display: flex; 
+      align-items: center;
+    }
+    .section-link { 
+      text-decoration: none; 
+      color: #2563eb; 
+      padding: 5px 0;
+    }
+    .section-link:hover { 
+      text-decoration: underline; 
+    }
+    .toggle-icon, .toggle-spacer { 
+      display: inline-block;
+      width: 20px;
+      text-align: center;
+      cursor: pointer;
+      margin-right: 5px;
+      transition: transform 0.2s ease;
+    }
+    .section-children { 
+      list-style-type: none; 
+      padding-left: 25px; 
+      margin-top: 5px;
+      display: none;
+    }
+    .section-item.expanded > .section-header > .toggle-icon { 
+      transform: rotate(90deg);
+    }
+    .section-item.expanded > .section-children { 
+      display: block;
+    }
+  </style>
   <!-- È possibile utilizzare un CSS esterno per sostituire lo stile predefinito -->
   <link rel="stylesheet" href="${externalCssFilename}" onerror="this.remove();">
 </head>
@@ -1668,8 +1723,23 @@ img, video, iframe {
     // Script per il download del CSS
     ${cssDownloadScript}
     
-    // Rendere interattive le checkbox
+    // Script per il tree view e interattività
     document.addEventListener('DOMContentLoaded', function() {
+      // Script per il tree view espandibile
+      const toggleIcons = document.querySelectorAll('.toggle-icon');
+      toggleIcons.forEach(icon => {
+        icon.addEventListener('click', function() {
+          const sectionItem = this.parentNode.parentNode;
+          sectionItem.classList.toggle('expanded');
+        });
+      });
+      
+      // Espandi automaticamente il primo livello dell'albero
+      const firstLevelItems = document.querySelectorAll('.section-tree > .section-item.has-children');
+      firstLevelItems.forEach(item => {
+        item.classList.add('expanded');
+      });
+      
       // Rendere i checkbox interattivi
       const checkboxes = document.querySelectorAll('.checklist-checkbox');
       checkboxes.forEach(checkbox => {
