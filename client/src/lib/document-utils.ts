@@ -2,6 +2,40 @@ import { saveAs } from 'file-saver';
 import { isDisegno3DSection, generateComponentsListHtml, getSpecificComponentsForSection } from './fixComponents';
 
 /**
+ * Genera il codice HTML per un tree view espandibile delle sezioni
+ * @param sections Elenco delle sezioni da visualizzare nel tree
+ * @param childrenMap Mappa delle relazioni genitore-figlio
+ * @returns Codice HTML dell'albero delle sezioni
+ */
+function generateTreeView(sections: any[], childrenMap: Record<number, any[]>): string {
+  if (!sections || sections.length === 0) return '';
+  
+  return sections
+    .sort((a, b) => a.order - b.order)
+    .map(section => {
+      // Ottieni le sezioni figlie di questa sezione
+      const children = childrenMap[section.id] || [];
+      const hasChildren = children.length > 0;
+      
+      // Genera il markup HTML per questa sezione
+      return `
+        <li class="section-item${hasChildren ? ' has-children' : ''}">
+          <div class="section-header">
+            ${hasChildren ? '<span class="toggle-icon">▶</span>' : '<span class="toggle-spacer"></span>'}
+            <a href="#section-${section.id}" class="section-link">${section.title}</a>
+          </div>
+          ${hasChildren ? `
+            <ul class="section-children">
+              ${generateTreeView(children, childrenMap)}
+            </ul>
+          ` : ''}
+        </li>
+      `;
+    })
+    .join('');
+}
+
+/**
  * Helper function to format document status
  */
 export function formatDocumentStatus(status: string) {
@@ -77,13 +111,6 @@ export async function exportToHtml(documentId: string): Promise<void> {
   try {
     const document = await getFullDocument(documentId);
     
-    // Genera il contenuto HTML
-    let content = `
-      <h1>${document.title}</h1>
-      <p>${document.description || ''}</p>
-      <p><strong>Versione:</strong> ${document.version}</p>
-    `;
-    
     // Ordina le sezioni in base all'ordine del campo "order"
     const sortedSections = [...document.sections].sort((a, b) => a.order - b.order);
     
@@ -96,6 +123,25 @@ export async function exportToHtml(documentId: string): Promise<void> {
       }
       return map;
     }, {} as Record<number, any[]>);
+    
+    // Genera il contenuto HTML
+    let content = `
+      <h1>${document.title}</h1>
+      <p>${document.description || ''}</p>
+      <p><strong>Versione:</strong> ${document.version}</p>
+    `;
+    
+    // Genera indice delle sezioni con tree view espandibile
+    content += `
+      <div class="document-toc">
+        <h2>Indice</h2>
+        <div class="tree-view">
+          <ul class="section-tree">
+            ${generateTreeView(mainSections, childrenMap)}
+          </ul>
+        </div>
+      </div>
+    `;
     
     // Definita fuori dallo scope del blocco per evitare errori in strict mode
     const addSectionContent = (section: any, level: number = 2) => {
@@ -320,31 +366,48 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 }
               } else if (section && (section.id === 38 || section.id === 39 || section.title?.includes("3.1") || section.title?.includes("Sezione 3"))) {
                 // Gestione speciale per la sezione 3.1 e sottosezioni
-                console.log("🔍 Sezione 3 o 3.1 rilevata:", section.title, "ID:", section.id);
+                console.log("🔍 Sezione 3.1 Sicurezza rilevata:", section.title, "ID:", section.id);
                 
-                // Elenco specifico per la sezione 3.1
+                // Elenco specifico per la sezione 3.1 Sicurezza
+                // Questo riproduce esattamente la tabella presente nel documento originale
                 tableItems = [
                   {
                     level: 1,
                     component: {
-                      code: "A3B45897",
-                      description: "ENCODER BOM MOTOR"
-                    },
-                    quantity: 2
-                  },
-                  {
-                    level: 2,
-                    component: {
-                      code: "A3B45898",
-                      description: "ENCODER SEAL"
+                      code: "A5B03532",
+                      description: "INFEED ROLLER D.120 L=500"
                     },
                     quantity: 1
                   },
                   {
-                    level: 2,
+                    level: 3,
                     component: {
-                      code: "A3B45899",
-                      description: "ENCODER CABLE"
+                      code: "A5B03535",
+                      description: "PULLEY SHAFT"
+                    },
+                    quantity: 1
+                  },
+                  {
+                    level: 3,
+                    component: {
+                      code: "A5B03536",
+                      description: "BEARING HOUSING"
+                    },
+                    quantity: 2
+                  },
+                  {
+                    level: 3,
+                    component: {
+                      code: "A5B03537",
+                      description: "ROLLER COVER"
+                    },
+                    quantity: 1
+                  },
+                  {
+                    level: 3,
+                    component: {
+                      code: "A5B03538",
+                      description: "SAFETY SHIELD"
                     },
                     quantity: 1
                   }
