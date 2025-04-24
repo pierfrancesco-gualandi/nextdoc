@@ -607,13 +607,8 @@ export async function exportToHtml(documentId: string): Promise<void> {
             `;
             break;
             
-          // Aggiunta di tipi di avviso specifici con miglioramenti visivi, icone e testi
+          // Moduli di avvertenza - SOLO il contenuto dell'utente, nessun testo a caso
           case 'danger':
-            // Esempio di testo specifico: rimuovere il carter e non toccare la cinghia di trasmissione
-            const pericoloText = section && (section.id === 20 || (section.title && section.title.includes("3"))) ? 
-              "Rimuovere il carter e non toccare la cinghia di trasmissione" : 
-              (module.content.message || module.content.text || 'Questo è un messaggio di PERICOLO');
-              
             content += `
               <div class="message danger" style="background-color: #ff0000; color: white; border-width: 0;">
                 <div class="message-header" style="color: white;">
@@ -621,7 +616,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                   <h4 style="color: white;">PERICOLO</h4>
                 </div>
                 <div class="message-body" style="color: white;">
-                  <p style="color: white;">${pericoloText}</p>
+                  ${module.content.message || module.content.text ? `<p style="color: white;">${module.content.message || module.content.text}</p>` : ''}
                   ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
                 </div>
               </div>
@@ -629,11 +624,6 @@ export async function exportToHtml(documentId: string): Promise<void> {
             break;
             
           case 'warning-alert':
-            // Esempio di testo specifico per la sezione 3
-            const avvertenzaText = section && (section.id === 20 || (section.title && section.title.includes("3"))) ? 
-              "Non avviare la macchina con i ripari aperti o danneggiati" : 
-              (module.content.message || module.content.text || 'Questo è un messaggio di AVVERTENZA');
-              
             content += `
               <div class="message warning" style="background-color: #ff8c00; color: white; border-width: 0;">
                 <div class="message-header" style="color: white;">
@@ -641,7 +631,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                   <h4 style="color: white;">AVVERTENZA</h4>
                 </div>
                 <div class="message-body" style="color: white;">
-                  <p style="color: white;">${avvertenzaText}</p>
+                  ${module.content.message || module.content.text ? `<p style="color: white;">${module.content.message || module.content.text}</p>` : ''}
                   ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
                 </div>
               </div>
@@ -649,11 +639,6 @@ export async function exportToHtml(documentId: string): Promise<void> {
             break;
             
           case 'caution':
-            // Esempio di testo specifico per la sezione 3
-            const attenzionText = section && (section.id === 20 || (section.title && section.title.includes("3"))) ? 
-              "Assicurarsi che tutti i dispositivi di sicurezza siano correttamente installati prima dell'avvio" : 
-              (module.content.message || module.content.text || 'Questo è un messaggio di ATTENZIONE');
-              
             content += `
               <div class="message caution" style="background-color: #ffd600; color: white; border-width: 0;">
                 <div class="message-header" style="color: white;">
@@ -661,7 +646,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                   <h4 style="color: white;">ATTENZIONE</h4>
                 </div>
                 <div class="message-body" style="color: white;">
-                  <p style="color: white;">${attenzionText}</p>
+                  ${module.content.message || module.content.text ? `<p style="color: white;">${module.content.message || module.content.text}</p>` : ''}
                   ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
                 </div>
               </div>
@@ -669,11 +654,6 @@ export async function exportToHtml(documentId: string): Promise<void> {
             break;
             
           case 'note':
-            // Esempio di testo specifico per la sezione 3
-            const notaText = section && (section.id === 20 || (section.title && section.title.includes("3"))) ? 
-              "Consultare il manuale tecnico per i dettagli completi di installazione" : 
-              (module.content.message || module.content.text || 'Questo è un messaggio informativo');
-              
             content += `
               <div class="message info" style="background-color: #0070d1; color: white; border-width: 0;">
                 <div class="message-header" style="color: white;">
@@ -681,7 +661,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                   <h4 style="color: white;">NOTA</h4>
                 </div>
                 <div class="message-body" style="color: white;">
-                  <p style="color: white;">${notaText}</p>
+                  ${module.content.message || module.content.text ? `<p style="color: white;">${module.content.message || module.content.text}</p>` : ''}
                   ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
                 </div>
               </div>
@@ -689,11 +669,6 @@ export async function exportToHtml(documentId: string): Promise<void> {
             break;
             
           case 'safety-instructions':
-            // Esempio di testo specifico per la sezione 3
-            const sicurezzaText = section && (section.id === 20 || (section.title && section.title.includes("3"))) ? 
-              "Utilizzare sempre dispositivi di protezione individuale durante le operazioni di manutenzione" : 
-              (module.content.message || module.content.text || 'Segui queste istruzioni di sicurezza');
-              
             content += `
               <div class="message success" style="background-color: #2e7d32; color: white; border-width: 0;">
                 <div class="message-header" style="color: white;">
@@ -701,7 +676,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                   <h4 style="color: white;">ISTRUZIONI DI SICUREZZA</h4>
                 </div>
                 <div class="message-body" style="color: white;">
-                  <p style="color: white;">${sicurezzaText}</p>
+                  ${module.content.message || module.content.text ? `<p style="color: white;">${module.content.message || module.content.text}</p>` : ''}
                   ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
                 </div>
               </div>
