@@ -107,8 +107,9 @@ export function downloadTextFile(fileName: string, content: string, type: string
  * Esporta un documento in formato HTML
  * @param documentId ID del documento da esportare
  */
-export async function exportToHtml(documentId: string): Promise<void> {
+export async function exportToHtml(documentId: string, languageId?: string): Promise<void> {
   try {
+    console.log(`Esportazione HTML per documento ${documentId}${languageId ? ' con lingua ' + languageId : ''}`);
     const document = await getFullDocument(documentId);
     
     // Ordina le sezioni in base all'ordine del campo "order"
@@ -989,7 +990,7 @@ export async function exportToPdf(documentId: string, languageId?: string): Prom
     
     // Prima esportiamo in HTML per avere un fallback in caso di problemi con il PDF
     // Questo assicura che l'utente abbia sempre un documento da consultare
-    await exportToHtml(documentId);
+    await exportToHtml(documentId, languageId);
     
     const response = await fetch(url, {
       method: 'GET',

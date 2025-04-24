@@ -5,9 +5,10 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ExportDropdownProps {
   documentId?: string;
+  selectedLanguage?: string;
 }
 
-export function ExportDropdown({ documentId }: ExportDropdownProps) {
+export function ExportDropdown({ documentId, selectedLanguage }: ExportDropdownProps) {
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -27,15 +28,19 @@ export function ExportDropdown({ documentId }: ExportDropdownProps) {
     setIsOpen(false); // Chiudi il menu dopo una selezione
     
     try {
+      // Usa la lingua selezionata per l'esportazione se è diversa dall'originale
+      const languageToUse = selectedLanguage && selectedLanguage !== '0' ? selectedLanguage : undefined;
+      console.log(`Esportazione in formato ${format} con lingua: ${languageToUse || 'originale'}`);
+      
       switch(format) {
         case 'html':
-          await exportToHtml(documentId);
+          await exportToHtml(documentId, languageToUse);
           break;
         case 'pdf':
-          await exportToPdf(documentId);
+          await exportToPdf(documentId, languageToUse);
           break;
         case 'word':
-          await exportToWord(documentId);
+          await exportToWord(documentId, languageToUse);
           toast({
             title: "Esportazione completata",
             description: "Il documento è stato esportato in formato Word"
