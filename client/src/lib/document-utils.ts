@@ -1784,13 +1784,43 @@ img, video, iframe {
       top: 0;
       left: 0;
       right: 0;
-      height: 50px;
+      height: 60px;
       background-color: #fff;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       display: flex;
       align-items: center;
-      padding: 0 10px;
+      padding: 0;
       z-index: 100;
+    }
+    
+    .top-bar-content {
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+    }
+    
+    .logo-container {
+      width: 100px;
+      height: 40px;
+      margin-right: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px dashed #ccc;
+      background-color: #f8f8f8;
+      border-radius: 4px;
+      color: #888;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    
+    .logo-container img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
     }
     
     .toggle-sidebar-btn {
@@ -1843,12 +1873,13 @@ img, video, iframe {
       flex: 1;
       max-width: 600px;
       position: relative;
+      margin: 0 20px;
     }
     
     .search-input {
       width: 100%;
-      height: 36px;
-      padding: 8px 12px 8px 36px;
+      height: 40px;
+      padding: 8px 12px 8px 40px;
       border: 1px solid #ddd;
       border-radius: 4px;
       font-size: 14px;
@@ -1860,13 +1891,23 @@ img, video, iframe {
       border-color: #0056b3;
     }
     
-    .search-icon {
+    .search-button {
       position: absolute;
-      left: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #999;
-      font-size: 16px;
+      left: 0;
+      top: 0;
+      height: 40px;
+      width: 40px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .search-icon {
+      color: #555;
+      font-size: 18px;
     }
     
     .search-input::placeholder {
@@ -1880,13 +1921,13 @@ img, video, iframe {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 300px;
+      max-width: 400px;
     }
     
     .document-container {
       display: flex;
       min-height: 100vh;
-      margin-top: 50px; /* Lascia spazio per la barra superiore */
+      margin-top: 60px; /* Lascia spazio per la barra superiore */
     }
     
     .sidebar {
@@ -1894,8 +1935,8 @@ img, video, iframe {
       background-color: #f0f2f5;
       border-right: 1px solid #ddd;
       position: fixed;
-      height: calc(100vh - 50px); /* Altezza calcolata in base alla barra superiore */
-      top: 50px; /* Posizionato sotto la barra superiore */
+      height: calc(100vh - 60px); /* Altezza calcolata in base alla barra superiore */
+      top: 60px; /* Posizionato sotto la barra superiore */
       overflow-y: auto;
       padding: 20px;
       box-sizing: border-box;
@@ -2028,18 +2069,25 @@ img, video, iframe {
 </head>
 <body>
   <div class="top-bar">
-    <div class="toggle-sidebar-btn" id="toggle-sidebar-btn" title="Mostra/Nascondi sidebar">
-      <div class="toggle-sidebar-icon">
-        <span></span>
-        <span></span>
-        <span></span>
+    <div class="top-bar-content">
+      <div class="logo-container" title="Logo">
+        <span>LOGO</span>
+      </div>
+      <div class="toggle-sidebar-btn" id="toggle-sidebar-btn" title="Mostra/Nascondi sidebar">
+        <div class="toggle-sidebar-icon">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+      <div class="document-title">${title.replace(/<[^>]*>/g, '')}</div>
+      <div class="search-container">
+        <button class="search-button" id="search-button" title="Cerca">
+          <span class="search-icon">&#x1F50D;</span>
+        </button>
+        <input type="text" class="search-input" id="search-input" placeholder="Cerca nel documento...">
       </div>
     </div>
-    <div class="search-container">
-      <span class="search-icon">&#x1F50D;</span>
-      <input type="text" class="search-input" id="search-input" placeholder="Cerca nel documento...">
-    </div>
-    <div class="document-title">${title.replace(/<[^>]*>/g, '')}</div>
   </div>
   
   <div class="document-container">
@@ -2089,8 +2137,11 @@ img, video, iframe {
       
       // Funzione di ricerca
       const searchInput = document.getElementById('search-input');
-      searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
+      const searchButton = document.getElementById('search-button');
+      
+      // Funzione che esegue la ricerca e l'evidenziazione
+      function performSearch() {
+        const searchTerm = searchInput.value.toLowerCase();
         
         // Rimuovi eventuali highlight precedenti
         const highlighted = document.querySelectorAll('.search-highlight');
@@ -2105,37 +2156,74 @@ img, video, iframe {
         // Cerca nel contenuto principale
         searchInContent(mainContent, searchTerm);
         
-        // Funzione per evidenziare il testo trovato
-        function searchInContent(element, term) {
-          if (element.nodeType === 3) { // È un nodo di testo
-            const content = element.nodeValue.toLowerCase();
-            if (content.includes(term)) {
-              // Sostituisci tutte le occorrenze del termine con uno span evidenziato
-              const parent = element.parentNode;
-              const html = element.nodeValue.replace(
-                new RegExp(term, 'gi'), 
-                match => '<span class="search-highlight" style="background-color: yellow; color: black;">' + match + '</span>'
-              );
-              
-              // Crea un elemento temporaneo per contenere l'HTML
-              const tempDiv = document.createElement('div');
-              tempDiv.innerHTML = html;
-              
-              // Sostituisci il nodo di testo originale con i nuovi nodi
-              while (tempDiv.firstChild) {
-                parent.insertBefore(tempDiv.firstChild, element);
-              }
-              parent.removeChild(element);
+        // Trova il primo elemento evidenziato e scorri fino ad esso
+        const firstHighlight = document.querySelector('.search-highlight');
+        if (firstHighlight) {
+          firstHighlight.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }
+      }
+      
+      // Funzione per evidenziare il testo trovato
+      function searchInContent(element, term) {
+        if (element.nodeType === 3) { // È un nodo di testo
+          const content = element.nodeValue.toLowerCase();
+          if (content.includes(term)) {
+            // Sostituisci tutte le occorrenze del termine con uno span evidenziato
+            const parent = element.parentNode;
+            const html = element.nodeValue.replace(
+              new RegExp(term, 'gi'), 
+              match => '<span class="search-highlight" style="background-color: yellow; color: black;">' + match + '</span>'
+            );
+            
+            // Crea un elemento temporaneo per contenere l'HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            // Sostituisci il nodo di testo originale con i nuovi nodi
+            while (tempDiv.firstChild) {
+              parent.insertBefore(tempDiv.firstChild, element);
             }
-          } else if (element.nodeType === 1) { // È un elemento
-            // Salta gli elementi script e style
-            if (element.tagName.toLowerCase() !== 'script' && 
-                element.tagName.toLowerCase() !== 'style') {
-              for (let i = 0; i < element.childNodes.length; i++) {
-                searchInContent(element.childNodes[i], term);
-              }
+            parent.removeChild(element);
+          }
+        } else if (element.nodeType === 1) { // È un elemento
+          // Salta gli elementi script e style
+          if (element.tagName.toLowerCase() !== 'script' && 
+              element.tagName.toLowerCase() !== 'style') {
+            for (let i = 0; i < element.childNodes.length; i++) {
+              searchInContent(element.childNodes[i], term);
             }
           }
+        }
+      }
+      
+      // Gestisci l'evento input per la ricerca in tempo reale
+      searchInput.addEventListener('input', function() {
+        if (this.value.length >= 2) {
+          performSearch();
+        } else {
+          // Rimuovi evidenziazioni se il testo è troppo corto
+          const highlighted = document.querySelectorAll('.search-highlight');
+          highlighted.forEach(el => {
+            const parent = el.parentNode;
+            parent.replaceChild(document.createTextNode(el.textContent), el);
+            parent.normalize();
+          });
+        }
+      });
+      
+      // Gestisci il pulsante di ricerca
+      searchButton.addEventListener('click', function() {
+        performSearch();
+      });
+      
+      // Gestisci la pressione del tasto INVIO nel campo di ricerca
+      searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          performSearch();
+          e.preventDefault();
         }
       });
       
