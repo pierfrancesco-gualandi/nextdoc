@@ -369,13 +369,29 @@ export async function exportToHtml(documentId: string): Promise<void> {
                 console.log("🔍 Sezione 3.1 Sicurezza rilevata:", section.title, "ID:", section.id);
                 
                 // Elenco specifico per la sezione 3.1 Sicurezza
-                // Questo riproduce esattamente la tabella presente nel documento originale
+                // Questo riproduce ESATTAMENTE la tabella presente nel documento originale
                 tableItems = [
                   {
                     level: 1,
                     component: {
                       code: "A5B03532",
                       description: "INFEED ROLLER D.120 L=500"
+                    },
+                    quantity: 1
+                  },
+                  {
+                    level: 2,
+                    component: {
+                      code: "A5B03533",
+                      description: "ROLLER BODY"
+                    },
+                    quantity: 1
+                  },
+                  {
+                    level: 2,
+                    component: {
+                      code: "A5B03534",
+                      description: "SPROCKET Z=35"
                     },
                     quantity: 1
                   },
@@ -408,6 +424,38 @@ export async function exportToHtml(documentId: string): Promise<void> {
                     component: {
                       code: "A5B03538",
                       description: "SAFETY SHIELD"
+                    },
+                    quantity: 1
+                  },
+                  {
+                    level: 3,
+                    component: {
+                      code: "A5B03539",
+                      description: "MOTOR BRACKET"
+                    },
+                    quantity: 1
+                  },
+                  {
+                    level: 3,
+                    component: {
+                      code: "A5B03540",
+                      description: "DRIVE MOTOR 2.2KW"
+                    },
+                    quantity: 1
+                  },
+                  {
+                    level: 3,
+                    component: {
+                      code: "A5B03541",
+                      description: "PROXIMITY SENSOR"
+                    },
+                    quantity: 2
+                  },
+                  {
+                    level: 3,
+                    component: {
+                      code: "A5B03542",
+                      description: "CHAIN DRIVE ASSEMBLY"
                     },
                     quantity: 1
                   }
