@@ -2003,6 +2003,42 @@ img, video, iframe {
       color: #999;
     }
     
+    .search-navigation-controls {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .search-nav-button {
+      background: none;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #555;
+      transition: background-color 0.2s;
+    }
+    
+    .search-nav-button:hover {
+      background-color: rgba(0,0,0,0.05);
+    }
+    
+    #search-count {
+      font-size: 12px;
+      color: #777;
+      min-width: 40px;
+      text-align: center;
+    }
+    
     .document-title {
       margin-left: 20px;
       font-size: 18px;
@@ -2201,6 +2237,17 @@ img, video, iframe {
     .bom-table .level-3 {
       padding-left: 50px;
     }
+    
+    /* Stile per l'evidenziazione delle sezioni al clic */
+    .highlight-section {
+      animation: highlight-pulse 2s ease-in-out;
+    }
+    
+    @keyframes highlight-pulse {
+      0% { background-color: rgba(255, 255, 0, 0); }
+      20% { background-color: rgba(255, 255, 0, 0.3); }
+      100% { background-color: rgba(255, 255, 0, 0); }
+    }
   </style>
   <!-- È possibile utilizzare un CSS esterno per sostituire lo stile predefinito -->
   <link rel="stylesheet" href="${externalCssFilename}" onerror="this.remove();">
@@ -2224,6 +2271,11 @@ img, video, iframe {
           <span class="search-icon">&#x1F50D;</span>
         </button>
         <input type="text" class="search-input" id="search-input" placeholder="Cerca nel documento...">
+        <div class="search-navigation-controls">
+          <button id="search-prev" class="search-nav-button" title="Risultato precedente">&#x0668;</button>
+          <span id="search-count">0/0</span>
+          <button id="search-next" class="search-nav-button" title="Risultato successivo">&#x0667;</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2277,6 +2329,9 @@ img, video, iframe {
       const searchInput = document.getElementById('search-input');
       const searchButton = document.getElementById('search-button');
       
+      let currentHighlightIndex = -1;
+      let searchHighlights = [];
+      
       // Funzione che esegue la ricerca e l'evidenziazione
       function performSearch() {
         const searchTerm = searchInput.value.toLowerCase();
@@ -2289,19 +2344,80 @@ img, video, iframe {
           parent.normalize(); // Unisce i nodi di testo adiacenti
         });
         
-        if (searchTerm.length < 2) return; // Cerca solo termini di 2+ caratteri
+        if (searchTerm.length < 2) {
+          // Aggiorna contatore ricerca
+          document.getElementById('search-count').textContent = '0/0';
+          return; // Cerca solo termini di 2+ caratteri
+        }
         
         // Cerca nel contenuto principale
         searchInContent(mainContent, searchTerm);
         
-        // Trova il primo elemento evidenziato e scorri fino ad esso
-        const firstHighlight = document.querySelector('.search-highlight');
-        if (firstHighlight) {
-          firstHighlight.scrollIntoView({
+        // Raccogli tutti gli elementi evidenziati
+        searchHighlights = Array.from(document.querySelectorAll('.search-highlight'));
+        currentHighlightIndex = searchHighlights.length > 0 ? 0 : -1;
+        
+        // Aggiorna il contatore dei risultati
+        updateSearchCounter();
+        
+        // Evidenzia il risultato corrente e scorri fino ad esso
+        highlightCurrentResult();
+      }
+      
+      function updateSearchCounter() {
+        const countElement = document.getElementById('search-count');
+        if (searchHighlights.length > 0) {
+          countElement.textContent = (currentHighlightIndex + 1) + '/' + searchHighlights.length;
+        } else {
+          countElement.textContent = '0/0';
+        }
+      }
+      
+      function highlightCurrentResult() {
+        // Rimuovi l'evidenziazione attiva da tutti i risultati
+        searchHighlights.forEach(el => {
+          el.style.backgroundColor = 'yellow';
+          el.style.color = 'black';
+        });
+        
+        // Evidenzia il risultato corrente
+        if (currentHighlightIndex >= 0 && currentHighlightIndex < searchHighlights.length) {
+          const currentElement = searchHighlights[currentHighlightIndex];
+          currentElement.style.backgroundColor = 'orange';
+          currentElement.style.color = 'white';
+          
+          // Scorri fino al risultato corrente
+          currentElement.scrollIntoView({
             behavior: 'smooth',
             block: 'center'
           });
         }
+      }
+      
+      // Naviga al risultato precedente
+      function navigateToPrevResult() {
+        if (searchHighlights.length === 0) return;
+        
+        currentHighlightIndex--;
+        if (currentHighlightIndex < 0) {
+          currentHighlightIndex = searchHighlights.length - 1;
+        }
+        
+        updateSearchCounter();
+        highlightCurrentResult();
+      }
+      
+      // Naviga al risultato successivo
+      function navigateToNextResult() {
+        if (searchHighlights.length === 0) return;
+        
+        currentHighlightIndex++;
+        if (currentHighlightIndex >= searchHighlights.length) {
+          currentHighlightIndex = 0;
+        }
+        
+        updateSearchCounter();
+        highlightCurrentResult();
       }
       
       // Funzione per evidenziare il testo trovato
@@ -2365,12 +2481,52 @@ img, video, iframe {
         }
       });
       
+      // Gestione dei pulsanti di navigazione ricerca
+      document.getElementById('search-prev').addEventListener('click', function() {
+        navigateToPrevResult();
+      });
+      
+      document.getElementById('search-next').addEventListener('click', function() {
+        navigateToNextResult();
+      });
+      
       // Script per il tree view espandibile
       const toggleIcons = document.querySelectorAll('.toggle-icon');
       toggleIcons.forEach(icon => {
-        icon.addEventListener('click', function() {
+        icon.addEventListener('click', function(e) {
           const sectionItem = this.parentNode.parentNode;
           sectionItem.classList.toggle('expanded');
+          e.stopPropagation(); // Previene la propagazione ai link
+        });
+      });
+      
+      // Gestisci i clic sui link delle sezioni
+      const sectionLinks = document.querySelectorAll('.section-link');
+      sectionLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          
+          // Ottieni l'ID della sezione da visualizzare
+          const targetId = this.getAttribute('href').substring(1);
+          const targetElement = document.getElementById(targetId);
+          
+          if (targetElement) {
+            // Calcola la posizione tenendo conto dell'altezza della barra
+            const topBarHeight = 60; // Altezza della barra superiore in pixel
+            const offsetTop = targetElement.offsetTop - topBarHeight - 20; // 20px di margine extra
+            
+            // Scorri fino alla sezione
+            window.scrollTo({
+              top: offsetTop,
+              behavior: 'smooth'
+            });
+            
+            // Evidenzia brevemente la sezione
+            targetElement.classList.add('highlight-section');
+            setTimeout(() => {
+              targetElement.classList.remove('highlight-section');
+            }, 2000);
+          }
         });
       });
       
