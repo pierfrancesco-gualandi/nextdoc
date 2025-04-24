@@ -112,8 +112,61 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
     console.log(`Esportazione HTML per documento ${documentId}${languageId ? ' con lingua ' + languageId : ''}`);
     const document = await getFullDocument(documentId);
     
+    // Carica le traduzioni per le sezioni se è specificata una lingua
+    let sectionTranslations: Record<number, any> = {};
+    if (languageId && languageId !== '0') {
+      console.log(`Caricamento traduzioni sezioni per lingua: ${languageId}`);
+      try {
+        const translationsResponse = await fetch(`/api/section-translations?documentId=${documentId}&languageId=${languageId}`);
+        const translationsData = await translationsResponse.json();
+        
+        // Crea una mappa per un accesso più facile
+        sectionTranslations = translationsData.reduce((acc: Record<number, any>, translation: any) => {
+          acc[translation.sectionId] = translation;
+          return acc;
+        }, {});
+        
+        console.log(`Caricate ${Object.keys(sectionTranslations).length} traduzioni per le sezioni`);
+      } catch (error) {
+        console.error('Errore nel caricamento delle traduzioni delle sezioni:', error);
+      }
+    }
+    
+    // Carica le traduzioni per i moduli se è specificata una lingua
+    let moduleTranslations: Record<number, any> = {};
+    if (languageId && languageId !== '0') {
+      console.log(`Caricamento traduzioni moduli per lingua: ${languageId}`);
+      try {
+        const moduleTranslationsResponse = await fetch(`/api/content-module-translations?documentId=${documentId}&languageId=${languageId}`);
+        const moduleTranslationsData = await moduleTranslationsResponse.json();
+        
+        // Crea una mappa per un accesso più facile
+        moduleTranslations = moduleTranslationsData.reduce((acc: Record<number, any>, translation: any) => {
+          acc[translation.moduleId] = translation;
+          return acc;
+        }, {});
+        
+        console.log(`Caricate ${Object.keys(moduleTranslations).length} traduzioni per i moduli`);
+      } catch (error) {
+        console.error('Errore nel caricamento delle traduzioni dei moduli:', error);
+      }
+    }
+    
     // Ordina le sezioni in base all'ordine del campo "order"
     const sortedSections = [...document.sections].sort((a, b) => a.order - b.order);
+    
+    // Applica le traduzioni alle sezioni
+    if (languageId && languageId !== '0') {
+      for (const section of sortedSections) {
+        const translation = sectionTranslations[section.id];
+        if (translation) {
+          // Sostituisci i campi tradotti mantenendo i campi originali se non c'è traduzione
+          section.title = translation.title || section.title;
+          section.description = translation.description || section.description;
+          console.log(`Applicata traduzione per sezione ${section.id}: ${section.title}`);
+        }
+      }
+    }
     
     // Organizza le sezioni in struttura gerarchica
     const mainSections = sortedSections.filter(s => !s.parentId);
@@ -153,6 +206,52 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
       const sortedModules = [...modules].sort((a, b) => a.order - b.order);
       
       for (const module of sortedModules) {
+        // Applica le traduzioni al modulo se disponibili
+        if (languageId && languageId !== '0') {
+          const translation = moduleTranslations[module.id];
+          if (translation) {
+            // Crea una copia del modulo originale
+            const originalContent = { ...module.content };
+            
+            // Applichiamo la traduzione in base al tipo di modulo
+            switch(module.type) {
+              case 'text':
+                if (translation.content && translation.content.text) {
+                  module.content.text = translation.content.text;
+                }
+                break;
+              case 'warning':
+              case 'danger':
+              case 'caution':
+              case 'note':
+              case 'safety-instructions':
+                if (translation.content) {
+                  if (translation.content.title) module.content.title = translation.content.title;
+                  if (translation.content.description) module.content.description = translation.content.description;
+                }
+                break;
+              case 'image':
+              case 'video':
+              case 'file':
+              case 'pdf':
+                if (translation.content && translation.content.caption) {
+                  module.content.caption = translation.content.caption;
+                }
+                if (translation.content && translation.content.title) {
+                  module.content.title = translation.content.title;
+                }
+                break;
+              // Per altri tipi di moduli, gestiamo traduzioni specifiche
+              default:
+                if (translation.content) {
+                  // Merge generico dell'oggetto content, preservando i campi originali non tradotti
+                  module.content = { ...module.content, ...translation.content };
+                }
+            }
+            
+            console.log(`Applicata traduzione per modulo ${module.id} di tipo ${module.type}`);
+          }
+        }
         switch (module.type) {
           case 'text':
             content += `<div>${module.content.text}</div>`;
@@ -192,19 +291,37 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
             break;
             
           case 'warning':
-            // Determina la classe e l'icona in base al livello
+          case 'danger':
+          case 'caution':
+          case 'note':
+          case 'safety-instructions':
+            // Determina la classe e le proprietà in base al tipo di avviso
             let warningClass = 'info';
             let warningIcon = '&#9432;'; // ℹ️
             let warningTitle = module.content.title || 'Nota';
+            let warningText = module.content.description || module.content.message || '';
             
-            if (module.content.level === 'error') {
-              warningClass = 'danger';
-              warningIcon = '&#9888;'; // ⚠️
-              warningTitle = module.content.title || 'PERICOLO';
-            } else if (module.content.level === 'warning') {
-              warningClass = 'warning';
-              warningIcon = '&#9888;'; // ⚠️
-              warningTitle = module.content.title || 'AVVERTENZA';
+            switch(module.type) {
+              case 'danger':
+                warningClass = 'danger';
+                warningIcon = '&#9888;'; // ⚠️
+                warningTitle = module.content.title || 'PERICOLO';
+                break;
+              case 'warning':
+                warningClass = 'warning';
+                warningIcon = '&#9888;'; // ⚠️
+                warningTitle = module.content.title || 'AVVERTENZA';
+                break;
+              case 'caution':
+                warningClass = 'caution';
+                warningIcon = '&#9888;'; // ⚠️
+                warningTitle = module.content.title || 'ATTENZIONE';
+                break;
+              case 'safety-instructions':
+                warningClass = 'safety';
+                warningIcon = '&#9745;'; // ✅
+                warningTitle = module.content.title || 'ISTRUZIONI DI SICUREZZA';
+                break;
             }
             
             content += `
@@ -214,7 +331,7 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
                   <h4>${warningTitle}</h4>
                 </div>
                 <div class="message-body">
-                  <p>${module.content.message}</p>
+                  ${warningText}
                 </div>
               </div>
             `;
