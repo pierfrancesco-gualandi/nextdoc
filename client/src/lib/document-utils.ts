@@ -1217,6 +1217,30 @@ img, video, iframe {
   margin: var(--base-spacing) auto;
 }
 
+/* Stile per l'evidenziazione delle sezioni quando ci si clicca */
+.document-section {
+  padding: 10px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.highlight-section {
+  background-color: rgba(255, 247, 200, 0.7);
+  animation: flash-highlight 2s ease;
+}
+
+@keyframes flash-highlight {
+  0% { background-color: rgba(255, 247, 200, 0.2); }
+  50% { background-color: rgba(255, 247, 200, 0.7); }
+  100% { background-color: rgba(255, 247, 200, 0.2); }
+}
+
+.section-heading {
+  margin-top: 0;
+  padding-top: 10px;
+}
+
 .section {
   margin-bottom: calc(var(--base-spacing) * 2);
 }
@@ -2373,6 +2397,100 @@ img, video, iframe {
         mainContent.classList.add('full-width');
       }
       
+      // Gestione dei toggle per l'espansione delle sezioni
+      const toggleIcons = document.querySelectorAll('.toggle-icon');
+      toggleIcons.forEach(icon => {
+        icon.addEventListener('click', function(e) {
+          // Previeni il comportamento predefinito
+          e.stopPropagation();
+          
+          // Ottieni l'elemento section-item (il genitore del genitore)
+          const sectionItem = this.parentNode.parentNode;
+          
+          // Alterna la classe expanded
+          sectionItem.classList.toggle('expanded');
+          
+          // Cambia il simbolo del triangolo in base allo stato
+          this.textContent = sectionItem.classList.contains('expanded') ? '▼' : '▶';
+          
+          // Salva lo stato nel localStorage
+          const sectionLink = sectionItem.querySelector('.section-link');
+          if (sectionLink) {
+            const sectionId = sectionLink.getAttribute('href').substring(1);
+            localStorage.setItem('section-expanded-' + sectionId, String(sectionItem.classList.contains('expanded')));
+          }
+        });
+      });
+      
+      // Espandi automaticamente il primo livello dell'albero e ripristina lo stato salvato
+      const allSectionItems = document.querySelectorAll('.section-item.has-children');
+      allSectionItems.forEach(item => {
+        // Ottieni l'ID della sezione
+        const sectionLink = item.querySelector('.section-link');
+        if (sectionLink) {
+          const sectionId = sectionLink.getAttribute('href').substring(1);
+          const savedState = localStorage.getItem('section-expanded-' + sectionId);
+          
+          // Se c'è uno stato salvato, lo ripristiniamo
+          if (savedState === 'true') {
+            item.classList.add('expanded');
+            
+            // Aggiorna l'icona del triangolo
+            const toggleIcon = item.querySelector('.toggle-icon');
+            if (toggleIcon) toggleIcon.textContent = '▼';
+          } else if (savedState === 'false') {
+            item.classList.remove('expanded');
+            
+            // Aggiorna l'icona del triangolo
+            const toggleIcon = item.querySelector('.toggle-icon');
+            if (toggleIcon) toggleIcon.textContent = '▶';
+          } else {
+            // Se non c'è stato salvato e è un elemento di primo livello, lo espandiamo automaticamente
+            const isFirstLevel = item.parentNode && item.parentNode.classList.contains('section-tree');
+            
+            if (isFirstLevel) {
+              item.classList.add('expanded');
+              
+              // Aggiorna l'icona del triangolo
+              const toggleIcon = item.querySelector('.toggle-icon');
+              if (toggleIcon) toggleIcon.textContent = '▼';
+            }
+          }
+        }
+      });
+      
+      // Configura i link delle sezioni per scrollare con offset per il top bar
+      const sectionLinks = document.querySelectorAll('.section-link');
+      sectionLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          const targetId = this.getAttribute('href').substring(1);
+          const targetElement = document.getElementById(targetId);
+          
+          if (targetElement) {
+            // Calcola l'offset del top bar (altezza del top bar + un piccolo margine)
+            const topBarHeight = document.querySelector('.top-bar')?.offsetHeight || 0;
+            const offset = topBarHeight + 10;
+            
+            // Calcola la posizione di destinazione
+            const elementPosition = targetElement.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - offset;
+            
+            // Scorrimento alla posizione target con animazione smooth
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
+            
+            // Evidenzia temporaneamente la sezione
+            targetElement.classList.add('highlight-section');
+            setTimeout(() => {
+              targetElement.classList.remove('highlight-section');
+            }, 2000);
+          }
+        });
+      });
+      
       // Funzione di ricerca
       const searchInput = document.getElementById('search-input');
       const searchButton = document.getElementById('search-button');
@@ -2538,51 +2656,7 @@ img, video, iframe {
         navigateToNextResult();
       });
       
-      // Script per il tree view espandibile
-      const toggleIcons = document.querySelectorAll('.toggle-icon');
-      toggleIcons.forEach(icon => {
-        icon.addEventListener('click', function(e) {
-          const sectionItem = this.parentNode.parentNode;
-          sectionItem.classList.toggle('expanded');
-          e.stopPropagation(); // Previene la propagazione ai link
-        });
-      });
-      
-      // Gestisci i clic sui link delle sezioni
-      const sectionLinks = document.querySelectorAll('.section-link');
-      sectionLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-          e.preventDefault();
-          
-          // Ottieni l'ID della sezione da visualizzare
-          const targetId = this.getAttribute('href').substring(1);
-          const targetElement = document.getElementById(targetId);
-          
-          if (targetElement) {
-            // Calcola la posizione tenendo conto dell'altezza della barra
-            const topBarHeight = 60; // Altezza della barra superiore in pixel
-            const offsetTop = targetElement.offsetTop - topBarHeight - 20; // 20px di margine extra
-            
-            // Scorri fino alla sezione
-            window.scrollTo({
-              top: offsetTop,
-              behavior: 'smooth'
-            });
-            
-            // Evidenzia brevemente la sezione
-            targetElement.classList.add('highlight-section');
-            setTimeout(() => {
-              targetElement.classList.remove('highlight-section');
-            }, 2000);
-          }
-        });
-      });
-      
-      // Espandi automaticamente il primo livello dell'albero
-      const firstLevelItems = document.querySelectorAll('.section-tree > .section-item.has-children');
-      firstLevelItems.forEach(item => {
-        item.classList.add('expanded');
-      });
+      // Le funzioni per il tree view sono già definite sopra - non duplicare
       
       // Rendere i checkbox interattivi
       const checkboxes = document.querySelectorAll('.checklist-checkbox');
