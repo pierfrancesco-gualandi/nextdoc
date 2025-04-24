@@ -12,6 +12,7 @@ import Users from "@/pages/users";
 import Translations from "@/pages/translations";
 import ModuleTranslation from "@/pages/module-translation";
 import DocumentTranslationExport from "@/pages/document-translation-export";
+import DocumentTranslationTree from "@/pages/document-translation-tree";
 import Sidebar from "@/components/sidebar";
 import { useState, createContext, useContext, useEffect } from "react";
 import { UserProvider } from "./contexts/UserContext";
@@ -162,6 +163,7 @@ function Router() {
             <Route path="/translations" component={() => <Translations toggleSidebar={toggleSidebar} />} />
             <Route path="/module-translation/:id" component={({ params }) => <ModuleTranslation toggleSidebar={toggleSidebar} />} />
             <Route path="/document/:id/export-translations" component={({ params }) => <DocumentTranslationExport />} />
+            <Route path="/document/:id/translate" component={({ params }) => <DocumentTranslationTree toggleSidebar={toggleSidebar} />} />
             <Route component={NotFound} />
           </Switch>
         </div>
