@@ -959,7 +959,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
             const children = childrenMap[section.id] || [];
             const hasChildren = children.length > 0;
             
-            // Genera il markup HTML per questa sezione
+            // Genera il markup HTML per questa sezione - ESATTAMENTE COME NEL DOCUMENTO ORIGINALE
             return `
               <li class="section-item${hasChildren ? ' has-children' : ''}">
                 <div class="section-header">
@@ -968,7 +968,7 @@ export async function exportToHtml(documentId: string): Promise<void> {
                   <a href="#section-${section.id}" class="section-link">${section.title}</a>
                 </div>
                 ${hasChildren ? `
-                  <ul class="section-children">
+                  <ul class="section-children" style="display: none;">
                     ${generateTreeView(children)}
                   </ul>
                 ` : ''}
@@ -2289,13 +2289,13 @@ img, video, iframe {
       list-style-type: none; 
       padding-left: 21px; 
       margin-top: 3px;
-      display: none; /* Nascondi tutti i figli per default */
       border-left: 1px dotted #ccc;
+      /* La visualizzazione è gestita inline nei singoli elementi */
     }
     
-    /* Mostra i figli degli elementi espansi */
+    /* Mostra i figli degli elementi espansi - la classe viene cambiata via JS */
     .section-item.expanded > .section-children {
-      display: block;
+      display: block !important;
     }
     
     /* Triangoli di espansione - esattamente come nel documento originale */
@@ -2436,55 +2436,51 @@ img, video, iframe {
         mainContent.classList.add('full-width');
       }
       
-      // Gestione dei toggle per l'espansione delle sezioni
+      // Gestione dei toggle per l'espansione delle sezioni - ESATTAMENTE COME NELL'ORIGINALE
       const toggleIcons = document.querySelectorAll('.toggle-icon');
       toggleIcons.forEach(icon => {
         icon.addEventListener('click', function(e) {
           // Previeni il comportamento predefinito
           e.stopPropagation();
           
-          // Ottieni l'elemento section-item (il genitore del genitore)
+          // Ottieni l'elemento section-item (li) che è il genitore del genitore (section-header)
           const sectionItem = this.parentNode.parentNode;
           
-          // Alterna la classe expanded
-          sectionItem.classList.toggle('expanded');
+          // Trova l'elemento ul.section-children direttamente
+          const childrenContainer = sectionItem.querySelector('.section-children');
           
-          // Modifica direttamente il contenuto del triangolo (come nel documento originale)
-          this.textContent = sectionItem.classList.contains('expanded') ? '▼' : '▶';
-          
-          // Salva lo stato nel localStorage
-          const sectionLink = sectionItem.querySelector('.section-link');
-          if (sectionLink) {
-            const sectionId = sectionLink.getAttribute('href').substring(1);
-            localStorage.setItem('section-expanded-' + sectionId, String(sectionItem.classList.contains('expanded')));
+          if (childrenContainer) {
+            // Invece di usare classi, modifichiamo direttamente lo stile di visualizzazione come nel documento originale
+            const isExpanded = childrenContainer.style.display !== 'none';
+            
+            // Alterna lo stato di visualizzazione
+            if (isExpanded) {
+              childrenContainer.style.display = 'none';
+              this.textContent = '▶'; // Triangolo verso destra (chiuso)
+              sectionItem.classList.remove('expanded');
+            } else {
+              childrenContainer.style.display = 'block';
+              this.textContent = '▼'; // Triangolo verso il basso (aperto)
+              sectionItem.classList.add('expanded');
+            }
           }
         });
       });
       
-      // Per default, tutti i nodi sono compressi e vengono espansi solo quelli di primo livello o salvati
+      // TUTTI i nodi sono compressi all'inizio - NESSUNA ESPANSIONE AUTOMATICA
       const allSectionItems = document.querySelectorAll('.section-item.has-children');
       allSectionItems.forEach(item => {
-        // Inizializza tutti i triangoli a ▶ (chiuso)
+        // Inizializza tutti i triangoli a ▶ (chiuso) 
         const toggleIcon = item.querySelector('.toggle-icon');
         if (toggleIcon) toggleIcon.textContent = '▶';
         
-        // Ottieni l'ID della sezione
-        const sectionLink = item.querySelector('.section-link');
-        if (sectionLink) {
-          const sectionId = sectionLink.getAttribute('href').substring(1);
-          const savedState = localStorage.getItem('section-expanded-' + sectionId);
-          
-          // Controlla se è un elemento di primo livello
-          const isFirstLevel = item.parentNode && item.parentNode.classList.contains('section-tree');
-          
-          // Espandi solo se è stato salvato come espanso o è un elemento di primo livello
-          if (savedState === 'true' || (isFirstLevel && savedState !== 'false')) {
-            item.classList.add('expanded');
-            // Cambia il simbolo del triangolo
-            if (toggleIcon) toggleIcon.textContent = '▼';
-          } else {
-            item.classList.remove('expanded');
-          }
+        // Assicurati che nessun nodo sia espanso all'inizio
+        item.classList.remove('expanded');
+        
+        // Assicurati che la ul delle sottosezioni abbia display none
+        const childrenUl = item.querySelector('.section-children');
+        if (childrenUl) {
+          childrenUl.style.display = 'none';
         }
       });
       
