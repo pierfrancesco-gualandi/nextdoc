@@ -691,9 +691,32 @@ export async function exportToHtml(documentId: string): Promise<void> {
       }
     }
     
-    // Aggiungiamo JavaScript per i controlli dei modelli 3D
+    // Aggiungiamo JavaScript per i controlli dei modelli 3D e per il tree view
     const scriptContent = `
     <script>
+      // Script per il tree view espandibile delle sezioni
+      document.addEventListener('DOMContentLoaded', function() {
+        // Seleziona tutti gli elementi con la classe toggle-icon
+        const toggleIcons = document.querySelectorAll('.toggle-icon');
+        
+        // Aggiungi l'event listener a ciascun toggle-icon
+        toggleIcons.forEach(icon => {
+          icon.addEventListener('click', function() {
+            // Ottieni l'elemento section-item (il genitore del genitore)
+            const sectionItem = this.parentNode.parentNode;
+            
+            // Alterna la classe expanded
+            sectionItem.classList.toggle('expanded');
+          });
+        });
+        
+        // Espandi automaticamente il primo livello dell'albero
+        const firstLevelItems = document.querySelectorAll('.section-tree > .section-item.has-children');
+        firstLevelItems.forEach(item => {
+          item.classList.add('expanded');
+        });
+      });
+      
       // Funzioni per il controllo dei modelli 3D
       function rotateModel(direction, modelId) {
         console.log('Rotate model: ' + direction + ' for model: ' + modelId);
