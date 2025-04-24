@@ -2268,13 +2268,14 @@ img, video, iframe {
       display: block;
     }
     
-    /* Valori predefiniti per le icone di espansione */
-    .section-item > .section-header .toggle-icon::before { 
-      content: "▶";
-    }
-    
-    .section-item.expanded > .section-header .toggle-icon::before { 
-      content: "▼";
+    /* Triangoli di espansione - esattamente come nel documento originale */
+    /* Utilizziamo lo stile diretto senza ::before per maggiore compatibilità */
+    .toggle-icon { 
+      margin-right: 5px;
+      cursor: pointer;
+      width: 16px;
+      text-align: center;
+      display: inline-block;
     }
     
     /* La regola è già definita sopra */
@@ -2422,8 +2423,8 @@ img, video, iframe {
           // Alterna la classe expanded
           sectionItem.classList.toggle('expanded');
           
-          // Non dobbiamo più modificare il contenuto del triangolo
-          // poiché è gestito tramite CSS con ::before
+          // Modifica direttamente il contenuto del triangolo (come nel documento originale)
+          this.textContent = sectionItem.classList.contains('expanded') ? '▼' : '▶';
           
           // Salva lo stato nel localStorage
           const sectionLink = sectionItem.querySelector('.section-link');
@@ -2437,9 +2438,10 @@ img, video, iframe {
       // Per default, tutti i nodi sono compressi e vengono espansi solo quelli di primo livello o salvati
       const allSectionItems = document.querySelectorAll('.section-item.has-children');
       allSectionItems.forEach(item => {
-        // Non serve inizializzare i triangoli manualmente
-        // poiché sono gestiti tramite CSS ::before
-
+        // Inizializza tutti i triangoli a ▶ (chiuso)
+        const toggleIcon = item.querySelector('.toggle-icon');
+        if (toggleIcon) toggleIcon.textContent = '▶';
+        
         // Ottieni l'ID della sezione
         const sectionLink = item.querySelector('.section-link');
         if (sectionLink) {
@@ -2452,6 +2454,8 @@ img, video, iframe {
           // Espandi solo se è stato salvato come espanso o è un elemento di primo livello
           if (savedState === 'true' || (isFirstLevel && savedState !== 'false')) {
             item.classList.add('expanded');
+            // Cambia il simbolo del triangolo
+            if (toggleIcon) toggleIcon.textContent = '▼';
           } else {
             item.classList.remove('expanded');
           }
