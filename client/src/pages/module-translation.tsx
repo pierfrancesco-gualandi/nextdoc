@@ -1182,54 +1182,71 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                         )}
                         
                         {module.type === 'table' && (
-                          <div className="space-y-4">
+                          <div className="space-y-6">
                             <div>
                               <Label htmlFor="table-caption">Didascalia tabella</Label>
                               <Input
                                 id="table-caption"
                                 value={translatedContent.caption || ''}
                                 onChange={(e) => handleTextChange(e.target.value, 'caption')}
-                                placeholder="Didascalia della tabella tradotta..."
+                                placeholder={getOriginalContent('caption')}
+                                className={isFieldTranslated('caption') ? '' : 'border-red-500'}
                               />
                             </div>
                             
-                            <div>
-                              <Label>Intestazioni</Label>
-                              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                                {Array.isArray(translatedContent.headers) ? (
-                                  // Se headers è un array, utilizziamo map per renderizzare gli input
-                                  translatedContent.headers.map((header: string, index: number) => (
-                                    <Input
-                                      key={`header-${index}`}
-                                      value={header}
-                                      onChange={(e) => handleTextChange(e.target.value, 'headers', index)}
-                                      placeholder={`Intestazione ${index + 1}`}
-                                    />
-                                  ))
-                                ) : (
-                                  // Se headers è un oggetto o non è definito, mostriamo un messaggio
-                                  <div className="col-span-4 text-red-500">
-                                    Impossibile visualizzare le intestazioni in questo formato.
-                                    Controlla il tipo di tabella.
-                                  </div>
-                                )}
+                            <div className="space-y-4">
+                              <Label>Intestazioni e Contenuto Tabella</Label>
+                              <div className="border rounded-md overflow-hidden">
+                                <table className="w-full border-collapse">
+                                  <thead>
+                                    <tr className="bg-neutral-lightest border-b">
+                                      {Array.isArray(module.content.headers) && module.content.headers.map((header: string, index: number) => (
+                                        <th key={`header-${index}`} className="p-2 text-left border-r last:border-r-0">
+                                          <Input
+                                            value={Array.isArray(translatedContent.headers) ? translatedContent.headers[index] || '' : ''}
+                                            onChange={(e) => handleTextChange(e.target.value, 'headers', index)}
+                                            placeholder={header}
+                                            className={
+                                              Array.isArray(translatedContent.headers) && 
+                                              translatedContent.headers[index] ? 
+                                              'border-neutral-200' : 'border-red-500'
+                                            }
+                                          />
+                                        </th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {Array.isArray(module.content.rows) && module.content.rows.map((row: string[], rowIndex: number) => (
+                                      <tr key={`row-${rowIndex}`} className="border-b last:border-b-0">
+                                        {row.map((cell: string, cellIndex: number) => (
+                                          <td key={`cell-${rowIndex}-${cellIndex}`} className="p-2 border-r last:border-r-0">
+                                            <Input
+                                              value={
+                                                Array.isArray(translatedContent.rows) && 
+                                                translatedContent.rows[rowIndex] &&
+                                                translatedContent.rows[rowIndex][cellIndex] || ''
+                                              }
+                                              onChange={(e) => handleTextChange(e.target.value, 'rows', rowIndex, cellIndex)}
+                                              placeholder={cell}
+                                              className={
+                                                Array.isArray(translatedContent.rows) && 
+                                                translatedContent.rows[rowIndex] && 
+                                                translatedContent.rows[rowIndex][cellIndex] ? 
+                                                'border-neutral-200' : 'border-red-500'
+                                              }
+                                            />
+                                          </td>
+                                        ))}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
                               </div>
-                            </div>
-                            
-                            <div>
-                              <Label>Righe</Label>
-                              {translatedContent.rows && translatedContent.rows.map((row: string[], rowIndex: number) => (
-                                <div key={`row-${rowIndex}`} className="grid grid-cols-2 gap-2 mb-2 sm:grid-cols-3 md:grid-cols-4">
-                                  {row.map((cell: string, cellIndex: number) => (
-                                    <Input
-                                      key={`cell-${rowIndex}-${cellIndex}`}
-                                      value={cell}
-                                      onChange={(e) => handleTextChange(e.target.value, 'rows', rowIndex, cellIndex)}
-                                      placeholder={`Cella ${rowIndex + 1}x${cellIndex + 1}`}
-                                    />
-                                  ))}
-                                </div>
-                              ))}
+                              
+                              <div className="text-sm text-neutral-medium mt-2">
+                                <p><strong>Nota:</strong> I campi in rosso non sono ancora stati tradotti</p>
+                              </div>
                             </div>
                           </div>
                         )}
