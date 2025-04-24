@@ -1692,10 +1692,74 @@ img, video, iframe {
     });
   `;
 
-  // Genera una sidebar statica con la struttura del documento
-  const sidebarTreeHtml = content.includes('document-toc') ? 
-    '<li>Indice già incluso nel documento</li>' : 
-    '<li class="section-item"><div class="section-header"><span class="toggle-icon">►</span><a href="#top" class="section-link">Indice del documento</a></div></li>';
+  // Genera l'HTML per l'albero delle sezioni nella sidebar
+  let sidebarTreeHtml = '';
+  
+  try {
+    // Creiamo un albero navigabile delle sezioni del documento
+    // Prima, raccogliamo tutte le sezioni dal contenuto HTML
+    const sectionMatches = content.matchAll(/<h([1-6])[^>]*id=["']([^"']+)["'][^>]*>(.*?)<\/h\1>/g);
+    const sections = [];
+    
+    // Estrai le sezioni dal contenuto
+    for (const match of sectionMatches) {
+      const level = parseInt(match[1], 10);
+      const id = match[2];
+      const title = match[3].replace(/<[^>]*>/g, ''); // Rimuove eventuali tag HTML nel titolo
+      sections.push({ level, id, title });
+    }
+    
+    // Funzione ricorsiva per generare l'albero
+    function generateSectionTree(sections, startIndex = 0, level = 1) {
+      let html = '';
+      for (let i = startIndex; i < sections.length; i++) {
+        const section = sections[i];
+        if (section.level === level) {
+          // Cerca i figli di questa sezione
+          const children = [];
+          let j = i + 1;
+          while (j < sections.length && sections[j].level > level) {
+            if (sections[j].level === level + 1) {
+              children.push(j);
+            }
+            j++;
+          }
+          
+          const hasChildren = children.length > 0;
+          const childrenHtml = hasChildren ? generateSectionTree(sections, i + 1, level + 1) : '';
+          
+          html += `
+            <li class="section-item${hasChildren ? ' has-children' : ''}">
+              <div class="section-header">
+                ${hasChildren ? '<span class="toggle-icon">►</span>' : '<span class="toggle-spacer"></span>'}
+                <a href="#${section.id}" class="section-link">${section.title}</a>
+              </div>
+              ${hasChildren ? `<ul class="section-children">${childrenHtml}</ul>` : ''}
+            </li>
+          `;
+          
+          // Salta i figli già processati
+          i = j - 1;
+        } else if (section.level < level) {
+          // Torniamo al livello superiore
+          break;
+        }
+      }
+      return html;
+    }
+    
+    // Genera l'albero delle sezioni
+    if (sections.length > 0) {
+      sidebarTreeHtml = generateSectionTree(sections);
+    } else {
+      // Fallback se non ci sono sezioni
+      sidebarTreeHtml = '<li class="section-item"><div class="section-header"><span class="toggle-spacer"></span><a href="#top" class="section-link">Inizio documento</a></div></li>';
+    }
+  } catch (error) {
+    // Fallback in caso di errore
+    console.error('Errore nella generazione del tree view:', error);
+    sidebarTreeHtml = '<li class="section-item"><div class="section-header"><span class="toggle-spacer"></span><a href="#top" class="section-link">Inizio documento</a></div></li>';
+  }
   
   return `
 <!DOCTYPE html>
@@ -1714,9 +1778,115 @@ img, video, iframe {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
+    /* Barra superiore del documento */
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 50px;
+      background-color: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      z-index: 100;
+    }
+    
+    .toggle-sidebar-btn {
+      background-color: #f0f2f5;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin-right: 15px;
+      transition: background-color 0.2s;
+    }
+    
+    .toggle-sidebar-btn:hover {
+      background-color: #e4e6e9;
+    }
+    
+    .toggle-sidebar-icon {
+      width: 20px;
+      height: 18px;
+      position: relative;
+      transition: all 0.3s;
+    }
+    
+    .toggle-sidebar-icon span {
+      display: block;
+      position: absolute;
+      height: 2px;
+      width: 100%;
+      background-color: #555;
+      transition: all 0.3s;
+    }
+    
+    .toggle-sidebar-icon span:nth-child(1) {
+      top: 0;
+    }
+    
+    .toggle-sidebar-icon span:nth-child(2) {
+      top: 8px;
+    }
+    
+    .toggle-sidebar-icon span:nth-child(3) {
+      top: 16px;
+    }
+    
+    .search-container {
+      flex: 1;
+      max-width: 600px;
+      position: relative;
+    }
+    
+    .search-input {
+      width: 100%;
+      height: 36px;
+      padding: 8px 12px 8px 36px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    
+    .search-input:focus {
+      border-color: #0056b3;
+    }
+    
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #999;
+      font-size: 16px;
+    }
+    
+    .search-input::placeholder {
+      color: #999;
+    }
+    
+    .document-title {
+      margin-left: 20px;
+      font-size: 18px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 300px;
+    }
+    
     .document-container {
       display: flex;
       min-height: 100vh;
+      margin-top: 50px; /* Lascia spazio per la barra superiore */
     }
     
     .sidebar {
@@ -1724,16 +1894,28 @@ img, video, iframe {
       background-color: #f0f2f5;
       border-right: 1px solid #ddd;
       position: fixed;
-      height: 100vh;
+      height: calc(100vh - 50px); /* Altezza calcolata in base alla barra superiore */
+      top: 50px; /* Posizionato sotto la barra superiore */
       overflow-y: auto;
       padding: 20px;
       box-sizing: border-box;
+      transition: transform 0.3s ease;
+      z-index: 50;
+    }
+    
+    .sidebar.hidden {
+      transform: translateX(-100%);
     }
     
     .main-content {
       flex: 1;
       padding: 30px;
       margin-left: 280px;
+      transition: margin-left 0.3s ease;
+    }
+    
+    .main-content.full-width {
+      margin-left: 0;
     }
     
     /* Stili per il tree view delle sezioni - ESATTAMENTE come nel documento originale */
@@ -1845,8 +2027,23 @@ img, video, iframe {
   <link rel="stylesheet" href="${externalCssFilename}" onerror="this.remove();">
 </head>
 <body>
+  <div class="top-bar">
+    <div class="toggle-sidebar-btn" id="toggle-sidebar-btn" title="Mostra/Nascondi sidebar">
+      <div class="toggle-sidebar-icon">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+    <div class="search-container">
+      <span class="search-icon">&#x1F50D;</span>
+      <input type="text" class="search-input" id="search-input" placeholder="Cerca nel documento...">
+    </div>
+    <div class="document-title">${title.replace(/<[^>]*>/g, '')}</div>
+  </div>
+  
   <div class="document-container">
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
       <h2>Indice</h2>
       <div class="document-toc">
         <div class="tree-view">
@@ -1857,7 +2054,7 @@ img, video, iframe {
       </div>
     </div>
     
-    <div class="main-content">
+    <div class="main-content" id="main-content">
       ${content}
       ${cssDownloadLink}
     </div>
@@ -1869,6 +2066,79 @@ img, video, iframe {
     
     // Script per il tree view e interattività
     document.addEventListener('DOMContentLoaded', function() {
+      // Toggle sidebar
+      const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
+      const sidebar = document.getElementById('sidebar');
+      const mainContent = document.getElementById('main-content');
+      
+      toggleSidebarBtn.addEventListener('click', function() {
+        sidebar.classList.toggle('hidden');
+        mainContent.classList.toggle('full-width');
+        
+        // Salva lo stato della sidebar nel localStorage
+        const isSidebarHidden = sidebar.classList.contains('hidden');
+        localStorage.setItem('sidebar-hidden', isSidebarHidden);
+      });
+      
+      // Ripristina lo stato della sidebar
+      const savedSidebarState = localStorage.getItem('sidebar-hidden');
+      if (savedSidebarState === 'true') {
+        sidebar.classList.add('hidden');
+        mainContent.classList.add('full-width');
+      }
+      
+      // Funzione di ricerca
+      const searchInput = document.getElementById('search-input');
+      searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        // Rimuovi eventuali highlight precedenti
+        const highlighted = document.querySelectorAll('.search-highlight');
+        highlighted.forEach(el => {
+          const parent = el.parentNode;
+          parent.replaceChild(document.createTextNode(el.textContent), el);
+          parent.normalize(); // Unisce i nodi di testo adiacenti
+        });
+        
+        if (searchTerm.length < 2) return; // Cerca solo termini di 2+ caratteri
+        
+        // Cerca nel contenuto principale
+        searchInContent(mainContent, searchTerm);
+        
+        // Funzione per evidenziare il testo trovato
+        function searchInContent(element, term) {
+          if (element.nodeType === 3) { // È un nodo di testo
+            const content = element.nodeValue.toLowerCase();
+            if (content.includes(term)) {
+              // Sostituisci tutte le occorrenze del termine con uno span evidenziato
+              const parent = element.parentNode;
+              const html = element.nodeValue.replace(
+                new RegExp(term, 'gi'), 
+                match => '<span class="search-highlight" style="background-color: yellow; color: black;">' + match + '</span>'
+              );
+              
+              // Crea un elemento temporaneo per contenere l'HTML
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = html;
+              
+              // Sostituisci il nodo di testo originale con i nuovi nodi
+              while (tempDiv.firstChild) {
+                parent.insertBefore(tempDiv.firstChild, element);
+              }
+              parent.removeChild(element);
+            }
+          } else if (element.nodeType === 1) { // È un elemento
+            // Salta gli elementi script e style
+            if (element.tagName.toLowerCase() !== 'script' && 
+                element.tagName.toLowerCase() !== 'style') {
+              for (let i = 0; i < element.childNodes.length; i++) {
+                searchInContent(element.childNodes[i], term);
+              }
+            }
+          }
+        }
+      });
+      
       // Script per il tree view espandibile
       const toggleIcons = document.querySelectorAll('.toggle-icon');
       toggleIcons.forEach(icon => {
