@@ -138,8 +138,12 @@ export async function exportToHtml(documentId: string): Promise<void> {
     const addSectionContent = (section: any, level: number = 2) => {
       // Crea tag h appropriato in base al livello (h2, h3, h4, ecc.)
       const headingTag = `h${Math.min(level, 6)}`;
+      
+      // Apri un div contenitore per la sezione con ID per la navigazione
+      content += `<div id="section-${section.id}" class="document-section">`;
+      
       content += `
-        <${headingTag} id="section-${section.id}">${section.title}</${headingTag}>
+        <${headingTag} class="section-heading">${section.title}</${headingTag}>
         <p>${section.description || ''}</p>
       `;
       
@@ -728,6 +732,9 @@ export async function exportToHtml(documentId: string): Promise<void> {
             `;
         }
       }
+      
+      // Chiudi il div contenitore della sezione
+      content += `</div>`;
     }
     
     // Aggiungiamo JavaScript per i controlli dei modelli 3D e per il tree view
@@ -740,12 +747,50 @@ export async function exportToHtml(documentId: string): Promise<void> {
         
         // Aggiungi l'event listener a ciascun toggle-icon
         toggleIcons.forEach(icon => {
-          icon.addEventListener('click', function() {
+          icon.addEventListener('click', function(e) {
+            // Previeni il comportamento predefinito del click (non navigare al link)
+            e.stopPropagation();
+            
             // Ottieni l'elemento section-item (il genitore del genitore)
             const sectionItem = this.parentNode.parentNode;
             
             // Alterna la classe expanded
             sectionItem.classList.toggle('expanded');
+            
+            // Cambia il simbolo del triangolo in base allo stato
+            this.textContent = sectionItem.classList.contains('expanded') ? '▼' : '▶';
+          });
+        });
+        
+        // Configura i link della sezione per scrollare con offset per il top bar
+        const sectionLinks = document.querySelectorAll('.section-link');
+        sectionLinks.forEach(link => {
+          link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href').substring(1);
+            const targetElement = document.getElementById(targetId);
+            
+            if (targetElement) {
+              // Calcola l'offset del top bar (altezza del top bar + un piccolo margine)
+              const topBarHeight = document.querySelector('.top-bar')?.offsetHeight || 0;
+              const offset = topBarHeight + 10;
+              
+              // Calcola la posizione di destinazione
+              const elementPosition = targetElement.getBoundingClientRect().top;
+              const offsetPosition = elementPosition + window.pageYOffset - offset;
+              
+              // Scorrimento alla posizione target con animazione smooth
+              window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+              });
+              
+              // Evidenzia temporaneamente la sezione per renderla più visibile
+              targetElement.classList.add('highlight-section');
+              setTimeout(() => {
+                targetElement.classList.remove('highlight-section');
+              }, 2000);
+            }
           });
         });
         
@@ -753,6 +798,9 @@ export async function exportToHtml(documentId: string): Promise<void> {
         const firstLevelItems = document.querySelectorAll('.section-tree > .section-item.has-children');
         firstLevelItems.forEach(item => {
           item.classList.add('expanded');
+          // Aggiorna il simbolo del triangolo
+          const toggleIcon = item.querySelector('.toggle-icon');
+          if (toggleIcon) toggleIcon.textContent = '▼';
         });
       });
       
