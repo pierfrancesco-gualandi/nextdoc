@@ -2125,6 +2125,7 @@ img, video, iframe {
       display: flex;
       min-height: 100vh;
       margin-top: 60px; /* Lascia spazio per la barra superiore */
+      position: relative; /* Per posizionamento assoluto della sidebar */
     }
     
     .sidebar {
@@ -2137,13 +2138,13 @@ img, video, iframe {
       overflow-y: auto;
       padding: 20px;
       box-sizing: border-box;
-      transition: all 0.3s ease;
+      transition: transform 0.3s ease, opacity 0.3s ease;
       z-index: 50;
       left: 0;
     }
     
     .sidebar.hidden {
-      left: -300px; /* Nasconde completamente la sidebar */
+      transform: translateX(-100%); /* Usa transform invece di left */
       opacity: 0;
       visibility: hidden;
     }
@@ -2151,12 +2152,20 @@ img, video, iframe {
     .main-content {
       flex: 1;
       padding: 30px;
-      margin-left: 280px;
-      transition: margin-left 0.3s ease;
+      margin-left: 0; /* Non usiamo margin-left qui */
+      max-width: calc(100% - 30px); /* Controllo larghezza massima */
+      width: 100%;
+      box-sizing: border-box;
+      position: absolute;
+      left: 280px; /* Posizionato accanto alla sidebar */
+      right: 0;
+      transition: left 0.3s ease, width 0.3s ease;
     }
     
     .main-content.full-width {
-      margin-left: 0;
+      left: 0; /* Quando la sidebar è nascosta */
+      width: 100%;
+      max-width: 100%;
     }
     
     /* Stili per il tree view delle sezioni - ESATTAMENTE come nel documento originale */
@@ -2413,8 +2422,8 @@ img, video, iframe {
           // Alterna la classe expanded
           sectionItem.classList.toggle('expanded');
           
-          // Cambia il simbolo del triangolo in base allo stato
-          this.textContent = sectionItem.classList.contains('expanded') ? '▼' : '▶';
+          // Non dobbiamo più modificare il contenuto del triangolo
+          // poiché è gestito tramite CSS con ::before
           
           // Salva lo stato nel localStorage
           const sectionLink = sectionItem.querySelector('.section-link');
@@ -2428,10 +2437,9 @@ img, video, iframe {
       // Per default, tutti i nodi sono compressi e vengono espansi solo quelli di primo livello o salvati
       const allSectionItems = document.querySelectorAll('.section-item.has-children');
       allSectionItems.forEach(item => {
-        // Inizializza tutti i triangoli a ▶ (chiuso)
-        const toggleIcon = item.querySelector('.toggle-icon');
-        if (toggleIcon) toggleIcon.textContent = '▶';
-        
+        // Non serve inizializzare i triangoli manualmente
+        // poiché sono gestiti tramite CSS ::before
+
         // Ottieni l'ID della sezione
         const sectionLink = item.querySelector('.section-link');
         if (sectionLink) {
@@ -2444,7 +2452,6 @@ img, video, iframe {
           // Espandi solo se è stato salvato come espanso o è un elemento di primo livello
           if (savedState === 'true' || (isFirstLevel && savedState !== 'false')) {
             item.classList.add('expanded');
-            if (toggleIcon) toggleIcon.textContent = '▼';
           } else {
             item.classList.remove('expanded');
           }
