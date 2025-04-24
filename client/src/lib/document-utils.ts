@@ -1768,7 +1768,14 @@ img, video, iframe {
         html += `
           <li class="section-item${hasChildren ? ' has-children' : ''}">
             <div class="section-header">
-              ${hasChildren ? '<span class="toggle-icon">►</span>' : '<span class="toggle-spacer"></span>'}
+              ${hasChildren 
+                ? '<span class="toggle-icon">▶</span>' 
+                : '<span class="toggle-spacer"></span>'
+              }
+              ${hasChildren 
+                ? '<span class="folder-icon"></span>' 
+                : '<span class="document-icon"></span>'
+              }
               <a href="#${section.id}" class="section-link">${section.sectionNumber ? `${section.sectionNumber} ` : ''}${section.title}</a>
             </div>
             ${hasChildren ? `<ul class="section-children">${generateSectionTree(sections, section.children)}</ul>` : ''}
@@ -2031,17 +2038,47 @@ img, video, iframe {
       color: #0056b3;
     }
     
-    /* Utilizziamo un'icona di triangolo identica all'originale */
+    /* Stili per le icone della struttura documento - IDENTICI all'originale */
+    .folder-icon, .document-icon {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      margin-right: 5px;
+      background-color: #333;
+      position: relative;
+    }
+    
+    .folder-icon {
+      border-radius: 2px;
+    }
+    
+    .document-icon {
+      border-radius: 2px;
+      position: relative;
+    }
+    
+    .document-icon::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      right: 3px;
+      height: 1px;
+      background-color: white;
+      box-shadow: 0 3px 0 white, 0 6px 0 white;
+    }
+    
+    /* Triangolo di espansione/compressione - identico all'originale */
     .toggle-icon { 
       display: inline-block;
       width: 16px;
       text-align: center;
       cursor: pointer;
       margin-right: 5px;
-      content: "►";
       color: #555;
-      font-size: 10px;
+      font-size: 12px;
       transition: transform 0.2s ease;
+      background-color: transparent;
     }
     
     .toggle-spacer { 
@@ -2058,12 +2095,28 @@ img, video, iframe {
       border-left: 1px dotted #ccc;
     }
     
+    .section-item > .section-header .toggle-icon { 
+      content: "▶";
+    }
+    
     .section-item.expanded > .section-header > .toggle-icon { 
-      transform: rotate(90deg);
+      content: "▼";
+      transform: rotate(0);
     }
     
     .section-item.expanded > .section-children { 
       display: block;
+    }
+    
+    /* Evidenziazione della sezione attiva - uguale all'originale */
+    .section-item.active > .section-header {
+      background-color: #e8f0fe;
+      border-radius: 4px;
+    }
+    
+    .section-item.active > .section-header .section-link {
+      color: #1a73e8;
+      font-weight: 500;
     }
     
     /* Stili per tabelle BOM aggiornati */
