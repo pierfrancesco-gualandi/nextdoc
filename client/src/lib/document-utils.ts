@@ -912,6 +912,14 @@ export async function exportToHtml(documentId: string): Promise<void> {
     try {
       // Crea una struttura gerarchica delle sezioni
       const mainSections = sortedSections.filter(s => !s.parentId);
+      
+      // Mappa di tutte le sezioni per recuperare facilmente i dettagli per ID
+      const sectionsMap = sortedSections.reduce((map, section) => {
+        map[section.id] = section;
+        return map;
+      }, {} as Record<number, any>);
+      
+      // Crea una mappa delle relazioni genitore-figlio
       const childrenMap = sortedSections.reduce((map, section) => {
         if (section.parentId) {
           if (!map[section.parentId]) map[section.parentId] = [];
@@ -920,8 +928,30 @@ export async function exportToHtml(documentId: string): Promise<void> {
         return map;
       }, {} as Record<number, any[]>);
       
+      // Verifica se ci sono cicli nella gerarchia
+      const detectCycle = (sectionId: number, visited = new Set<number>()): boolean => {
+        if (visited.has(sectionId)) return true;
+        visited.add(sectionId);
+        
+        const children = childrenMap[sectionId] || [];
+        for (const child of children) {
+          if (detectCycle(child.id, new Set(visited))) return true;
+        }
+        
+        return false;
+      };
+      
+      // Rimuovi eventuali cicli dalla gerarchia
+      for (const section of sortedSections) {
+        if (section.parentId && detectCycle(section.id)) {
+          console.warn(`Rilevato ciclo nella gerarchia per la sezione ${section.id}. Rimuovo la relazione genitore-figlio.`);
+          const parentChildren = childrenMap[section.parentId] || [];
+          childrenMap[section.parentId] = parentChildren.filter(c => c.id !== section.id);
+        }
+      }
+      
       // Funzione per generare il tree view in modo ricorsivo
-      const generateTreeView = (sections: any[]) => {
+      const generateTreeView = (sections: any[]): string => {
         return sections
           .sort((a, b) => a.order - b.order)
           .map(section => {
@@ -2269,16 +2299,12 @@ img, video, iframe {
     }
     
     /* Triangoli di espansione - esattamente come nel documento originale */
-    /* Utilizziamo lo stile diretto senza ::before per maggiore compatibilità */
+    /* Aggiunto stile per font-family per garantire la visualizzazione corretta dei triangoli */
     .toggle-icon { 
-      margin-right: 5px;
-      cursor: pointer;
-      width: 16px;
-      text-align: center;
-      display: inline-block;
+      font-family: monospace, sans-serif;
+      font-size: 12px;
+      font-weight: bold;
     }
-    
-    /* La regola è già definita sopra */
     
     /* Evidenziazione della sezione attiva - uguale all'originale */
     .section-item.active > .section-header {
