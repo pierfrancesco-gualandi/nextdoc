@@ -691,7 +691,20 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
     setTranslatedContent((prev: any) => {
       const updated = { ...prev };
       
-      if (field.includes('.')) {
+      // Caso speciale per le intestazioni di tabella
+      if (field === 'headers' && index !== undefined && module.type === 'table') {
+        // Assicuriamoci che headers sia sempre un array
+        if (!Array.isArray(updated.headers)) {
+          const originalHeaders = Array.isArray(module.content.headers) ? 
+            module.content.headers : [];
+          // Inizializza l'array headers con stringhe vuote per ogni intestazione originale
+          updated.headers = originalHeaders.map(() => '');
+        }
+        // Aggiorna il valore all'indice specificato
+        updated.headers[index] = value;
+        console.log(`Aggiornata intestazione tabella[${index}] a: ${value}`, updated.headers);
+      }
+      else if (field.includes('.')) {
         const [parentField, childField] = field.split('.');
         // Assicuriamoci che updated[parentField] esista sempre
         if (!updated[parentField]) {
@@ -728,24 +741,42 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
     // Assicuriamoci che le strutture dei messaggi e delle intestazioni esistano
     const updatedContent = { ...translatedContent };
     
-    // Garantisci che headers e messages esistano
-    if (!updatedContent.headers) {
-      updatedContent.headers = {
-        number: '', 
-        level: '',
-        code: '',
-        description: '',
-        quantity: ''
-      };
-    }
-    
-    if (!updatedContent.messages) {
-      updatedContent.messages = {
-        loading: '',
-        notFound: '',
-        empty: '',
-        noResults: ''
-      };
+    // Gestione speciale per i moduli di tipo tabella
+    if (module.type === 'table') {
+      // Assicurati che headers sia un array, altrimenti convertilo
+      if (!Array.isArray(updatedContent.headers)) {
+        console.log("Convertendo headers da non-array a array per salvataggio:", updatedContent.headers);
+        
+        // Se headers è una stringa o altro tipo, inizializza un array vuoto
+        // poi prendi i valori originali per sapere quanti elementi creare
+        const originalHeaders = Array.isArray(module.content.headers) ? 
+          module.content.headers : [];
+        
+        // Crea un nuovo array di stringhe vuote
+        updatedContent.headers = originalHeaders.map(() => '');
+      }
+    } 
+    // Gestione per i moduli BOM (le intestazioni per questi sono oggetti)
+    else if (module.type === 'bom') {
+      // Garantisci che headers e messages esistano
+      if (!updatedContent.headers || typeof updatedContent.headers !== 'object') {
+        updatedContent.headers = {
+          number: '', 
+          level: '',
+          code: '',
+          description: '',
+          quantity: ''
+        };
+      }
+      
+      if (!updatedContent.messages) {
+        updatedContent.messages = {
+          loading: '',
+          notFound: '',
+          empty: '',
+          noResults: ''
+        };
+      }
     }
     
     // Garantisci che descriptions esista
@@ -1196,24 +1227,44 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                             
                             <div className="space-y-4">
                               <Label>Intestazioni e Contenuto Tabella</Label>
+                              
+                              {/* Mostra lo stato dell'intestazione corrente */}
+                              <div className="text-sm text-blue-600 mb-2 bg-blue-50 p-2 rounded">
+                                <p>Stato intestazioni: {
+                                  Array.isArray(translatedContent.headers) 
+                                    ? `Array con ${translatedContent.headers.length} elementi`
+                                    : typeof translatedContent.headers === 'string'
+                                      ? `Stringa: "${translatedContent.headers}"`
+                                      : 'Non definito'
+                                }</p>
+                              </div>
+                              
                               <div className="border rounded-md overflow-hidden">
                                 <table className="w-full border-collapse">
                                   <thead>
                                     <tr className="bg-neutral-lightest border-b">
-                                      {Array.isArray(module.content.headers) && module.content.headers.map((header: string, index: number) => (
-                                        <th key={`header-${index}`} className="p-2 text-left border-r last:border-r-0">
-                                          <Input
-                                            value={Array.isArray(translatedContent.headers) ? translatedContent.headers[index] || '' : ''}
-                                            onChange={(e) => handleTextChange(e.target.value, 'headers', index)}
-                                            placeholder={header}
-                                            className={
-                                              Array.isArray(translatedContent.headers) && 
-                                              translatedContent.headers[index] ? 
-                                              'border-neutral-200' : 'border-red-500'
-                                            }
-                                          />
-                                        </th>
-                                      ))}
+                                      {Array.isArray(module.content.headers) && module.content.headers.map((header: string, index: number) => {
+                                        // Se headers non è un array, assicurati di mostrare un campo vuoto
+                                        let headerValue = '';
+                                        if (Array.isArray(translatedContent.headers)) {
+                                          headerValue = translatedContent.headers[index] || '';
+                                        }
+                                        
+                                        return (
+                                          <th key={`header-${index}`} className="p-2 text-left border-r last:border-r-0">
+                                            <Input
+                                              value={headerValue}
+                                              onChange={(e) => handleTextChange(e.target.value, 'headers', index)}
+                                              placeholder={header}
+                                              className={
+                                                Array.isArray(translatedContent.headers) && 
+                                                translatedContent.headers[index] ? 
+                                                'border-neutral-200' : 'border-red-500'
+                                              }
+                                            />
+                                          </th>
+                                        );
+                                      })}
                                     </tr>
                                   </thead>
                                   <tbody>
