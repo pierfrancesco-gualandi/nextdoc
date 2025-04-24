@@ -680,6 +680,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
         documentId={id}
         status={document?.status}
         showTabs={true}
+        selectedLanguage={selectedLanguage}
         onSave={handleSaveDocument}
         onClose={handleCloseDocument}
         toggleSidebar={toggleSidebar}

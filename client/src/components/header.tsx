@@ -13,6 +13,7 @@ interface HeaderProps {
   documentId?: string;
   status?: string;
   showTabs?: boolean;
+  selectedLanguage?: string;
   onSave?: () => void;
   onClose?: () => void;
   toggleSidebar?: () => void;
@@ -23,6 +24,7 @@ export default function Header({
   documentId,
   status = "draft",
   showTabs = false,
+  selectedLanguage,
   onSave,
   onClose,
   toggleSidebar
@@ -238,7 +240,7 @@ export default function Header({
               </Button>
             )}
             
-            <ExportDropdown documentId={documentId} />
+            <ExportDropdown documentId={documentId} selectedLanguage={selectedLanguage} />
           </div>
         )}
       </div>
