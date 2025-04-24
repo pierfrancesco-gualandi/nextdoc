@@ -859,8 +859,55 @@ export async function exportToHtml(documentId: string): Promise<void> {
       processChildren(section.id, 3);
     }
     
-    // Genera il documento HTML completo con lo script
-    const htmlDocument = generateHtml(document.title, content + scriptContent);
+    // Genera l'HTML per l'albero delle sezioni da inserire nella sidebar
+    let sidebarTree = '';
+    try {
+      // Crea una struttura gerarchica delle sezioni
+      const mainSections = sortedSections.filter(s => !s.parentId);
+      const childrenMap = sortedSections.reduce((map, section) => {
+        if (section.parentId) {
+          if (!map[section.parentId]) map[section.parentId] = [];
+          map[section.parentId].push(section);
+        }
+        return map;
+      }, {} as Record<number, any[]>);
+      
+      // Funzione per generare il tree view in modo ricorsivo
+      const generateTreeView = (sections: any[]) => {
+        return sections
+          .sort((a, b) => a.order - b.order)
+          .map(section => {
+            // Ottieni le sezioni figlie di questa sezione
+            const children = childrenMap[section.id] || [];
+            const hasChildren = children.length > 0;
+            
+            // Genera il markup HTML per questa sezione
+            return `
+              <li class="section-item${hasChildren ? ' has-children' : ''}">
+                <div class="section-header">
+                  ${hasChildren ? '<span class="toggle-icon">▶</span>' : '<span class="toggle-spacer"></span>'}
+                  ${hasChildren ? '<span class="folder-icon"></span>' : '<span class="document-icon"></span>'}
+                  <a href="#section-${section.id}" class="section-link">${section.title}</a>
+                </div>
+                ${hasChildren ? `
+                  <ul class="section-children">
+                    ${generateTreeView(children)}
+                  </ul>
+                ` : ''}
+              </li>
+            `;
+          })
+          .join('');
+      };
+      
+      // Genera il tree view
+      sidebarTree = generateTreeView(mainSections);
+    } catch (error) {
+      console.error("Errore nella generazione del tree view:", error);
+    }
+    
+    // Genera il documento HTML completo con lo script e il tree view
+    const htmlDocument = generateHtml(document.title, content + scriptContent, sidebarTree);
     
     // Scarica il file
     downloadTextFile(`${document.title.replace(/\s+/g, '_')}_v${document.version}.html`, htmlDocument, 'text/html;charset=utf-8');
@@ -996,9 +1043,10 @@ export async function exportToWord(documentId: string, languageId?: string): Pro
  * Genera un semplice documento HTML
  * @param title Titolo del documento
  * @param content Contenuto HTML del documento
+ * @param sidebarTreeHtml HTML opzionale per l'albero delle sezioni nella sidebar
  * @returns Stringa HTML completa
  */
-export function generateHtml(title: string, content: string): string {
+export function generateHtml(title: string, content: string, sidebarTreeHtml?: string): string {
   // Definiamo i CSS esterni parametrizzati per facile personalizzazione
   const cssContent = `
 :root {
@@ -1692,111 +1740,114 @@ img, video, iframe {
     });
   `;
 
-  // Genera l'HTML per l'albero delle sezioni nella sidebar
-  let sidebarTreeHtml = '';
+  // Se viene fornito l'albero delle sezioni, lo usiamo, altrimenti lo generiamo dal contenuto
+  let treeHtml = sidebarTreeHtml || '';
   
-  try {
-    // Creiamo un albero navigabile delle sezioni del documento
-    // Prima, raccogliamo tutte le sezioni dal contenuto HTML
-    const sectionMatches = content.matchAll(/<h([1-6])[^>]*id=["']([^"']+)["'][^>]*>(.*?)<\/h\1>/g);
-    const sections = [];
-    
-    // Estrai le sezioni dal contenuto
-    for (const match of sectionMatches) {
-      const level = parseInt(match[1], 10);
-      const id = match[2];
-      // Estrae il numero di sezione se presente (es. "1.2.3 Titolo sezione")
-      const fullTitle = match[3].replace(/<[^>]*>/g, '');
-      const sectionNumberMatch = fullTitle.match(/^(\d+(\.\d+)*)\s+(.*)/);
+  // Se non è stato fornito un albero delle sezioni, lo generiamo dal contenuto
+  if (!treeHtml) {
+    try {
+      // Creiamo un albero navigabile delle sezioni del documento
+      // Prima, raccogliamo tutte le sezioni dal contenuto HTML
+      const sectionMatches = Array.from(content.matchAll(/<h([1-6])[^>]*id=["']([^"']+)["'][^>]*>(.*?)<\/h\1>/g));
+      const sections = [];
       
-      const sectionNumber = sectionNumberMatch ? sectionNumberMatch[1] : "";
-      const title = sectionNumberMatch ? sectionNumberMatch[3] : fullTitle;
-      
-      sections.push({ 
-        level, 
-        id, 
-        title,
-        fullTitle,
-        sectionNumber
-      });
-    }
-    
-    // Organizza le sezioni in una gerarchia appropriata
-    function organizeHierarchy(sections) {
-      const sectionIds = {};
-      const rootSections = [];
-      
-      // Prima, indicizzo tutte le sezioni per ID
-      sections.forEach((section, index) => {
-        section.index = index;
-        section.children = [];
-        sectionIds[section.id] = section;
-      });
-      
-      // Ora, costruisco la gerarchia
-      for (let i = 0; i < sections.length; i++) {
-        const currentSection = sections[i];
+      // Estrai le sezioni dal contenuto
+      for (const match of sectionMatches) {
+        const level = parseInt(match[1], 10);
+        const id = match[2];
+        // Estrae il numero di sezione se presente (es. "1.2.3 Titolo sezione")
+        const fullTitle = match[3].replace(/<[^>]*>/g, '');
+        const sectionNumberMatch = fullTitle.match(/^(\d+(\.\d+)*)\s+(.*)/);
         
-        // Se è una sezione di primo livello, aggiungila alle radici
-        if (currentSection.level === 1) {
-          rootSections.push(currentSection);
-          continue;
-        }
+        const sectionNumber = sectionNumberMatch ? sectionNumberMatch[1] : "";
+        const title = sectionNumberMatch ? sectionNumberMatch[3] : fullTitle;
         
-        // Altrimenti, cerca il genitore appropriato
-        for (let j = i - 1; j >= 0; j--) {
-          const potentialParent = sections[j];
-          if (potentialParent.level < currentSection.level) {
-            potentialParent.children.push(currentSection);
-            break;
+        sections.push({ 
+          level, 
+          id, 
+          title,
+          fullTitle,
+          sectionNumber,
+          children: []
+        });
+      }
+      
+      // Organizza le sezioni in una gerarchia appropriata
+      const organizeHierarchy = (sections: any[]) => {
+        const sectionIds: Record<string, any> = {};
+        const rootSections: any[] = [];
+        
+        // Prima, indicizzo tutte le sezioni per ID
+        sections.forEach((section, index) => {
+          section.index = index;
+          section.children = section.children || [];
+          sectionIds[section.id] = section;
+        });
+        
+        // Ora, costruisco la gerarchia
+        for (let i = 0; i < sections.length; i++) {
+          const currentSection = sections[i];
+          
+          // Se è una sezione di primo livello, aggiungila alle radici
+          if (currentSection.level === 1) {
+            rootSections.push(currentSection);
+            continue;
+          }
+          
+          // Altrimenti, cerca il genitore appropriato
+          for (let j = i - 1; j >= 0; j--) {
+            const potentialParent = sections[j];
+            if (potentialParent.level < currentSection.level) {
+              potentialParent.children.push(currentSection);
+              break;
+            }
           }
         }
-      }
-      
-      return { sectionIds, rootSections };
-    }
-    
-    const hierarchy = organizeHierarchy(sections);
-    
-    // Funzione ricorsiva per generare l'albero - versione migliorata
-    function generateSectionTree(sections, currentSections = hierarchy.rootSections) {
-      let html = '';
-      
-      for (const section of currentSections) {
-        const hasChildren = section.children && section.children.length > 0;
         
-        html += `
-          <li class="section-item${hasChildren ? ' has-children' : ''}">
-            <div class="section-header">
-              ${hasChildren 
-                ? '<span class="toggle-icon">▶</span>' 
-                : '<span class="toggle-spacer"></span>'
-              }
-              ${hasChildren 
-                ? '<span class="folder-icon"></span>' 
-                : '<span class="document-icon"></span>'
-              }
-              <a href="#${section.id}" class="section-link">${section.sectionNumber ? `${section.sectionNumber} ` : ''}${section.title}</a>
-            </div>
-            ${hasChildren ? `<ul class="section-children">${generateSectionTree(sections, section.children)}</ul>` : ''}
-          </li>
-        `;
-      }
+        return { sectionIds, rootSections };
+      };
       
-      return html;
+      const hierarchy = organizeHierarchy(sections);
+      
+      // Funzione ricorsiva per generare l'albero - versione migliorata
+      const generateSectionTree = (sections: any[], currentSections = hierarchy.rootSections) => {
+        let html = '';
+        
+        for (const section of currentSections) {
+          const hasChildren = section.children && section.children.length > 0;
+          
+          html += `
+            <li class="section-item${hasChildren ? ' has-children' : ''}">
+              <div class="section-header">
+                ${hasChildren 
+                  ? '<span class="toggle-icon">▶</span>' 
+                  : '<span class="toggle-spacer"></span>'
+                }
+                ${hasChildren 
+                  ? '<span class="folder-icon"></span>' 
+                  : '<span class="document-icon"></span>'
+                }
+                <a href="#${section.id}" class="section-link">${section.sectionNumber ? `${section.sectionNumber} ` : ''}${section.title}</a>
+              </div>
+              ${hasChildren ? `<ul class="section-children">${generateSectionTree(sections, section.children)}</ul>` : ''}
+            </li>
+          `;
+        }
+        
+        return html;
+      };
+      
+      // Genera l'albero delle sezioni
+      if (sections.length > 0) {
+        treeHtml = generateSectionTree(sections);
+      } else {
+        // Fallback se non ci sono sezioni
+        treeHtml = '<li class="section-item"><div class="section-header"><span class="toggle-spacer"></span><a href="#top" class="section-link">Inizio documento</a></div></li>';
+      }
+    } catch (error) {
+      console.error('Errore nella generazione del tree view:', error);
+      treeHtml = '<li class="section-item"><div class="section-header"><span class="toggle-spacer"></span><a href="#top" class="section-link">Inizio documento</a></div></li>';
     }
-    
-    // Genera l'albero delle sezioni
-    if (sections.length > 0) {
-      sidebarTreeHtml = generateSectionTree(sections);
-    } else {
-      // Fallback se non ci sono sezioni
-      sidebarTreeHtml = '<li class="section-item"><div class="section-header"><span class="toggle-spacer"></span><a href="#top" class="section-link">Inizio documento</a></div></li>';
-    }
-  } catch (error) {
-    // Fallback in caso di errore
-    console.error('Errore nella generazione del tree view:', error);
-    sidebarTreeHtml = '<li class="section-item"><div class="section-header"><span class="toggle-spacer"></span><a href="#top" class="section-link">Inizio documento</a></div></li>';
   }
   
   return `
@@ -2183,7 +2234,7 @@ img, video, iframe {
       <div class="document-toc">
         <div class="tree-view">
           <ul class="section-tree">
-            ${sidebarTreeHtml}
+            ${treeHtml}
           </ul>
         </div>
       </div>
