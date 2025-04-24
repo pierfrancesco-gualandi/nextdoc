@@ -403,6 +403,15 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
         case 'text':
           return !translatedContent.text;
         
+        case 'testp':
+          // Verifica i campi di testo per i file di testo
+          return !translatedContent.title || !translatedContent.description;
+          
+        case 'image':
+        case 'video':
+          // Per immagini e video, verifica titolo, didascalia e testo alternativo
+          return !translatedContent.caption || !translatedContent.alt || !translatedContent.title;
+          
         case 'warning':
         case 'danger':
         case 'warning-alert':
@@ -428,7 +437,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
             }
           }
           
-          return false;
+          return !translatedContent.caption && moduleContent?.caption;
           
         case 'checklist':
           if (Array.isArray(moduleContent?.items)) {
@@ -441,7 +450,15 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
             }
           }
           
-          return false;
+          return !translatedContent.title && moduleContent?.title;
+          
+        case 'pdf':
+          // Verifica titolo e descrizione per i PDF
+          return !translatedContent.title || !translatedContent.description;
+          
+        case 'link':
+          // Verifica testo e descrizione per i link
+          return !translatedContent.text || !translatedContent.description;
           
         case 'bom':
           // Verifica intestazioni, messaggi e descrizioni componenti
@@ -450,10 +467,23 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           
           const hasMessages = translatedContent.messages && 
             Object.keys(moduleContent?.messages || {}).every(key => !!translatedContent.messages[key]);
+            
+          // Verifica che tutte le descrizioni dei componenti siano tradotte
+          const hasDescriptions = translatedContent.descriptions && 
+            Object.keys(moduleContent?.descriptions || {}).every(key => !!translatedContent.descriptions[key]);
           
-          return !hasHeaders || !hasMessages;
-        
+          return !translatedContent.title || !hasHeaders || !hasMessages || !hasDescriptions;
+          
+        case '3d-model':
+          // Per modelli 3D, verifica titolo e descrizione
+          return !translatedContent.title || !translatedContent.description;
+          
         default:
+          // Per qualsiasi altro tipo di modulo, verifica se ha un titolo
+          if (moduleContent?.title && !translatedContent.title) return true;
+          // O una descrizione
+          if (moduleContent?.description && !translatedContent.description) return true;
+          // O qualsiasi altro campo di testo che dovrebbe essere tradotto
           return false;
       }
     };
@@ -720,6 +750,168 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
             </div>
           );
           
+        case 'image':
+        case 'video':
+          return (
+            <div className="space-y-4">
+              {moduleContent.title && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-title`}>Titolo</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.title}
+                    </div>
+                    <Input
+                      id={`module-${module.id}-title`}
+                      value={translatedContent.title || ''}
+                      onChange={(e) => handleContentChange({ title: e.target.value })}
+                      placeholder="Inserisci la traduzione del titolo..."
+                      className={!translatedContent.title ? "border-red-300" : ""}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {moduleContent.caption && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-caption`}>Didascalia</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.caption}
+                    </div>
+                    <Input
+                      id={`module-${module.id}-caption`}
+                      value={translatedContent.caption || ''}
+                      onChange={(e) => handleContentChange({ caption: e.target.value })}
+                      placeholder="Inserisci la traduzione della didascalia..."
+                      className={!translatedContent.caption ? "border-red-300" : ""}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {moduleContent.alt && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-alt`}>Testo alternativo</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.alt}
+                    </div>
+                    <Input
+                      id={`module-${module.id}-alt`}
+                      value={translatedContent.alt || ''}
+                      onChange={(e) => handleContentChange({ alt: e.target.value })}
+                      placeholder="Inserisci la traduzione del testo alternativo..."
+                      className={!translatedContent.alt ? "border-red-300" : ""}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+
+        case 'testp':
+          return (
+            <div className="space-y-4">
+              {moduleContent.title && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-title`}>Titolo</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.title}
+                    </div>
+                    <Input
+                      id={`module-${module.id}-title`}
+                      value={translatedContent.title || ''}
+                      onChange={(e) => handleContentChange({ title: e.target.value })}
+                      placeholder="Inserisci la traduzione del titolo..."
+                      className={!translatedContent.title ? "border-red-300" : ""}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {moduleContent.description && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-description`}>Descrizione</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.description}
+                    </div>
+                    <Textarea
+                      id={`module-${module.id}-description`}
+                      value={translatedContent.description || ''}
+                      onChange={(e) => handleContentChange({ description: e.target.value })}
+                      placeholder="Inserisci la traduzione della descrizione..."
+                      className={!translatedContent.description ? "border-red-300" : ""}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+          
+        case 'pdf':
+        case '3d-model':
+        case 'link':
+          return (
+            <div className="space-y-4">
+              {moduleContent.title && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-title`}>Titolo</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.title}
+                    </div>
+                    <Input
+                      id={`module-${module.id}-title`}
+                      value={translatedContent.title || ''}
+                      onChange={(e) => handleContentChange({ title: e.target.value })}
+                      placeholder="Inserisci la traduzione del titolo..."
+                      className={!translatedContent.title ? "border-red-300" : ""}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {moduleContent.description && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-description`}>Descrizione</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.description}
+                    </div>
+                    <Textarea
+                      id={`module-${module.id}-description`}
+                      value={translatedContent.description || ''}
+                      onChange={(e) => handleContentChange({ description: e.target.value })}
+                      placeholder="Inserisci la traduzione della descrizione..."
+                      className={!translatedContent.description ? "border-red-300" : ""}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {module.type === 'link' && moduleContent.text && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-text`}>Testo del link</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.text}
+                    </div>
+                    <Input
+                      id={`module-${module.id}-text`}
+                      value={translatedContent.text || ''}
+                      onChange={(e) => handleContentChange({ text: e.target.value })}
+                      placeholder="Inserisci la traduzione del testo del link..."
+                      className={!translatedContent.text ? "border-red-300" : ""}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+
         case 'bom':
           return (
             <div className="space-y-4">
@@ -810,13 +1002,111 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                   </div>
                 </div>
               )}
+              
+              {moduleContent.descriptions && (
+                <div>
+                  <Label>Descrizioni Componenti</Label>
+                  <div className="mt-2">
+                    {Object.entries(moduleContent.descriptions).map(([code, description]) => {
+                      const descriptions = translatedContent.descriptions || {};
+                      
+                      return (
+                        <div key={`description-${code}`} className="mt-4">
+                          <Label htmlFor={`description-${code}`}>{code}</Label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                            <div className="p-3 bg-neutral-50 rounded border text-sm">
+                              {description as string}
+                            </div>
+                            <Input
+                              id={`description-${code}`}
+                              value={descriptions[code] || ''}
+                              onChange={(e) => {
+                                const newDescriptions = {
+                                  ...descriptions,
+                                  [code]: e.target.value
+                                };
+                                handleContentChange({ descriptions: newDescriptions });
+                              }}
+                              placeholder="Inserisci la traduzione..."
+                              className={!descriptions[code] ? "border-red-300" : ""}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           );
           
         default:
+          // Trova qualsiasi elemento testuale nel modulo che potrebbe richiedere traduzione
+          const textFields = [];
+          
+          if (moduleContent.title) {
+            textFields.push({
+              key: 'title',
+              label: 'Titolo',
+              value: moduleContent.title
+            });
+          }
+          
+          if (moduleContent.description) {
+            textFields.push({
+              key: 'description',
+              label: 'Descrizione',
+              value: moduleContent.description
+            });
+          }
+          
+          if (moduleContent.text) {
+            textFields.push({
+              key: 'text',
+              label: 'Testo',
+              value: moduleContent.text
+            });
+          }
+          
+          if (moduleContent.caption) {
+            textFields.push({
+              key: 'caption',
+              label: 'Didascalia',
+              value: moduleContent.caption
+            });
+          }
+          
+          if (textFields.length > 0) {
+            return (
+              <div className="space-y-4">
+                {textFields.map(field => (
+                  <div key={`field-${field.key}`}>
+                    <Label htmlFor={`module-${module.id}-${field.key}`}>{field.label}</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                      <div className="p-3 bg-neutral-50 rounded border text-sm">
+                        {field.value}
+                      </div>
+                      <Textarea
+                        id={`module-${module.id}-${field.key}`}
+                        value={translatedContent[field.key] || ''}
+                        onChange={(e) => {
+                          const update = {};
+                          update[field.key] = e.target.value;
+                          handleContentChange(update);
+                        }}
+                        placeholder={`Inserisci la traduzione ${field.label.toLowerCase()}...`}
+                        className={!translatedContent[field.key] ? "border-red-300" : ""}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          }
+          
           return (
             <div className="p-4 border rounded bg-neutral-50 text-sm">
-              Questo tipo di modulo ({module.type}) non richiede traduzione manuale.
+              Questo tipo di modulo ({module.type}) non contiene campi testuali da tradurre.
             </div>
           );
       }
@@ -854,6 +1144,36 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
     
     return (
       <div className="mb-6">
+        <div className="flex justify-end mb-4 space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              // Espandi tutte le sezioni
+              if (sections) {
+                const allExpanded = {};
+                sections.forEach((section: any) => {
+                  allExpanded[section.id] = true;
+                });
+                setExpandedSections(allExpanded);
+              }
+            }}
+          >
+            <ChevronDownIcon className="h-4 w-4 mr-1" />
+            Espandi tutto
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              // Comprimi tutte le sezioni
+              setExpandedSections({});
+            }}
+          >
+            <ChevronUpIcon className="h-4 w-4 mr-1" />
+            Comprimi tutto
+          </Button>
+        </div>
         {sections.map((section: any) => (
           <Accordion
             key={section.id}
