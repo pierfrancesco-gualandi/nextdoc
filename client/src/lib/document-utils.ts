@@ -2250,22 +2250,25 @@ img, video, iframe {
       list-style-type: none; 
       padding-left: 21px; 
       margin-top: 3px;
-      display: none;
+      display: none; /* Nascondi tutti i figli per default */
       border-left: 1px dotted #ccc;
     }
     
-    .section-item > .section-header .toggle-icon { 
+    /* Mostra i figli degli elementi espansi */
+    .section-item.expanded > .section-children {
+      display: block;
+    }
+    
+    /* Valori predefiniti per le icone di espansione */
+    .section-item > .section-header .toggle-icon::before { 
       content: "▶";
     }
     
-    .section-item.expanded > .section-header > .toggle-icon { 
+    .section-item.expanded > .section-header .toggle-icon::before { 
       content: "▼";
-      transform: rotate(0);
     }
     
-    .section-item.expanded > .section-children { 
-      display: block;
-    }
+    /* La regola è già definita sopra */
     
     /* Evidenziazione della sezione attiva - uguale all'originale */
     .section-item.active > .section-header {
@@ -2422,39 +2425,28 @@ img, video, iframe {
         });
       });
       
-      // Espandi automaticamente il primo livello dell'albero e ripristina lo stato salvato
+      // Per default, tutti i nodi sono compressi e vengono espansi solo quelli di primo livello o salvati
       const allSectionItems = document.querySelectorAll('.section-item.has-children');
       allSectionItems.forEach(item => {
+        // Inizializza tutti i triangoli a ▶ (chiuso)
+        const toggleIcon = item.querySelector('.toggle-icon');
+        if (toggleIcon) toggleIcon.textContent = '▶';
+        
         // Ottieni l'ID della sezione
         const sectionLink = item.querySelector('.section-link');
         if (sectionLink) {
           const sectionId = sectionLink.getAttribute('href').substring(1);
           const savedState = localStorage.getItem('section-expanded-' + sectionId);
           
-          // Se c'è uno stato salvato, lo ripristiniamo
-          if (savedState === 'true') {
+          // Controlla se è un elemento di primo livello
+          const isFirstLevel = item.parentNode && item.parentNode.classList.contains('section-tree');
+          
+          // Espandi solo se è stato salvato come espanso o è un elemento di primo livello
+          if (savedState === 'true' || (isFirstLevel && savedState !== 'false')) {
             item.classList.add('expanded');
-            
-            // Aggiorna l'icona del triangolo
-            const toggleIcon = item.querySelector('.toggle-icon');
             if (toggleIcon) toggleIcon.textContent = '▼';
-          } else if (savedState === 'false') {
-            item.classList.remove('expanded');
-            
-            // Aggiorna l'icona del triangolo
-            const toggleIcon = item.querySelector('.toggle-icon');
-            if (toggleIcon) toggleIcon.textContent = '▶';
           } else {
-            // Se non c'è stato salvato e è un elemento di primo livello, lo espandiamo automaticamente
-            const isFirstLevel = item.parentNode && item.parentNode.classList.contains('section-tree');
-            
-            if (isFirstLevel) {
-              item.classList.add('expanded');
-              
-              // Aggiorna l'icona del triangolo
-              const toggleIcon = item.querySelector('.toggle-icon');
-              if (toggleIcon) toggleIcon.textContent = '▼';
-            }
+            item.classList.remove('expanded');
           }
         }
       });
