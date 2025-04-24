@@ -7,6 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { 
+  ChevronDownIcon, 
+  ChevronUpIcon, 
+  FolderIcon, 
+  FileTextIcon, 
+  GlobeIcon, 
+  AlertTriangleIcon, 
+  Loader2, 
+  SaveIcon 
+} from 'lucide-react';
+import { 
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -33,16 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  ChevronRightIcon,
-  ChevronDownIcon,
-  Loader2,
-  FolderIcon,
-  FileTextIcon, 
-  GlobeIcon,
-  SaveIcon,
-  AlertTriangleIcon
-} from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -1159,8 +1160,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
               }
             }}
           >
-            <ChevronDownIcon className="h-4 w-4 mr-1" />
-            Espandi tutto
+            ▼ Espandi tutto
           </Button>
           <Button 
             variant="outline" 
@@ -1170,8 +1170,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
               setExpandedSections({});
             }}
           >
-            <ChevronUpIcon className="h-4 w-4 mr-1" />
-            Comprimi tutto
+            ▲ Comprimi tutto
           </Button>
         </div>
         {sections.map((section: any) => (
