@@ -290,48 +290,73 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
             `;
             break;
             
-          case 'warning':
+          // Gestione moduli di avvertenza, pericolo, sicurezza, ecc.
           case 'danger':
-          case 'caution':
-          case 'note':
-          case 'safety-instructions':
-            // Determina la classe e le proprietà in base al tipo di avviso
-            let warningClass = 'info';
-            let warningIcon = '&#9432;'; // ℹ️
-            let warningTitle = module.content.title || 'Nota';
-            let warningText = module.content.description || module.content.message || '';
-            
-            switch(module.type) {
-              case 'danger':
-                warningClass = 'danger';
-                warningIcon = '&#9888;'; // ⚠️
-                warningTitle = module.content.title || 'PERICOLO';
-                break;
-              case 'warning':
-                warningClass = 'warning';
-                warningIcon = '&#9888;'; // ⚠️
-                warningTitle = module.content.title || 'AVVERTENZA';
-                break;
-              case 'caution':
-                warningClass = 'caution';
-                warningIcon = '&#9888;'; // ⚠️
-                warningTitle = module.content.title || 'ATTENZIONE';
-                break;
-              case 'safety-instructions':
-                warningClass = 'safety';
-                warningIcon = '&#9745;'; // ✅
-                warningTitle = module.content.title || 'ISTRUZIONI DI SICUREZZA';
-                break;
-            }
-            
             content += `
-              <div class="message ${warningClass}">
-                <div class="message-header">
-                  <span class="message-icon">${warningIcon}</span>
-                  <h4>${warningTitle}</h4>
+              <div class="message danger" style="background-color: #ff0000; color: white; border-width: 0;">
+                <div class="message-header" style="color: white;">
+                  <span class="message-icon" style="color: white;">&#9888;</span> <!-- ⚠️ -->
+                  <h4 style="color: white;">${module.content.title || 'PERICOLO'}</h4>
                 </div>
-                <div class="message-body">
-                  ${warningText}
+                <div class="message-body" style="color: white;">
+                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
+                </div>
+              </div>
+            `;
+            break;
+            
+          case 'warning':
+          case 'warning-alert':
+            content += `
+              <div class="message warning" style="background-color: #ff8c00; color: white; border-width: 0;">
+                <div class="message-header" style="color: white;">
+                  <span class="message-icon" style="color: white;">&#9888;</span> <!-- ⚠️ -->
+                  <h4 style="color: white;">${module.content.title || 'AVVERTENZA'}</h4>
+                </div>
+                <div class="message-body" style="color: white;">
+                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
+                </div>
+              </div>
+            `;
+            break;
+            
+          case 'caution':
+            content += `
+              <div class="message caution" style="background-color: #ffd600; color: white; border-width: 0;">
+                <div class="message-header" style="color: white;">
+                  <span class="message-icon" style="color: white;">&#9888;</span> <!-- ⚠️ -->
+                  <h4 style="color: white;">${module.content.title || 'ATTENZIONE'}</h4>
+                </div>
+                <div class="message-body" style="color: white;">
+                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
+                </div>
+              </div>
+            `;
+            break;
+            
+          case 'note':
+            content += `
+              <div class="message info" style="background-color: #0070d1; color: white; border-width: 0;">
+                <div class="message-header" style="color: white;">
+                  <span class="message-icon" style="color: white;">&#9432;</span> <!-- ℹ️ -->
+                  <h4 style="color: white;">${module.content.title || 'NOTA'}</h4>
+                </div>
+                <div class="message-body" style="color: white;">
+                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
+                </div>
+              </div>
+            `;
+            break;
+            
+          case 'safety-instructions':
+            content += `
+              <div class="message success" style="background-color: #2e7d32; color: white; border-width: 0;">
+                <div class="message-header" style="color: white;">
+                  <span class="message-icon" style="color: white;">&#10003;</span> <!-- ✓ -->
+                  <h4 style="color: white;">${module.content.title || 'ISTRUZIONI DI SICUREZZA'}</h4>
+                </div>
+                <div class="message-body" style="color: white;">
+                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
                 </div>
               </div>
             `;
