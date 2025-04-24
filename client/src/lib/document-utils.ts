@@ -21,7 +21,7 @@ function generateTreeView(sections: any[], childrenMap: Record<number, any[]>): 
       return `
         <li class="section-item${hasChildren ? ' has-children' : ''}">
           <div class="section-header">
-            ${hasChildren ? '<span class="toggle-icon">▶</span>' : '<span class="toggle-spacer"></span>'}
+            ${hasChildren ? '<span class="toggle-icon">►</span>' : '<span class="toggle-spacer"></span>'}
             <a href="#section-${section.id}" class="section-link">${section.title}</a>
           </div>
           ${hasChildren ? `
@@ -1711,62 +1711,162 @@ img, video, iframe {
   <style id="document-css">
     ${cssContent}
     
-    /* Stili per il tree view delle sezioni */
-    .document-toc { 
-      background-color: #f8f9fa; 
-      padding: 15px; 
-      border-radius: 4px; 
-      margin-bottom: 2em;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    /* Layout a due colonne con tree view a sinistra e contenuto a destra */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
+    
+    .document-container {
+      display: flex;
+      min-height: 100vh;
+    }
+    
+    .sidebar {
+      width: 280px;
+      background-color: #f0f2f5;
+      border-right: 1px solid #ddd;
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    
+    .main-content {
+      flex: 1;
+      padding: 30px;
+      margin-left: 280px;
+    }
+    
+    /* Stili per il tree view delle sezioni - ESATTAMENTE come nel documento originale */
+    .document-toc { 
+      background-color: transparent;
+      padding: 0;
+      margin-bottom: 2em;
+      box-shadow: none;
+    }
+    
     .tree-view { margin-top: 10px; }
+    
     .section-tree { 
       list-style-type: none; 
       padding-left: 0; 
       margin: 0;
     }
+    
     .section-item { 
       margin-bottom: 5px; 
     }
+    
     .section-header { 
       display: flex; 
       align-items: center;
     }
+    
     .section-link { 
       text-decoration: none; 
-      color: #2563eb; 
-      padding: 5px 0;
+      color: #333;
+      padding: 3px 0;
+      font-size: 14px;
+      flex: 1;
     }
+    
     .section-link:hover { 
       text-decoration: underline; 
+      color: #0056b3;
     }
-    .toggle-icon, .toggle-spacer { 
+    
+    /* Utilizziamo un'icona di triangolo identica all'originale */
+    .toggle-icon { 
       display: inline-block;
-      width: 20px;
+      width: 16px;
       text-align: center;
       cursor: pointer;
       margin-right: 5px;
+      content: "►";
+      color: #555;
+      font-size: 10px;
       transition: transform 0.2s ease;
     }
+    
+    .toggle-spacer { 
+      display: inline-block;
+      width: 16px;
+      margin-right: 5px;
+    }
+    
     .section-children { 
       list-style-type: none; 
-      padding-left: 25px; 
-      margin-top: 5px;
+      padding-left: 21px; 
+      margin-top: 3px;
       display: none;
+      border-left: 1px dotted #ccc;
     }
+    
     .section-item.expanded > .section-header > .toggle-icon { 
       transform: rotate(90deg);
     }
+    
     .section-item.expanded > .section-children { 
       display: block;
+    }
+    
+    /* Stili per tabelle BOM aggiornati */
+    .bom-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 14px;
+    }
+    
+    .bom-table th, .bom-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+    
+    .bom-table th {
+      background-color: #f2f2f2;
+      font-weight: bold;
+      text-align: left;
+    }
+    
+    .bom-table .level-1 {
+      padding-left: 10px;
+      font-weight: bold;
+    }
+    
+    .bom-table .level-2 {
+      padding-left: 30px;
+    }
+    
+    .bom-table .level-3 {
+      padding-left: 50px;
     }
   </style>
   <!-- È possibile utilizzare un CSS esterno per sostituire lo stile predefinito -->
   <link rel="stylesheet" href="${externalCssFilename}" onerror="this.remove();">
 </head>
 <body>
-  ${content}
-  ${cssDownloadLink}
+  <div class="document-container">
+    <div class="sidebar">
+      <h2>Indice</h2>
+      <div class="document-toc">
+        <div class="tree-view">
+          <ul class="section-tree">
+            ${content.includes('document-toc') ? '' : generateTreeView(mainSections, childrenMap)}
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    <div class="main-content">
+      ${content}
+      ${cssDownloadLink}
+    </div>
+  </div>
+  
   <script>
     // Script per il download del CSS
     ${cssDownloadScript}
