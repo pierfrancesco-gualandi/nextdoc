@@ -131,17 +131,8 @@ export async function exportToHtml(documentId: string): Promise<void> {
       <p><strong>Versione:</strong> ${document.version}</p>
     `;
     
-    // Genera indice delle sezioni con tree view espandibile
-    content += `
-      <div class="document-toc">
-        <h2>Indice</h2>
-        <div class="tree-view">
-          <ul class="section-tree">
-            ${generateTreeView(mainSections, childrenMap)}
-          </ul>
-        </div>
-      </div>
-    `;
+    // Rimuoviamo l'indice dal contenuto principale poiché sarà già nella sidebar
+    // L'indice è ora gestito dalla nuova struttura a due colonne
     
     // Definita fuori dallo scope del blocco per evitare errori in strict mode
     const addSectionContent = (section: any, level: number = 2) => {
@@ -1701,6 +1692,18 @@ img, video, iframe {
     });
   `;
 
+  // Organizziamo le sezioni per generare l'albero da mostrare nella sidebar
+  const mainSections = document.sections.filter((s: any) => !s.parentId).sort((a: any, b: any) => a.order - b.order);
+  const sectionsChildrenMap = document.sections.reduce((map: Record<number, any[]>, section: any) => {
+    if (section.parentId) {
+      if (!map[section.parentId]) map[section.parentId] = [];
+      map[section.parentId].push(section);
+    }
+    return map;
+  }, {} as Record<number, any[]>);
+  
+  const treeViewHtml = generateTreeView(mainSections, sectionsChildrenMap);
+  
   return `
 <!DOCTYPE html>
 <html lang="it">
@@ -1855,7 +1858,7 @@ img, video, iframe {
       <div class="document-toc">
         <div class="tree-view">
           <ul class="section-tree">
-            ${content.includes('document-toc') ? '' : generateTreeView(mainSections, childrenMap)}
+            ${treeViewHtml}
           </ul>
         </div>
       </div>
