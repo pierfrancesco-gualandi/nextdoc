@@ -1692,17 +1692,10 @@ img, video, iframe {
     });
   `;
 
-  // Organizziamo le sezioni per generare l'albero da mostrare nella sidebar
-  const mainSections = document.sections.filter((s: any) => !s.parentId).sort((a: any, b: any) => a.order - b.order);
-  const sectionsChildrenMap = document.sections.reduce((map: Record<number, any[]>, section: any) => {
-    if (section.parentId) {
-      if (!map[section.parentId]) map[section.parentId] = [];
-      map[section.parentId].push(section);
-    }
-    return map;
-  }, {} as Record<number, any[]>);
-  
-  const treeViewHtml = generateTreeView(mainSections, sectionsChildrenMap);
+  // Genera una sidebar statica con la struttura del documento
+  const sidebarTreeHtml = content.includes('document-toc') ? 
+    '<li>Indice già incluso nel documento</li>' : 
+    '<li class="section-item"><div class="section-header"><span class="toggle-icon">►</span><a href="#top" class="section-link">Indice del documento</a></div></li>';
   
   return `
 <!DOCTYPE html>
@@ -1858,7 +1851,7 @@ img, video, iframe {
       <div class="document-toc">
         <div class="tree-view">
           <ul class="section-tree">
-            ${treeViewHtml}
+            ${sidebarTreeHtml}
           </ul>
         </div>
       </div>
