@@ -460,50 +460,14 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
           }
         }
         
-        // Copia TUTTI i componenti associati alla sezione
-        // (Non filtrare per codici comuni perché vogliamo mantenere l'associazione completa)
+        // Copiamo SOLO i componenti originali della sezione
+        // (manteniamo SOLO le associazioni originali, non aggiungiamo componenti dalla BOM)
         const components = sectionComponentsMap.get(section.id) || [];
         
         // Log dei componenti prima di copiarli
         console.log(`Sezione ${section.id} (${section.title}): Trovati ${components.length} componenti da copiare`);
         
-        // Recupera anche i componenti dal BOM originale
-        // Per assicurarsi che ogni componente venga trasferito correttamente
-        try {
-          const bomItemsResponse = await fetch(`/api/boms/${selectedSourceBomId}/items`);
-          if (bomItemsResponse.ok) {
-            const bomItems = await bomItemsResponse.json();
-            console.log(`Recuperati ${bomItems.length} componenti dalla BOM sorgente`);
-            
-            // Per ogni componente del BOM, verifica se è associato alla sezione
-            for (const item of bomItems) {
-              // Se il componente non è già nella lista dei componenti della sezione
-              if (!components.some((comp: any) => 
-                  comp.componentId === item.componentId || 
-                  (comp.component && item.component && comp.component.id === item.component.id))) {
-                
-                try {
-                  const newComponentData = {
-                    sectionId: newSection.id,
-                    componentId: item.componentId,
-                    quantity: item.quantity || 1,
-                    notes: null
-                  };
-                  
-                  // Aggiunge il componente alla nuova sezione
-                  await apiRequest('POST', '/api/section-components', newComponentData);
-                  console.log(`Aggiunto componente da BOM ${item.componentId} alla sezione ${newSection.id}`);
-                } catch (e) {
-                  console.error(`Errore nell'aggiunta del componente dal BOM: ${e}`);
-                }
-              }
-            }
-          }
-        } catch (e) {
-          console.error(`Errore nel recupero dei componenti dal BOM: ${e}`);
-        }
-        
-        // Copiamo i componenti originali della sezione
+        // Copiamo i componenti ESATTAMENTE come nel documento di origine
         for (const comp of components) {
           try {
             if (!comp.componentId) {
@@ -511,20 +475,26 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
               continue;
             }
             
-            const newComponentData = {
-              sectionId: newSection.id,
-              componentId: comp.componentId,
-              quantity: comp.quantity || 1,
-              notes: comp.notes || null
-            };
-            
-            const response = await apiRequest('POST', '/api/section-components', newComponentData);
-            
-            if (response.ok) {
-              console.log(`Copiato componente ID ${comp.componentId} alla sezione ${newSection.id}`);
+            // Verifichiamo se il componente è nella lista dei codici comuni
+            // Solo in questo caso lo includiamo nel documento
+            if (comp.component && comp.component.code && commonCodes.includes(comp.component.code)) {
+              const newComponentData = {
+                sectionId: newSection.id,
+                componentId: comp.componentId,
+                quantity: comp.quantity || 1,
+                notes: comp.notes || null
+              };
+              
+              const response = await apiRequest('POST', '/api/section-components', newComponentData);
+              
+              if (response.ok) {
+                console.log(`Copiato componente comune ${comp.component.code} (ID ${comp.componentId}) alla sezione ${newSection.id}`);
+              } else {
+                const errorText = await response.text();
+                console.error(`Errore nell'assegnazione del componente: ${errorText}`);
+              }
             } else {
-              const errorText = await response.text();
-              console.error(`Errore nell'assegnazione del componente: ${errorText}`);
+              console.log(`Componente non nei codici comuni, non copiato alla nuova sezione`);
             }
           } catch (e) {
             console.error("Errore nell'assegnazione del componente:", e);
