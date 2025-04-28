@@ -14,14 +14,24 @@ import {
   GlobeIcon, 
   AlertTriangleIcon, 
   Loader2, 
-  SaveIcon 
+  SaveIcon,
+  FileDownIcon,
+  FileIcon,
+  DownloadIcon
 } from 'lucide-react';
+import { exportToHtml, exportToPdf, exportToWord } from '@/lib/document-utils';
 import { 
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger 
 } from '@/components/ui/accordion';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Card,
   CardContent,
@@ -1516,24 +1526,50 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
               </div>
               
               {selectedLanguage && (
-                <Button 
-                  variant="default" 
-                  className="ml-auto" 
-                  onClick={saveAllTranslations}
-                  disabled={savingTranslation}
-                >
-                  {savingTranslation ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Salvataggio...
-                    </>
-                  ) : (
-                    <>
-                      <SaveIcon className="mr-2 h-4 w-4" />
-                      Salva tutte le traduzioni
-                    </>
-                  )}
-                </Button>
+                <div className="flex space-x-2 ml-auto">
+                  <Button 
+                    variant="default" 
+                    onClick={saveAllTranslations}
+                    disabled={savingTranslation}
+                  >
+                    {savingTranslation ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Salvataggio...
+                      </>
+                    ) : (
+                      <>
+                        <SaveIcon className="mr-2 h-4 w-4" />
+                        Salva tutte le traduzioni
+                      </>
+                    )}
+                  </Button>
+                  
+                  <div className="relative">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                          <DownloadIcon className="mr-2 h-4 w-4" />
+                          Esporta documento
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => exportToHtml(documentId, selectedLanguage)}>
+                          <FileIcon className="mr-2 h-4 w-4" />
+                          Esporta in HTML
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => exportToPdf(documentId, selectedLanguage)}>
+                          <FileIcon className="mr-2 h-4 w-4" />
+                          Esporta in PDF
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => exportToWord(documentId, selectedLanguage)}>
+                          <FileIcon className="mr-2 h-4 w-4" />
+                          Esporta in Word
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
               )}
             </div>
             
