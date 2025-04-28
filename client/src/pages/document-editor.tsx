@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { DndProvider, useDrop } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
+import { useDrop } from "react-dnd";
 import { useLocation } from "wouter";
 import Header from "@/components/header";
 import DocumentTreeView from "@/components/document-tree-view";
@@ -687,7 +686,6 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
       />
       
       <main className="flex-1 overflow-y-auto bg-neutral-lightest">
-        <DndProvider backend={HTML5Backend}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
             <TabsList className="px-4 border-b border-neutral-light">
               {/* Tab Editor, disponibile solo per admin ed editor */}
@@ -1132,7 +1130,6 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
             showTrashBin={showTrashBin}
             onDeleteRequest={(id) => setSectionToDelete(id)}
           />
-        </DndProvider>
       </main>
     </>
   );

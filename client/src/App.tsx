@@ -16,6 +16,8 @@ import DocumentTranslationTree from "@/pages/document-translation-tree";
 import Sidebar from "@/components/sidebar";
 import { useState, createContext, useContext, useEffect } from "react";
 import { UserProvider } from "./contexts/UserContext";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 // Definizione delle interfacce per i documenti aperti
 export interface OpenDocument {
@@ -177,7 +179,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <UserProvider>
-        <Router />
+        <DndProvider backend={HTML5Backend}>
+          <Router />
+        </DndProvider>
       </UserProvider>
     </QueryClientProvider>
   );
