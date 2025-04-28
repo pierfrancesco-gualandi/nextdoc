@@ -1201,6 +1201,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                         }}
                         placeholder={`Inserisci la traduzione ${field.label.toLowerCase()}...`}
                         className={!translatedContent[field.key] ? "border-red-300" : ""}
+                        keepFocus={true}
                       />
                     </div>
                   </div>
@@ -1352,8 +1353,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                         onChange={(e) => updateSectionTranslation(section.id, 'title', e.target.value)}
                         placeholder="Inserisci la traduzione del titolo..."
                         className={!sectionTranslations[section.id]?.title ? "border-red-300" : ""}
-                        // Imposta la modalità bloccata per mantenere il focus
-                        onBlur={(e) => e.target.focus()}
+                        keepFocus={true}
                         rows={1}
                       />
                     </div>
@@ -1372,6 +1372,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                           onChange={(e) => updateSectionTranslation(section.id, 'description', e.target.value)}
                           placeholder="Inserisci la traduzione della descrizione..."
                           className={section.description && !sectionTranslations[section.id]?.description ? "border-red-300" : ""}
+                          keepFocus={true}
                         />
                       </div>
                     </div>
