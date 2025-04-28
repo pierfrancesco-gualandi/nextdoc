@@ -69,22 +69,31 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, []);
 
   // Determina il tipo MIME
-  const getMimeType = (src: string, format?: string): string => {
+  const getMimeType = (src: string | undefined, format?: string): string => {
     if (format) {
       return `video/${format}`;
     }
     
-    const extension = src.split('.').pop()?.toLowerCase();
-    switch (extension) {
-      case 'mp4': return 'video/mp4';
-      case 'webm': return 'video/webm';
-      case 'ogg': return 'video/ogg';
-      case 'mov': return 'video/quicktime';
-      case 'avi': return 'video/x-msvideo';
-      case 'wmv': return 'video/x-ms-wmv';
-      case 'flv': return 'video/x-flv';
-      case 'mkv': return 'video/x-matroska';
-      default: return '';
+    if (!src) {
+      return 'video/mp4'; // Formato predefinito
+    }
+    
+    try {
+      const extension = src.split('.').pop()?.toLowerCase();
+      switch (extension) {
+        case 'mp4': return 'video/mp4';
+        case 'webm': return 'video/webm';
+        case 'ogg': return 'video/ogg';
+        case 'mov': return 'video/quicktime';
+        case 'avi': return 'video/x-msvideo';
+        case 'wmv': return 'video/x-ms-wmv';
+        case 'flv': return 'video/x-flv';
+        case 'mkv': return 'video/x-matroska';
+        default: return 'video/mp4'; // Formato predefinito
+      }
+    } catch (error) {
+      console.warn('Errore nell\'analisi dell\'estensione del video', error);
+      return 'video/mp4'; // Formato predefinito in caso di errore
     }
   };
 

@@ -730,7 +730,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                               <td className="p-2 border text-center">{idx + 1}</td>
                               <td className="p-2 border">{header}</td>
                               <td className="p-2 border">
-                                <Input 
+                                <Textarea 
                                   value={headers[idx] || ''}
                                   onChange={(e) => {
                                     const newHeaders = [...headers];
@@ -739,6 +739,9 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                                   }}
                                   placeholder="Inserisci la traduzione..."
                                   className={!headers[idx] ? "border-red-300" : ""}
+                                  // Imposta la modalità bloccata per mantenere il focus
+                                  onBlur={(e) => e.target.focus()}
+                                  rows={1}
                                 />
                               </td>
                             </tr>
@@ -774,7 +777,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                                 <td className="p-2 border text-center">{rowIdx + 1},{colIdx + 1}</td>
                                 <td className="p-2 border">{cell}</td>
                                 <td className="p-2 border">
-                                  <Input 
+                                  <Textarea 
                                     value={currentRow[colIdx] || ''}
                                     onChange={(e) => {
                                       const newRows = [...rows];
@@ -784,6 +787,9 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                                     }}
                                     placeholder="Inserisci la traduzione..."
                                     className={!currentRow[colIdx] ? "border-red-300" : ""}
+                                    // Imposta la modalità bloccata per mantenere il focus
+                                    onBlur={(e) => e.target.focus()}
+                                    rows={1}
                                   />
                                 </td>
                               </tr>
@@ -1041,7 +1047,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                             <div className="p-3 bg-neutral-50 rounded border text-sm">
                               {value as string}
                             </div>
-                            <Input
+                            <Textarea
                               id={`header-${key}`}
                               value={headers[key] || ''}
                               onChange={(e) => {
@@ -1053,6 +1059,9 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                               }}
                               placeholder="Inserisci la traduzione..."
                               className={!headers[key] ? "border-red-300" : ""}
+                              // Imposta la modalità bloccata per mantenere il focus
+                              onBlur={(e) => e.target.focus()}
+                              rows={1}
                             />
                           </div>
                         </div>
