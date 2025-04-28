@@ -395,15 +395,11 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
         }
       }
       
-      // 4. Funzione ricorsiva per verificare se una sezione o qualsiasi sua sotto-sezione 
-      // hanno componenti comuni
+      // 4. Funzione ricorsiva per verificare se una sezione ha associazioni dirette a componenti comuni
+      // o se ha moduli BOM con riferimento alla distinta sorgente
       const shouldIncludeSection = (sectionId: number): boolean => {
-        // Verifica diretta
-        if (sectionWithComponentMap.has(sectionId)) return true;
-        
-        // Verifica ricorsiva sui figli
-        const children = sectionChildren.get(sectionId) || [];
-        return children.some((child: any) => shouldIncludeSection(child.id));
+        // Verifica diretta - deve avere componenti associati o moduli BOM specifici
+        return sectionWithComponentMap.has(sectionId);
       };
       
       // 5. Mappa per tenere traccia degli ID vecchi -> nuovi delle sezioni
@@ -464,23 +460,33 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
           }
         }
         
-        // Copia i componenti associati che sono presenti nei codici comuni
+        // Copia TUTTI i componenti associati alla sezione
+        // (Non filtrare per codici comuni perché vogliamo mantenere l'associazione completa)
         const components = sectionComponentsMap.get(section.id) || [];
         for (const comp of components) {
-          if (comp.component && commonCodes.includes(comp.component.code)) {
-            try {
-              const newComponentData = {
-                sectionId: newSection.id,
-                componentId: comp.componentId,
-                quantity: comp.quantity,
-                notes: comp.notes
-              };
-              
-              await apiRequest('POST', '/api/section-components', newComponentData);
-              console.log(`Copiato componente ${comp.component.code} alla sezione ${newSection.id}`);
-            } catch (e) {
-              console.error("Errore nell'assegnazione del componente:", e);
+          try {
+            if (!comp.componentId) {
+              console.error("Componente senza componentId:", comp);
+              continue;
             }
+            
+            const newComponentData = {
+              sectionId: newSection.id,
+              componentId: comp.componentId,
+              quantity: comp.quantity || 1,
+              notes: comp.notes || null
+            };
+            
+            const response = await apiRequest('POST', '/api/section-components', newComponentData);
+            
+            if (response.ok) {
+              console.log(`Copiato componente ID ${comp.componentId} alla sezione ${newSection.id}`);
+            } else {
+              const errorText = await response.text();
+              console.error(`Errore nell'assegnazione del componente: ${errorText}`);
+            }
+          } catch (e) {
+            console.error("Errore nell'assegnazione del componente:", e);
           }
         }
         
