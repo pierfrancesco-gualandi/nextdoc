@@ -500,56 +500,25 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
           }
         }
         
-        // Importante: Assicuriamoci che TUTTI i codici comuni siano associati alla sezione!
-        // Questo garantisce che ogni sezione che è stata inclusa nel nuovo documento
-        // abbia effettivamente TUTTI i codici componenti comuni associati
+        // Nota: NON aggiungiamo altri codici comuni alla sezione
+        // Manteniamo esattamente le stesse associazioni del documento originale
+        // Solo i componenti che erano già associati alla sezione originale e sono nei codici comuni
+        // vengono copiati nella nuova sezione
+        
+        // Log dei codici componenti copiati per questa sezione
         try {
-          console.log(`Verifico codici comuni non ancora associati alla sezione ${newSection.id}`);
-          
           // Ottieni i codici già associati a questa sezione
           const associatedCodes = components
             .filter((comp: any) => comp.component && comp.component.code && commonCodes.includes(comp.component.code))
             .map((comp: any) => comp.component.code);
           
-          console.log(`Codici già associati alla sezione: ${associatedCodes.join(', ') || 'nessuno'}`);
-          
-          // Trova i codici comuni che non sono ancora associati a questa sezione
-          const missingCommonCodes = commonCodes.filter(code => !associatedCodes.includes(code));
-          
-          console.log(`Codici comuni mancanti: ${missingCommonCodes.join(', ') || 'nessuno'}`);
-          
-          // Per ogni codice mancante, associa il componente corrispondente alla sezione
-          for (const code of missingCommonCodes) {
-            // Trova il componente per questo codice
-            const componentsResponse = await fetch(`/api/components?code=${code}`);
-            if (componentsResponse.ok) {
-              const components = await componentsResponse.json();
-              
-              if (components && components.length > 0) {
-                const component = components[0]; // Prendiamo il primo componente con quel codice
-                
-                const newComponentData = {
-                  sectionId: newSection.id,
-                  componentId: component.id,
-                  quantity: 1, // Quantità predefinita
-                  notes: `Aggiunto automaticamente dal processo di confronto BOM (codice comune)`
-                };
-                
-                const response = await apiRequest('POST', '/api/section-components', newComponentData);
-                
-                if (response.ok) {
-                  console.log(`Aggiunto componente comune mancante ${code} (ID ${component.id}) alla sezione ${newSection.id}`);
-                } else {
-                  const errorText = await response.text();
-                  console.error(`Errore nell'assegnazione del componente comune mancante: ${errorText}`);
-                }
-              } else {
-                console.error(`Nessun componente trovato per il codice comune ${code}`);
-              }
-            }
+          if (associatedCodes.length > 0) {
+            console.log(`Sezione ${newSection.id} (${newSection.title}): Codici componenti copiati: ${associatedCodes.join(', ')}`);
+          } else {
+            console.log(`Sezione ${newSection.id} (${newSection.title}): Nessun codice componente comune copiato`);
           }
         } catch (e) {
-          console.error("Errore durante l'aggiunta dei codici comuni mancanti:", e);
+          console.error("Errore durante il logging dei codici componenti:", e);
         }
         
         // Copia le traduzioni delle sezioni
