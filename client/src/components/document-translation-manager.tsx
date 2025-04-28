@@ -265,39 +265,102 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
     try {
       // Salva le traduzioni delle sezioni
       for (const sectionId in sectionTranslations) {
-        const translation = sectionTranslations[sectionId];
-        const exists = !!translation.id;
-        
-        await saveSectionTranslation.mutateAsync({
-          exists,
-          id: translation.id,
-          translation: {
+        try {
+          const translation = sectionTranslations[sectionId];
+          const exists = !!translation.id;
+          
+          const sectionTranslationData = {
             sectionId: parseInt(sectionId),
             languageId: parseInt(selectedLanguage),
             title: translation.title || '',
             description: translation.description || '',
             status: 'translated'
+          };
+          
+          if (exists) {
+            // PUT
+            const response = await fetch(`/api/section-translations/${translation.id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(sectionTranslationData),
+            });
+            
+            if (!response.ok) {
+              throw new Error(`Errore HTTP ${response.status} durante l'aggiornamento della traduzione della sezione ${sectionId}`);
+            }
+          } else {
+            // POST
+            const response = await fetch('/api/section-translations', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(sectionTranslationData),
+            });
+            
+            if (!response.ok) {
+              throw new Error(`Errore HTTP ${response.status} durante la creazione della traduzione della sezione ${sectionId}`);
+            }
           }
-        });
+        } catch (sectionError) {
+          console.error(`Errore nella sezione ${sectionId}:`, sectionError);
+          throw sectionError;
+        }
       }
       
       // Salva le traduzioni dei moduli
       for (const moduleId in moduleTranslations) {
-        const translation = moduleTranslations[moduleId];
-        const exists = !!translation.id;
-        
-        await saveModuleTranslation.mutateAsync({
-          exists,
-          id: translation.id,
-          translation: {
+        try {
+          const translation = moduleTranslations[moduleId];
+          const exists = !!translation.id;
+          
+          let moduleContent = translation.content;
+          if (typeof moduleContent !== 'string') {
+            moduleContent = JSON.stringify(moduleContent);
+          }
+          
+          const moduleTranslationData = {
             moduleId: parseInt(moduleId),
             languageId: parseInt(selectedLanguage),
-            content: typeof translation.content === 'string' 
-              ? translation.content 
-              : JSON.stringify(translation.content),
+            content: moduleContent,
             status: 'translated'
+          };
+          
+          if (exists) {
+            // PUT
+            const response = await fetch(`/api/module-translations/${translation.id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(moduleTranslationData),
+            });
+            
+            if (!response.ok) {
+              const responseText = await response.text();
+              throw new Error(`Errore HTTP ${response.status} durante l'aggiornamento della traduzione del modulo ${moduleId}: ${responseText}`);
+            }
+          } else {
+            // POST
+            const response = await fetch('/api/module-translations', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(moduleTranslationData),
+            });
+            
+            if (!response.ok) {
+              const responseText = await response.text();
+              throw new Error(`Errore HTTP ${response.status} durante la creazione della traduzione del modulo ${moduleId}: ${responseText}`);
+            }
           }
-        });
+        } catch (moduleError) {
+          console.error(`Errore nel modulo ${moduleId}:`, moduleError);
+          throw moduleError;
+        }
       }
       
       toast({
@@ -311,7 +374,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
       console.error('Errore durante il salvataggio delle traduzioni:', error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante il salvataggio delle traduzioni.",
+        description: error.message || "Si è verificato un errore durante il salvataggio delle traduzioni.",
         variant: "destructive"
       });
     } finally {
@@ -355,6 +418,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
   const ModuleTranslationItem = ({ module, section }: { module: any, section: any }) => {
     const [moduleContent, setModuleContent] = useState<any>(null);
     const [isLoadingModule, setIsLoadingModule] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
     
     // Carica il contenuto del modulo se necessario
     useEffect(() => {
@@ -1127,7 +1191,44 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           )}
         </div>
         <div className="p-4">
-          {renderModuleTranslationForm()}
+          {isEditing ? (
+            <div>
+              {renderModuleTranslationForm()}
+              <div className="flex justify-end mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(false)}
+                >
+                  Chiudi editing
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col space-y-4">
+              <div className="preview">
+                {moduleContent && module.type === 'text' && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium mb-1">Testo originale:</h4>
+                    <p className="p-3 bg-gray-50 rounded border text-sm">{moduleContent.text}</p>
+                    
+                    <h4 className="text-sm font-medium mb-1 mt-4">Traduzione:</h4>
+                    <p className="p-3 bg-neutral-100 rounded border text-sm">
+                      {translatedContent.text || <span className="text-red-500">Non tradotto</span>}
+                    </p>
+                  </div>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                  className="ml-auto"
+                >
+                  ✎ Modifica traduzione
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
