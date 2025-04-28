@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import Header from "@/components/header";
 import { DownloadGuideButton } from "@/components/download-guide-button";
 import { 
@@ -303,59 +303,129 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
   // Funzione per duplicare la struttura del documento
   const createDocumentStructure = async (newDocumentId: number) => {
     try {
+      console.log("Inizio processo di creazione documento da confronto BOM");
+      
+      // Recuperiamo i codici comuni
+      const { commonCodes = [] } = comparisonResult || {};
+      console.log("Codici comuni tra le distinte:", commonCodes);
+      
+      if (!commonCodes?.length) {
+        throw new Error("Nessun codice comune trovato tra le distinte base");
+      }
+      
       // 1. Recupera tutte le sezioni del documento sorgente
       const sectionsResponse = await fetch(`/api/documents/${selectedDocumentId}/sections`);
       if (!sectionsResponse.ok) throw new Error("Errore nel recupero delle sezioni");
       const sections = await sectionsResponse.json();
+      console.log(`Recuperate ${sections.length} sezioni dal documento originale`);
       
-      // 2. Filtriamo le sezioni che contengono moduli BOM con i codici comuni
-      // Prima recuperiamo tutti i moduli per ogni sezione
+      // 2. Recuperiamo tutti i moduli di tutte le sezioni e i loro componenti associati
       const sectionModulesMap = new Map();
+      const sectionComponentsMap = new Map();
+      const sectionWithComponentMap = new Map();
+      
+      // Crea una mappa di componenti per codice per rapida ricerca
+      const componentCodeMap: {[key: string]: any} = {};
+      
+      // Prima recuperiamo i componenti associati alle sezioni
       for (const section of sections) {
+        const componentsResponse = await fetch(`/api/sections/${section.id}/components`);
+        if (componentsResponse.ok) {
+          const components = await componentsResponse.json();
+          sectionComponentsMap.set(section.id, components);
+          
+          // Marca le sezioni che hanno componenti con codici comuni
+          const hasCommonComponents = components.some((comp: any) => 
+            comp.component && commonCodes.includes(comp.component.code)
+          );
+          
+          if (hasCommonComponents) {
+            sectionWithComponentMap.set(section.id, true);
+            console.log(`Sezione ${section.id} (${section.title}) ha componenti comuni`);
+          }
+          
+          // Aggiungi i componenti alla mappa per codice
+          for (const comp of components) {
+            if (comp.component && comp.component.code) {
+              componentCodeMap[comp.component.code] = comp.component;
+            }
+          }
+        }
+        
+        // Recupera anche i moduli della sezione
         const modulesResponse = await fetch(`/api/sections/${section.id}/modules`);
         if (modulesResponse.ok) {
           const modules = await modulesResponse.json();
           sectionModulesMap.set(section.id, modules);
+          
+          // Marca le sezioni che hanno moduli BOM con riferimento alla distinta sorgente
+          const hasBomModule = modules.some((module: any) => {
+            if (module.type !== 'bom') return false;
+            
+            try {
+              const content = typeof module.content === 'string' 
+                ? JSON.parse(module.content) 
+                : module.content;
+                
+              return content.bomId === parseInt(selectedSourceBomId);
+            } catch (e) {
+              return false;
+            }
+          });
+          
+          if (hasBomModule) {
+            sectionWithComponentMap.set(section.id, true);
+            console.log(`Sezione ${section.id} (${section.title}) ha moduli BOM rilevanti`);
+          }
         }
       }
       
-      // 3. Mappa per tenere traccia degli ID vecchi -> nuovi delle sezioni
+      // 3. Costruisci un grafo delle sezioni e determina le dipendenze gerarchiche
+      const sectionChildren = new Map();
+      const rootSections = [];
+      
+      for (const section of sections) {
+        if (!section.parentId) {
+          rootSections.push(section);
+        } else {
+          if (!sectionChildren.has(section.parentId)) {
+            sectionChildren.set(section.parentId, []);
+          }
+          sectionChildren.get(section.parentId).push(section);
+        }
+      }
+      
+      // 4. Funzione ricorsiva per verificare se una sezione o qualsiasi sua sotto-sezione 
+      // hanno componenti comuni
+      const shouldIncludeSection = (sectionId: number): boolean => {
+        // Verifica diretta
+        if (sectionWithComponentMap.has(sectionId)) return true;
+        
+        // Verifica ricorsiva sui figli
+        const children = sectionChildren.get(sectionId) || [];
+        return children.some((child: any) => shouldIncludeSection(child.id));
+      };
+      
+      // 5. Mappa per tenere traccia degli ID vecchi -> nuovi delle sezioni
       const sectionIdMap = new Map();
       
-      // 4. Crea le nuove sezioni nel nuovo documento, in ordine per gestire le relazioni di gerarchia
-      const sortedSections = [...sections].sort((a, b) => {
-        // Ordina per parentId (null prima) e poi per ordine
-        if (a.parentId === null && b.parentId !== null) return -1;
-        if (a.parentId !== null && b.parentId === null) return 1;
-        return a.order - b.order;
-      });
-      
-      for (const section of sortedSections) {
-        // Controlla se la sezione contiene moduli BOM associati ai codici comuni
-        const modules = sectionModulesMap.get(section.id) || [];
+      // 6. Funzione ricorsiva per creare la struttura gerarchica nel nuovo documento
+      const createSectionHierarchy = async (section: any, parentId: number | null = null) => {
+        // Se questa sezione o i suoi discendenti non contengono componenti comuni, salta
+        if (!shouldIncludeSection(section.id)) {
+          console.log(`Sezione ${section.id} (${section.title}) saltata: nessun componente comune`);
+          return;
+        }
         
-        // Trova moduli BOM e verifica se sono associati ai codici comuni
-        const bomModules = modules.filter((module: any) => {
-          if (module.type !== 'bom') return false;
-          
-          try {
-            const content = typeof module.content === 'string' 
-              ? JSON.parse(module.content) 
-              : module.content;
-              
-            return content.bomId === parseInt(selectedSourceBomId);
-          } catch (e) {
-            return false;
-          }
-        });
+        console.log(`Creando sezione ${section.id} (${section.title}) nel nuovo documento`);
         
-        // Crea una nuova sezione nel nuovo documento
+        // Crea la sezione nel nuovo documento
         const newSectionData = {
           documentId: newDocumentId,
           title: section.title,
           description: section.description,
           order: section.order,
-          parentId: section.parentId ? sectionIdMap.get(section.parentId) : null,
+          parentId: parentId,
           isModule: section.isModule
         };
         
@@ -365,7 +435,8 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
         const newSection = await newSectionResponse.json();
         sectionIdMap.set(section.id, newSection.id);
         
-        // Duplica tutti i moduli della sezione, aggiornando quelli BOM con la nuova BOM
+        // Duplicate i moduli, prestando attenzione a quelli BOM
+        const modules = sectionModulesMap.get(section.id) || [];
         for (const module of modules) {
           try {
             let moduleContent = typeof module.content === 'string' 
@@ -373,8 +444,11 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
               : module.content;
             
             // Se è un modulo BOM, aggiorna il riferimento alla BOM target
-            if (module.type === 'bom' && moduleContent.bomId === parseInt(selectedSourceBomId)) {
-              moduleContent.bomId = parseInt(selectedTargetBomId);
+            if (module.type === 'bom') {
+              if (moduleContent.bomId === parseInt(selectedSourceBomId)) {
+                moduleContent.bomId = parseInt(selectedTargetBomId);
+                console.log(`Aggiornato modulo BOM in sezione ${newSection.id}, bomId ${moduleContent.bomId} -> ${selectedTargetBomId}`);
+              }
             }
             
             const newModuleData = {
@@ -390,11 +464,31 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
           }
         }
         
-        // Recupera e copia le traduzioni delle sezioni
+        // Copia i componenti associati che sono presenti nei codici comuni
+        const components = sectionComponentsMap.get(section.id) || [];
+        for (const comp of components) {
+          if (comp.component && commonCodes.includes(comp.component.code)) {
+            try {
+              const newComponentData = {
+                sectionId: newSection.id,
+                componentId: comp.componentId,
+                quantity: comp.quantity,
+                notes: comp.notes
+              };
+              
+              await apiRequest('POST', '/api/section-components', newComponentData);
+              console.log(`Copiato componente ${comp.component.code} alla sezione ${newSection.id}`);
+            } catch (e) {
+              console.error("Errore nell'assegnazione del componente:", e);
+            }
+          }
+        }
+        
+        // Copia le traduzioni
         try {
-          const sectionTranslationsResponse = await fetch(`/api/section-translations?sectionId=${section.id}`);
-          if (sectionTranslationsResponse.ok) {
-            const translations = await sectionTranslationsResponse.json();
+          const translationsResponse = await fetch(`/api/section-translations?sectionId=${section.id}`);
+          if (translationsResponse.ok) {
+            const translations = await translationsResponse.json();
             
             for (const translation of translations) {
               const newTranslationData = {
@@ -409,9 +503,24 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
             }
           }
         } catch (e) {
-          console.error("Errore nella copia delle traduzioni della sezione:", e);
+          console.error("Errore nella copia delle traduzioni:", e);
         }
+        
+        // Procedi ricorsivamente con i figli
+        const children = sectionChildren.get(section.id) || [];
+        for (const childSection of children) {
+          await createSectionHierarchy(childSection, newSection.id);
+        }
+      };
+      
+      // 7. Crea la gerarchia partendo dalle sezioni radice
+      for (const rootSection of rootSections) {
+        await createSectionHierarchy(rootSection);
       }
+      
+      // 8. Aggiorna la dashboard per mostrare il nuovo documento
+      // Questo forzera un reload dei documenti disponibili
+      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
       
       toast({
         title: "Documento creato",
@@ -645,23 +754,23 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
                           <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div className="p-4 bg-neutral-lightest rounded-lg border border-neutral-light">
                               <p className="text-sm text-neutral-medium">Codici Totali (Target)</p>
-                              <p className="text-2xl font-semibold">{summary.totalTargetCodes}</p>
+                              <p className="text-2xl font-semibold">{summary?.totalTargetCodes}</p>
                             </div>
                             <div className="p-4 bg-neutral-lightest rounded-lg border border-neutral-light">
                               <p className="text-sm text-neutral-medium">Codici Comuni</p>
-                              <p className="text-2xl font-semibold">{summary.commonCodesCount}</p>
+                              <p className="text-2xl font-semibold">{summary?.commonCodesCount}</p>
                             </div>
                             <div className="p-4 bg-neutral-lightest rounded-lg border border-neutral-light">
                               <p className="text-sm text-neutral-medium">Codici Non Associati</p>
-                              <p className="text-2xl font-semibold text-amber-700">{summary.uniqueCodesCount}</p>
+                              <p className="text-2xl font-semibold text-amber-700">{summary?.uniqueCodesCount}</p>
                             </div>
                             <div className="p-4 bg-neutral-lightest rounded-lg border border-neutral-light">
                               <p className="text-sm text-neutral-medium">Percentuale di Corrispondenza</p>
-                              <p className="text-2xl font-semibold">{summary.matchPercentage}%</p>
+                              <p className="text-2xl font-semibold">{summary?.matchPercentage}%</p>
                             </div>
                           </div>
                           
-                          {summary.uniqueCodesCount > 0 && (
+                          {summary?.uniqueCodesCount > 0 && (
                             <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg mb-4">
                               <div className="flex items-start space-x-2">
                                 <span className="text-amber-500 mt-1">
@@ -673,18 +782,18 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
                                 <div>
                                   <h4 className="text-amber-800 font-medium text-sm">Componenti Non Associati</h4>
                                   <p className="text-amber-700 text-sm mt-1">
-                                    I seguenti {summary.uniqueCodesCount} componenti sono presenti solo nella nuova distinta base
+                                    I seguenti {summary?.uniqueCodesCount} componenti sono presenti solo nella nuova distinta base
                                     e non hanno associazioni nella distinta originale:
                                   </p>
                                   <div className="mt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                                    {summary.nonAssociatedCodes?.slice(0, 9).map((item: any, index: number) => (
+                                    {summary?.nonAssociatedCodes?.slice(0, 9).map((item: any, index: number) => (
                                       <div key={index} className="px-3 py-2 bg-white border border-amber-200 rounded text-xs">
                                         <span className="font-medium">{item.code}</span>: {item.description}
                                       </div>
                                     ))}
-                                    {summary.nonAssociatedCodes?.length > 9 && (
+                                    {(summary?.nonAssociatedCodes?.length || 0) > 9 && (
                                       <div className="px-3 py-2 bg-white border border-amber-200 rounded text-xs flex items-center justify-center">
-                                        <span className="font-medium">+{summary.nonAssociatedCodes.length - 9} altri</span>
+                                        <span className="font-medium">+{(summary?.nonAssociatedCodes?.length || 0) - 9} altri</span>
                                       </div>
                                     )}
                                   </div>
@@ -709,7 +818,7 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
                           </TableHeader>
                           <TableBody>
                             {/* Filtra e mostra solo i codici non associati */}
-                            {summary.nonAssociatedCodes?.map((item: any) => (
+                            {summary?.nonAssociatedCodes?.map((item: any) => (
                               <TableRow 
                                 key={item.id} 
                                 className="bg-amber-100 hover:bg-amber-200 font-medium"
