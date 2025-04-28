@@ -463,6 +463,47 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
         // Copia TUTTI i componenti associati alla sezione
         // (Non filtrare per codici comuni perché vogliamo mantenere l'associazione completa)
         const components = sectionComponentsMap.get(section.id) || [];
+        
+        // Log dei componenti prima di copiarli
+        console.log(`Sezione ${section.id} (${section.title}): Trovati ${components.length} componenti da copiare`);
+        
+        // Recupera anche i componenti dal BOM originale
+        // Per assicurarsi che ogni componente venga trasferito correttamente
+        try {
+          const bomItemsResponse = await fetch(`/api/boms/${selectedSourceBomId}/items`);
+          if (bomItemsResponse.ok) {
+            const bomItems = await bomItemsResponse.json();
+            console.log(`Recuperati ${bomItems.length} componenti dalla BOM sorgente`);
+            
+            // Per ogni componente del BOM, verifica se è associato alla sezione
+            for (const item of bomItems) {
+              // Se il componente non è già nella lista dei componenti della sezione
+              if (!components.some((comp: any) => 
+                  comp.componentId === item.componentId || 
+                  (comp.component && item.component && comp.component.id === item.component.id))) {
+                
+                try {
+                  const newComponentData = {
+                    sectionId: newSection.id,
+                    componentId: item.componentId,
+                    quantity: item.quantity || 1,
+                    notes: null
+                  };
+                  
+                  // Aggiunge il componente alla nuova sezione
+                  await apiRequest('POST', '/api/section-components', newComponentData);
+                  console.log(`Aggiunto componente da BOM ${item.componentId} alla sezione ${newSection.id}`);
+                } catch (e) {
+                  console.error(`Errore nell'aggiunta del componente dal BOM: ${e}`);
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.error(`Errore nel recupero dei componenti dal BOM: ${e}`);
+        }
+        
+        // Copiamo i componenti originali della sezione
         for (const comp of components) {
           try {
             if (!comp.componentId) {
@@ -490,11 +531,12 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
           }
         }
         
-        // Copia le traduzioni
+        // Copia le traduzioni delle sezioni
         try {
           const translationsResponse = await fetch(`/api/section-translations?sectionId=${section.id}`);
           if (translationsResponse.ok) {
             const translations = await translationsResponse.json();
+            console.log(`Trovate ${translations.length} traduzioni per la sezione ${section.id}`);
             
             for (const translation of translations) {
               const newTranslationData = {
@@ -502,14 +544,67 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
                 languageId: translation.languageId,
                 title: translation.title,
                 description: translation.description,
-                status: translation.status
+                status: translation.status,
+                translatedById: translation.translatedById,
+                reviewedById: translation.reviewedById
               };
               
-              await apiRequest('POST', '/api/section-translations', newTranslationData);
+              const transResponse = await apiRequest('POST', '/api/section-translations', newTranslationData);
+              if (transResponse.ok) {
+                console.log(`Copiata traduzione in lingua ${translation.languageId} per sezione ${newSection.id}`);
+              } else {
+                console.error(`Errore nella copia della traduzione: ${await transResponse.text()}`);
+              }
             }
           }
         } catch (e) {
-          console.error("Errore nella copia delle traduzioni:", e);
+          console.error("Errore nella copia delle traduzioni della sezione:", e);
+        }
+        
+        // Copia le traduzioni dei moduli
+        try {
+          const modules = sectionModulesMap.get(section.id) || [];
+          
+          for (const module of modules) {
+            // Recupera le traduzioni per questo modulo
+            const moduleTranslationsResponse = await fetch(`/api/module-translations?moduleId=${module.id}`);
+            if (moduleTranslationsResponse.ok) {
+              const moduleTranslations = await moduleTranslationsResponse.json();
+              
+              // Trova il modulo corrispondente nella nuova sezione
+              const sectModulesResponse = await fetch(`/api/sections/${newSection.id}/modules`);
+              if (sectModulesResponse.ok) {
+                const newSectionModules = await sectModulesResponse.json();
+                
+                // Trova il modulo corrispondente con lo stesso tipo e ordine
+                const newModule = newSectionModules.find((m: any) => 
+                  m.type === module.type && m.order === module.order);
+                
+                if (newModule) {
+                  // Copia le traduzioni per questo modulo
+                  for (const modTrans of moduleTranslations) {
+                    try {
+                      const newModuleTranslationData = {
+                        moduleId: newModule.id,
+                        languageId: modTrans.languageId,
+                        content: modTrans.content,
+                        status: modTrans.status,
+                        translatedById: modTrans.translatedById,
+                        reviewedById: modTrans.reviewedById
+                      };
+                      
+                      await apiRequest('POST', '/api/module-translations', newModuleTranslationData);
+                      console.log(`Copiata traduzione per modulo ${newModule.id} (tipo: ${module.type})`);
+                    } catch (e) {
+                      console.error(`Errore nella copia delle traduzioni del modulo: ${e}`);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Errore nella copia delle traduzioni dei moduli:", e);
         }
         
         // Procedi ricorsivamente con i figli
