@@ -3,10 +3,27 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 export interface TextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  /**
+   * Funzione speciale per mantenere il focus quando perso
+   */
+  keepFocus?: boolean;
+}
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, ...props }, ref) => {
+  ({ className, keepFocus, onBlur, ...props }, ref) => {
+    // Gestiamo l'evento onBlur per mantenere il focus se richiesto
+    const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+      if (keepFocus) {
+        e.target.focus();
+      }
+      
+      // Chiamiamo l'evento onBlur originale se fornito
+      if (onBlur) {
+        onBlur(e);
+      }
+    };
+    
     return (
       <textarea
         className={cn(
@@ -14,6 +31,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           className
         )}
         ref={ref}
+        onBlur={handleBlur}
         {...props}
       />
     )

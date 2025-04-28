@@ -739,8 +739,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                                   }}
                                   placeholder="Inserisci la traduzione..."
                                   className={!headers[idx] ? "border-red-300" : ""}
-                                  // Imposta la modalità bloccata per mantenere il focus
-                                  onBlur={(e) => e.target.focus()}
+                                  keepFocus={true}
                                   rows={1}
                                 />
                               </td>
@@ -787,8 +786,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                                     }}
                                     placeholder="Inserisci la traduzione..."
                                     className={!currentRow[colIdx] ? "border-red-300" : ""}
-                                    // Imposta la modalità bloccata per mantenere il focus
-                                    onBlur={(e) => e.target.focus()}
+                                    keepFocus={true}
                                     rows={1}
                                   />
                                 </td>
@@ -1085,7 +1083,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                             <div className="p-3 bg-neutral-50 rounded border text-sm">
                               {value as string}
                             </div>
-                            <Input
+                            <Textarea
                               id={`message-${key}`}
                               value={messages[key] || ''}
                               onChange={(e) => {
@@ -1097,6 +1095,8 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                               }}
                               placeholder="Inserisci la traduzione..."
                               className={!messages[key] ? "border-red-300" : ""}
+                              keepFocus={true}
+                              rows={1}
                             />
                           </div>
                         </div>
@@ -1120,7 +1120,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                             <div className="p-3 bg-neutral-50 rounded border text-sm">
                               {description as string}
                             </div>
-                            <Input
+                            <Textarea
                               id={`description-${code}`}
                               value={descriptions[code] || ''}
                               onChange={(e) => {
@@ -1132,6 +1132,8 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                               }}
                               placeholder="Inserisci la traduzione..."
                               className={!descriptions[code] ? "border-red-300" : ""}
+                              keepFocus={true}
+                              rows={1}
                             />
                           </div>
                         </div>
@@ -1344,12 +1346,15 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                       <div className="p-3 bg-white rounded border text-sm">
                         {section.title}
                       </div>
-                      <Input
+                      <Textarea
                         id={`section-${section.id}-title`}
                         value={(sectionTranslations[section.id]?.title) || ''}
                         onChange={(e) => updateSectionTranslation(section.id, 'title', e.target.value)}
                         placeholder="Inserisci la traduzione del titolo..."
                         className={!sectionTranslations[section.id]?.title ? "border-red-300" : ""}
+                        // Imposta la modalità bloccata per mantenere il focus
+                        onBlur={(e) => e.target.focus()}
+                        rows={1}
                       />
                     </div>
                   </div>
