@@ -69,10 +69,39 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
     enabled: !!documentId,
   });
   
-  // Carica le sezioni del documento
+  // Carica le sezioni del documento 
   const { data: sections, isLoading: isLoadingSections } = useQuery({
     queryKey: [`/api/documents/${documentId}/sections`],
     enabled: !!documentId,
+    // Qui ordiniamo le sezioni in base al campo 'order' per rispettare la struttura originale del documento
+    select: (data) => {
+      if (!Array.isArray(data)) return [];
+      
+      // Funzione per ordinare le sezioni ricorsivamente in base alla loro struttura ad albero
+      const orderSectionsByHierarchy = (items: any[], parentId: number | null = null): any[] => {
+        const result: any[] = [];
+        
+        // Filtriamo le sezioni che appartengono al livello corrente
+        const levelSections = items.filter((item: any) => item.parentId === parentId);
+        
+        // Ordiniamo per il campo 'order'
+        const sortedSections = [...levelSections].sort((a: any, b: any) => a.order - b.order);
+        
+        // Aggiungiamo ogni sezione e poi ricorsivamente i suoi figli
+        sortedSections.forEach((section: any) => {
+          result.push(section);
+          
+          // Aggiungiamo i figli ricorsivamente
+          const children = orderSectionsByHierarchy(items, section.id);
+          result.push(...children);
+        });
+        
+        return result;
+      };
+      
+      // Chiamiamo la funzione di ordinamento
+      return orderSectionsByHierarchy(data);
+    }
   });
   
   // Carica le lingue disponibili
@@ -1371,7 +1400,9 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
         const response = await fetch(`/api/sections/${section.id}/modules`);
         if (response.ok) {
           const modules = await response.json();
-          section.modules = modules;
+          // Ordiniamo i moduli per il campo 'order' per mantenere l'ordine originale
+          const sortedModules = [...modules].sort((a: any, b: any) => a.order - b.order);
+          section.modules = sortedModules;
         }
       } catch (err) {
         console.warn(`Impossibile caricare i moduli per la sezione ${section.id}`, err);
