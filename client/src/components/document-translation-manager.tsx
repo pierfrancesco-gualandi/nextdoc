@@ -1218,11 +1218,21 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                                 id={`description-${code}`}
                                 value={descriptions[code] || ''}
                                 onChange={(e) => {
+                                  // NON aggiornare immediatamente
+                                  // Salva l'input in una variabile locale
+                                  const newValue = e.target.value;
+                                  
+                                  // Crea una copia dello stato esistente
                                   const newDescriptions = {
                                     ...descriptions,
-                                    [code]: e.target.value
+                                    [code]: newValue
                                   };
-                                  handleContentChange({ descriptions: newDescriptions });
+                                  
+                                  // Aggiorna il contenuto solo dopo un breve ritardo
+                                  clearTimeout((window as any).saveTimeout);
+                                  (window as any).saveTimeout = setTimeout(() => {
+                                    handleContentChange({ descriptions: newDescriptions });
+                                  }, 500);
                                 }}
                                 placeholder="Inserisci la traduzione..."
                                 className={!descriptions[code] ? "border-red-300" : ""}
@@ -1290,9 +1300,19 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                         id={`module-${module.id}-${field.key}`}
                         value={translatedContent[field.key] || ''}
                         onChange={(e) => {
+                          // NON aggiornare immediatamente - soluzione definitiva
+                          const newValue = e.target.value;
+                          
+                          // Crea un oggetto aggiornamento
                           const update = {};
-                          update[field.key] = e.target.value;
-                          handleContentChange(update);
+                          update[field.key] = newValue;
+                          
+                          // Usa un timer per ritardare l'aggiornamento
+                          const fieldKey = `timeout-${field.key}`;
+                          clearTimeout((window as any)[fieldKey]);
+                          (window as any)[fieldKey] = setTimeout(() => {
+                            handleContentChange(update);
+                          }, 500);
                         }}
                         placeholder={`Inserisci la traduzione ${field.label.toLowerCase()}...`}
                         className={!translatedContent[field.key] ? "border-red-300" : ""}
@@ -1445,7 +1465,15 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                       <Textarea
                         id={`section-${section.id}-title`}
                         value={(sectionTranslations[section.id]?.title) || ''}
-                        onChange={(e) => updateSectionTranslation(section.id, 'title', e.target.value)}
+                        onChange={(e) => {
+                          // Modifica ritardata per evitare problemi di focus
+                          const newValue = e.target.value;
+                          const timerId = `title-${section.id}`;
+                          clearTimeout((window as any)[timerId]);
+                          (window as any)[timerId] = setTimeout(() => {
+                            updateSectionTranslation(section.id, 'title', newValue);
+                          }, 500);
+                        }}
                         placeholder="Inserisci la traduzione del titolo..."
                         className={!sectionTranslations[section.id]?.title ? "border-red-300" : ""}
                         keepFocus={true}
@@ -1464,7 +1492,15 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                         <Textarea
                           id={`section-${section.id}-description`}
                           value={(sectionTranslations[section.id]?.description) || ''}
-                          onChange={(e) => updateSectionTranslation(section.id, 'description', e.target.value)}
+                          onChange={(e) => {
+                            // Modifica ritardata per evitare problemi di focus
+                            const newValue = e.target.value;
+                            const timerId = `description-${section.id}`;
+                            clearTimeout((window as any)[timerId]);
+                            (window as any)[timerId] = setTimeout(() => {
+                              updateSectionTranslation(section.id, 'description', newValue);
+                            }, 500);
+                          }}
                           placeholder="Inserisci la traduzione della descrizione..."
                           className={section.description && !sectionTranslations[section.id]?.description ? "border-red-300" : ""}
                           keepFocus={true}

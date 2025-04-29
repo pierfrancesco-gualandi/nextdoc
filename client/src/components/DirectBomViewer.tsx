@@ -96,30 +96,49 @@ export default function DirectBomViewer({
     loadData();
   }, [bomId, toast]);
   
-  // Filtra gli elementi in base ai codici specificati
+  // ACCETTA TUTTO! Non filtrare quando filteredCodes è vuoto o undefined
   const filteredItems = React.useMemo(() => {
     if (!items || !Array.isArray(items)) return [];
+    
+    console.log("DirectBomViewer - Total items loaded:", items.length);
     
     // Se abbiamo una lista esplicita di codici, usa quella per filtrare
     if (filteredCodes && filteredCodes.length > 0) {
       console.log("DirectBomViewer - Uso filtro esplicito con", filteredCodes.length, "codici");
+      
+      // SOLUZIONE DEFINITIVA: prima determina se questi codici esistono nei dati
+      const hasMatchingCodes = items.some(item => 
+        item.component && filteredCodes.includes(item.component.code)
+      );
+      
+      if (!hasMatchingCodes) {
+        console.warn("DirectBomViewer - NESSUN CODICE CORRISPONDENTE TROVATO, mostro TUTTI gli elementi");
+        return items; // MOSTRA TUTTI GLI ELEMENTI SE NESSUNO CORRISPONDE
+      }
+      
       return items.filter(item => 
         item.component && filteredCodes.includes(item.component.code)
       );
     }
     
     // Altrimenti filtra per livello e codice
-    console.log("DirectBomViewer - Uso filtro di livello", levelFilter, "e codice", codeFilter);
-    return items.filter(item => 
-      item.component && 
-      item.level === levelFilter && 
-      (item.parentCode === codeFilter || 
-       items.some(parent => 
-         parent.component && 
-         parent.component.code === codeFilter && 
-         parent.level < item.level
-       ))
-    );
+    if (levelFilter !== undefined && codeFilter) {
+      console.log("DirectBomViewer - Uso filtro di livello", levelFilter, "e codice", codeFilter);
+      return items.filter(item => 
+        item.component && 
+        item.level === levelFilter && 
+        (item.parentCode === codeFilter || 
+         items.some(parent => 
+           parent.component && 
+           parent.component.code === codeFilter && 
+           parent.level < item.level
+         ))
+      );
+    }
+    
+    // Se nessun filtro è specificato, mostra TUTTI gli elementi
+    console.log("DirectBomViewer - NESSUN FILTRO SPECIFICATO, mostro TUTTI gli elementi");
+    return items;
   }, [items, filteredCodes, levelFilter, codeFilter]);
   
   // Se sta caricando
