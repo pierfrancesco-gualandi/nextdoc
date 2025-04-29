@@ -128,7 +128,7 @@ const WarningModule: React.FC<WarningModuleProps> = ({
       </div>
       <div className="message-body" style={bodyStyle}>
         <p style={paragraphStyle}>{displayMessage}</p>
-        {description && description !== message && (
+        {description && description !== message && description !== displayMessage && (
           <p className="warning-description" style={descriptionStyle}>{description}</p>
         )}
       </div>
