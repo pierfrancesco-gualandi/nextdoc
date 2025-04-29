@@ -14,7 +14,7 @@ interface TranslationEditableFieldProps {
 
 /**
  * Componente specializzato che mantiene lo stato del campo di input durante la modifica
- * e previene la perdita di focus
+ * e previene completamente la perdita di focus
  */
 const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
   originalValue,
@@ -27,41 +27,63 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
 }) => {
   // Manteniamo una copia locale del valore per evitare perdite durante la digitazione
   const [localValue, setLocalValue] = useState(translatedValue || '');
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   // Aggiorniamo il valore locale quando cambia quello delle props (ma solo se non stiamo editando)
   useEffect(() => {
     setLocalValue(translatedValue || '');
   }, [translatedValue]);
   
-  // Gestiamo il cambio di valore con un delay
+  // Gestiamo il cambio di valore NON con un delay ma direttamente
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
-    
     // Aggiorniamo subito il valore locale per l'interfaccia utente
     setLocalValue(newValue);
+    // Passiamo immediatamente il nuovo valore al genitore
+    onChange(newValue);
+  };
+  
+  // Aggiungiamo questo per garantire che il campo mantenga il focus
+  useEffect(() => {
+    // Impediamo completamente che il campo perda il focus
+    const textarea = textareaRef.current;
     
-    // Cancelliamo eventuali timeout precedenti
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+    // Questa è la funzione cruciale: intercetta l'evento blur e lo previene
+    // assicurandoci che il campo mantenga sempre il focus
+    const preventBlur = (e: FocusEvent) => {
+      e.preventDefault();
+      if (textarea) {
+        // Riapplichiamo subito il focus
+        setTimeout(() => textarea.focus(), 0);
+      }
+    };
+    
+    if (textarea) {
+      textarea.addEventListener('blur', preventBlur);
+      // Focus iniziale
+      textarea.focus();
     }
     
-    // Impostando un delay molto lungo, ci assicuriamo che il componente abbia il tempo
-    // di gestire correttamente l'input senza perdere il focus
-    timeoutRef.current = setTimeout(() => {
-      console.log(`TRADUZIONE TABELLA - Salvando valore dopo delay (2000ms): ${newValue.substring(0, 20)}...`);
-      onChange(newValue);
-    }, 2000);
-  };
+    // Cleanup della funzione quando il componente viene smontato
+    return () => {
+      if (textarea) {
+        textarea.removeEventListener('blur', preventBlur);
+      }
+    };
+  }, []);
   
   return (
     <Textarea
+      ref={textareaRef}
       value={localValue}
       onChange={handleChange}
       placeholder={placeholder}
       className={errorCondition ? "border-red-300" : ""}
-      keepFocus={true}
       rows={rows}
+      // Impostiamo esplicitamente autoFocus per garantire che il campo sia attivo
+      autoFocus
+      // Aggiungiamo attributi aggiuntivi per garantire che il campo mantenga il focus
+      onBlur={(e) => e.currentTarget.focus()}
     />
   );
 };
