@@ -24,60 +24,58 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       }
     };
     
+    // Stato per tenere traccia se stiamo modificando il testo
+    const [isEditing, setIsEditing] = React.useState(false);
+    
+    // Evento per l'inizio dell'editing
+    const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+      setIsEditing(true);
+      if (props.onFocus) {
+        props.onFocus(e);
+      }
+    };
+    
     // Gestiamo l'evento onBlur in modo più sofisticato
     const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+      if (!keepFocus) {
+        if (onBlur) {
+          onBlur(e);
+        }
+        setIsEditing(false);
+        return;
+      }
+      
+      // Preveniamo il comportamento standard
+      e.preventDefault();
+      
       // Chiamiamo l'evento onBlur originale se fornito
       if (onBlur) {
         onBlur(e);
       }
       
-      // Per prevenire il blocco dell'interfaccia, controlliamo se il focus è andato
-      // a un elemento dentro il form o se è un click volontario fuori
-      if (keepFocus) {
-        // Manteniamo una copia dello stato del textarea prima di qualsiasi modifica
-        const currentValue = textareaRef.current?.value;
-        const currentSelectionStart = textareaRef.current?.selectionStart;
-        const currentSelectionEnd = textareaRef.current?.selectionEnd;
-        
-        // Usiamo requestAnimationFrame per assicurarci che il browser abbia completato 
-        // il ridisegno prima di decidere se riportare il focus al textarea
-        requestAnimationFrame(() => {
-          // Solo se il textarea esiste ancora
-          if (textareaRef.current) {
-            // Verifichiamo se il focus è andato ad un elemento interattivo
-            const activeElement = document.activeElement;
-            const isInteractiveElement = activeElement && 
-              (activeElement.tagName === 'TEXTAREA' || 
-               activeElement.tagName === 'INPUT' ||
-               activeElement.tagName === 'BUTTON' ||
-               activeElement.tagName === 'SELECT' ||
-               activeElement.tagName === 'A' ||
-               activeElement.hasAttribute('contenteditable'));
-              
-            // Verifichiamo se è un elemento nel nostro form o un bottone di azione
-            const isButtonWithAction = activeElement && 
-              activeElement.tagName === 'BUTTON' &&
-              (activeElement.textContent?.includes('Chiudi') || 
-               activeElement.textContent?.includes('Salva') ||
-               activeElement.textContent?.includes('Annulla'));
-               
-            // Riportiamo il focus solo se non è un click su un elemento interattivo del form
-            if (!isInteractiveElement && !isButtonWithAction) {
-              // Riportiamo il focus e reimpostiamo la posizione del cursore
-              textareaRef.current.focus();
-              
-              // Ripristiniamo la posizione del cursore
-              if (currentSelectionStart !== undefined && currentSelectionEnd !== undefined) {
-                setTimeout(() => {
-                  if (textareaRef.current) {
-                    textareaRef.current.selectionStart = currentSelectionStart;
-                    textareaRef.current.selectionEnd = currentSelectionEnd;
-                  }
-                }, 0);
-              }
-            }
+      // Manteniamo il focus attivo solo se siamo in modalità editing
+      if (isEditing) {
+        // Usiamo setTimeout per dare precedenza agli eventi del browser
+        setTimeout(() => {
+          // Verifichiamo se l'elemento che ha ricevuto il focus è un pulsante di azione
+          const activeElement = document.activeElement;
+          
+          // Lista di classi e attributi che identificano i pulsanti di chiusura/salvataggio
+          const isCloseButton = activeElement && 
+            (activeElement.textContent?.includes('Chiudi') || 
+             activeElement.textContent?.includes('Salva') ||
+             activeElement.textContent?.includes('Annulla') ||
+             activeElement.classList.contains('accordion-trigger') ||
+             activeElement.getAttribute('aria-label')?.includes('Close'));
+          
+          // Se non è un pulsante di chiusura, manteniamo il focus
+          if (!isCloseButton && textareaRef.current) {
+            textareaRef.current.focus();
+          } else {
+            // Altrimenti terminiamo l'editing
+            setIsEditing(false);
           }
-        });
+        }, 0);
       }
     };
     
@@ -95,6 +93,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           className
         )}
         ref={handleRef}
+        onFocus={handleFocus}
         onBlur={handleBlur}
         onChange={handleChange}
         {...props}

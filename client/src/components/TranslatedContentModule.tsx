@@ -48,13 +48,54 @@ export default function TranslatedContentModule({
     }
     
     // Assicurati che il contenuto tradotto mantenga le impostazioni di filtro dell'originale
-    if (module.type === 'bom' && originalContent && originalContent.filterSettings) {
-      console.log("Trasferisco impostazioni filtro da originale a traduzione:", originalContent.filterSettings);
-      // Mantieni impostazioni di filtro dell'originale nella traduzione
+    if (module.type === 'bom' && originalContent) {
+      // Trasferisci tutte le proprietà relative al filtro dall'originale alla traduzione
+      const filterProps = [
+        'bomId', 
+        'filter', 
+        'levelFilter', 
+        'useFilters', 
+        'filterSettings', 
+        'filteredComponentCodes'
+      ];
+      
+      // Log dei dettagli per debugging
+      console.log("Contenuto originale del modulo BOM:", {
+        bomId: originalContent.bomId,
+        filter: originalContent.filter,
+        levelFilter: originalContent.levelFilter,
+        useFilters: originalContent.useFilters,
+        filterSettings: originalContent.filterSettings,
+        hasFilteredComponentCodes: originalContent.filteredComponentCodes?.length > 0
+      });
+      
+      // Costruisci un nuovo oggetto con tutte le proprietà necessarie
+      const preservedSettings = {};
+      
+      // Copia tutte le proprietà di filtro dall'originale
+      filterProps.forEach(prop => {
+        if (originalContent[prop] !== undefined) {
+          preservedSettings[prop] = originalContent[prop];
+        }
+      });
+      
+      // Mantieni le descrizioni originali dei componenti se disponibili
+      if (originalContent.descriptions) {
+        preservedSettings['descriptions'] = originalContent.descriptions;
+      }
+      
+      // Assicurati che i titoli delle colonne siano preservati (per la traduzione)
+      if (originalContent.headers) {
+        preservedSettings['headers'] = originalContent.headers;
+      }
+      
+      // Log delle impostazioni preservate
+      console.log("Trasferisco impostazioni da originale a traduzione:", preservedSettings);
+      
+      // Applica le impostazioni preservate alla traduzione
       translatedContent = {
         ...translatedContent,
-        filterSettings: originalContent.filterSettings,
-        filteredComponentCodes: originalContent.filteredComponentCodes || []
+        ...preservedSettings
       };
     }
     
