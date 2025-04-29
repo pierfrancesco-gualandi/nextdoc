@@ -478,6 +478,22 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
     const [isLoadingModule, setIsLoadingModule] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     
+    // SOLUZIONE RADICALE: Stato globale per preservare quali moduli sono in editing
+    useEffect(() => {
+      // Crea un oggetto globale per mantenere lo stato dell'editing tra i render
+      if (typeof window !== 'undefined' && !(window as any).editingModuleStates) {
+        (window as any).editingModuleStates = {};
+      }
+      
+      // Se il modulo è già in editing in un altro render, ripristina lo stato
+      if ((window as any).editingModuleStates && (window as any).editingModuleStates[module.id]) {
+        setIsEditing(true);
+      }
+      
+      // Cleanup: quando il componente viene smontato, NON ripulire lo stato globale
+      // Questo permetterà di mantenere l'editing anche se il componente viene rimontato
+    }, [module.id]);
+    
     // Carica il contenuto del modulo se necessario
     useEffect(() => {
       if (!module || moduleContent) return;
@@ -1364,7 +1380,13 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setIsEditing(false)}
+                  onClick={() => {
+                    // Rimuovi questo modulo dall'elenco globale dei moduli in editing
+                    if (typeof window !== 'undefined' && (window as any).editingModuleStates) {
+                      delete (window as any).editingModuleStates[module.id];
+                    }
+                    setIsEditing(false);
+                  }}
                 >
                   Chiudi editing
                 </Button>
@@ -1387,7 +1409,16 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setIsEditing(true)}
+                  onClick={() => {
+                    // Aggiungi questo modulo all'elenco globale dei moduli in editing
+                    if (typeof window !== 'undefined') {
+                      if (!(window as any).editingModuleStates) {
+                        (window as any).editingModuleStates = {};
+                      }
+                      (window as any).editingModuleStates[module.id] = true;
+                    }
+                    setIsEditing(true);
+                  }}
                   className="ml-auto"
                 >
                   ✎ Modifica traduzione
