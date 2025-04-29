@@ -1120,35 +1120,66 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                 <div>
                   <Label>Descrizioni Componenti</Label>
                   <div className="mt-2">
-                    {Object.entries(moduleContent.descriptions).map(([code, description]) => {
+                    {/* Debug dei filtri applicati */}
+                    {moduleContent.filterSettings && (
+                      <div className="mb-4 p-3 border rounded bg-blue-50 text-sm">
+                        <p className="font-semibold mb-1">Configurazione filtri:</p>
+                        <p>Filtro per codice: {moduleContent.filterSettings.codeFilter || 'Nessuno'}</p>
+                        <p>Filtro per livello: {moduleContent.filterSettings.levelFilter || 'Tutti'}</p>
+                        <p>Filtri attivi: {moduleContent.filterSettings.enableFiltering ? 'Sì' : 'No'}</p>
+                        <p>Componenti visibili: {moduleContent.filteredComponentCodes?.length || 0}</p>
+                      </div>
+                    )}
+                    
+                    {/* Ottieni l'elenco dei codici componenti effettivamente visibili */}
+                    {(() => {
+                      // Utilizzo dei codici componenti filtrati se disponibili
+                      const visibleCodes = moduleContent.filteredComponentCodes || 
+                                           Object.keys(moduleContent.descriptions);
+                      console.log("Codici componenti visibili:", visibleCodes);
+                      
+                      if (visibleCodes.length === 0) {
+                        return (
+                          <div className="p-3 border rounded bg-yellow-50 text-sm">
+                            Nessun componente visibile con i filtri correnti.
+                          </div>
+                        );
+                      }
+                      
                       const descriptions = translatedContent.descriptions || {};
                       
-                      return (
-                        <div key={`description-${code}`} className="mt-4">
-                          <Label htmlFor={`description-${code}`}>{code}</Label>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                            <div className="p-3 bg-neutral-50 rounded border text-sm">
-                              {description as string}
+                      return visibleCodes.map(code => {
+                        const description = moduleContent.descriptions[code];
+                        
+                        if (!description) return null; // Salta componenti senza descrizione
+                        
+                        return (
+                          <div key={`description-${code}`} className="mt-4">
+                            <Label htmlFor={`description-${code}`}>{code}</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                              <div className="p-3 bg-neutral-50 rounded border text-sm">
+                                {description as string}
+                              </div>
+                              <Textarea
+                                id={`description-${code}`}
+                                value={descriptions[code] || ''}
+                                onChange={(e) => {
+                                  const newDescriptions = {
+                                    ...descriptions,
+                                    [code]: e.target.value
+                                  };
+                                  handleContentChange({ descriptions: newDescriptions });
+                                }}
+                                placeholder="Inserisci la traduzione..."
+                                className={!descriptions[code] ? "border-red-300" : ""}
+                                keepFocus={true}
+                                rows={1}
+                              />
                             </div>
-                            <Textarea
-                              id={`description-${code}`}
-                              value={descriptions[code] || ''}
-                              onChange={(e) => {
-                                const newDescriptions = {
-                                  ...descriptions,
-                                  [code]: e.target.value
-                                };
-                                handleContentChange({ descriptions: newDescriptions });
-                              }}
-                              placeholder="Inserisci la traduzione..."
-                              className={!descriptions[code] ? "border-red-300" : ""}
-                              keepFocus={true}
-                              rows={1}
-                            />
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               )}
