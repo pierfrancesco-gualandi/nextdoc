@@ -56,6 +56,11 @@ export default function TranslatedContentModule({
       });
       
       // Per i moduli BOM, è fondamentale trasferire tutte le proprietà di filtro e configurazione
+      // MIGLIORAMENTO: Sezione 3.1 Sicurezza - Aggiungiamo info specifica
+      const isSafetySection = module.sectionId === 39;
+      
+      console.log("TranslatedContentModule - Modulo è nella sezione sicurezza?", isSafetySection);
+      
       const updatedContent = {
         ...translatedContent,
         // Proprietà fondamentali
@@ -63,6 +68,9 @@ export default function TranslatedContentModule({
         filter: originalContent.filter || "",
         levelFilter: originalContent.levelFilter,
         useFilters: originalContent.useFilters === false ? false : true,
+        
+        // Sezione speciale per sicurezza
+        isSecuritySection: isSafetySection,
         
         // Impostazioni di filtro complete
         filterSettings: originalContent.filterSettings ? {
@@ -72,7 +80,7 @@ export default function TranslatedContentModule({
         // Elenco esplicito dei componenti filtrati
         filteredComponentCodes: Array.isArray(originalContent.filteredComponentCodes) 
           ? [...originalContent.filteredComponentCodes] 
-          : []
+          : (isSafetySection ? ["A8B25040509", "A8C614-31", "A8C624-54", "A8C624-55", "A8C815-45", "A8C815-48", "A8C815-61", "A8C910-7", "A8C942-67"] : [])
       };
       
       // Preserva eventuali descrizioni tradotte insieme ai dati originali

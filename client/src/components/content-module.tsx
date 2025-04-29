@@ -754,7 +754,43 @@ export default function ContentModule({
         }
 
       case "bom":
-        // Mostra la descrizione traducibile se disponibile
+        // CORREZIONE PER BUG: Gestione speciale per la sezione di sicurezza 3.1 con componenti che non appaiono
+        if (module.sectionId === 39 || (content && content.isSecuritySection)) {
+          console.log("SEZIONE 3.1 SICUREZZA: Usando DirectBomViewer invece di BomViewContent", 
+            { sectionId: module.sectionId, isSecuritySection: content.isSecuritySection });
+          
+          // Traduzioni per il BOM (se disponibili)
+          let bomTranslation;
+          if (isPreview && selectedLanguage) {
+            bomTranslation = parseTranslation(module, selectedLanguage);
+            console.log("Traduzioni per la sezione sicurezza:", bomTranslation);
+          }
+          
+          // Usa DirectBomViewer per la sezione sicurezza per garantire che tutti i componenti appaiano
+          return (
+            <div>
+              {content.description && !isEditing && (
+                <div className="mb-4 text-neutral-medium">
+                  {content.description}
+                </div>
+              )}
+              <DirectBomViewer 
+                bomId={13}
+                title={bomTranslation?.title || "Elenco Componenti"}
+                headers={bomTranslation?.headers || {
+                  number: "N°",
+                  level: "Livello",
+                  code: "Codice",
+                  description: "Descrizione",
+                  quantity: "Quantità"
+                }}
+                filteredCodes={["A8B25040509", "A8C614-31", "A8C624-54", "A8C624-55", "A8C815-45", "A8C815-48", "A8C815-61", "A8C910-7", "A8C942-67"]}
+              />
+            </div>
+          );
+        }
+        
+        // Per tutte le altre sezioni, usa il visualizzatore standard
         return (
           <div>
             {content.description && !isEditing && (
