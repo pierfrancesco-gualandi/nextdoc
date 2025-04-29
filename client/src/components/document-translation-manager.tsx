@@ -490,8 +490,11 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
         setIsEditing(true);
       }
       
-      // Cleanup: quando il componente viene smontato, NON ripulire lo stato globale
-      // Questo permetterà di mantenere l'editing anche se il componente viene rimontato
+      return () => {
+        // Questo evita che lo stato venga pulito immediatamente
+        // Il componente può essere desmontato durante il rendering o refresh
+        // ma deve mantenere il suo stato
+      };
     }, [module.id]);
     
     // Carica il contenuto del modulo se necessario
