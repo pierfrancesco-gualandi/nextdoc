@@ -4,12 +4,18 @@ import { cn } from '@/lib/utils';
 export interface WarningModuleProps {
   level: 'error' | 'warning' | 'caution' | 'info' | 'success' | 'safety';
   title?: string;
-  message: string;
+  message?: string;
+  description?: string;
   className?: string;
+  isTranslated?: boolean;
+  highlightMissingTranslations?: boolean;
+  originalTitle?: string;
+  originalDescription?: string;
 }
 
 /**
  * Componente per la visualizzazione di avvisi, note e messaggi di sicurezza
+ * Ora con lo stesso aspetto grafico dell'esportazione HTML
  *
  * @param {WarningModuleProps} props - Proprietà del componente
  * @returns {JSX.Element} - Il componente React
@@ -18,7 +24,12 @@ const WarningModule: React.FC<WarningModuleProps> = ({
   level = 'info',
   title,
   message,
-  className
+  description,
+  className,
+  isTranslated,
+  highlightMissingTranslations,
+  originalTitle,
+  originalDescription
 }) => {
   const defaultTitles = {
     error: 'PERICOLO',
@@ -29,16 +40,17 @@ const WarningModule: React.FC<WarningModuleProps> = ({
     safety: 'ISTRUZIONI DI SICUREZZA'
   };
   
+  // Cambiati da emoji a HTML entities come nell'esportazione HTML
   const icons = {
-    error: '⚠️',
-    warning: '⚠️',
-    caution: '⚠️',
-    info: 'ℹ️',
+    error: '⚠',
+    warning: '⚠',
+    caution: '⚠',
+    info: 'ℹ',
     success: '✓',
-    safety: '🛡️'
+    safety: '🛡'
   };
   
-  // Colori per ciascun tipo di avviso (corrispondono al CSS)
+  // Colori per ciascun tipo di avviso (corrispondono all'esportazione HTML)
   const bgColors = {
     error: '#ff0000',    // PERICOLO: Rosso intenso
     warning: '#ff8c00',  // AVVERTENZA: Arancione intenso
@@ -48,37 +60,77 @@ const WarningModule: React.FC<WarningModuleProps> = ({
     safety: '#2e7d32'    // ISTRUZIONI DI SICUREZZA: Verde intenso
   };
   
-  // Lo stile del bordo deve corrispondere esattamente al colore di sfondo
-  // Il testo deve sempre essere bianco per garantire la visibilità
-  const boxStyle = {
+  // Stili in linea per avere l'ESATTO stesso aspetto dell'esportazione HTML
+  const messageStyle = {
     backgroundColor: bgColors[level] || bgColors.info,
-    borderColor: bgColors[level] || bgColors.info,
-    color: '#ffffff' // Testo SEMPRE bianco
+    border: 'none',
+    color: '#ffffff',
+    padding: '15px',
+    margin: '15px 0',
+    borderRadius: '6px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    position: 'relative' as const,
+    overflow: 'hidden'
   };
   
   const headerStyle = {
-    backgroundColor: bgColors[level] || bgColors.info,
-    color: '#ffffff' // Testo SEMPRE bianco
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: '8px',
+    color: '#ffffff'
+  };
+  
+  const iconStyle = {
+    fontSize: '1.5em',
+    marginRight: '10px',
+    display: 'inline-block',
+    color: '#ffffff'
+  };
+  
+  const titleStyle = {
+    margin: '0',
+    fontSize: '1.1em',
+    fontWeight: '600' as const,
+    textTransform: 'uppercase' as const,
+    color: '#ffffff'
   };
   
   const bodyStyle = {
-    color: '#ffffff' // Testo SEMPRE bianco
+    color: '#ffffff',
+    paddingLeft: '2px'
+  };
+  
+  const paragraphStyle = {
+    margin: '8px 0',
+    color: '#ffffff'
+  };
+  
+  const descriptionStyle = {
+    marginTop: '10px',
+    fontStyle: 'italic',
+    borderTop: '1px dashed rgba(255,255,255,0.3)',
+    paddingTop: '8px',
+    color: '#ffffff'
   };
   
   // Applica il testo maiuscolo per i titoli (errore, avvertenza, nota)
   const formattedTitle = title || defaultTitles[level];
+  const displayMessage = message || description || "Messaggio non specificato";
   
   return (
     <div 
-      className={cn("warning-module", `warning-${level}`, className)}
-      style={boxStyle}
+      className={cn("message", level, className)}
+      style={messageStyle}
     >
-      <div className="warning-header" style={headerStyle}>
-        <span className="warning-icon">{icons[level]}</span>
-        <h4 className="warning-title">{formattedTitle}</h4>
+      <div className="message-header" style={headerStyle}>
+        <span className="message-icon" style={iconStyle}>{icons[level]}</span>
+        <h4 style={titleStyle}>{formattedTitle}</h4>
       </div>
-      <div className="warning-body" style={bodyStyle}>
-        <p>{message}</p>
+      <div className="message-body" style={bodyStyle}>
+        <p style={paragraphStyle}>{displayMessage}</p>
+        {description && description !== message && (
+          <p className="warning-description" style={descriptionStyle}>{description}</p>
+        )}
       </div>
     </div>
   );
