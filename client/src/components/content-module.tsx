@@ -23,6 +23,7 @@ import FileSelector from "./file-selector";
 import ThreeModelEditor from "./three-model-editor";
 import VideoPlayer from "./video-player";
 import BomViewContent, { BomFilterSettings } from "./BomViewContent";
+import DirectBomViewer from "./DirectBomViewer";
 import { 
   DangerModule,
   WarningAlertModule,
