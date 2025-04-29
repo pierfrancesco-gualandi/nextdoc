@@ -598,6 +598,7 @@ export default function ContentModule({
           return (
             <DangerModule
               title={content.title}
+              message={content.message || content.text}
               description={content.description}
               isTranslated={!!module.translation?.content}
               highlightMissingTranslations={highlightMissingTranslations}
@@ -633,6 +634,7 @@ export default function ContentModule({
           return (
             <WarningAlertModule
               title={content.title}
+              message={content.message || content.text}
               description={content.description}
               isTranslated={!!module.translation?.content}
               highlightMissingTranslations={highlightMissingTranslations}
@@ -668,6 +670,7 @@ export default function ContentModule({
           return (
             <CautionModule
               title={content.title}
+              message={content.message || content.text}
               description={content.description}
               isTranslated={!!module.translation?.content}
               highlightMissingTranslations={highlightMissingTranslations}
@@ -703,6 +706,7 @@ export default function ContentModule({
           return (
             <NoteModule
               title={content.title}
+              message={content.message || content.text}
               description={content.description}
               isTranslated={!!module.translation?.content}
               highlightMissingTranslations={highlightMissingTranslations}
@@ -738,6 +742,7 @@ export default function ContentModule({
           return (
             <SafetyInstructionsModule
               title={content.title}
+              message={content.message || content.text}
               description={content.description}
               isTranslated={!!module.translation?.content}
               highlightMissingTranslations={highlightMissingTranslations}
