@@ -7,6 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { 
+  TranslationField, 
+  SectionTitleField, 
+  SectionDescriptionField, 
+  ModuleTextField 
+} from '@/components/TranslationFieldsManager';
+import { 
   ChevronDownIcon, 
   ChevronUpIcon, 
   FolderIcon, 
@@ -1457,55 +1463,26 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                 {/* Form di traduzione della sezione */}
                 <div className="mb-6 space-y-4 p-4 border rounded bg-neutral-50">
                   <div>
-                    <Label htmlFor={`section-${section.id}-title`} className="font-medium">Titolo della sezione</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                      <div className="p-3 bg-white rounded border text-sm">
-                        {section.title}
-                      </div>
-                      <Textarea
-                        id={`section-${section.id}-title`}
-                        value={(sectionTranslations[section.id]?.title) || ''}
-                        onChange={(e) => {
-                          // Modifica ritardata per evitare problemi di focus
-                          const newValue = e.target.value;
-                          const timerId = `title-${section.id}`;
-                          clearTimeout((window as any)[timerId]);
-                          (window as any)[timerId] = setTimeout(() => {
-                            updateSectionTranslation(section.id, 'title', newValue);
-                          }, 500);
-                        }}
-                        placeholder="Inserisci la traduzione del titolo..."
-                        className={!sectionTranslations[section.id]?.title ? "border-red-300" : ""}
-                        keepFocus={true}
-                        rows={1}
-                      />
-                    </div>
+                    {/* COMPONENTE SPECIALIZZATO PER EVITARE PROBLEMI DI CHIUSURA DEI CAMPI */}
+                    <SectionTitleField
+                      section={section}
+                      translation={sectionTranslations[section.id] || {}}
+                      onChange={(value) => {
+                        updateSectionTranslation(section.id, 'title', value);
+                      }}
+                    />
                   </div>
                   
                   {section.description && (
                     <div>
-                      <Label htmlFor={`section-${section.id}-description`} className="font-medium">Descrizione della sezione</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                        <div className="p-3 bg-white rounded border text-sm">
-                          {section.description}
-                        </div>
-                        <Textarea
-                          id={`section-${section.id}-description`}
-                          value={(sectionTranslations[section.id]?.description) || ''}
-                          onChange={(e) => {
-                            // Modifica ritardata per evitare problemi di focus
-                            const newValue = e.target.value;
-                            const timerId = `description-${section.id}`;
-                            clearTimeout((window as any)[timerId]);
-                            (window as any)[timerId] = setTimeout(() => {
-                              updateSectionTranslation(section.id, 'description', newValue);
-                            }, 500);
-                          }}
-                          placeholder="Inserisci la traduzione della descrizione..."
-                          className={section.description && !sectionTranslations[section.id]?.description ? "border-red-300" : ""}
-                          keepFocus={true}
-                        />
-                      </div>
+                      {/* NUOVO COMPONENTE SPECIALIZZATO PER DESCRIZIONI */}
+                      <SectionDescriptionField
+                        section={section}
+                        translation={sectionTranslations[section.id] || {}}
+                        onChange={(value) => {
+                          updateSectionTranslation(section.id, 'description', value);
+                        }}
+                      />
                     </div>
                   )}
                 </div>
