@@ -772,18 +772,19 @@ export default function ContentModule({
           // Determinazione dei codici filtrati in base alla sezione
           let filteredCodes: string[] = [];
           
-          // Sezione 3.1 Sicurezza (ID: 39)
-          if (module.sectionId === 39 || (content && content.isSecuritySection)) {
-            filteredCodes = ["A8B25040509", "A8C614-31", "A8C624-54", "A8C624-55", "A8C815-45", "A8C815-48", "A8C815-61", "A8C910-7", "A8C942-67"];
-          }
-          // Sezione 2.1 Disegno 3D (ID: 16)
-          else if (module.sectionId === 16) {
-            filteredCodes = ["A5B03509", "A5B03528", "A5B03532", "A5B03539", "A5B05309A", "A5B05309B", "A5B05611", "A8B25040509", "A8C614-31", "A8C624-54"];
-          }
-          // Sezione Introduzione (default)
-          else {
-            filteredCodes = ["A5B03509", "A5B03528", "A5B03532", "A5B03539"];
-          }
+          // SOLUZIONE DEFINITIVA: stessi codici identici in tutte le sezioni
+          // Lista completa di tutti i componenti possibili usati in qualsiasi sezione
+          const allComponentCodes = [
+            "A5B03509", "A5B03528", "A5B03532", "A5B03539", 
+            "A5B05309A", "A5B05309B", "A5B05611", 
+            "A8B25040509", "A8C614-31", "A8C624-54", "A8C624-55", 
+            "A8C815-45", "A8C815-48", "A8C815-61", "A8C910-7", "A8C942-67"
+          ];
+            
+          // Tutte le sezioni usano tutti i codici
+          filteredCodes = allComponentCodes;
+          
+          console.log("DirectBomViewer - usando l'elenco completo di componenti per la sezione", module.sectionId);
           
           // Usa DirectBomViewer per garantire che tutti i componenti appaiano
           return (
