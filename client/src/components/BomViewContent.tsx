@@ -101,6 +101,14 @@ const BomViewContent = ({
   selectedLanguage,
   highlightMissingTranslations = false
 }: BomViewContentProps) => {
+  // Log per debug
+  console.log("BomViewContent: Rendering con filtri:", { 
+    bomId, 
+    filterSettings, 
+    filter,
+    isTranslation: !!translation,
+    filteredComponentCodes: filterSettings?.filteredComponentCodes
+  });
   // Stati locali per filtri
   const [codeFilter, setCodeFilter] = useState<string>(filterSettings?.codeFilter || "");
   const [codeFilterType, setCodeFilterType] = useState<'contains' | 'startsWith' | 'equals'>(
