@@ -35,24 +35,31 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       }
     };
     
-    // Gestisce il focus iniziale e lo mantiene durante l'editing
+        // Flag per controllare se è in corso una modifica attiva
+    const [isEditing, setIsEditing] = React.useState(false);
+    
+    // Gestisce il focus solo quando siamo in modalità editing
     React.useEffect(() => {
-      if (keepFocus && textareaRef.current) {
-        // Imposta il focus quando il componente è montato
+      // Solo se keepFocus è true E siamo in fase di editing
+      if (keepFocus && isEditing && textareaRef.current) {
+        // Strategia più gentile: controlla solo occasionalmente
         const focusInterval = setInterval(() => {
           if (textareaRef.current && document.activeElement !== textareaRef.current) {
             textareaRef.current.focus();
           }
-        }, 100); // Controlla continuamente
+        }, 300); // Controlla meno frequentemente
         
         return () => clearInterval(focusInterval);
       }
-    }, [keepFocus]);
+    }, [keepFocus, isEditing]);
     
     // Gestisce l'evento onChange - INTERCETTA COMPLETAMENTE
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       // Aggiorna il valore locale
       setLocalValue(e.target.value);
+      
+      // Segnala che siamo in fase di editing
+      setIsEditing(true);
       
       // Chiama l'event handler originale se fornito
       if (onChange) {
@@ -60,30 +67,46 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       }
     };
     
-    // Gestisce l'evento onFocus - NON FARE NULLA DI SPECIALE
+    // Gestisce l'evento onFocus - Attiva la modalità editing
     const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+      setIsEditing(true);
       if (onFocus) {
         onFocus(e);
       }
     };
     
-    // Gestisce l'evento onBlur - IGNORA COMPLETAMENTE SE keepFocus è true
+    // Gestisce l'evento onBlur - Comportamento più ragionevole
     const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
-      if (keepFocus) {
-        // Previeni la perdita di focus
-        e.preventDefault();
-        e.stopPropagation();
+      // Solo se keepFocus è true, isEditing è true, e ci sono contenuti
+      if (keepFocus && isEditing && textareaRef.current && textareaRef.current.value.trim() !== "") {
+        // Per sicurezza, distinguiamo situazioni diverse
+        const relatedTarget = e.relatedTarget as HTMLElement;
         
-        // Rimetti il focus immediatamente
+        // Se il focus sta andando a un altro textarea, dropdown o qualsiasi altro elemento di un modulo, PERMETTI
+        if (relatedTarget && 
+           (relatedTarget.tagName === 'TEXTAREA' || 
+            relatedTarget.tagName === 'SELECT' || 
+            relatedTarget.tagName === 'BUTTON' ||
+            relatedTarget.tagName === 'A' ||
+            relatedTarget.getAttribute('role') === 'button')) {
+          // Disattiva editing quando passiamo ad altri controlli
+          setIsEditing(false);
+          if (onBlur) onBlur(e);
+          return;
+        }
+        
+        // Altrimenti, SOLO se il campo ha contenuto, mantieni il focus
+        e.preventDefault();
         setTimeout(() => {
           if (textareaRef.current) {
             textareaRef.current.focus();
           }
         }, 0);
-        
-        // Non chiamare l'handler originale
         return;
       }
+      
+      // Disattiva editing quando usciamo dal campo
+      setIsEditing(false);
       
       // Se non dobbiamo mantenere il focus, chiama l'handler originale
       if (onBlur) {
