@@ -468,8 +468,15 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
       const moduleTranslation = moduleTranslations[module.id];
       if (!moduleTranslation) return true;
       
-      // Usa la funzione esistente per verificare le traduzioni mancanti nei campi
-      return hasMissingTranslation(module);
+      // Se il modulo ha una traduzione, è considerato tradotto
+      if (moduleTranslation) {
+        // Utilizzare la funzione definita all'interno di ModuleTranslationItem
+        const translatedContent = moduleTranslation.content;
+        return !translatedContent || translatedContent === '{}';
+      }
+      
+      // Altrimenti, è considerato da tradurre
+      return true;
     });
   };
   
