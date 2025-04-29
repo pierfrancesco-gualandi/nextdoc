@@ -47,16 +47,44 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
     onChange(newValue);
   };
   
-  // Posiziona il cursore alla fine del testo quando il componente è montato
+  // Mantiene il focus quando il componente viene aggiornato (ma non quando viene desmontato)
+  // Utilizziamo un flag per impedire al componente di perdere il focus con il cursore nella posizione corretta
+  const [isInitialFocus, setIsInitialFocus] = useState(true);
+  const savedSelection = useRef<{ start: number, end: number } | null>(null);
+  
+  // Quando il componente viene montato, posiziona il cursore alla fine
   useEffect(() => {
     const textarea = textareaRef.current;
-    if (textarea) {
-      // Posiziona il cursore alla fine del testo
+    if (textarea && isInitialFocus) {
+      // Posiziona il cursore alla fine del testo solo la prima volta
       const length = textarea.value.length;
       textarea.setSelectionRange(length, length);
       textarea.focus();
+      setIsInitialFocus(false);
     }
-  }, []);
+  }, [isInitialFocus]);
+  
+  // Salva la posizione del cursore prima di ogni render
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea && document.activeElement === textarea) {
+      savedSelection.current = {
+        start: textarea.selectionStart,
+        end: textarea.selectionEnd
+      };
+    }
+  });
+  
+  // Ripristina la posizione del cursore dopo ogni render
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea && savedSelection.current && document.activeElement === textarea) {
+      textarea.setSelectionRange(
+        savedSelection.current.start,
+        savedSelection.current.end
+      );
+    }
+  });
   
   return (
     <Textarea
@@ -69,6 +97,25 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
       autoFocus
       // Impostiamo una altezza minima maggiore
       style={{ minHeight: '120px' }}
+      // Questi eventi mantengono un registro della posizione del cursore
+      onFocus={() => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+          savedSelection.current = {
+            start: textarea.selectionStart,
+            end: textarea.selectionEnd
+          };
+        }
+      }}
+      onClick={() => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+          savedSelection.current = {
+            start: textarea.selectionStart,
+            end: textarea.selectionEnd
+          };
+        }
+      }}
     />
   );
 };

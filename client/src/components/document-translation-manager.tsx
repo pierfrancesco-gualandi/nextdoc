@@ -577,8 +577,9 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           
         case 'image':
         case 'video':
-          // Per immagini e video, verifica titolo, didascalia e testo alternativo
-          return !translatedContent.caption || !translatedContent.alt || !translatedContent.title;
+          // Per immagini e video, solo verifica che ci sia almeno la didascalia
+          // Alcuni campi potrebbero non essere sempre necessari
+          return !translatedContent.caption;
           
         case 'warning':
         case 'danger':
@@ -621,8 +622,8 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           return !translatedContent.title && moduleContent?.title;
           
         case 'pdf':
-          // Verifica titolo e descrizione per i PDF
-          return !translatedContent.title || !translatedContent.description;
+          // Per i PDF, solo la didascalia è necessaria
+          return !translatedContent.caption;
           
         case 'link':
           // Verifica testo e descrizione per i link
@@ -672,8 +673,8 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           return !translatedContent.title || !hasHeaders || !hasMessages || !hasDescriptions;
           
         case '3d-model':
-          // Per modelli 3D, verifica titolo e descrizione
-          return !translatedContent.title || !translatedContent.description;
+          // Per modelli 3D, verifica solo caption
+          return !translatedContent.caption;
           
         default:
           // Per qualsiasi altro tipo di modulo, verifica se ha un titolo
