@@ -884,19 +884,20 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                             <div className="p-3 bg-neutral-50 rounded border text-sm">
                               {item.text}
                             </div>
-                            <Input
-                              id={`checklist-item-${idx}`}
-                              value={currentItem.text || ''}
-                              onChange={(e) => {
+                            <TranslationEditableField
+                              originalValue={item.text}
+                              translatedValue={currentItem.text || ''}
+                              onChange={(value) => {
                                 const newItems = [...items];
                                 newItems[idx] = { 
                                   ...currentItem,
-                                  text: e.target.value 
+                                  text: value 
                                 };
                                 handleContentChange({ items: newItems });
                               }}
                               placeholder="Inserisci la traduzione..."
-                              className={!currentItem.text ? "border-red-300" : ""}
+                              errorCondition={!currentItem.text}
+                              rows={1}
                             />
                           </div>
                         </div>
