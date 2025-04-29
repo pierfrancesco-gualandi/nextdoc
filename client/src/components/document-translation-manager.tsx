@@ -577,22 +577,28 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           return !translatedContent.text || !translatedContent.description;
           
         case 'bom':
+          // Verifica se moduleContent è definito
+          if (!moduleContent) return true;
+          
           // Verifica intestazioni, messaggi e descrizioni componenti
           const hasHeaders = translatedContent.headers && 
-            Object.keys(moduleContent?.headers || {}).every(key => !!translatedContent.headers[key]);
+            Object.keys(moduleContent.headers || {}).every(key => !!translatedContent.headers[key]);
           
           const hasMessages = translatedContent.messages && 
-            Object.keys(moduleContent?.messages || {}).every(key => !!translatedContent.messages[key]);
+            Object.keys(moduleContent.messages || {}).every(key => !!translatedContent.messages[key]);
           
           // Ottieni l'elenco dei componenti effettivamente visibili secondo i filtri attivi
-          const visibleComponentCodes = moduleContent.filteredComponentCodes || 
-                                        Object.keys(moduleContent?.descriptions || {});
+          // Usa una verifica di sicurezza per ogni accesso di proprietà
+          const descriptions = moduleContent.descriptions || {};
+          const visibleComponentCodes = (moduleContent.filteredComponentCodes || 
+                                        Object.keys(descriptions));
           
           // Verifica solo le descrizioni dei componenti visibili
-          const hasDescriptions = translatedContent.descriptions && visibleComponentCodes.length > 0 &&
-            visibleComponentCodes.every(code => {
+          const hasDescriptions = translatedContent.descriptions && 
+            visibleComponentCodes.length > 0 &&
+            visibleComponentCodes.every((code: string) => {
               // Se il componente non ha una descrizione originale, non considerarlo mancante
-              if (!moduleContent?.descriptions?.[code]) return true;
+              if (!descriptions[code]) return true;
               // Altrimenti, verifica che abbia una traduzione
               return !!translatedContent.descriptions[code];
             });
@@ -1168,9 +1174,22 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     
                     {/* Ottieni l'elenco dei codici componenti effettivamente visibili */}
                     {(() => {
+                      // Verifica che moduleContent esista
+                      if (!moduleContent) {
+                        return (
+                          <div className="p-3 border rounded bg-red-50 text-sm">
+                            Errore: contenuto del modulo non disponibile.
+                          </div>
+                        );
+                      }
+                      
+                      // Accesso sicuro alle proprietà
+                      const allDescriptions = moduleContent.descriptions || {};
+                      
                       // Utilizzo dei codici componenti filtrati se disponibili
                       const visibleCodes = moduleContent.filteredComponentCodes || 
-                                           Object.keys(moduleContent.descriptions);
+                                           Object.keys(allDescriptions);
+                                           
                       console.log("Codici componenti visibili:", visibleCodes);
                       
                       if (visibleCodes.length === 0) {
@@ -1183,8 +1202,8 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                       
                       const descriptions = translatedContent.descriptions || {};
                       
-                      return visibleCodes.map(code => {
-                        const description = moduleContent.descriptions[code];
+                      return visibleCodes.map((code: string) => {
+                        const description = allDescriptions[code];
                         
                         if (!description) return null; // Salta componenti senza descrizione
                         
