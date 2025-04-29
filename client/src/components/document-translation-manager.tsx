@@ -440,18 +440,37 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
     const needsDescription = !!section.description;
     const hasDescription = needsDescription ? !!sectionTranslations[section.id].description : true;
     
+    // Verifica moduli della sezione
+    const modulesIncomplete = hasModulesWithMissingTranslations(section);
+    
     // Ottieni lo stato attuale di traduzione completata
-    const isComplete = hasTitle && hasDescription;
+    const isComplete = hasTitle && hasDescription && !modulesIncomplete;
     
     // Debug per risoluzione problemi
     console.log(`Sezione ${section.id} - ${section.title}:`, {
       hasTitle,
       needsDescription,
       hasDescription,
+      modulesIncomplete,
       isComplete,
     });
     
     return !isComplete;
+  };
+  
+  // Verifica se la sezione ha moduli con traduzioni mancanti
+  const hasModulesWithMissingTranslations = (section: any) => {
+    if (!section.modules || section.modules.length === 0) return false;
+    
+    // Controlla tutti i moduli nella sezione
+    return section.modules.some((module: any) => {
+      // Il modulo deve avere una traduzione
+      const moduleTranslation = moduleTranslations[module.id];
+      if (!moduleTranslation) return true;
+      
+      // Usa la funzione esistente per verificare le traduzioni mancanti nei campi
+      return hasMissingTranslation(module);
+    });
   };
   
   // Carica lo stato di completamento della traduzione

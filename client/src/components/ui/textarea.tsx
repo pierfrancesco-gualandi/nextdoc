@@ -75,9 +75,8 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       }
     };
     
-    // Gestisce l'evento onBlur - COMPLETAMENTE SEMPLIFICATO
-    // La tenuta del focus è ora gestita dal componente TranslationEditableField
-    // e dall'uso di editingModuleStates
+    // Gestisce l'evento onBlur - GESTIONE MULTI-CAMPO
+    // Mantiene il focus nei campi finché non si clicca in un altro input
     const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
       // Se lo stato globale mi dice di NON mantenere il focus, fallo perdere normalmente
       if (typeof window !== 'undefined' && (window as any).preventTextareaFocus) {
@@ -88,10 +87,32 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         return;
       }
       
-      // Altrimenti, se keepFocus è true e siamo in editing, manteniamo il focus
+      // Determina se stiamo passando a un altro campo di input
+      const relatedTarget = e.relatedTarget as HTMLElement;
+      const isMovingToAnotherField = relatedTarget && (
+        relatedTarget.tagName === 'INPUT' || 
+        relatedTarget.tagName === 'TEXTAREA' || 
+        relatedTarget.tagName === 'SELECT' ||
+        relatedTarget.tagName === 'BUTTON'
+      );
+      
+      // Se stiamo passando a un altro campo, lascia che accada
+      if (isMovingToAnotherField) {
+        if (onBlur) {
+          onBlur(e);
+        }
+        return;
+      }
+      
+      // Altrimenti, se keepFocus è true, manteniamo il focus
       if (keepFocus && isEditing) {
-        // Previeni default solo se il parametro keepFocus è true
         e.preventDefault();
+        // Manteniamo il focus
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.focus();
+          }
+        }, 0);
       }
       
       // Se non dobbiamo mantenere il focus, chiama l'handler originale
