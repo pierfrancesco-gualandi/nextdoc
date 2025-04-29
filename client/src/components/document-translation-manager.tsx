@@ -12,6 +12,7 @@ import {
   SectionDescriptionField, 
   ModuleTextField 
 } from '@/components/TranslationFieldsManager';
+import TranslationEditableField from '@/components/TranslationEditableField';
 import { 
   ChevronDownIcon, 
   ChevronUpIcon, 
@@ -682,12 +683,13 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                   <div className="p-3 bg-neutral-50 rounded border text-sm">
                     {moduleContent.text || ''}
                   </div>
-                  <Textarea
-                    id={`module-${module.id}-text`}
-                    value={translatedContent.text || ''}
-                    onChange={(e) => handleContentChange({ text: e.target.value })}
+                  <TranslationEditableField
+                    originalValue={moduleContent.text || ''}
+                    translatedValue={translatedContent.text || ''}
+                    onChange={(value) => handleContentChange({ text: value })}
                     placeholder="Inserisci la traduzione del testo..."
-                    className={!translatedContent.text ? "border-red-300" : ""}
+                    errorCondition={!translatedContent.text}
+                    isMultiline={true}
                   />
                 </div>
               </div>
@@ -727,16 +729,17 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                   <div className="p-3 bg-neutral-50 rounded border text-sm">
                     {moduleContent[messageField] || ''}
                   </div>
-                  <Textarea
-                    id={`module-${module.id}-message`}
-                    value={translatedContent[messageField] || ''}
-                    onChange={(e) => {
+                  <TranslationEditableField
+                    originalValue={moduleContent[messageField] || ''}
+                    translatedValue={translatedContent[messageField] || ''}
+                    onChange={(value) => {
                       const updates: any = {};
-                      updates[messageField] = e.target.value;
+                      updates[messageField] = value;
                       handleContentChange(updates);
                     }}
                     placeholder={`Inserisci la traduzione del ${messageField === 'message' ? 'messaggio' : 'descrizione'}...`}
-                    className={!translatedContent[messageField] ? "border-red-300" : ""}
+                    errorCondition={!translatedContent[messageField]}
+                    isMultiline={true}
                   />
                 </div>
               </div>
@@ -787,16 +790,16 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                               <td className="p-2 border text-center">{idx + 1}</td>
                               <td className="p-2 border">{header}</td>
                               <td className="p-2 border">
-                                <Textarea 
-                                  value={headers[idx] || ''}
-                                  onChange={(e) => {
+                                <TranslationEditableField 
+                                  originalValue={header}
+                                  translatedValue={headers[idx] || ''}
+                                  onChange={(value) => {
                                     const newHeaders = [...headers];
-                                    newHeaders[idx] = e.target.value;
+                                    newHeaders[idx] = value;
                                     handleContentChange({ headers: newHeaders });
                                   }}
                                   placeholder="Inserisci la traduzione..."
-                                  className={!headers[idx] ? "border-red-300" : ""}
-                                  keepFocus={true}
+                                  errorCondition={!headers[idx]}
                                   rows={1}
                                 />
                               </td>
@@ -833,17 +836,17 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                                 <td className="p-2 border text-center">{rowIdx + 1},{colIdx + 1}</td>
                                 <td className="p-2 border">{cell}</td>
                                 <td className="p-2 border">
-                                  <Textarea 
-                                    value={currentRow[colIdx] || ''}
-                                    onChange={(e) => {
+                                  <TranslationEditableField
+                                    originalValue={cell}
+                                    translatedValue={currentRow[colIdx] || ''}
+                                    onChange={(value) => {
                                       const newRows = [...rows];
                                       if (!newRows[rowIdx]) newRows[rowIdx] = [];
-                                      newRows[rowIdx][colIdx] = e.target.value;
+                                      newRows[rowIdx][colIdx] = value;
                                       handleContentChange({ rows: newRows });
                                     }}
                                     placeholder="Inserisci la traduzione..."
-                                    className={!currentRow[colIdx] ? "border-red-300" : ""}
-                                    keepFocus={true}
+                                    errorCondition={!currentRow[colIdx]}
                                     rows={1}
                                   />
                                 </td>
