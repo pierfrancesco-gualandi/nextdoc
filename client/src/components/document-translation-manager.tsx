@@ -1384,11 +1384,32 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                   variant="outline"
                   size="sm"
                   onClick={() => {
+                    console.log(`Chiudendo editing modulo ${module.id} (type: ${module.type})`);
+                    
                     // Rimuovi questo modulo dall'elenco globale dei moduli in editing
-                    if (typeof window !== 'undefined' && (window as any).editingModuleStates) {
-                      delete (window as any).editingModuleStates[module.id];
+                    if (typeof window !== 'undefined') {
+                      // FORZA la perdita di focus di tutti i textarea
+                      (window as any).preventTextareaFocus = true;
+                      
+                      // Rimuovi lo stato di editing
+                      if ((window as any).editingModuleStates) {
+                        delete (window as any).editingModuleStates[module.id];
+                      }
+                      
+                      // Forza l'aggiornamento dell'interfaccia
+                      setIsEditing(false);
+                      
+                      // IMPORTANTE: elimina anche eventuali altri stati globali che potrebbero interferire
+                      if ((window as any)[`timeout-text-${module.id}`]) {
+                        clearTimeout((window as any)[`timeout-text-${module.id}`]);
+                        delete (window as any)[`timeout-text-${module.id}`];
+                      }
+                      
+                      // Ripristina il normale comportamento dopo un breve timeout
+                      setTimeout(() => {
+                        (window as any).preventTextareaFocus = false;
+                      }, 100);
                     }
-                    setIsEditing(false);
                   }}
                 >
                   Chiudi editing

@@ -23,53 +23,39 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
   isMultiline = false,
   placeholder = "Inserisci la traduzione...",
   errorCondition = false,
-  rows = 1
+  rows = 4
 }) => {
-  // Manteniamo una copia locale del valore per evitare perdite durante la digitazione
+  // RISOLUZIONE DEL PROBLEMA: Usar lo stato locale per evitare l'inversione del testo
   const [localValue, setLocalValue] = useState(translatedValue || '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  // Aggiorniamo il valore locale quando cambia quello delle props (ma solo se non stiamo editando)
+  // Aggiorniamo il valore locale SOLO quando cambia il valore iniziale
   useEffect(() => {
-    setLocalValue(translatedValue || '');
+    if (translatedValue !== localValue) {
+      setLocalValue(translatedValue || '');
+    }
   }, [translatedValue]);
   
-  // Gestiamo il cambio di valore NON con un delay ma direttamente
+  // Gestiamo il cambio di valore con una funzione separata
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
+    
     // Aggiorniamo subito il valore locale per l'interfaccia utente
     setLocalValue(newValue);
-    // Passiamo immediatamente il nuovo valore al genitore
+    
+    // Passiamo il nuovo valore al genitore
     onChange(newValue);
   };
   
-  // Aggiungiamo questo per garantire che il campo mantenga il focus
+  // Posiziona il cursore alla fine del testo quando il componente è montato
   useEffect(() => {
-    // Impediamo completamente che il campo perda il focus
     const textarea = textareaRef.current;
-    
-    // Questa è la funzione cruciale: intercetta l'evento blur e lo previene
-    // assicurandoci che il campo mantenga sempre il focus
-    const preventBlur = (e: FocusEvent) => {
-      e.preventDefault();
-      if (textarea) {
-        // Riapplichiamo subito il focus
-        setTimeout(() => textarea.focus(), 0);
-      }
-    };
-    
     if (textarea) {
-      textarea.addEventListener('blur', preventBlur);
-      // Focus iniziale
+      // Posiziona il cursore alla fine del testo
+      const length = textarea.value.length;
+      textarea.setSelectionRange(length, length);
       textarea.focus();
     }
-    
-    // Cleanup della funzione quando il componente viene smontato
-    return () => {
-      if (textarea) {
-        textarea.removeEventListener('blur', preventBlur);
-      }
-    };
   }, []);
   
   return (
@@ -80,10 +66,9 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
       placeholder={placeholder}
       className={errorCondition ? "border-red-300" : ""}
       rows={rows}
-      // Impostiamo esplicitamente autoFocus per garantire che il campo sia attivo
       autoFocus
-      // Aggiungiamo attributi aggiuntivi per garantire che il campo mantenga il focus
-      onBlur={(e) => e.currentTarget.focus()}
+      // Impostiamo una altezza minima maggiore
+      style={{ minHeight: '120px' }}
     />
   );
 };

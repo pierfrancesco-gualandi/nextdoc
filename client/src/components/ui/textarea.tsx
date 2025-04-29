@@ -75,38 +75,24 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       }
     };
     
-    // Gestisce l'evento onBlur - Comportamento più ragionevole
+    // Gestisce l'evento onBlur - COMPLETAMENTE SEMPLIFICATO
+    // La tenuta del focus è ora gestita dal componente TranslationEditableField
+    // e dall'uso di editingModuleStates
     const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
-      // Solo se keepFocus è true, isEditing è true, e ci sono contenuti
-      if (keepFocus && isEditing && textareaRef.current && textareaRef.current.value.trim() !== "") {
-        // Per sicurezza, distinguiamo situazioni diverse
-        const relatedTarget = e.relatedTarget as HTMLElement;
-        
-        // Se il focus sta andando a un altro textarea, dropdown o qualsiasi altro elemento di un modulo, PERMETTI
-        if (relatedTarget && 
-           (relatedTarget.tagName === 'TEXTAREA' || 
-            relatedTarget.tagName === 'SELECT' || 
-            relatedTarget.tagName === 'BUTTON' ||
-            relatedTarget.tagName === 'A' ||
-            relatedTarget.getAttribute('role') === 'button')) {
-          // Disattiva editing quando passiamo ad altri controlli
-          setIsEditing(false);
-          if (onBlur) onBlur(e);
-          return;
+      // Se lo stato globale mi dice di NON mantenere il focus, fallo perdere normalmente
+      if (typeof window !== 'undefined' && (window as any).preventTextareaFocus) {
+        // Chiama l'event handler originale e basta
+        if (onBlur) {
+          onBlur(e);
         }
-        
-        // Altrimenti, SOLO se il campo ha contenuto, mantieni il focus
-        e.preventDefault();
-        setTimeout(() => {
-          if (textareaRef.current) {
-            textareaRef.current.focus();
-          }
-        }, 0);
         return;
       }
       
-      // Disattiva editing quando usciamo dal campo
-      setIsEditing(false);
+      // Altrimenti, se keepFocus è true e siamo in editing, manteniamo il focus
+      if (keepFocus && isEditing) {
+        // Previeni default solo se il parametro keepFocus è true
+        e.preventDefault();
+      }
       
       // Se non dobbiamo mantenere il focus, chiama l'handler originale
       if (onBlur) {
