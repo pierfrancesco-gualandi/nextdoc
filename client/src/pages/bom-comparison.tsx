@@ -469,31 +469,52 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
         // Copiamo i componenti del documento di origine che sono nei codici comuni
         for (const comp of components) {
           try {
-            if (!comp.componentId) {
-              console.error("Componente senza componentId:", comp);
+            // Nel database, i componenti hanno una struttura come questa:
+            // {
+            //   "id": 15,               // ID dell'associazione section-component
+            //   "sectionId": 1,
+            //   "component": {           // Oggetto componente annidato
+            //     "id": 14,              // ID del componente stesso
+            //     "code": "A8B25040509",
+            //     "description": "...",
+            //     "details": {}
+            //   },
+            //   "quantity": 1,
+            //   "notes": null
+            // }
+            
+            // Assicuriamoci di estrarre l'ID del componente dall'oggetto annidato
+            if (!comp.component || !comp.component.id) {
+              console.error("Componente senza oggetto component o ID valido:", comp);
               continue;
             }
             
+            const componentId = comp.component.id;
+            const componentCode = comp.component.code;
+            
             // Verifichiamo se il componente è nella lista dei codici comuni
-            // Solo in questo caso lo includiamo nel documento
-            if (comp.component && comp.component.code && commonCodes.includes(comp.component.code)) {
+            const isCommonCode = componentCode && commonCodes.includes(componentCode);
+            
+            if (isCommonCode) {
               const newComponentData = {
                 sectionId: newSection.id,
-                componentId: comp.componentId,
+                componentId: componentId,
                 quantity: comp.quantity || 1,
                 notes: comp.notes || null
               };
               
+              console.log(`Tentativo di associare componente ${componentCode} (ID: ${componentId}) alla sezione ${newSection.id}`, newComponentData);
+              
               const response = await apiRequest('POST', '/api/section-components', newComponentData);
               
               if (response.ok) {
-                console.log(`Copiato componente comune ${comp.component.code} (ID ${comp.componentId}) alla sezione ${newSection.id}`);
+                console.log(`SUCCESSO: Copiato componente comune ${componentCode} (ID ${componentId}) alla sezione ${newSection.id}`);
               } else {
                 const errorText = await response.text();
                 console.error(`Errore nell'assegnazione del componente: ${errorText}`);
               }
             } else {
-              console.log(`Componente non nei codici comuni, non copiato alla nuova sezione`);
+              console.log(`Componente ${componentCode || 'senza codice'} non nei codici comuni, non copiato alla nuova sezione`);
             }
           } catch (e) {
             console.error("Errore nell'assegnazione del componente:", e);
