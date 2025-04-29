@@ -36,6 +36,28 @@ export default function TranslatedContentModule({
       translatedContent = translation.content;
     }
     
+    // Estrai il contenuto originale
+    let originalContent;
+    try {
+      originalContent = typeof module.content === 'string' 
+        ? JSON.parse(module.content) 
+        : module.content;
+    } catch (e) {
+      console.error("Errore nel parsing del contenuto originale:", e);
+      originalContent = module.content;
+    }
+    
+    // Assicurati che il contenuto tradotto mantenga le impostazioni di filtro dell'originale
+    if (module.type === 'bom' && originalContent && originalContent.filterSettings) {
+      console.log("Trasferisco impostazioni filtro da originale a traduzione:", originalContent.filterSettings);
+      // Mantieni impostazioni di filtro dell'originale nella traduzione
+      translatedContent = {
+        ...translatedContent,
+        filterSettings: originalContent.filterSettings,
+        filteredComponentCodes: originalContent.filteredComponentCodes || []
+      };
+    }
+    
     // Crea una copia del modulo originale con i contenuti tradotti
     const moduleWithTranslation = {
       ...module,
