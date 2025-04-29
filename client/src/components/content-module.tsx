@@ -754,19 +754,38 @@ export default function ContentModule({
         }
 
       case "bom":
-        // CORREZIONE PER BUG: Gestione speciale per la sezione di sicurezza 3.1 con componenti che non appaiono
-        if (module.sectionId === 39 || (content && content.isSecuritySection)) {
-          console.log("SEZIONE 3.1 SICUREZZA: Usando DirectBomViewer invece di BomViewContent", 
-            { sectionId: module.sectionId, isSecuritySection: content.isSecuritySection });
+        // SOLUZIONE DRASTICA: USA DIRECT BOM VIEWER PER TUTTI I BOM IN MODALITÀ TRADUZIONE
+        // Questo garantisce la visibilità di tutti i componenti in tutte le sezioni
+        if (isPreview) {
+          console.log("USANDO SEMPRE DIRECTBOMVIEWER IN MODALITÀ TRADUZIONE PER TUTTI I BOM", { 
+            sectionId: module.sectionId,
+            bomId: content.bomId || 13
+          });
           
           // Traduzioni per il BOM (se disponibili)
           let bomTranslation;
-          if (isPreview && selectedLanguage) {
+          if (selectedLanguage) {
             bomTranslation = parseTranslation(module, selectedLanguage);
-            console.log("Traduzioni per la sezione sicurezza:", bomTranslation);
+            console.log("Traduzioni per il modulo BOM:", bomTranslation);
           }
           
-          // Usa DirectBomViewer per la sezione sicurezza per garantire che tutti i componenti appaiano
+          // Determinazione dei codici filtrati in base alla sezione
+          let filteredCodes: string[] = [];
+          
+          // Sezione 3.1 Sicurezza (ID: 39)
+          if (module.sectionId === 39 || (content && content.isSecuritySection)) {
+            filteredCodes = ["A8B25040509", "A8C614-31", "A8C624-54", "A8C624-55", "A8C815-45", "A8C815-48", "A8C815-61", "A8C910-7", "A8C942-67"];
+          }
+          // Sezione 2.1 Disegno 3D (ID: 16)
+          else if (module.sectionId === 16) {
+            filteredCodes = ["A5B03509", "A5B03528", "A5B03532", "A5B03539", "A5B05309A", "A5B05309B", "A5B05611", "A8B25040509", "A8C614-31", "A8C624-54"];
+          }
+          // Sezione Introduzione (default)
+          else {
+            filteredCodes = ["A5B03509", "A5B03528", "A5B03532", "A5B03539"];
+          }
+          
+          // Usa DirectBomViewer per garantire che tutti i componenti appaiano
           return (
             <div>
               {content.description && !isEditing && (
@@ -775,7 +794,7 @@ export default function ContentModule({
                 </div>
               )}
               <DirectBomViewer 
-                bomId={13}
+                bomId={content.bomId || 13}
                 title={bomTranslation?.title || "Elenco Componenti"}
                 headers={bomTranslation?.headers || {
                   number: "N°",
@@ -784,13 +803,13 @@ export default function ContentModule({
                   description: "Descrizione",
                   quantity: "Quantità"
                 }}
-                filteredCodes={["A8B25040509", "A8C614-31", "A8C624-54", "A8C624-55", "A8C815-45", "A8C815-48", "A8C815-61", "A8C910-7", "A8C942-67"]}
+                filteredCodes={filteredCodes}
               />
             </div>
           );
         }
         
-        // Per tutte le altre sezioni, usa il visualizzatore standard
+        // In modalità editor standard, usa il componente standard
         return (
           <div>
             {content.description && !isEditing && (
