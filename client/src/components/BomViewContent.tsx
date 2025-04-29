@@ -160,6 +160,30 @@ const BomViewContent = ({
   // Filtra gli elementi in base ai criteri
   const filteredItems = useMemo(() => {
     if (!bomItems || !Array.isArray(bomItems)) return [];
+    
+    console.log("BomViewContent - Filtering Items:", {
+      enableFiltering,
+      codeFilter,
+      levelFilterValue,
+      filteredComponentCodes: filterSettings?.filteredComponentCodes || [],
+      itemCount: bomItems.length
+    });
+    
+    // Se abbiamo una lista esplicita di codici componenti da mostrare nella traduzione
+    if (filterSettings?.filteredComponentCodes?.length > 0) {
+      console.log("BomViewContent - Usando filteredComponentCodes specifici:", 
+        filterSettings.filteredComponentCodes.length, 
+        "componenti da mostrare"
+      );
+      
+      // Filtra usando direttamente la lista dei codici
+      return bomItems.filter((item: any) => {
+        if (!item || !item.component) return false;
+        return filterSettings.filteredComponentCodes?.includes(item.component.code);
+      });
+    }
+    
+    // Se il filtro è disabilitato, mostra tutti i componenti
     if (!enableFiltering) return bomItems;
     
     // Cerca codici padre e figli se è specificato un filtro per codice
@@ -235,7 +259,7 @@ const BomViewContent = ({
       // Tutte le condizioni devono essere soddisfatte
       return codeMatch && descriptionMatch && levelMatch;
     });
-  }, [bomItems, codeFilter, codeFilterType, descriptionFilter, descriptionFilterType, levelFilterValue, enableFiltering]);
+  }, [bomItems, codeFilter, codeFilterType, descriptionFilter, descriptionFilterType, levelFilterValue, enableFiltering, filterSettings]);
 
   // Aggiorna i filtri e notifica il componente padre
   useEffect(() => {
