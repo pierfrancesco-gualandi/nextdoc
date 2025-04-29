@@ -49,54 +49,66 @@ export default function TranslatedContentModule({
     
     // Assicurati che il contenuto tradotto mantenga le impostazioni di filtro dell'originale
     if (module.type === 'bom' && originalContent) {
-      // Trasferisci tutte le proprietà relative al filtro dall'originale alla traduzione
-      const filterProps = [
-        'bomId', 
-        'filter', 
-        'levelFilter', 
-        'useFilters', 
-        'filterSettings', 
-        'filteredComponentCodes'
-      ];
-      
-      // Log dei dettagli per debugging
-      console.log("Contenuto originale del modulo BOM:", {
-        bomId: originalContent.bomId,
-        filter: originalContent.filter,
-        levelFilter: originalContent.levelFilter,
-        useFilters: originalContent.useFilters,
-        filterSettings: originalContent.filterSettings,
-        hasFilteredComponentCodes: originalContent.filteredComponentCodes?.length > 0
+      console.log("TranslatedContentModule - Modulo BOM trovato:", {
+        id: module.id,
+        type: module.type,
+        bomId: originalContent.bomId
       });
       
-      // Costruisci un nuovo oggetto con tutte le proprietà necessarie
-      const preservedSettings = {};
-      
-      // Copia tutte le proprietà di filtro dall'originale
-      filterProps.forEach(prop => {
-        if (originalContent[prop] !== undefined) {
-          preservedSettings[prop] = originalContent[prop];
-        }
-      });
-      
-      // Mantieni le descrizioni originali dei componenti se disponibili
-      if (originalContent.descriptions) {
-        preservedSettings['descriptions'] = originalContent.descriptions;
-      }
-      
-      // Assicurati che i titoli delle colonne siano preservati (per la traduzione)
-      if (originalContent.headers) {
-        preservedSettings['headers'] = originalContent.headers;
-      }
-      
-      // Log delle impostazioni preservate
-      console.log("Trasferisco impostazioni da originale a traduzione:", preservedSettings);
-      
-      // Applica le impostazioni preservate alla traduzione
-      translatedContent = {
+      // Per i moduli BOM, è fondamentale trasferire tutte le proprietà di filtro e configurazione
+      const updatedContent = {
         ...translatedContent,
-        ...preservedSettings
+        // Proprietà fondamentali
+        bomId: originalContent.bomId,
+        filter: originalContent.filter || "",
+        levelFilter: originalContent.levelFilter,
+        useFilters: originalContent.useFilters === false ? false : true,
+        
+        // Impostazioni di filtro complete
+        filterSettings: originalContent.filterSettings ? {
+          ...originalContent.filterSettings
+        } : undefined,
+        
+        // Elenco esplicito dei componenti filtrati
+        filteredComponentCodes: Array.isArray(originalContent.filteredComponentCodes) 
+          ? [...originalContent.filteredComponentCodes] 
+          : []
       };
+      
+      // Preserva eventuali descrizioni tradotte insieme ai dati originali
+      if (translatedContent && translatedContent.descriptions) {
+        // Mantieni le descrizioni tradotte se esistono
+        updatedContent.descriptions = translatedContent.descriptions;
+      } else if (originalContent.descriptions) {
+        // Altrimenti usa quelle originali come punto di partenza
+        updatedContent.descriptions = {...originalContent.descriptions};
+      }
+      
+      // Preserva le traduzioni delle intestazioni
+      if (translatedContent && translatedContent.headers) {
+        updatedContent.headers = translatedContent.headers;
+      } else if (originalContent.headers) {
+        updatedContent.headers = {...originalContent.headers};
+      }
+      
+      // Preserva messaggi personalizzati
+      if (translatedContent && translatedContent.messages) {
+        updatedContent.messages = translatedContent.messages;
+      } else if (originalContent.messages) {
+        updatedContent.messages = {...originalContent.messages};
+      }
+      
+      // Log completo delle impostazioni trasferite
+      console.log("TranslatedContentModule - Trasferisco impostazioni BOM:", {
+        bomId: updatedContent.bomId,
+        filterSettings: updatedContent.filterSettings,
+        filteredComponentCodes: updatedContent.filteredComponentCodes?.length,
+        hasDescriptions: !!updatedContent.descriptions,
+        hasHeaders: !!updatedContent.headers
+      });
+      
+      // Aggiorna il contenuto tradotto con tutte le impostazioni
+      translatedContent = updatedContent;
     }
     
     // Crea una copia del modulo originale con i contenuti tradotti
