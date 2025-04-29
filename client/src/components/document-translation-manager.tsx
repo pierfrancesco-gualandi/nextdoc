@@ -423,6 +423,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
   
   // Verifica se una sezione ha traduzioni mancanti
   const hasMissingSectionTranslation = (section: any) => {
+    // Verifica che esista una traduzione
     if (!sectionTranslations[section.id]) return true;
     
     // Verifica se il titolo è stato tradotto
@@ -430,9 +431,20 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
     
     // Se la sezione ha una descrizione, verifica anche quella
     const needsDescription = !!section.description;
-    const hasDescription = !!sectionTranslations[section.id].description;
+    const hasDescription = needsDescription ? !!sectionTranslations[section.id].description : true;
     
-    return !hasTitle || (needsDescription && !hasDescription);
+    // Ottieni lo stato attuale di traduzione completata
+    const isComplete = hasTitle && hasDescription;
+    
+    // Debug per risoluzione problemi
+    console.log(`Sezione ${section.id} - ${section.title}:`, {
+      hasTitle,
+      needsDescription,
+      hasDescription,
+      isComplete,
+    });
+    
+    return !isComplete;
   };
   
   // Carica lo stato di completamento della traduzione
@@ -571,10 +583,33 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           
           const hasMessages = translatedContent.messages && 
             Object.keys(moduleContent?.messages || {}).every(key => !!translatedContent.messages[key]);
-            
-          // Verifica che tutte le descrizioni dei componenti siano tradotte
-          const hasDescriptions = translatedContent.descriptions && 
-            Object.keys(moduleContent?.descriptions || {}).every(key => !!translatedContent.descriptions[key]);
+          
+          // Ottieni l'elenco dei componenti effettivamente visibili secondo i filtri attivi
+          const visibleComponentCodes = moduleContent.filteredComponentCodes || 
+                                        Object.keys(moduleContent?.descriptions || {});
+          
+          // Verifica solo le descrizioni dei componenti visibili
+          const hasDescriptions = translatedContent.descriptions && visibleComponentCodes.length > 0 &&
+            visibleComponentCodes.every(code => {
+              // Se il componente non ha una descrizione originale, non considerarlo mancante
+              if (!moduleContent?.descriptions?.[code]) return true;
+              // Altrimenti, verifica che abbia una traduzione
+              return !!translatedContent.descriptions[code];
+            });
+          
+          // Se non ci sono componenti visibili, considera solo headers, messages e title  
+          if (visibleComponentCodes.length === 0) {
+            return !translatedContent.title || !hasHeaders || !hasMessages;
+          }
+          
+          // Log per debugging
+          console.log('BOM translation check:', {
+            title: !!translatedContent.title,
+            hasHeaders,
+            hasMessages,
+            hasDescriptions,
+            visibleComponentCount: visibleComponentCodes.length
+          });
           
           return !translatedContent.title || !hasHeaders || !hasMessages || !hasDescriptions;
           
