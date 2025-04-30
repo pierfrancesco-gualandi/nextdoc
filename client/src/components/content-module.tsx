@@ -527,6 +527,11 @@ export default function ContentModule({
                   Apri PDF
                 </a>
               </div>
+              {content.caption && (
+                <div className="mt-3 text-center text-sm text-neutral-medium italic">
+                  {content.caption}
+                </div>
+              )}
             </div>
           </div>
         );
