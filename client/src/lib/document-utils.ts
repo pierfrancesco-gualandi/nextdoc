@@ -106,77 +106,36 @@ export function downloadTextFile(fileName: string, content: string, type: string
 /**
  * Esporta un documento in formato HTML
  * @param documentId ID del documento da esportare
+ * @param languageId ID opzionale della lingua per traduzione
  */
 export async function exportToHtml(documentId: string, languageId?: string): Promise<void> {
   try {
     console.log(`Esportazione HTML per documento ${documentId}${languageId ? ' con lingua ' + languageId : ''}`);
+    
+    // Utilizziamo getFullDocument per mantenere la compatibilità con il codice esistente
     const document = await getFullDocument(documentId);
     
-    // Carica le traduzioni per le sezioni se è specificata una lingua
-    let sectionTranslations: Record<number, any> = {};
-    if (languageId && languageId !== '0') {
-      console.log(`Caricamento traduzioni sezioni per lingua: ${languageId}`);
-      try {
-        const translationsResponse = await fetch(`/api/section-translations?documentId=${documentId}&languageId=${languageId}`);
-        const translationsData = await translationsResponse.json();
-        
-        // Crea una mappa per un accesso più facile
-        sectionTranslations = translationsData.reduce((acc: Record<number, any>, translation: any) => {
-          acc[translation.sectionId] = translation;
-          return acc;
-        }, {});
-        
-        console.log(`Caricate ${Object.keys(sectionTranslations).length} traduzioni per le sezioni`);
-      } catch (error) {
-        console.error('Errore nel caricamento delle traduzioni delle sezioni:', error);
-      }
-    }
+    // Raccogliamo tutte le traduzioni dei moduli se è specificata una lingua diversa dall'originale
+    const moduleTranslations: Record<number, any> = {};
     
-    // Carica le traduzioni per i moduli se è specificata una lingua
-    let moduleTranslations: Record<number, any> = {};
     if (languageId && languageId !== '0') {
-      console.log(`Caricamento traduzioni moduli per lingua: ${languageId}`);
-      try {
-        const moduleTranslationsResponse = await fetch(`/api/content-module-translations?documentId=${documentId}&languageId=${languageId}`);
-        const moduleTranslationsData = await moduleTranslationsResponse.json();
-        
-        // Crea una mappa per un accesso più facile
-        moduleTranslations = moduleTranslationsData.reduce((acc: Record<number, any>, translation: any) => {
-          acc[translation.moduleId] = translation;
-          return acc;
-        }, {});
-        
-        console.log(`Caricate ${Object.keys(moduleTranslations).length} traduzioni per i moduli`);
-      } catch (error) {
-        console.error('Errore nel caricamento delle traduzioni dei moduli:', error);
-      }
-    }
-    
-    // Ordina le sezioni in base all'ordine del campo "order"
-    const sortedSections = [...document.sections].sort((a, b) => a.order - b.order);
-    
-    // Applica le traduzioni alle sezioni
-    if (languageId && languageId !== '0') {
-      for (const section of sortedSections) {
-        const translation = sectionTranslations[section.id];
-        if (translation) {
-          // Sostituisci i campi tradotti mantenendo i campi originali se non c'è traduzione
-          section.title = translation.title || section.title;
-          section.description = translation.description || section.description;
-          console.log(`Applicata traduzione per sezione ${section.id}: ${section.title}`);
+      // Per ogni sezione e ogni modulo, carica la traduzione corrispondente
+      for (const section of document.sections || []) {
+        for (const module of section.modules || []) {
+          try {
+            const response = await fetch(`/api/module-translations?moduleId=${module.id}&languageId=${languageId}`);
+            if (response.ok) {
+              const transData = await response.json();
+              if (transData && transData.length > 0) {
+                moduleTranslations[module.id] = transData[0];
+              }
+            }
+          } catch (err) {
+            console.warn(`Impossibile caricare la traduzione per il modulo ${module.id}`, err);
+          }
         }
       }
     }
-    
-    // Organizza le sezioni in struttura gerarchica
-    const mainSections = sortedSections.filter(s => !s.parentId);
-    const childrenMap = sortedSections.reduce((map, section) => {
-      if (section.parentId) {
-        if (!map[section.parentId]) map[section.parentId] = [];
-        map[section.parentId].push(section);
-      }
-      return map;
-    }, {} as Record<number, any[]>);
     
     // Genera il contenuto HTML
     let content = `

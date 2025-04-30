@@ -12,6 +12,7 @@ import {
   SectionDescriptionField, 
   ModuleTextField 
 } from '@/components/TranslationFieldsManager';
+import { imageModuleHasCaption, videoModuleHasCaption, pdfModuleHasCaption } from '@/lib/module-utils';
 import TranslationEditableField from '@/components/TranslationEditableField';
 import { 
   ChevronDownIcon, 
@@ -1077,6 +1078,8 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           );
           
         case 'pdf':
+        case 'image':
+        case 'video':
         case '3d-model':
         case 'link':
           return (
@@ -1116,6 +1119,27 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                       errorCondition={!translatedContent.description}
                       rows={4}
                       fieldId={`${module.type}-description-${module.id}`}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Aggiungi campo per la didascalia (caption) per PDF, immagini e video */}
+              {(module.type === 'pdf' || module.type === 'image' || module.type === 'video') && moduleContent.caption !== undefined && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-caption`}>Didascalia</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.caption || ''}
+                    </div>
+                    <TranslationEditableField
+                      originalValue={moduleContent.caption || ''}
+                      translatedValue={translatedContent.caption || ''}
+                      onChange={(value) => handleContentChange({ caption: value })}
+                      placeholder="Inserisci la traduzione della didascalia..."
+                      errorCondition={moduleContent.caption && !translatedContent.caption}
+                      rows={2}
+                      fieldId={`${module.type}-caption-${module.id}`}
                     />
                   </div>
                 </div>
