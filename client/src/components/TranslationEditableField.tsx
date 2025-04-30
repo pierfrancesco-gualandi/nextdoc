@@ -59,19 +59,22 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
     // Passiamo il nuovo valore al genitore
     onChange(newValue);
     
-    // Per i campi tabella e checklist, manteniamo il focus e la posizione del cursore
-    if (fieldId && (fieldId.includes('table-') || fieldId.includes('checklist-'))) {
-      // Imposta questo campo come attivo a livello globale
+    // Manteniamo il focus e la posizione del cursore per TUTTI i tipi di campi
+    // Questo approccio funziona per moduli di testo, tabelle, checklist, pericolo, attenzione, PDF, ecc.
+    // Imposta questo campo come attivo a livello globale indipendentemente dal tipo
+    if (fieldId) {
       setThisFieldActive();
       
       // Usa un setTimeout per assicurarsi che il focus venga ripristinato dopo l'aggiornamento React
       setTimeout(() => {
-        // Restaura la posizione di scorrimento originale
+        // Restaura la posizione di scorrimento originale per evitare salti di pagina
         window.scrollTo(scrollLeft, scrollTop);
         
-        // Ripristina il focus e la posizione del cursore
+        // Ripristina il focus e la posizione del cursore per TUTTI i tipi di campi
         if (textareaRef.current) {
+          // Mantiene il focus attivo sul campo
           textareaRef.current.focus();
+          // Restaura anche la posizione del cursore all'interno del campo
           textareaRef.current.setSelectionRange(cursorPos.start, cursorPos.end);
         }
       }, 0);
@@ -134,12 +137,12 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
     }
   }, [isInitialFocus, keepFocus]);
   
-  // Mantiene il focus sui campi di tabella e checklist dopo la digitazione
+  // Mantiene il focus su TUTTI i tipi di campi dopo la digitazione
+  // Soluzione universale per qualsiasi tipo di campo (testo, tabella, checklist, pericolo, ecc.)
   useEffect(() => {
     // Questa funzione viene eseguita dopo ogni render
     // È cruciale per mantenere il focus dopo l'aggiornamento del valore
-    if (fieldId && (fieldId.includes('table-') || fieldId.includes('checklist-')) && 
-        (window as any)._activeFieldData?.activeFieldId === fieldId) {
+    if (fieldId && (window as any)._activeFieldData?.activeFieldId === fieldId) {
       setTimeout(() => {
         // Utilizza un timeout per assicurarsi che l'elemento abbia il focus dopo gli aggiornamenti React
         const textarea = textareaRef.current;
@@ -151,10 +154,10 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
           // Applica il focus senza spostare la vista
           textarea.focus();
           
-          // Restaura la posizione di scorrimento
+          // Restaura la posizione di scorrimento subito dopo, per evitare salti
           window.scrollTo(scrollLeft, scrollTop);
         }
-      }, 10);
+      }, 5);
     }
   });
   
@@ -169,10 +172,11 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
       return true;
     }
     
-    // IMPORTANTE: per i campi multipli come tabelle/checklist, vogliamo solo mantenere il focus
-    // sul campo che ha effettivamente il focus corrente (e non forzare un riposizionamento del focus)
-    if (fieldId.includes('table-') || fieldId.includes('checklist-')) {
-      return document.activeElement === textareaRef.current;
+    // Per TUTTI i tipi di campi, manteniamo il focus su quello che è attualmente attivo
+    // Questo risolve il problema dell'evidenziatura che scompare per testo, pericolo, PDF, ecc.
+    // Se il campo è attualmente attivo, deve mantenere il focus
+    if (document.activeElement === textareaRef.current) {
+      return true;
     }
     
     // Se keepFocus è attivo, mantiene sempre il focus (per campi singoli)
@@ -181,7 +185,7 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
     }
     
     // Altrimenti, segue il comportamento normale
-    return document.activeElement === textareaRef.current;
+    return false;
   };
   
   // Salva la posizione del cursore prima di ogni render
@@ -205,15 +209,22 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
           // Oppure se questo è esplicitamente il campo attivo a livello globale
           ((window as any)._activeFieldData?.activeFieldId === fieldId)) {
         
+        // Mantiene la posizione di scorrimento prima di manipolare il focus
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        
+        // Ripristina la posizione del cursore
         textarea.setSelectionRange(
           savedSelection.current.start,
           savedSelection.current.end
         );
         
-        // Riattiva il focus SOLO per campi singoli e solo se necessario
-        if (keepFocus && !fieldId?.includes('table-') && !fieldId?.includes('checklist-') && 
-            document.activeElement !== textarea) {
+        // Riattiva il focus se necessario per qualsiasi tipo di campo
+        if ((window as any)._activeFieldData?.activeFieldId === fieldId && document.activeElement !== textarea) {
           textarea.focus();
+          
+          // Assicurati che lo schermo non scorra dopo aver ripristinato il focus
+          window.scrollTo(scrollLeft, scrollTop);
         }
       }
     }
