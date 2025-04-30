@@ -573,6 +573,7 @@ export default function ContentModule({
               }}
               height={400} // Altezza aumentata per modelli WebGL
             />
+            {content.caption && <div className="mt-2 text-sm text-neutral-dark italic text-center">{content.caption}</div>}
           </div>
         );
         
@@ -1139,6 +1140,16 @@ export default function ContentModule({
                 id="model-title" 
                 value={content.title || ""} 
                 onChange={(e) => setContent({ ...content, title: e.target.value })} 
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="model-caption">Didascalia</Label>
+              <Input 
+                id="model-caption" 
+                value={content.caption || ""} 
+                onChange={(e) => setContent({ ...content, caption: e.target.value })} 
+                placeholder="Didascalia da visualizzare sotto il modello 3D"
               />
             </div>
             
