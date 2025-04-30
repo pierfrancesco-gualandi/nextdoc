@@ -741,13 +741,14 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
               <div class="file-container">
                 <!-- Rimosso titolo "${fileType} Allegato" come richiesto per l'esportazione -->
                 <div class="file-info">
+                  ${module.content.title ? `<p><strong>${module.content.title}</strong></p>` : ''}
                   <p><strong>Nome file:</strong> ${filename}</p>
                   <p class="file-description">${module.content.description || ''}</p>
                   <a href="${fileSrc}" target="_blank" class="download-button">
                     <span class="download-icon">⬇</span> Scarica ${fileType}
                   </a>
                 </div>
-                ${module.content.caption ? `<p class="caption">${module.content.caption}</p>` : ''}
+                ${module.content.caption ? `<p class="caption text-center">${module.content.caption}</p>` : ''}
               </div>
             `;
             break;

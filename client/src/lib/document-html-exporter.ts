@@ -267,13 +267,14 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             content += `
               <figure class="file-container">
                 <div class="file-info">
+                  ${module.content.title ? `<p><strong>${module.content.title}</strong></p>` : ''}
                   <p><strong>Nome file:</strong> ${filename}</p>
                   <a href="${fileSrc}" target="_blank" class="download-button">
                     <span class="download-icon">⬇</span> Scarica file
                   </a>
                 </div>
-                ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : 
-                  (module.content.description ? `<figcaption class="module-caption">${module.content.description}</figcaption>` : '')}
+                ${module.content.caption ? `<figcaption class="module-caption text-center">${module.content.caption}</figcaption>` : 
+                  (module.content.description ? `<figcaption class="module-caption text-center">${module.content.description}</figcaption>` : '')}
               </figure>
             `;
             break;
@@ -384,11 +385,11 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               <figure class="link-container">
                 <div class="link-content">
                   <a href="${module.content.url}" target="_blank" class="external-link">
-                    ${module.content.text || module.content.url}
+                    <span class="link-icon">🔗</span> ${module.content.text || module.content.url}
                   </a>
                 </div>
-                ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : 
-                 (module.content.description ? `<figcaption class="module-caption">${module.content.description}</figcaption>` : '')}
+                ${module.content.caption ? `<figcaption class="module-caption text-center">${module.content.caption}</figcaption>` : 
+                 (module.content.description ? `<figcaption class="module-caption text-center">${module.content.description}</figcaption>` : '')}
               </figure>
             `;
             break;
