@@ -15,6 +15,43 @@ interface TranslationEditableFieldProps {
 }
 
 /**
+ * Inizializza un registro globale per i campi attivi più avanzato
+ * Include funzionalità specifiche per bloccare il focus sui campi di testo
+ */
+if (typeof window !== 'undefined' && !(window as any)._activeFieldData) {
+  (window as any)._activeFieldData = { 
+    activeFieldId: null,
+    focusLock: false,          // Flag per bloccare il focus su un campo
+    textFieldsInEditMode: new Set(), // Campi di testo attualmente in editing
+    moduleInEditMode: null     // ID del modulo attualmente in editing
+  };
+}
+
+/**
+ * Funzione globale per chiudere l'editing di un modulo
+ * Da chiamare quando si preme "Chiudi Editing"
+ */
+if (typeof window !== 'undefined' && !(window as any).closeModuleEditing) {
+  (window as any).closeModuleEditing = (moduleId: string) => {
+    console.log(`Chiudendo editing modulo ${moduleId} (type: ${moduleId?.split('-')[0] || 'unknown'})`);
+    (window as any)._activeFieldData.textFieldsInEditMode.clear();
+    (window as any)._activeFieldData.focusLock = false;
+    (window as any)._activeFieldData.activeFieldId = null;
+    (window as any)._activeFieldData.moduleInEditMode = null;
+  };
+}
+
+/**
+ * Funzione globale per attivare l'editing di un modulo
+ */
+if (typeof window !== 'undefined' && !(window as any).startModuleEditing) {
+  (window as any).startModuleEditing = (moduleId: string) => {
+    console.log(`Iniziando editing modulo ${moduleId}`);
+    (window as any)._activeFieldData.moduleInEditMode = moduleId;
+  };
+}
+
+/**
  * Componente specializzato che mantiene lo stato del campo di input durante la modifica
  * e previene completamente la perdita di focus
  */
@@ -33,6 +70,27 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
   const [localValue, setLocalValue] = useState(translatedValue || '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
+  // Determine if this is a text field (for special handling)
+  const isTextField = fieldId?.includes('text-') || false;
+  
+  // Registra questo campo come in modalità editing se è un campo di testo
+  useEffect(() => {
+    if (fieldId && isTextField) {
+      // Add this field to the set of text fields in edit mode
+      (window as any)._activeFieldData.textFieldsInEditMode.add(fieldId);
+      
+      // Activate focus lock for text fields
+      if (isTextField) {
+        (window as any)._activeFieldData.focusLock = true;
+      }
+      
+      // Cleanup when unmounting
+      return () => {
+        (window as any)._activeFieldData.textFieldsInEditMode.delete(fieldId);
+      };
+    }
+  }, [fieldId, isTextField]);
+  
   // Aggiorniamo il valore locale SOLO quando cambia il valore iniziale
   useEffect(() => {
     if (translatedValue !== localValue) {
@@ -48,6 +106,11 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
       start: textarea.selectionStart,
       end: textarea.selectionEnd
     };
+    
+    // Per i campi di testo, attiviamo il blocco del focus
+    if (isTextField) {
+      (window as any)._activeFieldData.focusLock = true;
+    }
     
     // Salva la posizione di scorrimento corrente
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -90,28 +153,14 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
   const [isInitialFocus, setIsInitialFocus] = useState(true);
   const savedSelection = useRef<{ start: number, end: number } | null>(null);
   
-  // Utilizziamo una variabile globale per tracciare il campo attualmente attivo
-  // Questo approccio è più semplice e diretto rispetto al sistema di gestione precedente
-  useEffect(() => {
-    // Crea l'oggetto globale se non esiste già
-    if (typeof window !== 'undefined') {
-      // Dichiara il tipo globale per TypeScript
-      if (!(window as any)._activeFieldData) {
-        (window as any)._activeFieldData = { 
-          activeFieldId: null 
-        };
-      }
-    }
-    
-    // Funzione di pulizia
-    return () => {
-      // Nessuna pulizia necessaria
-    };
-  }, []);
-  
   // Funzione per impostare questo campo come attivo
   const setThisFieldActive = () => {
     if (fieldId && typeof window !== 'undefined') {
+      // Per i campi di testo, attiviamo anche il blocco del focus
+      if (isTextField) {
+        (window as any)._activeFieldData.focusLock = true;
+      }
+      
       (window as any)._activeFieldData.activeFieldId = fieldId;
       
       // Identificazione del tipo di campo (per debug)
@@ -152,9 +201,15 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
   useEffect(() => {
     // Questa funzione viene eseguita dopo ogni render
     // È cruciale per mantenere il focus dopo l'aggiornamento del valore
-    if (fieldId && (window as any)._activeFieldData?.activeFieldId === fieldId) {
-      // Ridotto il tempo di attesa per i campi di testo
-      const timeoutDelay = fieldId.includes('text-') ? 0 : 5;
+    if (fieldId && (
+      // Standard focus tracking via activeFieldId
+      (window as any)._activeFieldData?.activeFieldId === fieldId ||
+      // Or for text fields with focus lock
+      (isTextField && (window as any)._activeFieldData?.focusLock && 
+       (window as any)._activeFieldData?.textFieldsInEditMode.has(fieldId))
+    )) {
+      // Zero delay for text fields to ensure instant feedback
+      const timeoutDelay = isTextField ? 0 : 5;
       
       setTimeout(() => {
         // Utilizza un timeout per assicurarsi che l'elemento abbia il focus dopo gli aggiornamenti React
@@ -184,6 +239,12 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
   const shouldKeepFocus = () => {
     // Se non c'è un fieldId, non può mantenere il focus in modo speciale
     if (!fieldId) return document.activeElement === textareaRef.current;
+    
+    // Per i campi di testo, se c'è un blocco del focus attivo
+    if (isTextField && (window as any)._activeFieldData.focusLock && 
+        (window as any)._activeFieldData.textFieldsInEditMode.has(fieldId)) {
+      return true;
+    }
     
     // Se questo è il campo attivo a livello globale (cliccato dall'utente)
     const globalData = (window as any)._activeFieldData;
@@ -226,7 +287,10 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
       // Questo è cruciale per evitare che un campo rubi il focus da un altro
       if (document.activeElement === textarea || 
           // Oppure se questo è esplicitamente il campo attivo a livello globale
-          ((window as any)._activeFieldData?.activeFieldId === fieldId)) {
+          ((window as any)._activeFieldData?.activeFieldId === fieldId) ||
+          // O per campi di testo con focus lock
+          (isTextField && (window as any)._activeFieldData.focusLock && 
+           (window as any)._activeFieldData.textFieldsInEditMode.has(fieldId))) {
         
         // Mantiene la posizione di scorrimento prima di manipolare il focus
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
