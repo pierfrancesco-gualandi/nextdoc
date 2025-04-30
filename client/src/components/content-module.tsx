@@ -763,12 +763,13 @@ export default function ContentModule({
         }
 
       case "bom":
-        // SOLUZIONE DRASTICA: USA DIRECT BOM VIEWER PER TUTTI I BOM IN MODALITÀ TRADUZIONE
-        // Questo garantisce la visibilità di tutti i componenti in tutte le sezioni
+        // In modalità traduzione, usa i filtri salvati nel modulo o impostazioni predefinite
         if (isPreview) {
-          console.log("USANDO SEMPRE DIRECTBOMVIEWER IN MODALITÀ TRADUZIONE PER TUTTI I BOM", { 
+          console.log("BomViewer in modalità traduzione", { 
             sectionId: module.sectionId,
-            bomId: content.bomId || 13
+            bomId: content.bomId || 13,
+            hasFilterSettings: !!content.filterSettings,
+            filteredComponentCodes: content.filteredComponentCodes?.length || 0
           });
           
           // Traduzioni per il BOM (se disponibili)
@@ -778,10 +779,38 @@ export default function ContentModule({
             console.log("Traduzioni per il modulo BOM:", bomTranslation);
           }
           
+          // NUOVO COMPORTAMENTO: Usa i filteredComponentCodes salvati in modalità editor se disponibili
+          if (content.filterSettings && Array.isArray(content.filteredComponentCodes) && content.filteredComponentCodes.length > 0) {
+            // Usa i filtri salvati dal modulo (gli stessi visualizzati in modalità editor)
+            console.log("Utilizzando filtri salvati dal modulo con", content.filteredComponentCodes.length, "componenti");
+            
+            return (
+              <div>
+                {content.description && !isEditing && (
+                  <div className="mb-4 text-neutral-medium">
+                    {content.description}
+                  </div>
+                )}
+                <DirectBomViewer 
+                  bomId={content.bomId || 13}
+                  title={bomTranslation?.title || "Elenco Componenti"}
+                  headers={bomTranslation?.headers || {
+                    number: "N°",
+                    level: "Livello",
+                    code: "Codice",
+                    description: "Descrizione",
+                    quantity: "Quantità"
+                  }}
+                  filteredCodes={content.filteredComponentCodes}
+                />
+              </div>
+            );
+          } 
+          
+          // Fallback alle regole predefinite se i filtri non sono disponibili
           // Determinazione dei codici filtrati in base alla sezione
           let filteredCodes: string[] = [];
           
-          // CORREZIONE DEFINITIVA: ogni sezione usa i suoi specifici componenti
           // Sezione 3.1 Sicurezza (ID: 39)
           if (module.sectionId === 39 || (content && content.isSecuritySection)) {
             // Codici ESATTI dalla sezione sicurezza
@@ -807,7 +836,7 @@ export default function ContentModule({
             console.log("DirectBomViewer - altra sezione -", module.sectionId, "- usando componenti fallback");
           }
           
-          // Usa DirectBomViewer per garantire che tutti i componenti appaiano
+          // Usa DirectBomViewer con filtri predefiniti se non ci sono filtri salvati
           return (
             <div>
               {content.description && !isEditing && (
