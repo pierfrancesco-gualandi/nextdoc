@@ -237,7 +237,8 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                     </li>`
                   ).join('')}
                 </ul>
-                ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : ''}
+                ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : 
+                 (module.content.title ? `<figcaption class="module-caption">${module.content.title}</figcaption>` : '')}
               </figure>
             `;
             break;

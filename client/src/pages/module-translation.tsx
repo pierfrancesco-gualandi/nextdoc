@@ -556,6 +556,8 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
             initialTranslatedContent.caption = '';
           } else if (module.type === 'checklist') {
             initialTranslatedContent.items = initialTranslatedContent.items.map((item: any) => ({ ...item, text: '' }));
+            initialTranslatedContent.caption = '';
+            initialTranslatedContent.title = '';
           } else if (module.type === 'pdf') {
             // Inizializza campi per moduli PDF
             initialTranslatedContent.title = '';
