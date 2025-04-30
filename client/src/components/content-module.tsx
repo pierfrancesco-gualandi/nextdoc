@@ -452,24 +452,27 @@ export default function ContentModule({
         }
         
         return (
-          <div className="space-y-2 my-2">
-            {content.items.map((item: any, index: number) => (
-              <div key={index} className="flex items-start">
-                <div className="mr-2 mt-0.5">
-                  <Checkbox 
-                    id={`checklist-item-${module.id}-${index}`} 
-                    checked={item.checked} 
-                    disabled={true}
-                  />
+          <div className="my-2">
+            <div className="space-y-2">
+              {content.items.map((item: any, index: number) => (
+                <div key={index} className="flex items-start">
+                  <div className="mr-2 mt-0.5">
+                    <Checkbox 
+                      id={`checklist-item-${module.id}-${index}`} 
+                      checked={item.checked} 
+                      disabled={true}
+                    />
+                  </div>
+                  <Label 
+                    htmlFor={`checklist-item-${module.id}-${index}`}
+                    className={`text-neutral-dark ${item.checked ? 'line-through text-neutral-medium' : ''}`}
+                  >
+                    {item.text}
+                  </Label>
                 </div>
-                <Label 
-                  htmlFor={`checklist-item-${module.id}-${index}`}
-                  className={`text-neutral-dark ${item.checked ? 'line-through text-neutral-medium' : ''}`}
-                >
-                  {item.text}
-                </Label>
-              </div>
-            ))}
+              ))}
+            </div>
+            {content.caption && <div className="mt-2 text-sm text-neutral-dark italic text-center">{content.caption}</div>}
           </div>
         );
         
