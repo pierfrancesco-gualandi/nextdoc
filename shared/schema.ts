@@ -483,6 +483,29 @@ export const insertTranslationAIRequestSchema = createInsertSchema(translationAI
   details: true,
 });
 
+// Document translations
+export const documentTranslations = pgTable("document_translations", {
+  id: serial("id").primaryKey(),
+  documentId: integer("document_id").notNull(),
+  languageId: integer("language_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("not_translated"), // not_translated, ai_suggested, in_review, approved
+  translatedById: integer("translated_by_id"),
+  reviewedById: integer("reviewed_by_id"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertDocumentTranslationSchema = createInsertSchema(documentTranslations).pick({
+  documentId: true,
+  languageId: true,
+  title: true,
+  description: true,
+  status: true,
+  translatedById: true,
+  reviewedById: true,
+});
+
 // Export translation types
 export type Language = typeof languages.$inferSelect;
 export type InsertLanguage = z.infer<typeof insertLanguageSchema>;
@@ -495,6 +518,9 @@ export type InsertSectionTranslation = z.infer<typeof insertSectionTranslationSc
 
 export type ContentModuleTranslation = typeof contentModuleTranslations.$inferSelect;
 export type InsertContentModuleTranslation = z.infer<typeof insertContentModuleTranslationSchema>;
+
+export type DocumentTranslation = typeof documentTranslations.$inferSelect;
+export type InsertDocumentTranslation = z.infer<typeof insertDocumentTranslationSchema>;
 
 export type TranslationImport = typeof translationImports.$inferSelect;
 export type InsertTranslationImport = z.infer<typeof insertTranslationImportSchema>;
