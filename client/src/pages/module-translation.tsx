@@ -556,9 +556,21 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
             initialTranslatedContent.caption = '';
           } else if (module.type === 'checklist') {
             initialTranslatedContent.items = initialTranslatedContent.items.map((item: any) => ({ ...item, text: '' }));
+          } else if (module.type === 'pdf') {
+            // Inizializza campi per moduli PDF
+            initialTranslatedContent.title = '';
+            initialTranslatedContent.caption = '';
+            initialTranslatedContent.description = '';
+          } else if (module.type === 'link') {
+            // Inizializza campi per moduli Link
+            initialTranslatedContent.text = '';  // Il testo del link
+            initialTranslatedContent.description = '';
+            initialTranslatedContent.caption = '';
           } else if (module.type === 'bom') {
             // Inizializza la struttura per le traduzioni dell'elenco componenti
             initialTranslatedContent.title = '';
+            initialTranslatedContent.description = '';
+            initialTranslatedContent.caption = '';
             initialTranslatedContent.headers = {
               number: '', 
               level: '',

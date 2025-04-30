@@ -170,6 +170,8 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
       else if (fieldId.includes('text-')) fieldType = "testo";
       else if (fieldId.includes('warning-')) fieldType = "avviso";
       else if (fieldId.includes('pdf-')) fieldType = "pdf";
+      else if (fieldId.includes('link-')) fieldType = "link";
+      else if (fieldId.includes('bom-')) fieldType = "elenco-componenti";
       else if (fieldId.includes('3d-')) fieldType = "3d";
       
       console.log(`Campo attivato: ${fieldId} (tipo: ${fieldType})`);
