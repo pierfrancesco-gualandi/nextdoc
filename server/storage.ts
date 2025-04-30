@@ -15,6 +15,7 @@ import {
   translationAssignments, TranslationAssignment, InsertTranslationAssignment,
   sectionTranslations, SectionTranslation, InsertSectionTranslation,
   contentModuleTranslations, ContentModuleTranslation, InsertContentModuleTranslation,
+  documentTranslations, DocumentTranslation, InsertDocumentTranslation,
   translationImports, TranslationImport, InsertTranslationImport,
   translationAIRequests, TranslationAIRequest, InsertTranslationAIRequest
 } from "@shared/schema";
@@ -140,6 +141,16 @@ export interface IStorage {
   createContentModuleTranslation(translation: InsertContentModuleTranslation): Promise<ContentModuleTranslation>;
   updateContentModuleTranslation(id: number, translation: Partial<InsertContentModuleTranslation>): Promise<ContentModuleTranslation | undefined>;
   deleteContentModuleTranslation(id: number): Promise<boolean>;
+  
+  // Document translation operations
+  getDocumentTranslation(id: number): Promise<DocumentTranslation | undefined>;
+  getDocumentTranslationByLanguage(documentId: number, languageId: number): Promise<DocumentTranslation | undefined>;
+  getDocumentTranslationsByLanguageId(languageId: number): Promise<DocumentTranslation[]>;
+  getDocumentTranslationsByDocumentId(documentId: number): Promise<DocumentTranslation[]>;
+  getDocumentTranslationsByFilter(filter: { documentId?: number, languageId?: number }): Promise<DocumentTranslation[]>;
+  createDocumentTranslation(translation: InsertDocumentTranslation): Promise<DocumentTranslation>;
+  updateDocumentTranslation(id: number, translation: Partial<InsertDocumentTranslation>): Promise<DocumentTranslation | undefined>;
+  deleteDocumentTranslation(id: number): Promise<boolean>;
 
   // Translation import operations
   getTranslationImport(id: number): Promise<TranslationImport | undefined>;
@@ -187,6 +198,7 @@ export class MemStorage implements IStorage {
   private translationAssignments: Map<number, TranslationAssignment>;
   private sectionTranslations: Map<number, SectionTranslation>;
   private contentModuleTranslations: Map<number, ContentModuleTranslation>;
+  private documentTranslations: Map<number, DocumentTranslation>;
   private translationImports: Map<number, TranslationImport>;
   private translationAIRequests: Map<number, TranslationAIRequest>;
   private uploadedFiles: Map<number, UploadedFile>;
@@ -207,6 +219,7 @@ export class MemStorage implements IStorage {
   private currentTranslationAssignmentId: number;
   private currentSectionTranslationId: number;
   private currentContentModuleTranslationId: number;
+  private currentDocumentTranslationId: number;
   private currentTranslationImportId: number;
   private currentTranslationAIRequestId: number;
   private currentUploadedFileId: number;
@@ -228,6 +241,7 @@ export class MemStorage implements IStorage {
     this.translationAssignments = new Map();
     this.sectionTranslations = new Map();
     this.contentModuleTranslations = new Map();
+    this.documentTranslations = new Map();
     this.translationImports = new Map();
     this.translationAIRequests = new Map();
     this.uploadedFiles = new Map();
@@ -248,6 +262,7 @@ export class MemStorage implements IStorage {
     this.currentTranslationAssignmentId = 1;
     this.currentSectionTranslationId = 1;
     this.currentContentModuleTranslationId = 1;
+    this.currentDocumentTranslationId = 1;
     this.currentTranslationImportId = 1;
     this.currentTranslationAIRequestId = 1;
     this.currentUploadedFileId = 1;
