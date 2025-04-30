@@ -1709,8 +1709,8 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
     return (
       <div className="space-y-8">
         <div className="prose prose-primary max-w-none">
-          <h1>{sectionTranslations[document.id]?.title || document.title}</h1>
-          <p>{sectionTranslations[document.id]?.description || document.description}</p>
+          <h1>{documentTitleTranslation || document.title}</h1>
+          <p>{document.description}</p>
         </div>
         
         {sections.map((section: any) => (
@@ -1862,6 +1862,42 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
       
       {selectedLanguage ? (
         <>
+          {/* Campo per la traduzione del titolo del documento */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg">
+                Titolo del documento
+              </CardTitle>
+              <CardDescription>
+                Il titolo tradotto del documento apparirà in tutte le esportazioni e nell'interfaccia quando questa lingua è selezionata.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label>Titolo originale</Label>
+                  <div className="mt-2 p-3 bg-neutral-50 rounded border text-base">
+                    {document?.title}
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="translated-title">Titolo tradotto</Label>
+                  <div className="mt-2">
+                    <TranslationEditableField
+                      originalValue={document?.title || ''}
+                      translatedValue={documentTitleTranslation}
+                      onChange={(value) => setDocumentTitleTranslation(value)}
+                      placeholder="Inserisci la traduzione del titolo del documento..."
+                      errorCondition={!documentTitleTranslation}
+                      rows={1}
+                      fieldId="document-title-translation"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
           <Tabs defaultValue="edit" value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-6">
               <TabsTrigger value="edit">Modifica Traduzione</TabsTrigger>
