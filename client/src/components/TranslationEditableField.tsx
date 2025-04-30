@@ -43,12 +43,39 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
   // Gestiamo il cambio di valore con una funzione separata
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
+    const textarea = e.target;
+    const cursorPos = {
+      start: textarea.selectionStart,
+      end: textarea.selectionEnd
+    };
+    
+    // Salva la posizione di scorrimento corrente
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
     
     // Aggiorniamo subito il valore locale per l'interfaccia utente
     setLocalValue(newValue);
     
     // Passiamo il nuovo valore al genitore
     onChange(newValue);
+    
+    // Per i campi tabella e checklist, manteniamo il focus e la posizione del cursore
+    if (fieldId && (fieldId.includes('table-') || fieldId.includes('checklist-'))) {
+      // Imposta questo campo come attivo a livello globale
+      setThisFieldActive();
+      
+      // Usa un setTimeout per assicurarsi che il focus venga ripristinato dopo l'aggiornamento React
+      setTimeout(() => {
+        // Restaura la posizione di scorrimento originale
+        window.scrollTo(scrollLeft, scrollTop);
+        
+        // Ripristina il focus e la posizione del cursore
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(cursorPos.start, cursorPos.end);
+        }
+      }, 0);
+    }
   };
   
   // Riferimento statico (condiviso tra tutti i componenti) per il campo attivo
@@ -106,6 +133,30 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
       setIsInitialFocus(false);
     }
   }, [isInitialFocus, keepFocus]);
+  
+  // Mantiene il focus sui campi di tabella e checklist dopo la digitazione
+  useEffect(() => {
+    // Questa funzione viene eseguita dopo ogni render
+    // È cruciale per mantenere il focus dopo l'aggiornamento del valore
+    if (fieldId && (fieldId.includes('table-') || fieldId.includes('checklist-')) && 
+        (window as any)._activeFieldData?.activeFieldId === fieldId) {
+      setTimeout(() => {
+        // Utilizza un timeout per assicurarsi che l'elemento abbia il focus dopo gli aggiornamenti React
+        const textarea = textareaRef.current;
+        if (textarea && document.activeElement !== textarea) {
+          // Mantiene la posizione di scorrimento attuale
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+          
+          // Applica il focus senza spostare la vista
+          textarea.focus();
+          
+          // Restaura la posizione di scorrimento
+          window.scrollTo(scrollLeft, scrollTop);
+        }
+      }, 10);
+    }
+  });
   
   // Verifica se questo campo è quello che deve mantenere il focus
   const shouldKeepFocus = () => {
