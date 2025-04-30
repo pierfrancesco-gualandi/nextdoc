@@ -736,6 +736,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     placeholder="Inserisci la traduzione del testo..."
                     errorCondition={!translatedContent.text}
                     isMultiline={true}
+                    fieldId={`text-field-${module.id}`}
                   />
                 </div>
               </div>
@@ -788,6 +789,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     placeholder={`Inserisci la traduzione del ${messageField === 'message' ? 'messaggio' : 'descrizione'}...`}
                     errorCondition={!translatedContent[messageField]}
                     isMultiline={true}
+                    fieldId={`warning-message-${module.id}`}
                   />
                 </div>
               </div>
