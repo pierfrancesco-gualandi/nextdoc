@@ -1211,9 +1211,34 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
               {moduleContent.headers && (
                 <div>
                   <Label>Intestazioni colonne</Label>
+                  <div className="mt-2 bg-blue-50 p-4 rounded mb-4 border border-blue-200">
+                    <p className="text-sm font-medium mb-2">Traduzioni standard per intestazioni colonne:</p>
+                    <ul className="text-sm space-y-1 list-disc pl-5 mb-3">
+                      <li><strong>code</strong>: Code</li>
+                      <li><strong>level</strong>: Level</li>
+                      <li><strong>number</strong>: N.</li>
+                      <li><strong>quantity</strong>: Qty</li>
+                      <li><strong>description</strong>: Description</li>
+                    </ul>
+                  </div>
+                  
                   <div className="mt-2">
                     {Object.entries(moduleContent.headers).map(([key, value]) => {
+                      // Inizializza o recupera l'oggetto headers esistente
                       const headers = translatedContent.headers || {};
+                      
+                      // Definisci le traduzioni predefinite per le intestazioni comuni
+                      const defaultTranslations: Record<string, string> = {
+                        'code': 'Code',
+                        'level': 'Level',
+                        'number': 'N.',
+                        'quantity': 'Qty',
+                        'description': 'Description'
+                      };
+                      
+                      // Usa la traduzione predefinita se esiste, altrimenti usa il valore esistente o vuoto
+                      const suggestedTranslation = defaultTranslations[key] || '';
+                      const existingTranslation = headers[key] || '';
                       
                       return (
                         <div key={`header-${key}`} className="mt-4">
@@ -1224,7 +1249,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                             </div>
                             <TranslationEditableField
                               originalValue={value as string}
-                              translatedValue={headers[key] || ''}
+                              translatedValue={existingTranslation || suggestedTranslation}
                               onChange={(newValue) => {
                                 const newHeaders = {
                                   ...headers,
@@ -1232,8 +1257,8 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                                 };
                                 handleContentChange({ headers: newHeaders });
                               }}
-                              placeholder="Inserisci la traduzione..."
-                              errorCondition={!headers[key]}
+                              placeholder={`Suggerito: ${suggestedTranslation || 'Inserisci la traduzione...'}`}
+                              errorCondition={!headers[key] && !suggestedTranslation}
                               rows={1}
                               fieldId={`bom-header-${module.id}-${key}`}
                             />
@@ -1792,51 +1817,53 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                 </Select>
               </div>
               
-              {selectedLanguage && (
-                <div className="flex space-x-2 ml-auto">
-                  <Button 
-                    variant="default" 
-                    onClick={saveAllTranslations}
-                    disabled={savingTranslation}
-                  >
-                    {savingTranslation ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Salvataggio...
-                      </>
-                    ) : (
-                      <>
-                        <SaveIcon className="mr-2 h-4 w-4" />
-                        Salva tutte le traduzioni
-                      </>
-                    )}
-                  </Button>
-                  
-                  <div className="relative">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline">
-                          <DownloadIcon className="mr-2 h-4 w-4" />
-                          Esporta documento
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => exportToHtml(documentId, selectedLanguage)}>
-                          <FileIcon className="mr-2 h-4 w-4" />
-                          Esporta in HTML
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => exportToPdf(documentId, selectedLanguage)}>
-                          <FileIcon className="mr-2 h-4 w-4" />
-                          Esporta in PDF
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => exportToWord(documentId, selectedLanguage)}>
-                          <FileIcon className="mr-2 h-4 w-4" />
-                          Esporta in Word
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+              {selectedLanguage && document && (
+                <>
+                  <div className="flex space-x-2 ml-auto">
+                    <Button 
+                      variant="default" 
+                      onClick={saveAllTranslations}
+                      disabled={savingTranslation}
+                    >
+                      {savingTranslation ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Salvataggio...
+                        </>
+                      ) : (
+                        <>
+                          <SaveIcon className="mr-2 h-4 w-4" />
+                          Salva tutte le traduzioni
+                        </>
+                      )}
+                    </Button>
+                    
+                    <div className="relative">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline">
+                            <DownloadIcon className="mr-2 h-4 w-4" />
+                            Esporta documento
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => exportToHtml(documentId, selectedLanguage)}>
+                            <FileIcon className="mr-2 h-4 w-4" />
+                            Esporta in HTML
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => exportToPdf(documentId, selectedLanguage)}>
+                            <FileIcon className="mr-2 h-4 w-4" />
+                            Esporta in PDF
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => exportToWord(documentId, selectedLanguage)}>
+                            <FileIcon className="mr-2 h-4 w-4" />
+                            Esporta in Word
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
-                </div>
+                </>
               )}
             </div>
             
