@@ -115,6 +115,19 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
     // Utilizziamo getFullDocument per mantenere la compatibilità con il codice esistente
     const document = await getFullDocument(documentId);
     
+    // Ordina le sezioni in base all'ordine del campo "order"
+    const sortedSections = [...(document.sections || [])].sort((a, b) => a.order - b.order);
+    
+    // Organizza le sezioni in struttura gerarchica
+    const mainSections = sortedSections.filter(s => !s.parentId);
+    const childrenMap = sortedSections.reduce((map, section) => {
+      if (section.parentId) {
+        if (!map[section.parentId]) map[section.parentId] = [];
+        map[section.parentId].push(section);
+      }
+      return map;
+    }, {} as Record<number, any[]>);
+    
     // Raccogliamo tutte le traduzioni dei moduli se è specificata una lingua diversa dall'originale
     const moduleTranslations: Record<number, any> = {};
     
@@ -916,23 +929,13 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
     // Genera l'HTML per l'albero delle sezioni da inserire nella sidebar
     let sidebarTree = '';
     try {
-      // Crea una struttura gerarchica delle sezioni
-      const mainSections = sortedSections.filter(s => !s.parentId);
-      
+      // Usiamo le variabili mainSections e childrenMap già definite sopra
+      // Non ridefiniamo le stesse variabili
       // Mappa di tutte le sezioni per recuperare facilmente i dettagli per ID
       const sectionsMap = sortedSections.reduce((map, section) => {
         map[section.id] = section;
         return map;
       }, {} as Record<number, any>);
-      
-      // Crea una mappa delle relazioni genitore-figlio
-      const childrenMap = sortedSections.reduce((map, section) => {
-        if (section.parentId) {
-          if (!map[section.parentId]) map[section.parentId] = [];
-          map[section.parentId].push(section);
-        }
-        return map;
-      }, {} as Record<number, any[]>);
       
       // Verifica se ci sono cicli nella gerarchia
       const detectCycle = (sectionId: number, visited = new Set<number>()): boolean => {
