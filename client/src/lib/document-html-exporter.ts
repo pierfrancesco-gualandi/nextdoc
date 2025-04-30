@@ -3,8 +3,12 @@ import { isDisegno3DSection, generateComponentsListHtml, getSpecificComponentsFo
 
 /**
  * Esporta un documento in formato HTML
+ * @param document Il documento da esportare
+ * @param sections Le sezioni del documento
+ * @param modules I moduli di contenuto
+ * @param languageId ID della lingua di destinazione per traduzione (opzionale)
  */
-export async function exportDocumentHtml(document: any, sections: any[], modules: any[]) {
+export async function exportDocumentHtml(document: any, sections: any[], modules: any[], languageId?: string | number) {
   const title = document?.title || 'Documento Esportato';
   
   try {
@@ -146,15 +150,48 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               // Genera la tabella HTML direttamente nell'output
               let tableHtml = '';
               if (bomItems.length > 0) {
+                // Definizioni delle intestazioni predefinite (in italiano)
+                const defaultHeaders = {
+                  'number': 'N°',
+                  'level': 'Livello',
+                  'code': 'Codice',
+                  'description': 'Descrizione',
+                  'quantity': 'Quantità'
+                };
+                
+                // Traduzioni predefinite (in inglese) da usare se non ci sono traduzioni personalizzate
+                const defaultTranslations = {
+                  'number': 'N.',
+                  'level': 'Level',
+                  'code': 'Code',
+                  'description': 'Description',
+                  'quantity': 'Qty'
+                };
+                
+                // Ottieni le intestazioni tradotte dal modulo se disponibili
+                let translatedHeaders = defaultHeaders;
+                
+                // Se stiamo esportando con una lingua specifica e il modulo ha traduzioni
+                if (languageId && module.content.translatedContent && module.content.translatedContent.headers) {
+                  // Usa le traduzioni fornite dall'utente o le traduzioni predefinite
+                  translatedHeaders = {
+                    'number': module.content.translatedContent.headers.number || defaultTranslations.number,
+                    'level': module.content.translatedContent.headers.level || defaultTranslations.level,
+                    'code': module.content.translatedContent.headers.code || defaultTranslations.code,
+                    'description': module.content.translatedContent.headers.description || defaultTranslations.description,
+                    'quantity': module.content.translatedContent.headers.quantity || defaultTranslations.quantity
+                  };
+                }
+                
                 tableHtml = `
                   <table class="bom-table">
                     <thead>
                       <tr>
-                        <th>N°</th>
-                        <th>Livello</th>
-                        <th>Codice</th>
-                        <th>Descrizione</th>
-                        <th>Quantità</th>
+                        <th>${translatedHeaders.number}</th>
+                        <th>${translatedHeaders.level}</th>
+                        <th>${translatedHeaders.code}</th>
+                        <th>${translatedHeaders.description}</th>
+                        <th>${translatedHeaders.quantity}</th>
                       </tr>
                     </thead>
                     <tbody>
