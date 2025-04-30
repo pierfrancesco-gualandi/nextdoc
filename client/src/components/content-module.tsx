@@ -1384,6 +1384,15 @@ export default function ContentModule({
                 placeholder="Inserisci una descrizione per questo elenco componenti"
               />
             </div>
+            <div>
+              <Label htmlFor="bom-caption">Didascalia (traducibile)</Label>
+              <Input
+                id="bom-caption"
+                value={content.caption || ""}
+                onChange={(e) => setContent({ ...content, caption: e.target.value })}
+                placeholder="Didascalia da visualizzare sotto l'elenco componenti"
+              />
+            </div>
             <div className="flex items-center space-x-2">
               <Checkbox 
                 id="bom-use-filters"
