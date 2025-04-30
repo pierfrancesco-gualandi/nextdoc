@@ -79,6 +79,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [moduleTranslations, setModuleTranslations] = useState<Record<string, any>>({});
   const [sectionTranslations, setSectionTranslations] = useState<Record<string, any>>({});
+  const [documentTitleTranslation, setDocumentTitleTranslation] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('edit');
   const [savingTranslation, setSavingTranslation] = useState(false);
   
@@ -181,11 +182,29 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
   
   // Carica tutte le traduzioni per la lingua selezionata
   useEffect(() => {
-    if (!selectedLanguage || !sections) return;
+    if (!selectedLanguage || !sections || !document) return;
     
     const loadTranslations = async () => {
       const sectionTrans: Record<string, any> = {};
       const moduleTrans: Record<string, any> = {};
+      
+      // Carica la traduzione del titolo del documento
+      try {
+        const docTitleResponse = await fetch(`/api/document-translations?documentId=${documentId}&languageId=${selectedLanguage}`);
+        if (docTitleResponse.ok) {
+          const docTitleData = await docTitleResponse.json();
+          if (docTitleData && docTitleData.length > 0) {
+            // Imposta il titolo tradotto del documento
+            setDocumentTitleTranslation(docTitleData[0].title || '');
+          } else {
+            // Reset del campo di traduzione se non esiste
+            setDocumentTitleTranslation('');
+          }
+        }
+      } catch (err) {
+        console.warn(`Impossibile caricare la traduzione del titolo per il documento ${documentId}`, err);
+        setDocumentTitleTranslation('');
+      }
       
       // Carica le traduzioni delle sezioni
       for (const section of sections) {
@@ -232,7 +251,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
     };
     
     loadTranslations();
-  }, [selectedLanguage, sections]);
+  }, [selectedLanguage, sections, document, documentId]);
   
   // Gestisce il cambio della lingua selezionata
   const handleLanguageChange = (value: string) => {
@@ -311,6 +330,46 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
     setSavingTranslation(true);
     
     try {
+      // Salva la traduzione del titolo del documento
+      if (documentTitleTranslation && document) {
+        try {
+          // Verifica se esiste già una traduzione per questo documento e lingua
+          const checkDocumentTranslationResponse = await fetch(`/api/document-translations?documentId=${documentId}&languageId=${selectedLanguage}`);
+          const documentTranslations = await checkDocumentTranslationResponse.json();
+          const existingDocumentTranslation = documentTranslations.length > 0 ? documentTranslations[0] : null;
+          
+          const documentTranslationData = {
+            documentId: parseInt(documentId),
+            languageId: parseInt(selectedLanguage),
+            title: documentTitleTranslation,
+            status: 'translated'
+          };
+          
+          if (existingDocumentTranslation) {
+            // Aggiorna la traduzione esistente
+            await fetch(`/api/document-translations/${existingDocumentTranslation.id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(documentTranslationData),
+            });
+          } else {
+            // Crea una nuova traduzione
+            await fetch('/api/document-translations', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(documentTranslationData),
+            });
+          }
+        } catch (docTitleError) {
+          console.error("Errore nel salvataggio della traduzione del titolo del documento:", docTitleError);
+          // Non interrompere l'intero processo di salvataggio se questa parte fallisce
+        }
+      }
+      
       // Salva le traduzioni delle sezioni
       for (const sectionId in sectionTranslations) {
         try {
