@@ -1,5 +1,6 @@
 import { saveAs } from 'file-saver';
 import { isDisegno3DSection, generateComponentsListHtml, getSpecificComponentsForSection } from './fixComponents';
+import { getDocumentWithTranslations } from './document-translation-utils';
 
 /**
  * Genera il codice HTML per un tree view espandibile delle sezioni
@@ -112,11 +113,24 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
   try {
     console.log(`Esportazione HTML per documento ${documentId}${languageId ? ' con lingua ' + languageId : ''}`);
     
-    // Utilizziamo getFullDocument per mantenere la compatibilità con il codice esistente
-    const document = await getFullDocument(documentId);
+    // Dichiariamo le variabili per document e sortedSections al di fuori degli if
+    let document;
+    let sortedSections;
     
-    // Ordina le sezioni in base all'ordine del campo "order"
-    const sortedSections = [...(document.sections || [])].sort((a, b) => a.order - b.order);
+    // Utilizziamo getDocumentWithTranslations se è specificata una lingua, altrimenti getFullDocument
+    if (languageId) {
+      console.log(`Esportazione in formato html con lingua: ${languageId}`);
+      // Recupera il documento con le traduzioni
+      const documentData = await getDocumentWithTranslations(documentId, languageId);
+      document = documentData.document;
+      // Ordina le sezioni in base all'ordine del campo "order"
+      sortedSections = [...(documentData.sections || [])].sort((a, b) => a.order - b.order);
+    } else {
+      // Utilizziamo getFullDocument per mantenere la compatibilità con il codice esistente
+      document = await getFullDocument(documentId);
+      // Ordina le sezioni in base all'ordine del campo "order"
+      sortedSections = [...(document.sections || [])].sort((a, b) => a.order - b.order);
+    }
     
     // Organizza le sezioni in struttura gerarchica
     const mainSections = sortedSections.filter(s => !s.parentId);
