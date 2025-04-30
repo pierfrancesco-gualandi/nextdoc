@@ -1523,7 +1523,28 @@ export default function ContentModule({
         
         return (
           <div className="space-y-4">
+            <div>
+              <Label htmlFor="checklist-title">Titolo</Label>
+              <Input 
+                id="checklist-title" 
+                value={content.title || ""} 
+                onChange={(e) => setContent({ ...content, title: e.target.value })} 
+                placeholder="Titolo della lista di controllo"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="checklist-caption">Didascalia</Label>
+              <Input 
+                id="checklist-caption" 
+                value={content.caption || ""} 
+                onChange={(e) => setContent({ ...content, caption: e.target.value })} 
+                placeholder="Didascalia da visualizzare sotto la lista di controllo"
+              />
+            </div>
+            
             <div className="space-y-2">
+              <Label>Elementi della lista</Label>
               {content.items.map((item: any, index: number) => (
                 <div key={index} className="flex items-start">
                   <div className="mr-2 mt-1">
