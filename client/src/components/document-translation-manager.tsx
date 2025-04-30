@@ -922,6 +922,26 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
         case 'checklist':
           return (
             <div className="space-y-4">
+              {moduleContent.caption && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-caption`}>Didascalia</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.caption}
+                    </div>
+                    <TranslationEditableField
+                      originalValue={moduleContent.caption}
+                      translatedValue={translatedContent.caption || ''}
+                      onChange={(value) => handleContentChange({ caption: value })}
+                      placeholder="Inserisci la traduzione della didascalia..."
+                      errorCondition={moduleContent.caption && !translatedContent.caption}
+                      rows={2}
+                      fieldId={`checklist-caption-${module.id}`}
+                    />
+                  </div>
+                </div>
+              )}
+
               {Array.isArray(moduleContent.items) && (
                 <div>
                   <Label>Elementi della checklist</Label>
