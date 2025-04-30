@@ -325,6 +325,7 @@ export type LinkModuleContent = {
 export type PdfModuleContent = {
   src: string;
   title?: string;
+  caption?: string;
 };
 
 export type TestpModuleContent = {

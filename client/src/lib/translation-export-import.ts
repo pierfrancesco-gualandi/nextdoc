@@ -238,6 +238,8 @@ async function extractTranslatableFields(
       
     case 'image':
     case 'video':
+    case 'pdf':
+    case 'file':
       // Didascalia e testo alternativo
       if (content.caption !== undefined) {
         results.push({
