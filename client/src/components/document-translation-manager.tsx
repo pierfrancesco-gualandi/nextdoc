@@ -1173,21 +1173,20 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                             <div className="p-3 bg-neutral-50 rounded border text-sm">
                               {value as string}
                             </div>
-                            <Textarea
-                              id={`header-${key}`}
-                              value={headers[key] || ''}
-                              onChange={(e) => {
+                            <TranslationEditableField
+                              originalValue={value as string}
+                              translatedValue={headers[key] || ''}
+                              onChange={(newValue) => {
                                 const newHeaders = {
                                   ...headers,
-                                  [key]: e.target.value
+                                  [key]: newValue
                                 };
                                 handleContentChange({ headers: newHeaders });
                               }}
                               placeholder="Inserisci la traduzione..."
-                              className={!headers[key] ? "border-red-300" : ""}
-                              // Imposta la modalità bloccata per mantenere il focus
-                              onBlur={(e) => e.target.focus()}
+                              errorCondition={!headers[key]}
                               rows={1}
+                              fieldId={`bom-header-${module.id}-${key}`}
                             />
                           </div>
                         </div>
@@ -1211,20 +1210,20 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                             <div className="p-3 bg-neutral-50 rounded border text-sm">
                               {value as string}
                             </div>
-                            <Textarea
-                              id={`message-${key}`}
-                              value={messages[key] || ''}
-                              onChange={(e) => {
+                            <TranslationEditableField
+                              originalValue={value as string}
+                              translatedValue={messages[key] || ''}
+                              onChange={(newValue) => {
                                 const newMessages = {
                                   ...messages,
-                                  [key]: e.target.value
+                                  [key]: newValue
                                 };
                                 handleContentChange({ messages: newMessages });
                               }}
                               placeholder="Inserisci la traduzione..."
-                              className={!messages[key] ? "border-red-300" : ""}
-                              keepFocus={true}
+                              errorCondition={!messages[key]}
                               rows={1}
+                              fieldId={`bom-message-${module.id}-${key}`}
                             />
                           </div>
                         </div>

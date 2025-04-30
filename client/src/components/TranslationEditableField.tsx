@@ -51,41 +51,74 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
     onChange(newValue);
   };
   
-  // Registro globale per il campo attualmente attivo
-  const ACTIVE_FIELD_ID = useRef<string | null>(null);
+  // Riferimento statico (condiviso tra tutti i componenti) per il campo attivo
+  // Questa variabile viene condivisa tra tutte le istanze del componente
+  const staticActiveFieldId = useRef<{current: string | null}>({current: null});
   
   // Mantiene il focus quando il componente viene aggiornato (ma non quando viene desmontato)
   // Utilizziamo un flag per impedire al componente di perdere il focus con il cursore nella posizione corretta
   const [isInitialFocus, setIsInitialFocus] = useState(true);
   const savedSelection = useRef<{ start: number, end: number } | null>(null);
   
+  // Utilizziamo una variabile globale per tracciare il campo attualmente attivo
+  // Questo approccio è più semplice e diretto rispetto al sistema di gestione precedente
+  useEffect(() => {
+    // Crea l'oggetto globale se non esiste già
+    if (typeof window !== 'undefined') {
+      // Dichiara il tipo globale per TypeScript
+      if (!(window as any)._activeFieldData) {
+        (window as any)._activeFieldData = { 
+          activeFieldId: null 
+        };
+      }
+    }
+    
+    // Funzione di pulizia
+    return () => {
+      // Nessuna pulizia necessaria
+    };
+  }, []);
+  
+  // Funzione per impostare questo campo come attivo
+  const setThisFieldActive = () => {
+    if (fieldId && typeof window !== 'undefined') {
+      (window as any)._activeFieldData.activeFieldId = fieldId;
+      console.log("Campo attivato:", fieldId);
+    }
+  };
+  
   // Quando il componente viene montato, posiziona il cursore alla fine
   useEffect(() => {
     const textarea = textareaRef.current;
+    
+    // Solo alla prima renderizzazione
     if (textarea && isInitialFocus) {
       // Posiziona il cursore alla fine del testo solo la prima volta
       const length = textarea.value.length;
       textarea.setSelectionRange(length, length);
-      textarea.focus();
       
-      // Se questo è un campo identificato, registra quale è attivo globalmente
-      if (fieldId) {
-        ACTIVE_FIELD_ID.current = fieldId;
+      // Non attiva il focus automaticamente sui campi, lascia che l'utente selezioni
+      // il campo su cui vuole lavorare
+      if (keepFocus) {
+        textarea.focus();
       }
       
       setIsInitialFocus(false);
     }
-  }, [isInitialFocus, fieldId]);
+  }, [isInitialFocus, keepFocus]);
   
   // Verifica se questo campo è quello che deve mantenere il focus
-  // quando la proprietà keepFocus è true
   const shouldKeepFocus = () => {
-    // Se c'è un fieldId e coincide con quello attivo, mantiene il focus
-    if (fieldId && ACTIVE_FIELD_ID.current === fieldId) {
+    // Se non c'è un fieldId, non può mantenere il focus in modo speciale
+    if (!fieldId) return document.activeElement === textareaRef.current;
+    
+    // Se questo è il campo attivo a livello globale (cliccato dall'utente)
+    const globalData = (window as any)._activeFieldData;
+    if (globalData && globalData.activeFieldId === fieldId) {
       return true;
     }
     
-    // Se forceFocus è attivo, mantiene sempre il focus
+    // Se keepFocus è attivo, mantiene sempre il focus
     if (keepFocus) {
       return true;
     }
@@ -143,10 +176,7 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
           };
           
           // Aggiorna il campo attivo quando riceve il focus
-          if (fieldId) {
-            ACTIVE_FIELD_ID.current = fieldId;
-            console.log("Campo attivo:", fieldId);
-          }
+          setThisFieldActive();
         }
       }}
       onClick={() => {
@@ -158,15 +188,13 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
           };
           
           // Aggiorna il campo attivo quando si fa clic
-          if (fieldId) {
-            ACTIVE_FIELD_ID.current = fieldId;
-          }
+          setThisFieldActive();
         }
       }}
       // Previene la perdita delle info di selezione quando si usa il mouse
       onMouseDown={() => {
         if (fieldId) {
-          ACTIVE_FIELD_ID.current = fieldId;
+          setThisFieldActive();
         }
       }}
     />
