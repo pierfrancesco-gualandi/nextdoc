@@ -661,7 +661,7 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
               // Crea il contenitore HTML
               bomHtml = `
                 <div class="bom-container">
-                  <h4 class="bom-title">Elenco Componenti</h4>
+                  <!-- Rimosso titolo "Elenco Componenti" come richiesto per l'esportazione -->
                   <div class="bom-header">
                     ${module.content.description ? `<p class="bom-description">${module.content.description}</p>` : ''}
                   </div>
@@ -674,7 +674,7 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
               console.error("Errore nella generazione BOM:", error);
               bomHtml = `
                 <div class="bom-container">
-                  <h4 class="bom-title">Elenco Componenti</h4>
+                  <!-- Rimosso titolo "Elenco Componenti" come richiesto per l'esportazione -->
                   <p>La distinta base completa è disponibile nell'applicazione originale.</p>
                   <div class="message warning" style="background-color: #ff8c00; color: white; border-width: 0;">
                     <div class="message-header" style="color: white;">
@@ -713,7 +713,7 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
           case 'checklist':
             content += `
               <div class="checklist-container">
-                <h4>Lista di controllo</h4>
+                <!-- Rimosso titolo "Lista di controllo" come richiesto per l'esportazione -->
                 <ul class="checklist">
                   ${(module.content.items || []).map((item: any, index: number) => 
                     `<li class="checklist-item">
@@ -722,6 +722,7 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
                     </li>`
                   ).join('')}
                 </ul>
+                ${module.content.caption ? `<p class="caption">${module.content.caption}</p>` : ''}
               </div>
             `;
             break;
