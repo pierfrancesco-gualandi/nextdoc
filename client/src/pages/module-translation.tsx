@@ -1317,17 +1317,39 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                         )}
                         
                         {module.type === 'checklist' && (
-                          <div>
-                            <Label>Elementi checklist</Label>
-                            {translatedContent.items && translatedContent.items.map((item: any, index: number) => (
-                              <div key={`item-${index}`} className="mb-2">
-                                <Input
-                                  value={item.text || ''}
-                                  onChange={(e) => handleTextChange(e.target.value, 'items.text', index)}
-                                  placeholder={`Elemento ${index + 1}`}
-                                />
-                              </div>
-                            ))}
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="checklist-title">Titolo</Label>
+                              <Input
+                                id="checklist-title"
+                                value={translatedContent.title || ''}
+                                onChange={(e) => handleTextChange(e.target.value, 'title')}
+                                placeholder="Titolo lista di controllo tradotto..."
+                              />
+                            </div>
+                            
+                            <div>
+                              <Label htmlFor="checklist-caption">Didascalia</Label>
+                              <Input
+                                id="checklist-caption"
+                                value={translatedContent.caption || ''}
+                                onChange={(e) => handleTextChange(e.target.value, 'caption')}
+                                placeholder="Didascalia lista di controllo tradotta..."
+                              />
+                            </div>
+                            
+                            <div>
+                              <Label>Elementi checklist</Label>
+                              {translatedContent.items && translatedContent.items.map((item: any, index: number) => (
+                                <div key={`item-${index}`} className="mb-2">
+                                  <Input
+                                    value={item.text || ''}
+                                    onChange={(e) => handleTextChange(e.target.value, 'items.text', index)}
+                                    placeholder={`Elemento ${index + 1}`}
+                                  />
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                         
