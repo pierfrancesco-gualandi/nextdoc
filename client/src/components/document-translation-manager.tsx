@@ -1061,8 +1061,10 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                 </div>
               )}
               
-              {/* Aggiungi campo per la didascalia (caption) per PDF, immagini e video */}
-              {(module.type === 'pdf' || module.type === 'image' || module.type === 'video') && moduleContent.caption !== undefined && (
+              {/* Aggiungi campo per la didascalia (caption) per PDF, immagini, video, modello 3D, checklist ed elenco componenti */}
+              {(module.type === 'pdf' || module.type === 'image' || module.type === 'video' || 
+                module.type === '3d-model' || module.type === 'checklist' || module.type === 'bom') && 
+                moduleContent.caption !== undefined && (
                 <div>
                   <Label htmlFor={`module-${module.id}-caption`}>Didascalia</Label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
