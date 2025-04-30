@@ -1713,6 +1713,15 @@ export default function ContentModule({
                 placeholder="Manuale di istruzioni"
               />
             </div>
+            <div>
+              <Label htmlFor="pdf-caption">Didascalia</Label>
+              <Input 
+                id="pdf-caption" 
+                value={content.caption || ""} 
+                onChange={(e) => setContent({ ...content, caption: e.target.value })} 
+                placeholder="Didascalia da visualizzare sotto il PDF"
+              />
+            </div>
           </div>
         );
         
