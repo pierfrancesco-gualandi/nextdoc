@@ -1201,6 +1201,39 @@ export default function ModuleTranslation({ toggleSidebar }: ModuleTranslationPr
                           </>
                         )}
                         
+                        {/* PDF Module */}
+                        {module.type === 'pdf' && (
+                          <>
+                            <div>
+                              <Label htmlFor="pdf-title">Titolo del documento PDF</Label>
+                              <Input
+                                id="pdf-title"
+                                value={translatedContent.title || ''}
+                                onChange={(e) => handleTextChange(e.target.value, 'title')}
+                                placeholder={getOriginalContent('title')}
+                                className={!isFieldTranslated('title') ? "placeholder:text-red-500 placeholder:font-medium placeholder:bg-red-50" : ""}
+                              />
+                            </div>
+                            <div className="mt-2">
+                              <Label htmlFor="pdf-caption">Didascalia</Label>
+                              <Input
+                                id="pdf-caption"
+                                value={translatedContent.caption || ''}
+                                onChange={(e) => handleTextChange(e.target.value, 'caption')}
+                                placeholder={getOriginalContent('caption')}
+                                className={!isFieldTranslated('caption') ? "placeholder:text-red-500 placeholder:font-medium placeholder:bg-red-50" : ""}
+                              />
+                            </div>
+                            
+                            <div className="mt-4 pt-4 border-t border-dashed border-neutral-light">
+                              <div className="flex items-center space-x-2 text-sm text-neutral-medium">
+                                <span className="material-icons text-base">info</span>
+                                <span>L'URL del documento PDF non è traducibile.</span>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                        
                         {(module.type === 'image' || module.type === 'video') && (
                           <>
                             {module.type === 'image' && (
