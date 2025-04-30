@@ -113,7 +113,17 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
   const setThisFieldActive = () => {
     if (fieldId && typeof window !== 'undefined') {
       (window as any)._activeFieldData.activeFieldId = fieldId;
-      console.log("Campo attivato:", fieldId);
+      
+      // Identificazione del tipo di campo (per debug)
+      let fieldType = "generico";
+      if (fieldId.includes('table-')) fieldType = "tabella";
+      else if (fieldId.includes('checklist-')) fieldType = "checklist";
+      else if (fieldId.includes('text-')) fieldType = "testo";
+      else if (fieldId.includes('warning-')) fieldType = "avviso";
+      else if (fieldId.includes('pdf-')) fieldType = "pdf";
+      else if (fieldId.includes('3d-')) fieldType = "3d";
+      
+      console.log(`Campo attivato: ${fieldId} (tipo: ${fieldType})`);
     }
   };
   
@@ -143,6 +153,9 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
     // Questa funzione viene eseguita dopo ogni render
     // È cruciale per mantenere il focus dopo l'aggiornamento del valore
     if (fieldId && (window as any)._activeFieldData?.activeFieldId === fieldId) {
+      // Ridotto il tempo di attesa per i campi di testo
+      const timeoutDelay = fieldId.includes('text-') ? 0 : 5;
+      
       setTimeout(() => {
         // Utilizza un timeout per assicurarsi che l'elemento abbia il focus dopo gli aggiornamenti React
         const textarea = textareaRef.current;
@@ -151,13 +164,19 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
           const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
           const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
           
-          // Applica il focus senza spostare la vista
-          textarea.focus();
+          // Applica il focus in modo da prevenire lo scorrimento della pagina
+          if (textarea.getRootNode() !== document) {
+            // Per evitare scorrimenti indesiderati, usiamo preventScroll
+            // @ts-ignore - L'opzione preventScroll non è nel tipo standard ma è supportata
+            textarea.focus({ preventScroll: true });
+          } else {
+            textarea.focus();
+          }
           
           // Restaura la posizione di scorrimento subito dopo, per evitare salti
           window.scrollTo(scrollLeft, scrollTop);
         }
-      }, 5);
+      }, timeoutDelay);
     }
   });
   
