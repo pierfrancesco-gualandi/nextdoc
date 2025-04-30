@@ -64,7 +64,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             content += `
               <figure class="image-container">
                 <img src="${module.content.src}" alt="${module.content.alt || ''}" class="content-image" />
-                ${module.content.caption ? `<figcaption>${module.content.caption}</figcaption>` : ''}
+                ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : ''}
               </figure>
             `;
             break;
@@ -76,7 +76,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                   <p>Il video è disponibile nell'applicazione originale.</p>
                   <img src="${module.content.thumbnail || ''}" alt="Anteprima video" class="video-thumbnail" />
                 </div>
-                ${module.content.caption ? `<figcaption>${module.content.caption}</figcaption>` : ''}
+                ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : ''}
               </figure>
             `;
             break;
@@ -98,7 +98,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                     ).join('')}
                   </tbody>
                 </table>
-                ${module.content.caption ? `<figcaption>${module.content.caption}</figcaption>` : ''}
+                ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : ''}
               </figure>
             `;
             break;
@@ -178,33 +178,28 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               }
               
               bomHtml = `
-                <div class="bom-container">
-                  <h4 class="bom-title">Elenco Componenti</h4>
-                  <div class="bom-header">
-                    ${module.content.description ? `<p class="bom-description">${module.content.description}</p>` : ''}
-                  </div>
-                  
+                <figure class="bom-container">
                   <div class="bom-content">
                     ${tableHtml}
                   </div>
-                </div>
+                  ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : 
+                    (module.content.description ? `<figcaption class="module-caption">${module.content.description}</figcaption>` : '')}
+                </figure>
               `;
             } catch (e) {
               const errorMessage = e instanceof Error ? e.message : 'Errore sconosciuto';
               bomHtml = `
-                <div class="bom-container">
-                  <h4 class="bom-title">Elenco Componenti</h4>
-                  <p>La distinta base completa è disponibile nell'applicazione originale.</p>
-                  <div class="message warning">
-                    <div class="message-header">
-                      <span class="message-icon">&#9888;</span>
-                      <h4>AVVERTENZA</h4>
-                    </div>
-                    <div class="message-body">
-                      <p>Errore nel caricamento della distinta: ${errorMessage}</p>
+                <figure class="bom-container">
+                  <div class="bom-content">
+                    <p>La distinta base completa è disponibile nell'applicazione originale.</p>
+                    <div class="message warning">
+                      <div class="message-body">
+                        <p>Errore nel caricamento della distinta: ${errorMessage}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                  ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : ''}
+                </figure>
               `;
             }
             
@@ -213,26 +208,27 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             
           case 'component':
             content += `
-              <div class="component-container">
-                <h4>Componente</h4>
-                <table>
-                  <tr>
-                    <th>ID Componente</th>
-                    <td>${module.content.componentId}</td>
-                  </tr>
-                  <tr>
-                    <th>Quantità</th>
-                    <td>${module.content.quantity}</td>
-                  </tr>
-                </table>
-              </div>
+              <figure class="component-container">
+                <div class="component-content">
+                  <table>
+                    <tr>
+                      <th>ID Componente</th>
+                      <td>${module.content.componentId}</td>
+                    </tr>
+                    <tr>
+                      <th>Quantità</th>
+                      <td>${module.content.quantity}</td>
+                    </tr>
+                  </table>
+                </div>
+                ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : ''}
+              </figure>
             `;
             break;
             
           case 'checklist':
             content += `
-              <div class="checklist-container">
-                <h4>Lista di controllo</h4>
+              <figure class="checklist-container">
                 <ul class="checklist">
                   ${(module.content.items || []).map((item: any, index: number) => 
                     `<li class="checklist-item">
@@ -241,7 +237,8 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                     </li>`
                   ).join('')}
                 </ul>
-              </div>
+                ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : ''}
+              </figure>
             `;
             break;
             
@@ -251,10 +248,10 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             if (!module.content?.src) {
               console.warn('File/PDF senza percorso src:', module);
               content += `
-                <div class="file-container">
-                  <h4>${module.type === 'pdf' ? 'PDF' : 'File'} Allegato</h4>
+                <figure class="file-container">
                   <p class="file-error">Errore: Percorso del file mancante</p>
-                </div>
+                  ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : ''}
+                </figure>
               `;
               break;
             }
@@ -265,19 +262,18 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               module.content.src;
             
             const filename = module.content.filename || module.content.src.split('/').pop() || 'File';
-            const fileType = module.type === 'pdf' ? 'PDF' : 'File';
             
             content += `
-              <div class="file-container">
-                <h4>${fileType} Allegato</h4>
+              <figure class="file-container">
                 <div class="file-info">
                   <p><strong>Nome file:</strong> ${filename}</p>
-                  <p class="file-description">${module.content.description || ''}</p>
                   <a href="${fileSrc}" target="_blank" class="download-button">
-                    <span class="download-icon">⬇</span> Scarica ${fileType}
+                    <span class="download-icon">⬇</span> Scarica file
                   </a>
                 </div>
-              </div>
+                ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : 
+                  (module.content.description ? `<figcaption class="module-caption">${module.content.description}</figcaption>` : '')}
+              </figure>
             `;
             break;
             
@@ -384,14 +380,15 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             
           case 'link':
             content += `
-              <div class="link-container">
-                <p>
+              <figure class="link-container">
+                <div class="link-content">
                   <a href="${module.content.url}" target="_blank" class="external-link">
                     ${module.content.text || module.content.url}
                   </a>
-                  ${module.content.description ? `<span class="link-description">${module.content.description}</span>` : ''}
-                </p>
-              </div>
+                </div>
+                ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : 
+                 (module.content.description ? `<figcaption class="module-caption">${module.content.description}</figcaption>` : '')}
+              </figure>
             `;
             break;
             
@@ -511,11 +508,14 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
         box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
       }
       
-      figcaption {
+      figcaption, .module-caption {
         margin-top: 10px;
         font-style: italic;
         color: #666;
         font-size: 0.9em;
+        text-align: center;
+        display: block;
+        width: 100%;
       }
       
       /* Stili per i video */
