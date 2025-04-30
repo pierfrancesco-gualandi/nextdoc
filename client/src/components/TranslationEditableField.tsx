@@ -118,7 +118,13 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
       return true;
     }
     
-    // Se keepFocus è attivo, mantiene sempre il focus
+    // IMPORTANTE: per i campi multipli come tabelle/checklist, vogliamo solo mantenere il focus
+    // sul campo che ha effettivamente il focus corrente (e non forzare un riposizionamento del focus)
+    if (fieldId.includes('table-') || fieldId.includes('checklist-')) {
+      return document.activeElement === textareaRef.current;
+    }
+    
+    // Se keepFocus è attivo, mantiene sempre il focus (per campi singoli)
     if (keepFocus) {
       return true;
     }
@@ -142,14 +148,22 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea && savedSelection.current && shouldKeepFocus()) {
-      textarea.setSelectionRange(
-        savedSelection.current.start,
-        savedSelection.current.end
-      );
-      
-      // Riattiva il focus se necessario
-      if (keepFocus && document.activeElement !== textarea) {
-        textarea.focus();
+      // Verifica se questo campo è effettivamente quello che ha il focus
+      // Questo è cruciale per evitare che un campo rubi il focus da un altro
+      if (document.activeElement === textarea || 
+          // Oppure se questo è esplicitamente il campo attivo a livello globale
+          ((window as any)._activeFieldData?.activeFieldId === fieldId)) {
+        
+        textarea.setSelectionRange(
+          savedSelection.current.start,
+          savedSelection.current.end
+        );
+        
+        // Riattiva il focus SOLO per campi singoli e solo se necessario
+        if (keepFocus && !fieldId?.includes('table-') && !fieldId?.includes('checklist-') && 
+            document.activeElement !== textarea) {
+          textarea.focus();
+        }
       }
     }
   });
@@ -162,7 +176,7 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
       placeholder={placeholder}
       className={errorCondition ? "border-red-300" : ""}
       rows={rows}
-      autoFocus
+      // Rimuoviamo autoFocus per prevenire il salto da un campo all'altro
       id={fieldId}
       // Impostiamo una altezza minima adeguata al contenuto
       style={{ minHeight: rows === 1 ? '50px' : '120px' }}
