@@ -395,7 +395,7 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
               console.warn('Modello 3D senza percorso src:', module);
               content += `
                 <div class="model-container">
-                  <h4>Modello 3D</h4>
+                  <!-- Rimosso titolo "Modello 3D" come richiesto per l'esportazione -->
                   <p class="model-error">Errore: Percorso del modello 3D mancante</p>
                 </div>
               `;
@@ -418,7 +418,7 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
             // Per l'esportazione HTML, sostituiamo l'iframe con un'alternativa
             content += `
               <div class="model-container">
-                <h4>Modello 3D</h4>
+                <!-- Rimosso titolo "Modello 3D" come richiesto per l'esportazione -->
                 <p class="model-title"><strong>${modelTitle}</strong></p>
                 ${module.content.description ? `<p class="model-description">${module.content.description}</p>` : ''}
                 
@@ -428,19 +428,19 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
                     <div style="max-width: 300px; margin: 0 auto;">
                       <img src="/uploads/A4B09778/preview.jpg" alt="Anteprima modello 3D" style="width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 viewBox=%220 0 100 100%22><rect fill=%22%23f0f0f0%22 width=%22100%22 height=%22100%22/><path d=%22M30,20 L70,20 L70,80 L30,80 Z%22 stroke=%22%23aaa%22 fill=%22none%22 stroke-width=%222%22/><path d=%22M30,20 L50,10 L70,20%22 stroke=%22%23aaa%22 fill=%22none%22 stroke-width=%222%22/></svg>'; this.style.padding='20px';">
                     </div>
-                    <h3>Modello 3D</h3>
                   </div>
                 </div>
                 
                 <!-- Link diretto al modello 3D -->
                 <div class="model-download">
-                  <a href="https://6e1740a1-e98f-4c3d-a38b-847a758a93ad-00-2i3y4aa7x13k5.janeway.replit.dev/uploads/A4B09778/A4B09778.htm" class="download-button" target="_blank" style="background-color: #0d7855;">
+                  <a href="${modelDownloadPath}" class="download-button" target="_blank" style="background-color: #0d7855;">
                     <span class="download-icon">⬇</span> Visualizza modello 3D con tutti i componenti
                   </a>
                   <div class="model-instruction">
                     <p><strong>Nota:</strong> Fare clic sul pulsante verde sopra per visualizzare il modello 3D interattivo completo.</p>
                   </div>
                 </div>
+                ${module.content.caption ? `<p class="caption">${module.content.caption}</p>` : ''}
               </div>
             `;
             break;
@@ -739,7 +739,7 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
             
             content += `
               <div class="file-container">
-                <h4>${fileType} Allegato</h4>
+                <!-- Rimosso titolo "${fileType} Allegato" come richiesto per l'esportazione -->
                 <div class="file-info">
                   <p><strong>Nome file:</strong> ${filename}</p>
                   <p class="file-description">${module.content.description || ''}</p>
@@ -747,6 +747,7 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
                     <span class="download-icon">⬇</span> Scarica ${fileType}
                   </a>
                 </div>
+                ${module.content.caption ? `<p class="caption">${module.content.caption}</p>` : ''}
               </div>
             `;
             break;
