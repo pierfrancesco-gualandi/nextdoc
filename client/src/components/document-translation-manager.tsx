@@ -757,12 +757,14 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                   <div className="p-3 bg-neutral-50 rounded border text-sm">
                     {moduleContent.title || ''}
                   </div>
-                  <Input
-                    id={`module-${module.id}-title`}
-                    value={translatedContent.title || ''}
-                    onChange={(e) => handleContentChange({ title: e.target.value })}
+                  <TranslationEditableField
+                    originalValue={moduleContent.title || ''}
+                    translatedValue={translatedContent.title || ''}
+                    onChange={(value) => handleContentChange({ title: value })}
                     placeholder="Inserisci la traduzione del titolo..."
-                    className={!translatedContent.title ? "border-red-300" : ""}
+                    errorCondition={!translatedContent.title}
+                    rows={1}
+                    fieldId={`warning-title-${module.id}`}
                   />
                 </div>
               </div>
@@ -802,11 +804,14 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     <div className="p-3 bg-neutral-50 rounded border text-sm">
                       {moduleContent.caption}
                     </div>
-                    <Input
-                      id={`module-${module.id}-caption`}
-                      value={translatedContent.caption || ''}
-                      onChange={(e) => handleContentChange({ caption: e.target.value })}
+                    <TranslationEditableField
+                      originalValue={moduleContent.caption}
+                      translatedValue={translatedContent.caption || ''}
+                      onChange={(value) => handleContentChange({ caption: value })}
                       placeholder="Inserisci la traduzione della didascalia..."
+                      errorCondition={!translatedContent.caption}
+                      rows={2}
+                      fieldId={`table-caption-${module.id}`}
                     />
                   </div>
                 </div>
@@ -1290,30 +1295,26 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                               <div className="p-3 bg-neutral-50 rounded border text-sm">
                                 {description as string}
                               </div>
-                              <Textarea
-                                id={`description-${code}`}
-                                value={descriptions[code] || ''}
-                                onChange={(e) => {
-                                  // NON aggiornare immediatamente
-                                  // Salva l'input in una variabile locale
-                                  const newValue = e.target.value;
-                                  
+                              <TranslationEditableField
+                                originalValue={description as string}
+                                translatedValue={descriptions[code] || ''}
+                                onChange={(newValue) => {
                                   // Crea una copia dello stato esistente
                                   const newDescriptions = {
                                     ...descriptions,
                                     [code]: newValue
                                   };
                                   
-                                  // Aggiorna il contenuto solo dopo un breve ritardo
+                                  // Aggiorna il contenuto con un breve ritardo per prestazioni migliori
                                   clearTimeout((window as any).saveTimeout);
                                   (window as any).saveTimeout = setTimeout(() => {
                                     handleContentChange({ descriptions: newDescriptions });
-                                  }, 500);
+                                  }, 300);
                                 }}
                                 placeholder="Inserisci la traduzione..."
-                                className={!descriptions[code] ? "border-red-300" : ""}
-                                keepFocus={true}
+                                errorCondition={!descriptions[code]}
                                 rows={1}
+                                fieldId={`bom-description-${module.id}-${code}`}
                               />
                             </div>
                           </div>
@@ -1372,13 +1373,10 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                       <div className="p-3 bg-neutral-50 rounded border text-sm">
                         {field.value}
                       </div>
-                      <Textarea
-                        id={`module-${module.id}-${field.key}`}
-                        value={translatedContent[field.key] || ''}
-                        onChange={(e) => {
-                          // NON aggiornare immediatamente - soluzione definitiva
-                          const newValue = e.target.value;
-                          
+                      <TranslationEditableField
+                        originalValue={field.value}
+                        translatedValue={translatedContent[field.key] || ''}
+                        onChange={(newValue) => {
                           // Crea un oggetto aggiornamento
                           const update = {};
                           update[field.key] = newValue;
@@ -1388,11 +1386,12 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                           clearTimeout((window as any)[fieldKey]);
                           (window as any)[fieldKey] = setTimeout(() => {
                             handleContentChange(update);
-                          }, 500);
+                          }, 300);
                         }}
                         placeholder={`Inserisci la traduzione ${field.label.toLowerCase()}...`}
-                        className={!translatedContent[field.key] ? "border-red-300" : ""}
-                        keepFocus={true}
+                        errorCondition={!translatedContent[field.key]}
+                        rows={3}
+                        fieldId={`generic-${module.id}-${field.key}`}
                       />
                     </div>
                   </div>
