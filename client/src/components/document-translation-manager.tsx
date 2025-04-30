@@ -847,6 +847,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                                   placeholder="Inserisci la traduzione..."
                                   errorCondition={!headers[idx]}
                                   rows={1}
+                                  fieldId={`table-header-${module.id}-${idx}`}
                                 />
                               </td>
                             </tr>
@@ -894,6 +895,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                                     placeholder="Inserisci la traduzione..."
                                     errorCondition={!currentRow[colIdx]}
                                     rows={1}
+                                    fieldId={`table-cell-${module.id}-${rowIdx}-${colIdx}`}
                                   />
                                 </td>
                               </tr>
@@ -944,6 +946,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                               placeholder="Inserisci la traduzione..."
                               errorCondition={!currentItem.text}
                               rows={1}
+                              fieldId={`checklist-item-${module.id}-${idx}`}
                             />
                           </div>
                         </div>
@@ -966,12 +969,14 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     <div className="p-3 bg-neutral-50 rounded border text-sm">
                       {moduleContent.title}
                     </div>
-                    <Input
-                      id={`module-${module.id}-title`}
-                      value={translatedContent.title || ''}
-                      onChange={(e) => handleContentChange({ title: e.target.value })}
+                    <TranslationEditableField
+                      originalValue={moduleContent.title}
+                      translatedValue={translatedContent.title || ''}
+                      onChange={(value) => handleContentChange({ title: value })}
                       placeholder="Inserisci la traduzione del titolo..."
-                      className={!translatedContent.title ? "border-red-300" : ""}
+                      errorCondition={!translatedContent.title}
+                      rows={1}
+                      fieldId={`media-title-${module.id}`}
                     />
                   </div>
                 </div>
@@ -984,12 +989,14 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     <div className="p-3 bg-neutral-50 rounded border text-sm">
                       {moduleContent.caption}
                     </div>
-                    <Input
-                      id={`module-${module.id}-caption`}
-                      value={translatedContent.caption || ''}
-                      onChange={(e) => handleContentChange({ caption: e.target.value })}
+                    <TranslationEditableField
+                      originalValue={moduleContent.caption}
+                      translatedValue={translatedContent.caption || ''}
+                      onChange={(value) => handleContentChange({ caption: value })}
                       placeholder="Inserisci la traduzione della didascalia..."
-                      className={!translatedContent.caption ? "border-red-300" : ""}
+                      errorCondition={!translatedContent.caption}
+                      rows={1}
+                      fieldId={`media-caption-${module.id}`}
                     />
                   </div>
                 </div>
@@ -1002,12 +1009,14 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     <div className="p-3 bg-neutral-50 rounded border text-sm">
                       {moduleContent.alt}
                     </div>
-                    <Input
-                      id={`module-${module.id}-alt`}
-                      value={translatedContent.alt || ''}
-                      onChange={(e) => handleContentChange({ alt: e.target.value })}
+                    <TranslationEditableField
+                      originalValue={moduleContent.alt}
+                      translatedValue={translatedContent.alt || ''}
+                      onChange={(value) => handleContentChange({ alt: value })}
                       placeholder="Inserisci la traduzione del testo alternativo..."
-                      className={!translatedContent.alt ? "border-red-300" : ""}
+                      errorCondition={!translatedContent.alt}
+                      rows={1}
+                      fieldId={`media-alt-${module.id}`}
                     />
                   </div>
                 </div>
@@ -1025,12 +1034,14 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     <div className="p-3 bg-neutral-50 rounded border text-sm">
                       {moduleContent.title}
                     </div>
-                    <Input
-                      id={`module-${module.id}-title`}
-                      value={translatedContent.title || ''}
-                      onChange={(e) => handleContentChange({ title: e.target.value })}
+                    <TranslationEditableField
+                      originalValue={moduleContent.title}
+                      translatedValue={translatedContent.title || ''}
+                      onChange={(value) => handleContentChange({ title: value })}
                       placeholder="Inserisci la traduzione del titolo..."
-                      className={!translatedContent.title ? "border-red-300" : ""}
+                      errorCondition={!translatedContent.title}
+                      rows={1}
+                      fieldId={`testp-title-${module.id}`}
                     />
                   </div>
                 </div>
@@ -1043,12 +1054,14 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     <div className="p-3 bg-neutral-50 rounded border text-sm">
                       {moduleContent.description}
                     </div>
-                    <Textarea
-                      id={`module-${module.id}-description`}
-                      value={translatedContent.description || ''}
-                      onChange={(e) => handleContentChange({ description: e.target.value })}
+                    <TranslationEditableField
+                      originalValue={moduleContent.description}
+                      translatedValue={translatedContent.description || ''}
+                      onChange={(value) => handleContentChange({ description: value })}
                       placeholder="Inserisci la traduzione della descrizione..."
-                      className={!translatedContent.description ? "border-red-300" : ""}
+                      errorCondition={!translatedContent.description}
+                      rows={6}
+                      fieldId={`testp-description-${module.id}`}
                     />
                   </div>
                 </div>
@@ -1068,12 +1081,14 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     <div className="p-3 bg-neutral-50 rounded border text-sm">
                       {moduleContent.title}
                     </div>
-                    <Input
-                      id={`module-${module.id}-title`}
-                      value={translatedContent.title || ''}
-                      onChange={(e) => handleContentChange({ title: e.target.value })}
+                    <TranslationEditableField
+                      originalValue={moduleContent.title}
+                      translatedValue={translatedContent.title || ''}
+                      onChange={(value) => handleContentChange({ title: value })}
                       placeholder="Inserisci la traduzione del titolo..."
-                      className={!translatedContent.title ? "border-red-300" : ""}
+                      errorCondition={!translatedContent.title}
+                      rows={1}
+                      fieldId={`${module.type}-title-${module.id}`}
                     />
                   </div>
                 </div>
@@ -1086,12 +1101,14 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     <div className="p-3 bg-neutral-50 rounded border text-sm">
                       {moduleContent.description}
                     </div>
-                    <Textarea
-                      id={`module-${module.id}-description`}
-                      value={translatedContent.description || ''}
-                      onChange={(e) => handleContentChange({ description: e.target.value })}
+                    <TranslationEditableField
+                      originalValue={moduleContent.description}
+                      translatedValue={translatedContent.description || ''}
+                      onChange={(value) => handleContentChange({ description: value })}
                       placeholder="Inserisci la traduzione della descrizione..."
-                      className={!translatedContent.description ? "border-red-300" : ""}
+                      errorCondition={!translatedContent.description}
+                      rows={4}
+                      fieldId={`${module.type}-description-${module.id}`}
                     />
                   </div>
                 </div>
@@ -1104,12 +1121,14 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     <div className="p-3 bg-neutral-50 rounded border text-sm">
                       {moduleContent.text}
                     </div>
-                    <Input
-                      id={`module-${module.id}-text`}
-                      value={translatedContent.text || ''}
-                      onChange={(e) => handleContentChange({ text: e.target.value })}
+                    <TranslationEditableField
+                      originalValue={moduleContent.text}
+                      translatedValue={translatedContent.text || ''}
+                      onChange={(value) => handleContentChange({ text: value })}
                       placeholder="Inserisci la traduzione del testo del link..."
-                      className={!translatedContent.text ? "border-red-300" : ""}
+                      errorCondition={!translatedContent.text}
+                      rows={1}
+                      fieldId={`link-text-${module.id}`}
                     />
                   </div>
                 </div>
@@ -1127,12 +1146,14 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     <div className="p-3 bg-neutral-50 rounded border text-sm">
                       {moduleContent.title}
                     </div>
-                    <Input
-                      id={`module-${module.id}-title`}
-                      value={translatedContent.title || ''}
-                      onChange={(e) => handleContentChange({ title: e.target.value })}
+                    <TranslationEditableField
+                      originalValue={moduleContent.title}
+                      translatedValue={translatedContent.title || ''}
+                      onChange={(value) => handleContentChange({ title: value })}
                       placeholder="Inserisci la traduzione del titolo..."
-                      className={!translatedContent.title ? "border-red-300" : ""}
+                      errorCondition={!translatedContent.title}
+                      rows={1}
+                      fieldId={`bom-title-${module.id}`}
                     />
                   </div>
                 </div>
