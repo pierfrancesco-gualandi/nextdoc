@@ -758,10 +758,11 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
               <div class="link-container">
                 <p>
                   <a href="${module.content.url}" target="_blank" class="external-link">
-                    ${module.content.text || module.content.url}
+                    <span class="link-icon">🔗</span> ${module.content.text || module.content.url}
                   </a>
                   ${module.content.description ? `<span class="link-description">${module.content.description}</span>` : ''}
                 </p>
+                ${module.content.caption ? `<p class="caption">${module.content.caption}</p>` : ''}
               </div>
             `;
             break;
