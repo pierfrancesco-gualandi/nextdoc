@@ -1166,6 +1166,69 @@ export class MemStorage implements IStorage {
     return updatedImport;
   }
 
+  // Document translation operations
+  async getDocumentTranslation(id: number): Promise<DocumentTranslation | undefined> {
+    return this.documentTranslations.get(id);
+  }
+
+  async getDocumentTranslationByLanguage(documentId: number, languageId: number): Promise<DocumentTranslation | undefined> {
+    return Array.from(this.documentTranslations.values()).find(
+      translation => translation.documentId === documentId && translation.languageId === languageId
+    );
+  }
+
+  async getDocumentTranslationsByLanguageId(languageId: number): Promise<DocumentTranslation[]> {
+    return Array.from(this.documentTranslations.values())
+      .filter(translation => translation.languageId === languageId);
+  }
+
+  async getDocumentTranslationsByDocumentId(documentId: number): Promise<DocumentTranslation[]> {
+    return Array.from(this.documentTranslations.values())
+      .filter(translation => translation.documentId === documentId);
+  }
+
+  async getDocumentTranslationsByFilter(filter: { documentId?: number, languageId?: number }): Promise<DocumentTranslation[]> {
+    return Array.from(this.documentTranslations.values())
+      .filter(translation => {
+        if (filter.documentId !== undefined && translation.documentId !== filter.documentId) {
+          return false;
+        }
+        if (filter.languageId !== undefined && translation.languageId !== filter.languageId) {
+          return false;
+        }
+        return true;
+      });
+  }
+
+  async createDocumentTranslation(translation: InsertDocumentTranslation): Promise<DocumentTranslation> {
+    const id = this.currentDocumentTranslationId++;
+    const now = new Date();
+    const newTranslation: DocumentTranslation = {
+      ...translation,
+      id,
+      updatedAt: now
+    };
+    this.documentTranslations.set(id, newTranslation);
+    return newTranslation;
+  }
+
+  async updateDocumentTranslation(id: number, translation: Partial<InsertDocumentTranslation>): Promise<DocumentTranslation | undefined> {
+    const existingTranslation = this.documentTranslations.get(id);
+    if (!existingTranslation) return undefined;
+
+    const updatedTranslation: DocumentTranslation = {
+      ...existingTranslation,
+      ...translation,
+      updatedAt: new Date()
+    };
+    this.documentTranslations.set(id, updatedTranslation);
+    return updatedTranslation;
+  }
+
+  async deleteDocumentTranslation(id: number): Promise<boolean> {
+    return this.documentTranslations.delete(id);
+  }
+
   // Translation AI operations
   async getTranslationAIRequest(id: number): Promise<TranslationAIRequest | undefined> {
     return this.translationAIRequests.get(id);
@@ -2162,6 +2225,86 @@ export class DatabaseStorage implements IStorage {
       
       return false;
     }
+  }
+
+  // Document translation operations
+  async getDocumentTranslation(id: number): Promise<DocumentTranslation | undefined> {
+    const [translation] = await db
+      .select()
+      .from(documentTranslations)
+      .where(eq(documentTranslations.id, id));
+    return translation;
+  }
+
+  async getDocumentTranslationByLanguage(documentId: number, languageId: number): Promise<DocumentTranslation | undefined> {
+    const [translation] = await db
+      .select()
+      .from(documentTranslations)
+      .where(
+        and(
+          eq(documentTranslations.documentId, documentId),
+          eq(documentTranslations.languageId, languageId)
+        )
+      );
+    return translation;
+  }
+
+  async getDocumentTranslationsByLanguageId(languageId: number): Promise<DocumentTranslation[]> {
+    return db
+      .select()
+      .from(documentTranslations)
+      .where(eq(documentTranslations.languageId, languageId));
+  }
+
+  async getDocumentTranslationsByDocumentId(documentId: number): Promise<DocumentTranslation[]> {
+    return db
+      .select()
+      .from(documentTranslations)
+      .where(eq(documentTranslations.documentId, documentId));
+  }
+
+  async getDocumentTranslationsByFilter(filter: { documentId?: number, languageId?: number }): Promise<DocumentTranslation[]> {
+    let query = db.select().from(documentTranslations);
+    
+    if (filter.documentId !== undefined) {
+      query = query.where(eq(documentTranslations.documentId, filter.documentId));
+    }
+    
+    if (filter.languageId !== undefined) {
+      query = query.where(eq(documentTranslations.languageId, filter.languageId));
+    }
+    
+    return query;
+  }
+
+  async createDocumentTranslation(translation: InsertDocumentTranslation): Promise<DocumentTranslation> {
+    const [newTranslation] = await db
+      .insert(documentTranslations)
+      .values({
+        ...translation,
+        updatedAt: new Date()
+      })
+      .returning();
+    return newTranslation;
+  }
+
+  async updateDocumentTranslation(id: number, translation: Partial<InsertDocumentTranslation>): Promise<DocumentTranslation | undefined> {
+    const [updatedTranslation] = await db
+      .update(documentTranslations)
+      .set({
+        ...translation,
+        updatedAt: new Date()
+      })
+      .where(eq(documentTranslations.id, id))
+      .returning();
+    return updatedTranslation;
+  }
+
+  async deleteDocumentTranslation(id: number): Promise<boolean> {
+    const result = await db
+      .delete(documentTranslations)
+      .where(eq(documentTranslations.id, id));
+    return result.rowCount > 0;
   }
 
   // Translation AI operations
