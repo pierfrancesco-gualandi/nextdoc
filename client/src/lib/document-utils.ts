@@ -113,9 +113,9 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
   try {
     console.log(`Esportazione HTML per documento ${documentId}${languageId ? ' con lingua ' + languageId : ''}`);
     
-    // Dichiariamo le variabili per document e sortedSections al di fuori degli if
-    let document;
-    let sortedSections;
+    // Dichiariamo le variabili per document e sortedSections
+    let document: any;
+    let sortedSections: any[];
     
     // Utilizziamo getDocumentWithTranslations se è specificata una lingua, altrimenti getFullDocument
     if (languageId) {
@@ -124,12 +124,12 @@ export async function exportToHtml(documentId: string, languageId?: string): Pro
       const documentData = await getDocumentWithTranslations(documentId, languageId);
       document = documentData.document;
       // Ordina le sezioni in base all'ordine del campo "order"
-      sortedSections = [...(documentData.sections || [])].sort((a, b) => a.order - b.order);
+      sortedSections = [...(documentData.sections || [])].sort((a: any, b: any) => a.order - b.order);
     } else {
       // Utilizziamo getFullDocument per mantenere la compatibilità con il codice esistente
       document = await getFullDocument(documentId);
       // Ordina le sezioni in base all'ordine del campo "order"
-      sortedSections = [...(document.sections || [])].sort((a, b) => a.order - b.order);
+      sortedSections = [...(document.sections || [])].sort((a: any, b: any) => a.order - b.order);
     }
     
     // Organizza le sezioni in struttura gerarchica
