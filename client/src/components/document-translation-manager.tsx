@@ -12,7 +12,8 @@ import {
   SectionDescriptionField, 
   ModuleTextField 
 } from '@/components/TranslationFieldsManager';
-import { imageModuleHasCaption, videoModuleHasCaption, pdfModuleHasCaption } from '@/lib/module-utils';
+// Queste importazioni non sono più necessarie perché ora usiamo un controllo inline
+// import { imageModuleHasCaption, videoModuleHasCaption, pdfModuleHasCaption } from '@/lib/module-utils';
 import TranslationEditableField from '@/components/TranslationEditableField';
 import { 
   ChevronDownIcon, 
@@ -966,71 +967,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
             </div>
           );
           
-        case 'image':
-        case 'video':
-          return (
-            <div className="space-y-4">
-              {moduleContent.title && (
-                <div>
-                  <Label htmlFor={`module-${module.id}-title`}>Titolo</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                    <div className="p-3 bg-neutral-50 rounded border text-sm">
-                      {moduleContent.title}
-                    </div>
-                    <TranslationEditableField
-                      originalValue={moduleContent.title}
-                      translatedValue={translatedContent.title || ''}
-                      onChange={(value) => handleContentChange({ title: value })}
-                      placeholder="Inserisci la traduzione del titolo..."
-                      errorCondition={!translatedContent.title}
-                      rows={1}
-                      fieldId={`media-title-${module.id}`}
-                    />
-                  </div>
-                </div>
-              )}
-              
-              {moduleContent.caption && (
-                <div>
-                  <Label htmlFor={`module-${module.id}-caption`}>Didascalia</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                    <div className="p-3 bg-neutral-50 rounded border text-sm">
-                      {moduleContent.caption}
-                    </div>
-                    <TranslationEditableField
-                      originalValue={moduleContent.caption}
-                      translatedValue={translatedContent.caption || ''}
-                      onChange={(value) => handleContentChange({ caption: value })}
-                      placeholder="Inserisci la traduzione della didascalia..."
-                      errorCondition={!translatedContent.caption}
-                      rows={1}
-                      fieldId={`media-caption-${module.id}`}
-                    />
-                  </div>
-                </div>
-              )}
-              
-              {moduleContent.alt && (
-                <div>
-                  <Label htmlFor={`module-${module.id}-alt`}>Testo alternativo</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                    <div className="p-3 bg-neutral-50 rounded border text-sm">
-                      {moduleContent.alt}
-                    </div>
-                    <TranslationEditableField
-                      originalValue={moduleContent.alt}
-                      translatedValue={translatedContent.alt || ''}
-                      onChange={(value) => handleContentChange({ alt: value })}
-                      placeholder="Inserisci la traduzione del testo alternativo..."
-                      errorCondition={!translatedContent.alt}
-                      rows={1}
-                      fieldId={`media-alt-${module.id}`}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          );
+        // I moduli image e video sono ora gestiti nel case statement sotto (righe 1080+)
 
         case 'testp':
           return (
