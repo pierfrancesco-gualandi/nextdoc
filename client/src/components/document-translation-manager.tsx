@@ -1150,24 +1150,79 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           );
           
         case 'threeDModel':
-          // Utilizziamo il nostro componente specializzato per il modello 3D
-          // Import necessario: import ThreeDModelTranslationEditor from './module-translations/ThreeDModelTranslationEditor';
+          // Utilizziamo un approccio standard per i moduli 3D dato che abbiamo un editor specifico separato
           return (
             <div className="space-y-4">
-              <div className="imp-module-3d-translation">
-                {React.createElement(() => {
-                  // Importa dinamicamente il componente
-                  const ThreeDModelTranslationEditor = require('./module-translations/ThreeDModelTranslationEditor').default;
-                  
-                  return (
-                    <ThreeDModelTranslationEditor
-                      module={module}
-                      moduleTranslation={moduleTranslation}
-                      saveTranslation={handleContentChange}
-                      languageId={selectedLanguage}
+              {moduleContent.title && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-title`}>Titolo</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.title}
+                    </div>
+                    <TranslationEditableField
+                      originalValue={moduleContent.title}
+                      translatedValue={translatedContent.title || ''}
+                      onChange={(value) => handleContentChange({ title: value })}
+                      placeholder="Inserisci la traduzione del titolo..."
+                      errorCondition={!translatedContent.title}
+                      rows={1}
+                      fieldId={`threeDModel-title-${module.id}`}
                     />
-                  );
-                })}
+                  </div>
+                </div>
+              )}
+              
+              {moduleContent.caption && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-caption`}>Didascalia</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.caption}
+                    </div>
+                    <TranslationEditableField
+                      originalValue={moduleContent.caption}
+                      translatedValue={translatedContent.caption || ''}
+                      onChange={(value) => handleContentChange({ caption: value })}
+                      placeholder="Inserisci la traduzione della didascalia..."
+                      errorCondition={!translatedContent.caption}
+                      rows={2}
+                      fieldId={`threeDModel-caption-${module.id}`}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Etichette UI per il modulo 3D */}
+              <div>
+                <Label>Etichette interfaccia utente</Label>
+                <div className="p-4 bg-gray-50 rounded-md border mt-2">
+                  <div className="mb-4">
+                    <Label htmlFor={`module-${module.id}-label-view`}>Pulsante visualizzazione</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                      <div className="p-3 bg-neutral-50 rounded border text-sm">
+                        Visualizza in 3D
+                      </div>
+                      <TranslationEditableField
+                        originalValue="Visualizza in 3D"
+                        translatedValue={translatedContent.labels?.view || ''}
+                        onChange={(value) => {
+                          const currentLabels = translatedContent.labels || {};
+                          handleContentChange({ 
+                            labels: {
+                              ...currentLabels,
+                              view: value
+                            }
+                          });
+                        }}
+                        placeholder="Inserisci la traduzione per il pulsante..."
+                        errorCondition={!translatedContent.labels?.view}
+                        rows={1}
+                        fieldId={`threeDModel-view-label-${module.id}`}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           );
