@@ -80,6 +80,8 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
   const [moduleTranslations, setModuleTranslations] = useState<Record<string, any>>({});
   const [sectionTranslations, setSectionTranslations] = useState<Record<string, any>>({});
   const [documentTitleTranslation, setDocumentTitleTranslation] = useState<string>('');
+  const [documentVersionTranslation, setDocumentVersionTranslation] = useState<string>('');
+  const [documentDescriptionTranslation, setDocumentDescriptionTranslation] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('edit');
   const [savingTranslation, setSavingTranslation] = useState(false);
   
@@ -188,22 +190,29 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
       const sectionTrans: Record<string, any> = {};
       const moduleTrans: Record<string, any> = {};
       
-      // Carica la traduzione del titolo del documento
+      // Carica la traduzione del documento (titolo, versione, descrizione)
       try {
-        const docTitleResponse = await fetch(`/api/document-translations?documentId=${documentId}&languageId=${selectedLanguage}`);
-        if (docTitleResponse.ok) {
-          const docTitleData = await docTitleResponse.json();
-          if (docTitleData && docTitleData.length > 0) {
-            // Imposta il titolo tradotto del documento
-            setDocumentTitleTranslation(docTitleData[0].title || '');
+        const docTranslationResponse = await fetch(`/api/document-translations?documentId=${documentId}&languageId=${selectedLanguage}`);
+        if (docTranslationResponse.ok) {
+          const docTranslationData = await docTranslationResponse.json();
+          if (docTranslationData && docTranslationData.length > 0) {
+            const docTranslation = docTranslationData[0];
+            // Imposta i campi tradotti del documento
+            setDocumentTitleTranslation(docTranslation.title || '');
+            setDocumentVersionTranslation(docTranslation.version || '');
+            setDocumentDescriptionTranslation(docTranslation.description || '');
           } else {
-            // Reset del campo di traduzione se non esiste
+            // Reset dei campi di traduzione se non esistono
             setDocumentTitleTranslation('');
+            setDocumentVersionTranslation('');
+            setDocumentDescriptionTranslation('');
           }
         }
       } catch (err) {
-        console.warn(`Impossibile caricare la traduzione del titolo per il documento ${documentId}`, err);
+        console.warn(`Impossibile caricare la traduzione del documento ${documentId}`, err);
         setDocumentTitleTranslation('');
+        setDocumentVersionTranslation('');
+        setDocumentDescriptionTranslation('');
       }
       
       // Carica le traduzioni delle sezioni
@@ -330,8 +339,8 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
     setSavingTranslation(true);
     
     try {
-      // Salva la traduzione del titolo del documento
-      if (documentTitleTranslation && document) {
+      // Salva la traduzione del documento (titolo, versione, descrizione)
+      if (document) {
         try {
           // Verifica se esiste già una traduzione per questo documento e lingua
           const checkDocumentTranslationResponse = await fetch(`/api/document-translations?documentId=${documentId}&languageId=${selectedLanguage}`);
@@ -341,7 +350,9 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           const documentTranslationData = {
             documentId: parseInt(documentId),
             languageId: parseInt(selectedLanguage),
-            title: documentTitleTranslation,
+            title: documentTitleTranslation || document.title,
+            version: documentVersionTranslation || document.version,
+            description: documentDescriptionTranslation || document.description,
             status: 'translated'
           };
           
@@ -364,8 +375,8 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
               body: JSON.stringify(documentTranslationData),
             });
           }
-        } catch (docTitleError) {
-          console.error("Errore nel salvataggio della traduzione del titolo del documento:", docTitleError);
+        } catch (docTranslationError) {
+          console.error("Errore nel salvataggio della traduzione del documento:", docTranslationError);
           // Non interrompere l'intero processo di salvataggio se questa parte fallisce
         }
       }
@@ -1924,38 +1935,89 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
       
       {selectedLanguage ? (
         <>
-          {/* Campo per la traduzione del titolo del documento */}
+          {/* Campo per la traduzione del titolo, versione e descrizione del documento */}
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="text-lg">
-                Titolo del documento
+                Informazioni del documento
               </CardTitle>
               <CardDescription>
-                Il titolo tradotto del documento apparirà in tutte le esportazioni e nell'interfaccia quando questa lingua è selezionata.
+                Le informazioni tradotte del documento appariranno in tutte le esportazioni e nell'interfaccia quando questa lingua è selezionata.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <Label>Titolo originale</Label>
-                  <div className="mt-2 p-3 bg-neutral-50 rounded border text-base">
-                    {document?.title}
+              <div className="space-y-6">
+                {/* Titolo */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label>Titolo originale</Label>
+                    <div className="mt-2 p-3 bg-neutral-50 rounded border text-base">
+                      {document?.title}
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="translated-title">Titolo tradotto</Label>
+                    <div className="mt-2">
+                      <TranslationEditableField
+                        originalValue={document?.title || ''}
+                        translatedValue={documentTitleTranslation}
+                        onChange={(value) => setDocumentTitleTranslation(value)}
+                        placeholder="Inserisci la traduzione del titolo del documento..."
+                        errorCondition={!documentTitleTranslation}
+                        rows={1}
+                        fieldId="document-title-translation"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="translated-title">Titolo tradotto</Label>
-                  <div className="mt-2">
-                    <TranslationEditableField
-                      originalValue={document?.title || ''}
-                      translatedValue={documentTitleTranslation}
-                      onChange={(value) => setDocumentTitleTranslation(value)}
-                      placeholder="Inserisci la traduzione del titolo del documento..."
-                      errorCondition={!documentTitleTranslation}
-                      rows={1}
-                      fieldId="document-title-translation"
-                    />
+
+                {/* Versione */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label>Versione originale</Label>
+                    <div className="mt-2 p-3 bg-neutral-50 rounded border text-base">
+                      {document?.version}
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="translated-version">Versione tradotta</Label>
+                    <div className="mt-2">
+                      <TranslationEditableField
+                        originalValue={document?.version || ''}
+                        translatedValue={documentVersionTranslation}
+                        onChange={(value) => setDocumentVersionTranslation(value)}
+                        placeholder="Inserisci la traduzione della versione del documento..."
+                        rows={1}
+                        fieldId="document-version-translation"
+                      />
+                    </div>
                   </div>
                 </div>
+
+                {/* Descrizione */}
+                {document?.description && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label>Descrizione originale</Label>
+                      <div className="mt-2 p-3 bg-neutral-50 rounded border text-base">
+                        {document.description}
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="translated-description">Descrizione tradotta</Label>
+                      <div className="mt-2">
+                        <TranslationEditableField
+                          originalValue={document?.description || ''}
+                          translatedValue={documentDescriptionTranslation}
+                          onChange={(value) => setDocumentDescriptionTranslation(value)}
+                          placeholder="Inserisci la traduzione della descrizione del documento..."
+                          rows={3}
+                          fieldId="document-description-translation"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
