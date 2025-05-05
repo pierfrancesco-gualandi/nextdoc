@@ -1,0 +1,166 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8" />
+<title>3D Model</title>
+<script type="text/javascript" src="ivsys.js"></script><script type="text/javascript" src="ivmatrix3d.js"></script><script type="text/javascript" src="ivwindow3d.js"></script><script type="text/javascript" src="ivspace3d.js"></script><script type="text/javascript" src="ivmtl3d.js"></script><script type="text/javascript" src="ivmesh3d.js"></script><script type="text/javascript" src="ivnode3d.js"></script><script type="text/javascript" src="ivhittest.js"></script><script type="text/javascript" src="ivtextures.js"></script><script type="text/javascript" src="ivskin.js"></script><script type="text/javascript" src="ivprogress.js"></script><script type="text/javascript" src="ivclipplane.js"></script><script type="text/javascript" src="ivtriscan.js"></script><script type="text/javascript" src="ivaxis.js"></script><script type="text/javascript" src="ivgizmo.js"></script><script type="text/javascript" src="ivhandler.js"></script><script type="text/javascript" src="ivrectsel.js"></script><script type="text/javascript" src="treeview/ivtreeview.js"></script><script type="text/javascript" src="test/ivtest.js"></script><script type="text/javascript" src="ivapp.js"></script><script type="text/javascript" src="test/ivdivider.js"></script>
+<link rel="stylesheet" type="text/css" href="treeview/ivtreeview.css" /><link rel="stylesheet" type="text/css" href="test/ivtest.css" />
+</head>
+
+
+
+<body onload='view3d=iv.initSample("tree.iv3d",0xffffff)'>
+
+
+
+    <div id="file-header" class="fileHeader" >  
+
+
+         <div class="toolbar-left">
+               <div class="ivmenu">
+               <ul>
+                  <li class='has-sub last'>
+                  <a ><span id="select-mode-menu">Mode:Select</span></a>
+                     <ul>
+                        <li><a onclick="iv.onMenuSelected(this)" id="view3d-mode-select"><span>Select</span></a></li>
+                        <li><a onclick="iv.onMenuSelected(this)" id="view3d-mode-move"><span>Move</span></a></li>
+                        <li><a onclick="iv.onMenuSelected(this)" id="view3d-mode-rotate"><span>Rotate</span></a></li>
+                        <li><a onclick="iv.onMenuSelected(this)" id="view3d-mode-scale"><span>Scale</span></a></li>
+                        <li><a onclick="iv.onMenuSelected(this)" id="view3d-mode-measure"><span>Measure</span></a></li>
+                        
+                     </ul>
+                  </li>
+               </ul>
+               </div>      
+            </div>   
+
+            <div class="button" id="axis-x" onclick="iv.onToggleAxis(1)">X</div>
+            <div class="button" id="axis-y" onclick="iv.onToggleAxis(2)">Y</div>
+            <div class="button" id="axis-z" onclick="iv.onToggleAxis(4)">Z</div>
+
+
+      <div class="toolbar-left">
+              <div class="ivmenu">
+              <ul>
+                 <li class='has-sub last'>
+                 <a ><span id="clip-planes-mdenu">Clipping Planes</span></a>
+                    <ul>
+                       <li><a onclick="iv.onMenuSelected(this)" id="view3d-clip-0"><span>Clip 0</span></a></li>
+                       <li><a onclick="iv.onMenuSelected(this)" id="view3d-clip-1"><span>Clip 1</span></a></li>
+                       <li><a onclick="iv.onMenuSelected(this)" id="view3d-clip-2"><span>Clip 2</span></a></li>
+                       <li><a onclick="iv.onMenuSelected(this)" id="view3d-clip-mode"><span>Clip Mode</span></a></li>
+                       
+                    </ul>
+                 </li>
+              </ul>
+              </div>
+      </div>    
+
+
+        <div class="toolbar-right">
+            <div class="ivmenu">
+            <ul>
+               <li class='has-sub last'>
+               <a ><span>Options</span></a>
+                  <ul>
+
+                     <li><a  onclick="iv.onMenuSelected(this);" id="view3d-cfg-tree"><span>Scene Tree</span></a></li>
+                     <li class="separator"></li>                  
+
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-cfg-rectselect"><span>Rect Selection: Fully Inside Only</span></a></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-cfg-rotationcenter"><span>Rotate Around Mouse Pointer</span></a></li>
+   
+                     <li class="Header"><span>Render Options</span></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-cfg-textures"><span>Textures On/Off</span></a></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-cfg-materials"><span>Materials On/Off</span></a></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-cfg-dblside"><span>Show Backfacing Polygons</span></a></li>
+
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-cfg-xray"><span>XRay</span></a></li>
+                                 
+            <li class="Header"><span>Render Mode</span></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-rm-solid"><span>Solid</span></a></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-rm-wire"><span>Wireframe</span></a></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-rm-wireshaded"><span>Shaded Wireframe</span></a></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-rm-hiddenwire"><span>Hidden Wireframe</span></a></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-rm-outline"><span>Outline</span></a></li>
+                     <li><a onclick="iv.onMenuSelected(this);" id="view3d-rm-illustration"><span>Ilustration</span></a></li>
+            
+                  </ul>
+               </li>
+            </ul>
+            </div>            
+         </div>   
+         
+         
+         <div class="toolbar">
+                <div class="ivmenu">
+                <ul>
+                   <li class='has-sub last'>
+                   <a ><span>Views</span></a>
+                      <ul>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-ortho"><span>Ortho</span></a></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-perspective"><span>Perspective</span></a></li>
+                         <li class="separator"></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-user"><span>User</span></a></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-left"><span>Left</span></a></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-right"><span>Right</span></a></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-top"><span>Top</span></a></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-bottom"><span>Bottom</span></a></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-front"><span>Front</span></a></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-back"><span>Back</span></a></li>
+                         <li class="separator"></li>
+                         <li><a onclick="iv.onMenuSelected(this)" id="view3d-home"><span>Set Default View (HOME)</span></a></li>
+                      </ul>
+                   </li>
+                </ul>
+                </div>
+        </div>  
+      
+       <div class="toolbar">
+         <div class="ivmenu">
+         <ul>
+            <li class='has-sub last'>
+            <a><span id="left_button">Mouse Buttons</span></a>
+               <ul>
+                  <li class="Header"><span>Left Button</span></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-lbtn-none"><span>None</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-lbtn-orbit"><span>Orbit</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-lbtn-zoom"><span>Zoom</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-lbtn-pan"><span>Pan</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-lbtn-rectSelect"><span>Rectangle Select</span></a></li>
+                  
+                  <li class="Header"><span>Right Button</span></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-rbtn-none"><span>None</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-rbtn-orbit"><span>Orbit</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-rbtn-zoom"><span>Zoom</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-rbtn-pan"><span>Pan</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-rbtn-rectSelect"><span>Rectangle Select</span></a></li>
+
+                  <li class="Header"><span>Middle Button</span></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-mbtn-none"><span>None</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-mbtn-orbit"><span>Orbit</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-mbtn-zoom"><span>Zoom</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-mbtn-pan"><span>Pan</span></a></li>
+                  <li><a onclick="iv.onMenuSelected(this)" id="view3d-mbtn-rectSelect"><span>Rectangle Select</span></a></li>
+               </ul>
+            </li>
+         </ul>
+         </div>
+      </div>  
+</div>
+
+
+<div id="treeview-frame" class="treeframe" >
+<div class="tree-view" id="treeview"></div>
+</div>
+
+<div class="vdivider" id="vidivider"><span></span></div>
+
+<div class="viewframe">
+    <canvas id="canvas3d" style="border:none" width="800" height="600"></canvas>
+</div>
+
+</body>
+
+
+</html>
