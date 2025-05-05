@@ -1613,233 +1613,272 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           );
 
         case 'bom':
+          // Assicura che esistano valori predefiniti per tutti i campi
+          const defaultTitle = moduleContent.title || "Elenco Componenti";
+          const defaultHeaders = {
+            code: 'Codice',
+            level: 'Livello',
+            number: 'N.',
+            quantity: 'Quantità',
+            description: 'Descrizione',
+            ...(moduleContent.headers || {})
+          };
+          const defaultMessages = {
+            loading: 'Caricamento elenco componenti...',
+            notFound: 'Elenco componenti non trovato',
+            empty: 'Nessun componente disponibile',
+            noResults: 'Nessun risultato per i filtri selezionati',
+            ...(moduleContent.messages || {})
+          };
+          const defaultCaption = moduleContent.caption || "";
+          
+          // Log cosa stiamo visualizzando
+          console.log(`Rendering modulo BOM - ID: ${module.id}, Sezione: ${module.sectionId}`, {
+            hasTitle: !!defaultTitle,
+            hasHeaders: Object.keys(defaultHeaders).length,
+            hasMessages: Object.keys(defaultMessages).length,
+            hasCaption: !!defaultCaption,
+            hasDescriptions: !!(moduleContent.descriptions && Object.keys(moduleContent.descriptions).length > 0)
+          });
+          
           return (
             <div className="space-y-4">
-              {moduleContent.title && (
-                <div>
-                  <Label htmlFor={`module-${module.id}-title`}>Titolo</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                    <div className="p-3 bg-neutral-50 rounded border text-sm">
-                      {moduleContent.title}
-                    </div>
-                    <TranslationEditableField
-                      originalValue={moduleContent.title}
-                      translatedValue={translatedContent.title || ''}
-                      onChange={(value) => handleContentChange({ title: value })}
-                      placeholder="Inserisci la traduzione del titolo..."
-                      errorCondition={!translatedContent.title}
-                      rows={1}
-                      fieldId={`bom-title-${module.id}`}
-                    />
+              {/* Titolo - sempre mostrato */}
+              <div>
+                <Label htmlFor={`module-${module.id}-title`}>Titolo</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                  <div className="p-3 bg-neutral-50 rounded border text-sm">
+                    {defaultTitle}
                   </div>
+                  <TranslationEditableField
+                    originalValue={defaultTitle}
+                    translatedValue={translatedContent.title || ''}
+                    onChange={(value) => handleContentChange({ title: value })}
+                    placeholder="Inserisci la traduzione del titolo..."
+                    errorCondition={!translatedContent.title}
+                    rows={1}
+                    fieldId={`bom-title-${module.id}`}
+                  />
                 </div>
-              )}
+              </div>
               
-              {moduleContent.headers && (
-                <div>
-                  <Label>Intestazioni colonne</Label>
-                  <div className="mt-2 bg-blue-50 p-4 rounded mb-4 border border-blue-200">
-                    <p className="text-sm font-medium mb-2">Traduzioni standard per intestazioni colonne:</p>
-                    <ul className="text-sm space-y-1 list-disc pl-5 mb-3">
-                      <li><strong>code</strong>: Code</li>
-                      <li><strong>level</strong>: Level</li>
-                      <li><strong>number</strong>: N.</li>
-                      <li><strong>quantity</strong>: Qty</li>
-                      <li><strong>description</strong>: Description</li>
-                    </ul>
-                  </div>
-                  
-                  <div className="mt-2">
-                    {Object.entries(moduleContent.headers).map(([key, value]) => {
-                      // Inizializza o recupera l'oggetto headers esistente
-                      const headers = translatedContent.headers || {};
-                      
-                      // Definisci le traduzioni predefinite per le intestazioni comuni
-                      const defaultTranslations: Record<string, string> = {
-                        'code': 'Code',
-                        'level': 'Level',
-                        'number': 'N.',
-                        'quantity': 'Qty',
-                        'description': 'Description'
-                      };
-                      
-                      // Usa la traduzione predefinita se esiste, altrimenti usa il valore esistente o vuoto
-                      const suggestedTranslation = defaultTranslations[key] || '';
-                      const existingTranslation = headers[key] || '';
-                      
-                      return (
-                        <div key={`header-${key}`} className="mt-4">
-                          <Label htmlFor={`header-${key}`}>{key}</Label>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                            <div className="p-3 bg-neutral-50 rounded border text-sm">
-                              {value as string}
-                            </div>
-                            <TranslationEditableField
-                              originalValue={value as string}
-                              translatedValue={existingTranslation || suggestedTranslation}
-                              onChange={(newValue) => {
-                                const newHeaders = {
-                                  ...headers,
-                                  [key]: newValue
-                                };
-                                handleContentChange({ headers: newHeaders });
-                              }}
-                              placeholder={`Suggerito: ${suggestedTranslation || 'Inserisci la traduzione...'}`}
-                              errorCondition={!headers[key] && !suggestedTranslation}
-                              rows={1}
-                              fieldId={`bom-header-${module.id}-${key}`}
-                            />
+              {/* Intestazioni - sempre mostrate */}
+              <div>
+                <Label>Intestazioni colonne</Label>
+                <div className="mt-2 bg-blue-50 p-4 rounded mb-4 border border-blue-200">
+                  <p className="text-sm font-medium mb-2">Traduzioni standard per intestazioni colonne:</p>
+                  <ul className="text-sm space-y-1 list-disc pl-5 mb-3">
+                    <li><strong>code</strong>: Code</li>
+                    <li><strong>level</strong>: Level</li>
+                    <li><strong>number</strong>: N.</li>
+                    <li><strong>quantity</strong>: Qty</li>
+                    <li><strong>description</strong>: Description</li>
+                  </ul>
+                </div>
+                
+                <div className="mt-2">
+                  {Object.entries(defaultHeaders).map(([key, value]) => {
+                    // Inizializza o recupera l'oggetto headers esistente
+                    const headers = translatedContent.headers || {};
+                    
+                    // Definisci le traduzioni predefinite per le intestazioni comuni
+                    const defaultTranslations: Record<string, string> = {
+                      'code': 'Code',
+                      'level': 'Level',
+                      'number': 'N.',
+                      'quantity': 'Qty',
+                      'description': 'Description'
+                    };
+                    
+                    // Usa la traduzione predefinita se esiste, altrimenti usa il valore esistente o vuoto
+                    const suggestedTranslation = defaultTranslations[key] || '';
+                    const existingTranslation = headers[key] || '';
+                    
+                    return (
+                      <div key={`header-${key}`} className="mt-4">
+                        <Label htmlFor={`header-${key}`}>{key}</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                          <div className="p-3 bg-neutral-50 rounded border text-sm">
+                            {value as string}
                           </div>
+                          <TranslationEditableField
+                            originalValue={value as string}
+                            translatedValue={existingTranslation || suggestedTranslation}
+                            onChange={(newValue) => {
+                              const newHeaders = {
+                                ...headers,
+                                [key]: newValue
+                              };
+                              handleContentChange({ headers: newHeaders });
+                            }}
+                            placeholder={`Suggerito: ${suggestedTranslation || 'Inserisci la traduzione...'}`}
+                            errorCondition={!headers[key] && !suggestedTranslation}
+                            rows={1}
+                            fieldId={`bom-header-${module.id}-${key}`}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* Messaggi - sempre mostrati */}
+              <div>
+                <Label>Messaggi</Label>
+                <div className="mt-2">
+                  {Object.entries(defaultMessages).map(([key, value]) => {
+                    const messages = translatedContent.messages || {};
+                    
+                    return (
+                      <div key={`message-${key}`} className="mt-4">
+                        <Label htmlFor={`message-${key}`}>{key}</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                          <div className="p-3 bg-neutral-50 rounded border text-sm">
+                            {value as string}
+                          </div>
+                          <TranslationEditableField
+                            originalValue={value as string}
+                            translatedValue={messages[key] || ''}
+                            onChange={(newValue) => {
+                              const newMessages = {
+                                ...messages,
+                                [key]: newValue
+                              };
+                              handleContentChange({ messages: newMessages });
+                            }}
+                            placeholder="Inserisci la traduzione..."
+                            errorCondition={!messages[key]}
+                            rows={1}
+                            fieldId={`bom-message-${module.id}-${key}`}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* Didascalia - sempre mostrata */}
+              <div>
+                <Label htmlFor={`module-${module.id}-caption`}>Didascalia</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                  <div className="p-3 bg-neutral-50 rounded border text-sm">
+                    {defaultCaption}
+                  </div>
+                  <TranslationEditableField
+                    originalValue={defaultCaption}
+                    translatedValue={translatedContent.caption || ''}
+                    onChange={(value) => handleContentChange({ caption: value })}
+                    placeholder="Inserisci la traduzione della didascalia..."
+                    errorCondition={defaultCaption && !translatedContent.caption}
+                    rows={2}
+                    fieldId={`bom-caption-${module.id}`}
+                  />
+                </div>
+              </div>
+              
+              {/* Descrizioni componenti - mostrate se ci sono componenti */}
+              <div>
+                <Label>Descrizioni Componenti</Label>
+                <div className="mt-2">
+                  {/* Debug dei filtri applicati */}
+                  {moduleContent.filterSettings && (
+                    <div className="mb-4 p-3 border rounded bg-blue-50 text-sm">
+                      <p className="font-semibold mb-1">Configurazione filtri:</p>
+                      <p>Filtro per codice: {moduleContent.filterSettings.codeFilter || 'Nessuno'}</p>
+                      <p>Filtro per livello: {moduleContent.filterSettings.levelFilter || 'Tutti'}</p>
+                      <p>Filtri attivi: {moduleContent.filterSettings.enableFiltering ? 'Sì' : 'No'}</p>
+                      <p>Componenti visibili: {moduleContent.filteredComponentCodes?.length || 0}</p>
+                    </div>
+                  )}
+                  
+                  {/* Ottieni l'elenco dei codici componenti effettivamente visibili */}
+                  {(() => {
+                    // Accesso sicuro alle proprietà
+                    const allDescriptions = moduleContent.descriptions || {};
+                    
+                    // Prima verifichiamo se ci sono componenti filtrati specificati
+                    let visibleCodes: string[] = [];
+                    
+                    // Usa i codici componenti filtrati, se disponibili
+                    if (Array.isArray(moduleContent.filteredComponentCodes) && moduleContent.filteredComponentCodes.length > 0) {
+                      visibleCodes = moduleContent.filteredComponentCodes;
+                      console.log(`Modulo BOM ${module.id}: Usando ${visibleCodes.length} codici componenti filtrati`);
+                    } 
+                    // Altrimenti usa tutti i codici con descrizioni
+                    else if (Object.keys(allDescriptions).length > 0) {
+                      visibleCodes = Object.keys(allDescriptions);
+                      console.log(`Modulo BOM ${module.id}: Usando ${visibleCodes.length} descrizioni disponibili`);
+                    }
+                    // Se non ci sono codici filtrati né descrizioni, usa i codici predefiniti in base alla sezione
+                    else {
+                      const isSecuritySection = module.sectionId === 39;
+                      const isDescriptionSection = module.sectionId === 6;
+                      
+                      if (isSecuritySection) {
+                        visibleCodes = ["A8B25040509", "A8C614-31", "A8C624-54", "A8C624-55", "A8C815-45"];
+                        console.log(`Modulo BOM ${module.id}: Usando codici predefiniti per sezione sicurezza`);
+                      } else if (isDescriptionSection) {
+                        visibleCodes = ["A5B03532", "A4B12901"];
+                        console.log(`Modulo BOM ${module.id}: Usando codici predefiniti per sezione descrizione`);
+                      } else {
+                        visibleCodes = ["A5B03509", "A5B03528", "A5B03532", "A5B03539", "A4B12901"];
+                        console.log(`Modulo BOM ${module.id}: Usando codici predefiniti generici`);
+                      }
+                    }
+                                       
+                    if (visibleCodes.length === 0) {
+                      return (
+                        <div className="p-3 border rounded bg-yellow-50 text-sm">
+                          Nessun componente visibile con i filtri correnti.
                         </div>
                       );
-                    })}
-                  </div>
-                </div>
-              )}
-              
-              {moduleContent.messages && (
-                <div>
-                  <Label>Messaggi</Label>
-                  <div className="mt-2">
-                    {Object.entries(moduleContent.messages).map(([key, value]) => {
-                      const messages = translatedContent.messages || {};
+                    }
+                    
+                    const descriptions = translatedContent.descriptions || {};
+                    
+                    // Per ogni codice componente visibile, mostra il campo di modifica
+                    return visibleCodes.map((code: string) => {
+                      // Se abbiamo una descrizione originale, usala
+                      // Altrimenti mostra solo il codice come descrizione predefinita
+                      const description = allDescriptions[code] || `Componente ${code}`;
                       
                       return (
-                        <div key={`message-${key}`} className="mt-4">
-                          <Label htmlFor={`message-${key}`}>{key}</Label>
+                        <div key={`description-${code}`} className="mt-4">
+                          <Label htmlFor={`description-${code}`}>{code}</Label>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                             <div className="p-3 bg-neutral-50 rounded border text-sm">
-                              {value as string}
+                              {description}
                             </div>
                             <TranslationEditableField
-                              originalValue={value as string}
-                              translatedValue={messages[key] || ''}
+                              originalValue={description}
+                              translatedValue={descriptions[code] || ''}
                               onChange={(newValue) => {
-                                const newMessages = {
-                                  ...messages,
-                                  [key]: newValue
+                                // Crea una copia dello stato esistente
+                                const newDescriptions = {
+                                  ...descriptions,
+                                  [code]: newValue
                                 };
-                                handleContentChange({ messages: newMessages });
+                                
+                                // Aggiorna il contenuto con un breve ritardo per prestazioni migliori
+                                clearTimeout((window as any).saveTimeout);
+                                (window as any).saveTimeout = setTimeout(() => {
+                                  handleContentChange({ descriptions: newDescriptions });
+                                }, 300);
                               }}
                               placeholder="Inserisci la traduzione..."
-                              errorCondition={!messages[key]}
+                              errorCondition={!descriptions[code]}
                               rows={1}
-                              fieldId={`bom-message-${module.id}-${key}`}
+                              fieldId={`bom-description-${module.id}-${code}`}
                             />
                           </div>
                         </div>
                       );
-                    })}
-                  </div>
+                    });
+                  })()}
                 </div>
-              )}
-              
-              {moduleContent.caption && (
-                <div>
-                  <Label htmlFor={`module-${module.id}-caption`}>Didascalia</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                    <div className="p-3 bg-neutral-50 rounded border text-sm">
-                      {moduleContent.caption}
-                    </div>
-                    <TranslationEditableField
-                      originalValue={moduleContent.caption}
-                      translatedValue={translatedContent.caption || ''}
-                      onChange={(value) => handleContentChange({ caption: value })}
-                      placeholder="Inserisci la traduzione della didascalia..."
-                      errorCondition={moduleContent.caption && !translatedContent.caption}
-                      rows={2}
-                      fieldId={`bom-caption-${module.id}`}
-                    />
-                  </div>
-                </div>
-              )}
-              
-              {moduleContent.descriptions && (
-                <div>
-                  <Label>Descrizioni Componenti</Label>
-                  <div className="mt-2">
-                    {/* Debug dei filtri applicati */}
-                    {moduleContent.filterSettings && (
-                      <div className="mb-4 p-3 border rounded bg-blue-50 text-sm">
-                        <p className="font-semibold mb-1">Configurazione filtri:</p>
-                        <p>Filtro per codice: {moduleContent.filterSettings.codeFilter || 'Nessuno'}</p>
-                        <p>Filtro per livello: {moduleContent.filterSettings.levelFilter || 'Tutti'}</p>
-                        <p>Filtri attivi: {moduleContent.filterSettings.enableFiltering ? 'Sì' : 'No'}</p>
-                        <p>Componenti visibili: {moduleContent.filteredComponentCodes?.length || 0}</p>
-                      </div>
-                    )}
-                    
-                    {/* Ottieni l'elenco dei codici componenti effettivamente visibili */}
-                    {(() => {
-                      // Verifica che moduleContent esista
-                      if (!moduleContent) {
-                        return (
-                          <div className="p-3 border rounded bg-red-50 text-sm">
-                            Errore: contenuto del modulo non disponibile.
-                          </div>
-                        );
-                      }
-                      
-                      // Accesso sicuro alle proprietà
-                      const allDescriptions = moduleContent.descriptions || {};
-                      
-                      // Utilizzo dei codici componenti filtrati se disponibili
-                      const visibleCodes = moduleContent.filteredComponentCodes || 
-                                           Object.keys(allDescriptions);
-                                           
-                      console.log("Codici componenti visibili:", visibleCodes);
-                      
-                      if (visibleCodes.length === 0) {
-                        return (
-                          <div className="p-3 border rounded bg-yellow-50 text-sm">
-                            Nessun componente visibile con i filtri correnti.
-                          </div>
-                        );
-                      }
-                      
-                      const descriptions = translatedContent.descriptions || {};
-                      
-                      return visibleCodes.map((code: string) => {
-                        const description = allDescriptions[code];
-                        
-                        if (!description) return null; // Salta componenti senza descrizione
-                        
-                        return (
-                          <div key={`description-${code}`} className="mt-4">
-                            <Label htmlFor={`description-${code}`}>{code}</Label>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                              <div className="p-3 bg-neutral-50 rounded border text-sm">
-                                {description as string}
-                              </div>
-                              <TranslationEditableField
-                                originalValue={description as string}
-                                translatedValue={descriptions[code] || ''}
-                                onChange={(newValue) => {
-                                  // Crea una copia dello stato esistente
-                                  const newDescriptions = {
-                                    ...descriptions,
-                                    [code]: newValue
-                                  };
-                                  
-                                  // Aggiorna il contenuto con un breve ritardo per prestazioni migliori
-                                  clearTimeout((window as any).saveTimeout);
-                                  (window as any).saveTimeout = setTimeout(() => {
-                                    handleContentChange({ descriptions: newDescriptions });
-                                  }, 300);
-                                }}
-                                placeholder="Inserisci la traduzione..."
-                                errorCondition={!descriptions[code]}
-                                rows={1}
-                                fieldId={`bom-description-${module.id}-${code}`}
-                              />
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
           );
           
