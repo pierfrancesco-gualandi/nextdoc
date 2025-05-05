@@ -14,7 +14,8 @@ import ModuleTranslation from "@/pages/module-translation";
 import DocumentTranslationExport from "@/pages/document-translation-export";
 import DocumentTranslationTree from "@/pages/document-translation-tree";
 import Sidebar from "@/components/sidebar";
-import { useState, createContext, useContext, useEffect } from "react";
+import React, { useState, createContext, useContext, useEffect } from "react";
+import SettingsRedirect from "@/pages/settings-redirect";
 import { UserProvider } from "./contexts/UserContext";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -167,18 +168,9 @@ function Router() {
             <Route path="/document/:id/export-translations" component={({ params }) => <DocumentTranslationExport />} />
             <Route path="/document/:id/translate" component={({ params }) => <DocumentTranslationTree toggleSidebar={toggleSidebar} />} />
             {/* Nuove rotte per le impostazioni */}
-            <Route path="/settings" component={() => {
-              const SettingsPage = require("@/pages/settings").default;
-              return <SettingsPage toggleSidebar={toggleSidebar} />;
-            }} />
-            <Route path="/settings/domain" component={() => {
-              const DomainSettingsPage = require("@/pages/settings/domain-settings-page").default;
-              return <DomainSettingsPage />;
-            }} />
-            <Route path="/settings/deploy" component={() => {
-              const DeployPage = require("@/pages/settings/deploy-page").default;
-              return <DeployPage />;
-            }} />
+            <Route path="/settings" component={() => <SettingsRedirect path="settings" toggleSidebar={toggleSidebar} />} />
+            <Route path="/settings/domain" component={() => <SettingsRedirect path="domain" />} />
+            <Route path="/settings/deploy" component={() => <SettingsRedirect path="deploy" />} />
             <Route component={NotFound} />
           </Switch>
         </div>
