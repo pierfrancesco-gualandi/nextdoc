@@ -9,6 +9,8 @@ import { isDisegno3DSection, generateComponentsListHtml, getSpecificComponentsFo
  * @param languageId ID della lingua di destinazione per traduzione (opzionale)
  */
 export async function exportDocumentHtml(document: any, sections: any[], modules: any[], languageId?: string | number) {
+  console.log(`Esportazione in formato html con lingua: ${languageId}`);
+
   // Valori di default dal documento originale - usati SOLO se non ci sono traduzioni
   let documentTitle = document?.title || 'Documento Esportato';
   let documentDescription = document?.description || '';
@@ -17,6 +19,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
   // Se è specificata una lingua, cerchiamo la traduzione del documento
   if (languageId) {
     try {
+      // Carica le traduzioni del documento
       const documentTranslationResponse = await fetch(`/api/document-translations/${document.id}?languageId=${languageId}`);
       if (documentTranslationResponse.ok) {
         const documentTranslation = await documentTranslationResponse.json();
@@ -42,8 +45,64 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
       } else {
         console.warn(`Traduzione del documento non trovata per la lingua ${languageId}`);
       }
+      
+      // Carica esplicitamente tutte le traduzioni delle sezioni
+      try {
+        const sectionTranslationsResponse = await fetch(`/api/section-translations?languageId=${languageId}`);
+        if (sectionTranslationsResponse.ok) {
+          const sectionTranslations = await sectionTranslationsResponse.json();
+          console.log(`Caricate ${sectionTranslations.length} traduzioni di sezioni`);
+          
+          // Mappa le traduzioni alle sezioni
+          sections = sections.map(section => {
+            const translation = sectionTranslations.find((t: any) => t.sectionId === section.id);
+            if (translation) {
+              // Aggiungi le traduzioni direttamente alla sezione
+              return {
+                ...section,
+                translation: translation,
+                translatedContent: translation
+              };
+            }
+            return section;
+          });
+        } else {
+          console.error('Errore nel caricamento delle traduzioni delle sezioni');
+        }
+      } catch (error) {
+        console.error('Errore nel recupero delle traduzioni delle sezioni:', error);
+      }
+      
+      // Carica esplicitamente tutte le traduzioni dei moduli
+      try {
+        const moduleTranslationsResponse = await fetch(`/api/content-module-translations?languageId=${languageId}`);
+        if (moduleTranslationsResponse.ok) {
+          const moduleTranslations = await moduleTranslationsResponse.json();
+          console.log(`Caricate ${moduleTranslations.length} traduzioni di moduli`);
+          
+          // Mappa le traduzioni ai moduli
+          modules = modules.map(module => {
+            const translation = moduleTranslations.find((t: any) => t.moduleId === module.id);
+            if (translation && translation.content) {
+              // Aggiungi la traduzione direttamente al modulo
+              return {
+                ...module,
+                content: {
+                  ...module.content,
+                  translatedContent: translation.content
+                }
+              };
+            }
+            return module;
+          });
+        } else {
+          console.error('Errore nel caricamento delle traduzioni dei moduli');
+        }
+      } catch (error) {
+        console.error('Errore nel recupero delle traduzioni dei moduli:', error);
+      }
     } catch (error) {
-      console.error('Errore nel recupero della traduzione del documento:', error);
+      console.error('Errore nel recupero delle traduzioni:', error);
     }
   }
   
@@ -70,6 +129,30 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
       // Trova i moduli per questa sezione
       const sectionModules = modules.filter(m => m.sectionId === sectionId);
       
+      // Preparazione dei dati della sezione con valori predefiniti (fallback)
+      let sectionTitle = section.title || '';
+      let sectionDescription = section.description || '';
+      
+      // Se è specificata una lingua e la sezione esiste, otteniamo la traduzione della sezione
+      if (languageId && section) {
+        // Ottieni la traduzione della sezione, se disponibile
+        const translatedSection = section.translatedContent || section.translation;
+        
+        if (translatedSection) {
+          // Titolo della sezione tradotto - priorità ASSOLUTA
+          if (translatedSection.title !== undefined) {
+            sectionTitle = translatedSection.title;
+            console.log(`Sezione ${sectionId}: Usando titolo tradotto "${sectionTitle}"`);
+          }
+          
+          // Descrizione della sezione tradotta - priorità ASSOLUTA
+          if (translatedSection.description !== undefined) {
+            sectionDescription = translatedSection.description;
+            console.log(`Sezione ${sectionId}: Usando descrizione tradotta`);
+          }
+        }
+      }
+      
       let html = '';
       
       // Intestazione della sezione - il livello determina h1, h2, h3, ecc.
@@ -81,10 +164,10 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
       html += `
         <section id="section-${sectionId}" class="document-section level-${level}">
           <h${headingLevel} class="section-title">
-            <span class="section-number">${sectionNumber}</span> ${section.title}
+            <span class="section-number">${sectionNumber}</span> ${sectionTitle}
           </h${headingLevel}>
           
-          ${section.description ? `<div class="section-description">${section.description}</div>` : ''}
+          ${sectionDescription ? `<div class="section-description">${sectionDescription}</div>` : ''}
       `;
       
       // Aggiungi il contenuto dei moduli della sezione
