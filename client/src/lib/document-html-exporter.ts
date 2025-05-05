@@ -813,7 +813,9 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             // Prepara i dati del modello 3D con valori predefiniti
             let modelTitle = module.content.title || '3D Model';
             let modelCaption = module.content.caption || '';
-            let modelViewLabel = 'Visualizza in 3D';
+            let modelViewLabel = 'Visualizza modello 3D con tutti i componenti';
+            let modelDownloadLabel = 'Scarica il modello completo (.zip)';
+            let modelInstructions = 'Questo modello 3D richiede file esterni specifici per funzionare correttamente. Utilizza il pulsante qui sotto per visualizzare il modello con tutti i componenti.';
             
             // Utilizza le traduzioni se disponibili
             if (languageId && module.content.translatedContent) {
@@ -827,24 +829,41 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                 modelCaption = module.content.translatedContent.caption;
               }
               
-              // Etichetta tradotta per il pulsante di visualizzazione
-              if (module.content.translatedContent.labels && module.content.translatedContent.labels.view) {
-                modelViewLabel = module.content.translatedContent.labels.view;
+              // Etichette tradotte per il modello 3D
+              if (module.content.translatedContent.labels) {
+                // Usa le etichette tradotte se presenti
+                if (module.content.translatedContent.labels.viewModel) {
+                  modelViewLabel = module.content.translatedContent.labels.viewModel;
+                }
+                if (module.content.translatedContent.labels.download) {
+                  modelDownloadLabel = module.content.translatedContent.labels.download;
+                }
+                if (module.content.translatedContent.labels.instructions) {
+                  modelInstructions = module.content.translatedContent.labels.instructions;
+                }
               } else if (languageId && languageId !== 1) {
-                // Default inglese se non c'è una traduzione specifica
-                modelViewLabel = 'View in 3D';
+                // Default in inglese se non ci sono etichette tradotte e non è italiano
+                modelViewLabel = 'View 3D model with all components';
+                modelDownloadLabel = 'Download complete model (.zip)';
+                modelInstructions = 'This 3D model requires specific external files to function correctly. Use the button below to view the model with all components.';
               }
             }
             
-            // Nel caso dell'esportazione HTML, non possiamo includere il modello 3D interattivo,
-            // quindi mostriamo un messaggio con un link all'originale
+            // Nel caso dell'esportazione HTML, mostriamo un'interfaccia completa per interagire con il modello 3D
             content += `
               <figure class="threeDModel-container">
                 <div class="threeDModel-content">
                   ${modelTitle ? `<h4 class="threeDModel-title">${modelTitle}</h4>` : ''}
-                  <div class="threeDModel-placeholder">
-                    <div class="threeDModel-icon">🔄 3D</div>
-                    <p class="threeDModel-message">${modelViewLabel}</p>
+                  <div class="threeDModel-wrapper">
+                    <p class="threeDModel-instructions">${modelInstructions}</p>
+                    <div class="threeDModel-actions">
+                      <a href="#" class="threeDModel-button view-button">
+                        <span class="button-icon">🔄</span> ${modelViewLabel}
+                      </a>
+                      <a href="#" class="threeDModel-button download-button">
+                        <span class="button-icon">⬇</span> ${modelDownloadLabel}
+                      </a>
+                    </div>
                   </div>
                 </div>
                 ${modelCaption ? `<figcaption class="module-caption">${modelCaption}</figcaption>` : ''}

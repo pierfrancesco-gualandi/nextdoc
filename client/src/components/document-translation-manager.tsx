@@ -1230,9 +1230,286 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           );
           
         case 'pdf':
+          return (
+            <div className="space-y-4">
+              {moduleContent.title && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-title`}>Titolo</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.title}
+                    </div>
+                    <TranslationEditableField
+                      originalValue={moduleContent.title}
+                      translatedValue={translatedContent.title || ''}
+                      onChange={(value) => handleContentChange({ title: value })}
+                      placeholder="Inserisci la traduzione del titolo..."
+                      errorCondition={!translatedContent.title}
+                      rows={1}
+                      fieldId={`${module.type}-title-${module.id}`}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {moduleContent.description && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-description`}>Descrizione</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.description}
+                    </div>
+                    <TranslationEditableField
+                      originalValue={moduleContent.description}
+                      translatedValue={translatedContent.description || ''}
+                      onChange={(value) => handleContentChange({ description: value })}
+                      placeholder="Inserisci la traduzione della descrizione..."
+                      errorCondition={!translatedContent.description}
+                      rows={4}
+                      fieldId={`${module.type}-description-${module.id}`}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Caption/Didascalia */}
+              {moduleContent.caption !== undefined && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-caption`}>Didascalia</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.caption || ''}
+                    </div>
+                    <TranslationEditableField
+                      originalValue={moduleContent.caption || ''}
+                      translatedValue={translatedContent.caption || ''}
+                      onChange={(value) => handleContentChange({ caption: value })}
+                      placeholder="Inserisci la traduzione della didascalia..."
+                      errorCondition={moduleContent.caption && !translatedContent.caption}
+                      rows={2}
+                      fieldId={`${module.type}-caption-${module.id}`}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Etichette specifiche per PDF */}
+              <div>
+                <Label>Etichette interfaccia PDF</Label>
+                <div className="p-4 bg-gray-50 rounded-md border mt-2">
+                  {/* Etichetta per Campo nome file */}
+                  <div className="mb-4">
+                    <Label htmlFor={`module-${module.id}-label-fileLabel`}>Etichetta "Nome file"</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                      <div className="p-3 bg-neutral-50 rounded border text-sm">
+                        Nome file:
+                      </div>
+                      <TranslationEditableField
+                        originalValue="Nome file:"
+                        translatedValue={translatedContent.labels?.fileLabel || ''}
+                        onChange={(value) => {
+                          const currentLabels = translatedContent.labels || {};
+                          handleContentChange({ 
+                            labels: {
+                              ...currentLabels,
+                              fileLabel: value
+                            }
+                          });
+                        }}
+                        placeholder="Inserisci la traduzione per l'etichetta..."
+                        errorCondition={!translatedContent.labels?.fileLabel}
+                        rows={1}
+                        fieldId={`pdf-fileLabel-${module.id}`}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Testo pulsante download */}
+                  <div>
+                    <Label htmlFor={`module-${module.id}-label-download`}>Testo pulsante "Scarica file"</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                      <div className="p-3 bg-neutral-50 rounded border text-sm">
+                        Scarica file
+                      </div>
+                      <TranslationEditableField
+                        originalValue="Scarica file"
+                        translatedValue={translatedContent.labels?.download || ''}
+                        onChange={(value) => {
+                          const currentLabels = translatedContent.labels || {};
+                          handleContentChange({ 
+                            labels: {
+                              ...currentLabels,
+                              download: value
+                            }
+                          });
+                        }}
+                        placeholder="Inserisci la traduzione per il pulsante..."
+                        errorCondition={!translatedContent.labels?.download}
+                        rows={1}
+                        fieldId={`pdf-download-${module.id}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+          
         case 'image':
         case 'video':
         case '3d-model':
+          return (
+            <div className="space-y-4">
+              {moduleContent.title && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-title`}>Titolo</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.title}
+                    </div>
+                    <TranslationEditableField
+                      originalValue={moduleContent.title}
+                      translatedValue={translatedContent.title || ''}
+                      onChange={(value) => handleContentChange({ title: value })}
+                      placeholder="Inserisci la traduzione del titolo..."
+                      errorCondition={!translatedContent.title}
+                      rows={1}
+                      fieldId={`${module.type}-title-${module.id}`}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {moduleContent.description && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-description`}>Descrizione</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.description}
+                    </div>
+                    <TranslationEditableField
+                      originalValue={moduleContent.description}
+                      translatedValue={translatedContent.description || ''}
+                      onChange={(value) => handleContentChange({ description: value })}
+                      placeholder="Inserisci la traduzione della descrizione..."
+                      errorCondition={!translatedContent.description}
+                      rows={4}
+                      fieldId={`${module.type}-description-${module.id}`}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Caption/Didascalia */}
+              {moduleContent.caption !== undefined && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-caption`}>Didascalia</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.caption || ''}
+                    </div>
+                    <TranslationEditableField
+                      originalValue={moduleContent.caption || ''}
+                      translatedValue={translatedContent.caption || ''}
+                      onChange={(value) => handleContentChange({ caption: value })}
+                      placeholder="Inserisci la traduzione della didascalia..."
+                      errorCondition={moduleContent.caption && !translatedContent.caption}
+                      rows={2}
+                      fieldId={`${module.type}-caption-${module.id}`}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Etichette specifiche per il modello 3D */}
+              <div>
+                <Label>Etichette interfaccia modello 3D</Label>
+                <div className="p-4 bg-gray-50 rounded-md border mt-2">
+                  {/* Testo istruzioni modello 3D */}
+                  <div className="mb-4">
+                    <Label htmlFor={`module-${module.id}-label-3d-instructions`}>Testo istruzioni</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                      <div className="p-3 bg-neutral-50 rounded border text-sm">
+                        Questo modello 3D richiede file esterni specifici per funzionare correttamente. Utilizza il pulsante qui sotto per visualizzare il modello con tutti i componenti.
+                      </div>
+                      <TranslationEditableField
+                        originalValue="Questo modello 3D richiede file esterni specifici per funzionare correttamente. Utilizza il pulsante qui sotto per visualizzare il modello con tutti i componenti."
+                        translatedValue={translatedContent.labels?.instructions || ''}
+                        onChange={(value) => {
+                          const currentLabels = translatedContent.labels || {};
+                          handleContentChange({ 
+                            labels: {
+                              ...currentLabels,
+                              instructions: value
+                            }
+                          });
+                        }}
+                        placeholder="Inserisci la traduzione per le istruzioni..."
+                        errorCondition={!translatedContent.labels?.instructions}
+                        rows={3}
+                        fieldId={`3d-instructions-${module.id}`}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Testo pulsante visualizza modello 3D */}
+                  <div className="mb-4">
+                    <Label htmlFor={`module-${module.id}-label-3d-view`}>Testo pulsante "Visualizza modello 3D con tutti i componenti"</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                      <div className="p-3 bg-neutral-50 rounded border text-sm">
+                        Visualizza modello 3D con tutti i componenti
+                      </div>
+                      <TranslationEditableField
+                        originalValue="Visualizza modello 3D con tutti i componenti"
+                        translatedValue={translatedContent.labels?.viewModel || ''}
+                        onChange={(value) => {
+                          const currentLabels = translatedContent.labels || {};
+                          handleContentChange({ 
+                            labels: {
+                              ...currentLabels,
+                              viewModel: value
+                            }
+                          });
+                        }}
+                        placeholder="Inserisci la traduzione per il pulsante..."
+                        errorCondition={!translatedContent.labels?.viewModel}
+                        rows={1}
+                        fieldId={`3d-viewModel-${module.id}`}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Testo pulsante scarica modello */}
+                  <div>
+                    <Label htmlFor={`module-${module.id}-label-3d-download`}>Testo pulsante "Scarica il modello completo (.zip)"</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                      <div className="p-3 bg-neutral-50 rounded border text-sm">
+                        Scarica il modello completo (.zip)
+                      </div>
+                      <TranslationEditableField
+                        originalValue="Scarica il modello completo (.zip)"
+                        translatedValue={translatedContent.labels?.download || ''}
+                        onChange={(value) => {
+                          const currentLabels = translatedContent.labels || {};
+                          handleContentChange({ 
+                            labels: {
+                              ...currentLabels,
+                              download: value
+                            }
+                          });
+                        }}
+                        placeholder="Inserisci la traduzione per il pulsante..."
+                        errorCondition={!translatedContent.labels?.download}
+                        rows={1}
+                        fieldId={`3d-download-${module.id}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+          
         case 'link':
           return (
             <div className="space-y-4">
@@ -1276,30 +1553,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                 </div>
               )}
               
-              {/* Aggiungi campo per la didascalia (caption) per PDF, immagini, video, modello 3D, checklist ed elenco componenti */}
-              {(module.type === 'pdf' || module.type === 'image' || module.type === 'video' || 
-                module.type === '3d-model' || module.type === 'checklist' || module.type === 'bom') && 
-                moduleContent.caption !== undefined && (
-                <div>
-                  <Label htmlFor={`module-${module.id}-caption`}>Didascalia</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                    <div className="p-3 bg-neutral-50 rounded border text-sm">
-                      {moduleContent.caption || ''}
-                    </div>
-                    <TranslationEditableField
-                      originalValue={moduleContent.caption || ''}
-                      translatedValue={translatedContent.caption || ''}
-                      onChange={(value) => handleContentChange({ caption: value })}
-                      placeholder="Inserisci la traduzione della didascalia..."
-                      errorCondition={moduleContent.caption && !translatedContent.caption}
-                      rows={2}
-                      fieldId={`${module.type}-caption-${module.id}`}
-                    />
-                  </div>
-                </div>
-              )}
-              
-              {module.type === 'link' && moduleContent.text && (
+              {moduleContent.text && (
                 <div>
                   <Label htmlFor={`module-${module.id}-text`}>Testo del link</Label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
@@ -1314,6 +1568,26 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                       errorCondition={!translatedContent.text}
                       rows={1}
                       fieldId={`link-text-${module.id}`}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {moduleContent.caption !== undefined && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-caption`}>Didascalia</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.caption || ''}
+                    </div>
+                    <TranslationEditableField
+                      originalValue={moduleContent.caption || ''}
+                      translatedValue={translatedContent.caption || ''}
+                      onChange={(value) => handleContentChange({ caption: value })}
+                      placeholder="Inserisci la traduzione della didascalia..."
+                      errorCondition={moduleContent.caption && !translatedContent.caption}
+                      rows={2}
+                      fieldId={`${module.type}-caption-${module.id}`}
                     />
                   </div>
                 </div>
