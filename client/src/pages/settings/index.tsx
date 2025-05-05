@@ -54,6 +54,14 @@ const SettingsPage: React.FC = () => {
             />
             
             <SettingsCard
+              icon={<Server className="h-5 w-5" />}
+              title="Deploy Applicazione"
+              description="Pubblica l'applicazione per renderla accessibile online"
+              linkTo="/settings/deploy"
+              linkText="Gestisci deploy"
+            />
+            
+            <SettingsCard
               icon={<Database className="h-5 w-5" />}
               title="Backup & Ripristino"
               description="Gestisci i backup del sistema e le operazioni di ripristino"

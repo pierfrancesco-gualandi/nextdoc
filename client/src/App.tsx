@@ -175,6 +175,10 @@ function Router() {
               const DomainSettingsPage = require("@/pages/settings/domain-settings-page").default;
               return <DomainSettingsPage />;
             }} />
+            <Route path="/settings/deploy" component={() => {
+              const DeployPage = require("@/pages/settings/deploy-page").default;
+              return <DeployPage />;
+            }} />
             <Route component={NotFound} />
           </Switch>
         </div>
