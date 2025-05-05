@@ -768,6 +768,8 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           
         case '3d-model':
           // Per modelli 3D, verifica titolo, didascalia ed etichette UI
+          if (!moduleContent) return true;
+          
           const hasTitle3D = !moduleContent.title || !!translatedContent.title;
           const hasCaption3D = !moduleContent.caption || !!translatedContent.caption;
           const hasLabels3D = !translatedContent.labels || !!translatedContent.labels?.view;
