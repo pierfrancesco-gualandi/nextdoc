@@ -356,25 +356,42 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
             status: 'translated'
           };
           
+          console.log("Salvando traduzione documento:", documentTranslationData);
+          
           if (existingDocumentTranslation) {
             // Aggiorna la traduzione esistente
-            await fetch(`/api/document-translations/${existingDocumentTranslation.id}`, {
+            const updateResponse = await fetch(`/api/document-translations/${existingDocumentTranslation.id}`, {
               method: 'PUT',
               headers: {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify(documentTranslationData),
             });
+            
+            if (!updateResponse.ok) {
+              const errorText = await updateResponse.text();
+              console.error("Errore nell'aggiornamento della traduzione del documento:", errorText);
+              throw new Error(`Errore nell'aggiornamento della traduzione del documento: ${errorText}`);
+            }
           } else {
             // Crea una nuova traduzione
-            await fetch('/api/document-translations', {
+            const createResponse = await fetch('/api/document-translations', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify(documentTranslationData),
             });
+            
+            if (!createResponse.ok) {
+              const errorText = await createResponse.text();
+              console.error("Errore nella creazione della traduzione del documento:", errorText);
+              throw new Error(`Errore nella creazione della traduzione del documento: ${errorText}`);
+            }
           }
+          
+          // Invalida la cache per aggiornare i dati visualizzati
+          queryClient.invalidateQueries({ queryKey: [`/api/document-translations`] });
         } catch (docTranslationError) {
           console.error("Errore nel salvataggio della traduzione del documento:", docTranslationError);
           // Non interrompere l'intero processo di salvataggio se questa parte fallisce
