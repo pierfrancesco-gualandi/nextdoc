@@ -9,7 +9,7 @@ import { isDisegno3DSection, generateComponentsListHtml, getSpecificComponentsFo
  * @param languageId ID della lingua di destinazione per traduzione (opzionale)
  */
 export async function exportDocumentHtml(document: any, sections: any[], modules: any[], languageId?: string | number) {
-  // Valori di default dal documento originale
+  // Valori di default dal documento originale - usati SOLO se non ci sono traduzioni
   let documentTitle = document?.title || 'Documento Esportato';
   let documentDescription = document?.description || '';
   let documentVersion = document?.version || '1.0';
@@ -21,17 +21,23 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
       if (documentTranslationResponse.ok) {
         const documentTranslation = await documentTranslationResponse.json();
         
-        // Applica le traduzioni se disponibili
+        // PRIORITÀ ASSOLUTA alle traduzioni se presenti
         if (documentTranslation) {
-          documentTitle = documentTranslation.title || documentTitle;
-          documentDescription = documentTranslation.description || documentDescription;
-          
-          // Se il documento include traduzioni per la versione, la utilizziamo
-          if (documentTranslation.version) {
-            documentVersion = documentTranslation.version;
+          // Usa SEMPRE le traduzioni anche se sono stringhe vuote
+          if (documentTranslation.title !== undefined) {
+            documentTitle = documentTranslation.title;
+            console.log(`Titolo tradotto: "${documentTitle}"`);
           }
           
-          console.log(`Applicata traduzione al documento: ${documentTitle}`);
+          if (documentTranslation.description !== undefined) {
+            documentDescription = documentTranslation.description;
+            console.log(`Descrizione tradotta: "${documentDescription}"`);
+          }
+          
+          if (documentTranslation.version !== undefined) {
+            documentVersion = documentTranslation.version;
+            console.log(`Versione tradotta: "${documentVersion}"`);
+          }
         }
       } else {
         console.warn(`Traduzione del documento non trovata per la lingua ${languageId}`);
@@ -87,12 +93,19 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
         
         switch(module.type) {
           case 'text':
-            // Utilizza il testo tradotto se disponibile
+            // Utilizza SEMPRE il testo tradotto quando disponibile, anche se vuoto
+            // Il testo originale è solo un fallback
             let textContent = module.content.text || '';
             
             // Verifica se ci sono traduzioni disponibili per questo modulo
-            if (languageId && module.content.translatedContent && module.content.translatedContent.text) {
-              textContent = module.content.translatedContent.text;
+            if (languageId && module.content.translatedContent) {
+              // Se la traduzione esiste (anche se è vuota), la utilizziamo SEMPRE
+              if (module.content.translatedContent.text !== undefined) {
+                textContent = module.content.translatedContent.text;
+                console.log(`Modulo testo ${module.id}: Usando testo tradotto`);
+              } else {
+                console.log(`Modulo testo ${module.id}: Traduzione non disponibile, usando testo originale`);
+              }
             }
             
             content += `
@@ -103,26 +116,29 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'testp':
-            // Prepara i dati del file di testo con valori predefiniti
+            // Prepara i dati del file di testo con valori predefiniti (fallback)
             let textpTitle = module.content.title || '';
             let textpDescription = module.content.description || '';
             let textpContent = module.content.text || '';
             
-            // Utilizza le traduzioni se disponibili
+            // Utilizza SEMPRE le traduzioni quando disponibili, anche se sono stringhe vuote
             if (languageId && module.content.translatedContent) {
-              // Titolo tradotto
-              if (module.content.translatedContent.title) {
+              // Titolo tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.title !== undefined) {
                 textpTitle = module.content.translatedContent.title;
+                console.log(`Modulo testp ${module.id}: Usando titolo tradotto`);
               }
               
-              // Descrizione tradotta
-              if (module.content.translatedContent.description) {
+              // Descrizione tradotta - priorità ASSOLUTA
+              if (module.content.translatedContent.description !== undefined) {
                 textpDescription = module.content.translatedContent.description;
+                console.log(`Modulo testp ${module.id}: Usando descrizione tradotta`);
               }
               
-              // Testo tradotto
-              if (module.content.translatedContent.text) {
+              // Testo tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.text !== undefined) {
                 textpContent = module.content.translatedContent.text;
+                console.log(`Modulo testp ${module.id}: Usando testo tradotto`);
               }
             }
             
@@ -138,21 +154,28 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'image':
-            // Prepara i dati dell'immagine con valori predefiniti
+            // Prepara i dati dell'immagine con valori predefiniti (fallback)
             let imgSrc = module.content.src || '';
             let imgAlt = module.content.alt || '';
             let imgCaption = module.content.caption || '';
             
-            // Utilizza le traduzioni se disponibili
+            // Utilizza SEMPRE le traduzioni quando disponibili, anche se vuote
             if (languageId && module.content.translatedContent) {
-              // Alt text ha sempre priorità per accessibilità
-              if (module.content.translatedContent.alt) {
+              // Alt text - priorità ASSOLUTA
+              if (module.content.translatedContent.alt !== undefined) {
                 imgAlt = module.content.translatedContent.alt;
+                console.log(`Modulo immagine ${module.id}: Usando alt text tradotto`);
               }
               
-              // Didascalia tradotta
-              if (module.content.translatedContent.caption) {
+              // Didascalia - priorità ASSOLUTA
+              if (module.content.translatedContent.caption !== undefined) {
                 imgCaption = module.content.translatedContent.caption;
+                console.log(`Modulo immagine ${module.id}: Usando didascalia tradotta`);
+              }
+              
+              // Titolo - priorità ASSOLUTA
+              if (module.content.translatedContent.title !== undefined) {
+                console.log(`Modulo immagine ${module.id}: Usando titolo tradotto`);
               }
             }
             
@@ -165,21 +188,23 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'video':
-            // Prepara i dati del video con valori predefiniti
+            // Prepara i dati del video con valori predefiniti (fallback)
             let videoThumbnail = module.content.thumbnail || '';
             let videoTitle = module.content.title || 'Video';
             let videoCaption = module.content.caption || '';
             
-            // Utilizza le traduzioni se disponibili
+            // Utilizza SEMPRE le traduzioni quando disponibili, anche se vuote
             if (languageId && module.content.translatedContent) {
-              // Titolo tradotto
-              if (module.content.translatedContent.title) {
+              // Titolo tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.title !== undefined) {
                 videoTitle = module.content.translatedContent.title;
+                console.log(`Modulo video ${module.id}: Usando titolo tradotto`);
               }
               
-              // Didascalia tradotta
-              if (module.content.translatedContent.caption) {
+              // Didascalia tradotta - priorità ASSOLUTA
+              if (module.content.translatedContent.caption !== undefined) {
                 videoCaption = module.content.translatedContent.caption;
+                console.log(`Modulo video ${module.id}: Usando didascalia tradotta`);
               }
             }
             
@@ -199,28 +224,40 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'table':
-            // Prepara gli elementi tabella utilizzando valori predefiniti
+            // Prepara gli elementi tabella utilizzando valori predefiniti (fallback)
             let tableHeaders = module.content.headers || [];
             let tableRows = module.content.rows || [];
             let tableCaption = module.content.caption || '';
             
-            // Verifica se ci sono traduzioni disponibili per questo modulo
+            // PRIORITÀ ASSOLUTA alle traduzioni, anche se sono array vuoti o stringhe vuote
             if (languageId && module.content.translatedContent) {
-              // Utilizza le intestazioni tradotte se disponibili
-              if (Array.isArray(module.content.translatedContent.headers) &&
-                  module.content.translatedContent.headers.length > 0) {
-                tableHeaders = module.content.translatedContent.headers;
+              // Intestazioni tradotte - priorità ASSOLUTA
+              if (module.content.translatedContent.headers !== undefined) {
+                // Usa SEMPRE la traduzione se esiste
+                tableHeaders = Array.isArray(module.content.translatedContent.headers) 
+                  ? module.content.translatedContent.headers 
+                  : [];
+                console.log(`Modulo tabella ${module.id}: Usando intestazioni tradotte`);
               }
               
-              // Utilizza le righe tradotte se disponibili
-              if (Array.isArray(module.content.translatedContent.rows) &&
-                  module.content.translatedContent.rows.length > 0) {
-                tableRows = module.content.translatedContent.rows;
+              // Righe tradotte - priorità ASSOLUTA  
+              if (module.content.translatedContent.rows !== undefined) {
+                // Usa SEMPRE la traduzione se esiste
+                tableRows = Array.isArray(module.content.translatedContent.rows) 
+                  ? module.content.translatedContent.rows 
+                  : [];
+                console.log(`Modulo tabella ${module.id}: Usando righe tradotte`);
               }
               
-              // Utilizza la didascalia tradotta se disponibile
-              if (module.content.translatedContent.caption) {
+              // Didascalia tradotta - priorità ASSOLUTA
+              if (module.content.translatedContent.caption !== undefined) {
                 tableCaption = module.content.translatedContent.caption;
+                console.log(`Modulo tabella ${module.id}: Usando didascalia tradotta`);
+              }
+              
+              // Titolo tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.title !== undefined) {
+                console.log(`Modulo tabella ${module.id}: Usando titolo tradotto`);
               }
             }
             
@@ -382,27 +419,30 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'component':
-            // Prepara i dati del componente con valori predefiniti
+            // Prepara i dati del componente con valori predefiniti (fallback)
             let componentCaption = module.content.caption || '';
             let componentLabels = {
               id: 'ID Componente',
               qty: 'Quantità'
             };
             
-            // Utilizza le traduzioni se disponibili
+            // Utilizza SEMPRE le traduzioni quando disponibili, anche se vuote
             if (languageId && module.content.translatedContent) {
-              // Didascalia tradotta
-              if (module.content.translatedContent.caption) {
+              // Didascalia tradotta - priorità ASSOLUTA
+              if (module.content.translatedContent.caption !== undefined) {
                 componentCaption = module.content.translatedContent.caption;
+                console.log(`Modulo componente ${module.id}: Usando didascalia tradotta`);
               }
               
-              // Etichette tradotte
+              // Etichette tradotte - priorità ASSOLUTA
               if (module.content.translatedContent.labels) {
-                if (module.content.translatedContent.labels.id) {
+                if (module.content.translatedContent.labels.id !== undefined) {
                   componentLabels.id = module.content.translatedContent.labels.id;
+                  console.log(`Modulo componente ${module.id}: Usando etichetta ID tradotta`);
                 }
-                if (module.content.translatedContent.labels.qty) {
+                if (module.content.translatedContent.labels.qty !== undefined) {
                   componentLabels.qty = module.content.translatedContent.labels.qty;
+                  console.log(`Modulo componente ${module.id}: Usando etichetta quantità tradotta`);
                 }
               }
             }
