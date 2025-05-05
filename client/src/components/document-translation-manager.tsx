@@ -647,6 +647,13 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           // Verifica i campi di testo per i file di testo
           return !translatedContent.title || !translatedContent.description;
           
+        case 'threeDModel':
+          // Verifica titolo, didascalia e etichette per i modelli 3D
+          const hasTitle = !moduleContent.title || !!translatedContent.title;
+          const hasCaption = !moduleContent.caption || !!translatedContent.caption;
+          const hasLabels = !translatedContent.labels || !!translatedContent.labels?.view;
+          return !hasTitle || !hasCaption || !hasLabels;
+          
         case 'image':
         case 'video':
           // Per immagini e video, solo verifica che ci sia almeno la didascalia
@@ -760,8 +767,11 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           return !translatedContent.title || !hasHeaders || !hasMessages || !hasDescriptions;
           
         case '3d-model':
-          // Per modelli 3D, verifica solo caption
-          return !translatedContent.caption;
+          // Per modelli 3D, verifica titolo, didascalia ed etichette UI
+          const hasTitle3D = !moduleContent.title || !!translatedContent.title;
+          const hasCaption3D = !moduleContent.caption || !!translatedContent.caption;
+          const hasLabels3D = !translatedContent.labels || !!translatedContent.labels?.view;
+          return !hasTitle3D || !hasCaption3D || !hasLabels3D;
           
         default:
           // Per qualsiasi altro tipo di modulo, verifica se ha un titolo
@@ -1136,6 +1146,29 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                   </div>
                 </div>
               )}
+            </div>
+          );
+          
+        case 'threeDModel':
+          // Utilizziamo il nostro componente specializzato per il modello 3D
+          // Import necessario: import ThreeDModelTranslationEditor from './module-translations/ThreeDModelTranslationEditor';
+          return (
+            <div className="space-y-4">
+              <div className="imp-module-3d-translation">
+                {React.createElement(() => {
+                  // Importa dinamicamente il componente
+                  const ThreeDModelTranslationEditor = require('./module-translations/ThreeDModelTranslationEditor').default;
+                  
+                  return (
+                    <ThreeDModelTranslationEditor
+                      module={module}
+                      moduleTranslation={moduleTranslation}
+                      saveTranslation={handleContentChange}
+                      languageId={selectedLanguage}
+                    />
+                  );
+                })}
+              </div>
             </div>
           );
           
