@@ -396,25 +396,82 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               // ID della sezione (se disponibile)
               const sectionId = section ? section.id : null;
               
-              console.log("Verificando sezione per BOM:", sectionTitle, "ID:", sectionId);
+              console.log(`Modulo BOM: ${module.id} nella Sezione: ${sectionTitle} ID sezione: ${sectionId}`);
               
-              // Utilizziamo le funzioni di fixComponents.js per ottenere la lista componenti corretta
+              // IMPORTANTE: Utilizziamo le funzioni di fixComponents.js per ottenere la lista componenti corretta
               const specificItems = getSpecificComponentsForSection(sectionId, sectionTitle);
               console.log(`Elementi specifici per sezione ${sectionId}:`, specificItems ? specificItems.length : 'nessuno');
               
-              if (specificItems) {
-                console.log(`Primo elemento:`, JSON.stringify(specificItems[0] || {}));
+              // Controlli specifici per determinate sezioni
+              if (isDisegno3DSection(sectionId, sectionTitle)) {
+                console.log(`🔍 Cercando items per sezione: ${sectionTitle} ID: ${sectionId}`);
+                console.log(`isDisegno3DSection check - ID: ${sectionId}, Titolo: ${sectionTitle}`);
+                console.log(`Sezione 3D identificata tramite titolo: ${sectionTitle}`);
+                console.log(`✅ Trovati ${specificItems ? specificItems.length : 0} items specifici per la sezione`);
+              }
+              else if (sectionId === 6 || (sectionTitle && sectionTitle.toLowerCase().includes('descrizione'))) {
+                console.log(`🔍 Sezione Descrizione rilevata`);
+                if (specificItems && specificItems.length > 0) {
+                  console.log(specificItems.length === 1 ? 
+                    `✅ Primo modulo BOM nella sezione Descrizione` : 
+                    `✅ Secondo modulo BOM nella sezione Descrizione`);
+                }
+              }
+              else if (sectionId === 39 || (sectionTitle && (sectionTitle.toLowerCase().includes('safety') || sectionTitle.toLowerCase().includes('sicurezza')))) {
+                console.log(`🔍 Sezione 3.1 Sicurezza rilevata: ${sectionTitle} ID: ${sectionId}`);
+                console.log(`✅ Utilizzati componenti specifici per la sezione 3.1`);
               }
               
-              // Convertiamo gli elementi nel formato atteso
-              const bomItems = specificItems ? specificItems.map((item: any) => ({
-                level: item.level,
-                component: {
-                  code: item.code,
-                  description: item.description
-                },
-                quantity: item.quantity
-              })) : [];
+              // Convertiamo gli elementi nel formato atteso E applichiamo le traduzioni
+              let bomItems = [];
+              
+              if (specificItems && specificItems.length > 0) {
+                // Verifica se abbiamo traduzioni disponibili
+                const hasTranslations = languageId && 
+                                       module.content.translatedContent && 
+                                       module.content.translatedContent.descriptions;
+                
+                if (hasTranslations) {
+                  // Convertiamo gli elementi nel formato atteso MA applicando le traduzioni
+                  bomItems = specificItems.map((item: any) => {
+                    const code = item.code;
+                    let description = item.description;
+                    
+                    // Se abbiamo una traduzione per questo componente, utilizzala SEMPRE
+                    if (code && module.content.translatedContent.descriptions[code] !== undefined) {
+                      description = module.content.translatedContent.descriptions[code];
+                      console.log(`Componente ${code}: Usando descrizione tradotta`);
+                    }
+                    
+                    return {
+                      level: item.level,
+                      component: {
+                        code: code,
+                        description: description
+                      },
+                      quantity: item.quantity
+                    };
+                  });
+                  
+                  console.log(`✅ Applicate ${Object.keys(module.content.translatedContent.descriptions).length} traduzioni ai componenti`);
+                } else {
+                  // Nessuna traduzione disponibile, usiamo i valori originali
+                  bomItems = specificItems.map((item: any) => ({
+                    level: item.level,
+                    component: {
+                      code: item.code,
+                      description: item.description
+                    },
+                    quantity: item.quantity
+                  }));
+                  
+                  console.log(`⚠️ Nessuna traduzione disponibile per i componenti`);
+                }
+              } else {
+                // Nessun item trovato
+                bomItems = [];
+                console.log(`⚠️ Nessun componente trovato per questa sezione`);
+              }
               
               console.log(`Elementi BOM trasformati: ${bomItems.length} (include N°)`);
               
