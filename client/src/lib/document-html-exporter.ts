@@ -46,17 +46,25 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
         console.warn(`Traduzione del documento non trovata per la lingua ${languageId}`);
       }
       
-      // Carica esplicitamente tutte le traduzioni delle sezioni
+      // METODO COMPLETO MIGLIORATO: carica direttamente tutte le traduzioni necessarie dall'API
+      // Questo garantisce che tutte le traduzioni inserite nei campi vengano utilizzate nell'esportazione
+      
+      // 1. Carica esplicitamente tutte le traduzioni delle SEZIONI
       try {
+        // Recupera tutte le traduzioni di sezioni per la lingua selezionata
+        // Utilizziamo il percorso corretto che torna tutto il contenuto tradotto
         const sectionTranslationsResponse = await fetch(`/api/section-translations?languageId=${languageId}`);
         if (sectionTranslationsResponse.ok) {
           const sectionTranslations = await sectionTranslationsResponse.json();
           console.log(`Caricate ${sectionTranslations.length} traduzioni di sezioni`);
           
-          // Mappa le traduzioni alle sezioni
+          // Mappa le traduzioni alle sezioni - applicazione FORZATA delle traduzioni
           sections = sections.map(section => {
+            // Cerca la traduzione corrispondente
             const translation = sectionTranslations.find((t: any) => t.sectionId === section.id);
             if (translation) {
+              console.log(`Trovata traduzione per la sezione ${section.id} - "${section.title}"`);
+              
               // Aggiungi le traduzioni direttamente alla sezione
               return {
                 ...section,
@@ -73,23 +81,29 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
         console.error('Errore nel recupero delle traduzioni delle sezioni:', error);
       }
       
-      // Carica esplicitamente tutte le traduzioni dei moduli
+      // 2. Carica esplicitamente tutte le traduzioni dei MODULI
       try {
-        const moduleTranslationsResponse = await fetch(`/api/content-module-translations?languageId=${languageId}`);
+        // Recupera tutte le traduzioni dei moduli per la lingua selezionata
+        const moduleTranslationsResponse = await fetch(`/api/module-translations`);
         if (moduleTranslationsResponse.ok) {
-          const moduleTranslations = await moduleTranslationsResponse.json();
-          console.log(`Caricate ${moduleTranslations.length} traduzioni di moduli`);
+          const allModuleTranslations = await moduleTranslationsResponse.json();
+          // Filtra per lingua corrente
+          const moduleTranslations = allModuleTranslations.filter((t: any) => t.languageId == languageId);
+          console.log(`Caricate ${moduleTranslations.length} traduzioni di moduli per la lingua ${languageId}`);
           
-          // Mappa le traduzioni ai moduli
+          // Mappa le traduzioni ai moduli - applicazione FORZATA delle traduzioni
           modules = modules.map(module => {
+            // Cerca la traduzione corrispondente
             const translation = moduleTranslations.find((t: any) => t.moduleId === module.id);
-            if (translation && translation.content) {
+            if (translation) {
+              console.log(`Trovata traduzione per il modulo ${module.id} (tipo: ${module.type})`);
+              
               // Aggiungi la traduzione direttamente al modulo
               return {
                 ...module,
                 content: {
                   ...module.content,
-                  translatedContent: translation.content
+                  translatedContent: translation.content || {} // Imposta un oggetto vuoto anche se non c'è contenuto
                 }
               };
             }
@@ -430,15 +444,58 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                 let translatedHeaders = defaultHeaders;
                 
                 // Se stiamo esportando con una lingua specifica e il modulo ha traduzioni
-                if (languageId && module.content.translatedContent && module.content.translatedContent.headers) {
-                  // Usa le traduzioni fornite dall'utente o le traduzioni predefinite
-                  translatedHeaders = {
-                    'number': module.content.translatedContent.headers.number || defaultTranslations.number,
-                    'level': module.content.translatedContent.headers.level || defaultTranslations.level,
-                    'code': module.content.translatedContent.headers.code || defaultTranslations.code,
-                    'description': module.content.translatedContent.headers.description || defaultTranslations.description,
-                    'quantity': module.content.translatedContent.headers.quantity || defaultTranslations.quantity
-                  };
+                if (languageId && module.content.translatedContent) {
+                  // Verifica se esistono traduzioni per le intestazioni
+                  if (module.content.translatedContent.headers) {
+                    // Usa le traduzioni fornite dall'utente o le traduzioni predefinite
+                    translatedHeaders = {
+                      'number': module.content.translatedContent.headers.number !== undefined ? 
+                        module.content.translatedContent.headers.number : defaultTranslations.number,
+                      'level': module.content.translatedContent.headers.level !== undefined ? 
+                        module.content.translatedContent.headers.level : defaultTranslations.level,
+                      'code': module.content.translatedContent.headers.code !== undefined ? 
+                        module.content.translatedContent.headers.code : defaultTranslations.code,
+                      'description': module.content.translatedContent.headers.description !== undefined ? 
+                        module.content.translatedContent.headers.description : defaultTranslations.description,
+                      'quantity': module.content.translatedContent.headers.quantity !== undefined ? 
+                        module.content.translatedContent.headers.quantity : defaultTranslations.quantity
+                    };
+                    console.log(`Modulo BOM ${module.id}: Usando intestazioni tradotte complete`);
+                  } 
+                  // Verifica anche se ci sono tableHeaders come alternativa
+                  else if (module.content.translatedContent.tableHeaders) {
+                    translatedHeaders = {
+                      'number': module.content.translatedContent.tableHeaders.number !== undefined ? 
+                        module.content.translatedContent.tableHeaders.number : defaultTranslations.number,
+                      'level': module.content.translatedContent.tableHeaders.level !== undefined ? 
+                        module.content.translatedContent.tableHeaders.level : defaultTranslations.level,
+                      'code': module.content.translatedContent.tableHeaders.code !== undefined ? 
+                        module.content.translatedContent.tableHeaders.code : defaultTranslations.code,
+                      'description': module.content.translatedContent.tableHeaders.description !== undefined ? 
+                        module.content.translatedContent.tableHeaders.description : defaultTranslations.description,
+                      'quantity': module.content.translatedContent.tableHeaders.quantity !== undefined ? 
+                        module.content.translatedContent.tableHeaders.quantity : defaultTranslations.quantity
+                    };
+                    console.log(`Modulo BOM ${module.id}: Usando tableHeaders tradotte`);
+                  }
+                  // Verifica intestazioni come array semplice
+                  else if (Array.isArray(module.content.translatedContent.headers) && module.content.translatedContent.headers.length >= 3) {
+                    // Formato array semplice [codice, descrizione, quantità]
+                    const headers = module.content.translatedContent.headers;
+                    translatedHeaders = {
+                      'number': defaultTranslations.number,
+                      'level': defaultTranslations.level,
+                      'code': headers[0] !== undefined ? headers[0] : defaultTranslations.code,
+                      'description': headers[1] !== undefined ? headers[1] : defaultTranslations.description,
+                      'quantity': headers[2] !== undefined ? headers[2] : defaultTranslations.quantity
+                    };
+                    console.log(`Modulo BOM ${module.id}: Usando intestazioni tradotte in formato array`);
+                  }
+                  // Fallback lingua inglese
+                  else if (languageId === 2) {
+                    translatedHeaders = defaultTranslations;
+                    console.log(`Modulo BOM ${module.id}: Usando intestazioni tradotte predefinite per inglese`);
+                  }
                 }
                 
                 tableHtml = `
@@ -472,13 +529,32 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                 tableHtml = `<p class="bom-empty">Nessun elemento trovato nella distinta base</p>`;
               }
               
+              // Prepara didascalia e descrizione per il BOM, utilizzando le traduzioni se disponibili
+              let bomCaption = module.content.caption || '';
+              let bomDescription = module.content.description || '';
+              
+              // Usa SEMPRE le traduzioni quando disponibili, anche se vuote
+              if (languageId && module.content.translatedContent) {
+                // Didascalia tradotta - priorità ASSOLUTA
+                if (module.content.translatedContent.caption !== undefined) {
+                  bomCaption = module.content.translatedContent.caption;
+                  console.log(`Modulo BOM ${module.id}: Usando didascalia tradotta: "${bomCaption}"`);
+                }
+                
+                // Descrizione tradotta - priorità ASSOLUTA
+                if (module.content.translatedContent.description !== undefined) {
+                  bomDescription = module.content.translatedContent.description;
+                  console.log(`Modulo BOM ${module.id}: Usando descrizione tradotta: "${bomDescription}"`);
+                }
+              }
+              
               bomHtml = `
                 <figure class="bom-container">
                   <div class="bom-content">
                     ${tableHtml}
                   </div>
-                  ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : 
-                    (module.content.description ? `<figcaption class="module-caption">${module.content.description}</figcaption>` : '')}
+                  ${bomCaption ? `<figcaption class="module-caption">${bomCaption}</figcaption>` : 
+                    (bomDescription ? `<figcaption class="module-caption">${bomDescription}</figcaption>` : '')}
                 </figure>
               `;
             } catch (e) {
