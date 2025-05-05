@@ -19,13 +19,17 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
   // Se è specificata una lingua, cerchiamo la traduzione del documento
   if (languageId) {
     try {
-      // Carica le traduzioni del documento
-      const documentTranslationResponse = await fetch(`/api/document-translations/${document.id}?languageId=${languageId}`);
+      // Carica le traduzioni del documento - CORRETTO uso dell'endpoint API
+      const documentTranslationResponse = await fetch(`/api/document-translations?documentId=${document.id}&languageId=${languageId}`);
       if (documentTranslationResponse.ok) {
-        const documentTranslation = await documentTranslationResponse.json();
+        const documentTranslations = await documentTranslationResponse.json();
         
-        // PRIORITÀ ASSOLUTA alle traduzioni se presenti
-        if (documentTranslation) {
+        // Verifica se abbiamo traduzioni disponibili
+        if (documentTranslations && documentTranslations.length > 0) {
+          // Prendiamo la prima traduzione disponibile
+          const documentTranslation = documentTranslations[0];
+          console.log("Dati traduzione documento:", documentTranslation);
+          
           // Usa SEMPRE le traduzioni anche se sono stringhe vuote
           if (documentTranslation.title !== undefined) {
             documentTitle = documentTranslation.title;
@@ -41,9 +45,12 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             documentVersion = documentTranslation.version;
             console.log(`Versione tradotta: "${documentVersion}"`);
           }
+        } else {
+          console.warn(`Nessuna traduzione del documento trovata per ID=${document.id}, lingua=${languageId}`);
         }
       } else {
-        console.warn(`Traduzione del documento non trovata per la lingua ${languageId}`);
+        const errorText = await documentTranslationResponse.text();
+        console.error(`Errore nel caricamento della traduzione del documento: ${errorText}`);
       }
       
       // METODO COMPLETO MIGLIORATO: carica direttamente tutte le traduzioni necessarie dall'API

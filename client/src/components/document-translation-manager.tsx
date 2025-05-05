@@ -197,10 +197,17 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           const docTranslationData = await docTranslationResponse.json();
           if (docTranslationData && docTranslationData.length > 0) {
             const docTranslation = docTranslationData[0];
-            // Imposta i campi tradotti del documento
-            setDocumentTitleTranslation(docTranslation.title || '');
-            setDocumentVersionTranslation(docTranslation.version || '');
-            setDocumentDescriptionTranslation(docTranslation.description || '');
+            // Imposta i campi tradotti del documento ESATTAMENTE come sono salvati nel DB
+            // Questo garantisce che anche le stringhe vuote vengano preservate
+            setDocumentTitleTranslation(docTranslation.title !== undefined ? docTranslation.title : '');
+            setDocumentVersionTranslation(docTranslation.version !== undefined ? docTranslation.version : '');
+            setDocumentDescriptionTranslation(docTranslation.description !== undefined ? docTranslation.description : '');
+            
+            console.log("Caricati dati documento dall'API:", {
+              titleExact: docTranslation.title,
+              versionExact: docTranslation.version,
+              descriptionExact: docTranslation.description
+            });
           } else {
             // Reset dei campi di traduzione se non esistono
             setDocumentTitleTranslation('');
@@ -350,11 +357,16 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           const documentTranslationData = {
             documentId: parseInt(documentId),
             languageId: parseInt(selectedLanguage),
-            title: documentTitleTranslation || document.title,
-            version: documentVersionTranslation || document.version,
-            description: documentDescriptionTranslation || document.description,
+            title: documentTitleTranslation !== undefined ? documentTitleTranslation : document.title,
+            version: documentVersionTranslation !== undefined ? documentVersionTranslation : document.version,
+            description: documentDescriptionTranslation !== undefined ? documentDescriptionTranslation : document.description,
             status: 'translated'
           };
+          
+          console.log("Valori titolo:", {
+            documentTitleTranslationExact: documentTitleTranslation,
+            usandoValoreTitolo: documentTitleTranslation !== undefined ? documentTitleTranslation : document.title
+          });
           
           console.log("Salvando traduzione documento:", documentTranslationData);
           
