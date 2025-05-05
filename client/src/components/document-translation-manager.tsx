@@ -670,19 +670,32 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           return !translatedContent.caption && moduleContent?.caption;
           
         case 'checklist':
+          // Prima verifica se tutti gli elementi sono tradotti
           if (Array.isArray(moduleContent?.items)) {
             if (!Array.isArray(translatedContent.items)) return true;
             
+            // Verifica se ogni elemento ha una traduzione
             for (let i = 0; i < moduleContent.items.length; i++) {
               if (!translatedContent.items[i] || !translatedContent.items[i].text) {
+                console.log(`Checklist elemento ${i} non tradotto`);
                 return true;
               }
             }
           }
           
-          // Verifica se manca titolo o didascalia (quando presenti nell'originale)
-          return (moduleContent?.title && !translatedContent.title) || 
-                 (moduleContent?.caption && !translatedContent.caption);
+          // Log per debugging
+          console.log('Checklist status check:', {
+            hasTitle: moduleContent?.title ? !!translatedContent.title : true,
+            hasCaption: moduleContent?.caption ? !!translatedContent.caption : true,
+            modId: module.id
+          });
+          
+          // Verifica separata per titolo e didascalia, considerando come tradotto se non esistono nell'originale
+          const needsTitle = moduleContent?.title && !translatedContent.title;
+          const needsCaption = moduleContent?.caption && !translatedContent.caption;
+          
+          // Un modulo è completamente tradotto solo se tutti i campi richiesti sono tradotti
+          return needsTitle || needsCaption;
           
         case 'pdf':
           // Per i PDF, solo la didascalia è necessaria
