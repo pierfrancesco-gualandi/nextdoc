@@ -467,36 +467,42 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'checklist':
-            // Verifica se ci sono traduzioni disponibili per questo modulo
+            // Prepara i dati della checklist con valori predefiniti (fallback)
             let checklistItems = module.content.items || [];
             let checklistTitle = module.content.title || '';
             let checklistCaption = module.content.caption || '';
             
-            // Utilizza le traduzioni se disponibili
+            // Utilizza SEMPRE le traduzioni quando disponibili, anche se sono vuote
             if (languageId && module.content.translatedContent) {
-              // Aggiorna il titolo se disponibile nella traduzione
-              if (module.content.translatedContent.title) {
+              // Titolo tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.title !== undefined) {
                 checklistTitle = module.content.translatedContent.title;
+                console.log(`Modulo checklist ${module.id}: Usando titolo tradotto`);
               }
               
-              // Aggiorna la didascalia se disponibile nella traduzione
-              if (module.content.translatedContent.caption) {
+              // Didascalia tradotta - priorità ASSOLUTA
+              if (module.content.translatedContent.caption !== undefined) {
                 checklistCaption = module.content.translatedContent.caption;
+                console.log(`Modulo checklist ${module.id}: Usando didascalia tradotta`);
               }
               
-              // Aggiorna gli elementi della checklist se disponibili nella traduzione
-              if (Array.isArray(module.content.translatedContent.items)) {
-                // Crea nuovi elementi unendo il flag 'checked' originale con il testo tradotto
-                checklistItems = checklistItems.map((item, index) => {
-                  const translatedItem = module.content.translatedContent.items[index];
-                  if (translatedItem && translatedItem.text) {
-                    return {
-                      ...item,
-                      text: translatedItem.text
-                    };
-                  }
-                  return item;
-                });
+              // Elementi della checklist tradotti - priorità ASSOLUTA
+              if (module.content.translatedContent.items !== undefined) {
+                if (Array.isArray(module.content.translatedContent.items)) {
+                  // Crea nuovi elementi unendo il flag 'checked' originale con il testo tradotto
+                  checklistItems = checklistItems.map((item, index) => {
+                    const translatedItem = module.content.translatedContent.items[index];
+                    // Usa la traduzione se esiste per questo elemento specifico
+                    if (translatedItem && translatedItem.text !== undefined) {
+                      return {
+                        ...item,
+                        text: translatedItem.text
+                      };
+                    }
+                    return item;
+                  });
+                  console.log(`Modulo checklist ${module.id}: Usando elementi tradotti`);
+                }
               }
             }
             
@@ -530,35 +536,45 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               break;
             }
             
-            // Prepara i dati del file con valori predefiniti
+            // Prepara i dati del file con valori predefiniti (fallback)
             let fileTitle = module.content.title || '';
             let fileCaption = module.content.caption || module.content.description || '';
             let fileFilename = module.content.filename || module.content.src.split('/').pop() || 'File';
             let fileLabel = 'Nome file:';
             let downloadText = 'Scarica file';
             
-            // Utilizza le traduzioni se disponibili
+            // Utilizza SEMPRE le traduzioni quando disponibili, anche se vuote
             if (languageId && module.content.translatedContent) {
-              // Titolo tradotto
-              if (module.content.translatedContent.title) {
+              // Titolo tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.title !== undefined) {
                 fileTitle = module.content.translatedContent.title;
+                console.log(`Modulo file ${module.id}: Usando titolo tradotto`);
               }
               
-              // Didascalia/descrizione tradotta
-              if (module.content.translatedContent.caption) {
+              // Didascalia tradotta - priorità ASSOLUTA
+              if (module.content.translatedContent.caption !== undefined) {
                 fileCaption = module.content.translatedContent.caption;
-              } else if (module.content.translatedContent.description) {
+                console.log(`Modulo file ${module.id}: Usando didascalia tradotta`);
+              } else if (module.content.translatedContent.description !== undefined) {
                 fileCaption = module.content.translatedContent.description;
+                console.log(`Modulo file ${module.id}: Usando descrizione tradotta come didascalia`);
               }
               
-              // Adatta l'etichetta e il testo di download alla lingua
+              // Filename tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.filename !== undefined) {
+                fileFilename = module.content.translatedContent.filename;
+                console.log(`Modulo file ${module.id}: Usando filename tradotto`);
+              }
+              
+              // Etichette tradotte - priorità ASSOLUTA
               if (module.content.translatedContent.labels) {
-                // Usa le etichette tradotte se presenti
-                if (module.content.translatedContent.labels.fileLabel) {
+                if (module.content.translatedContent.labels.fileLabel !== undefined) {
                   fileLabel = module.content.translatedContent.labels.fileLabel;
+                  console.log(`Modulo file ${module.id}: Usando etichetta file tradotta`);
                 }
-                if (module.content.translatedContent.labels.download) {
+                if (module.content.translatedContent.labels.download !== undefined) {
                   downloadText = module.content.translatedContent.labels.download;
+                  console.log(`Modulo file ${module.id}: Usando testo download tradotto`);
                 }
               } else if (languageId && languageId !== 1) { // Se non è italiano e non ci sono etichette tradotte
                 fileLabel = 'File name:';
@@ -587,7 +603,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             
           // Aggiunta di tipi di avviso specifici con miglioramenti visivi, icone e testi
           case 'danger':
-            // Prepara i dati dell'avviso con valori predefiniti
+            // Prepara i dati dell'avviso con valori predefiniti (fallback)
             let dangerTitle = 'PERICOLO';
             let dangerMessage = module.content.message || module.content.text || 'Questo è un messaggio di PERICOLO';
             let dangerDescription = module.content.description || '';
@@ -597,24 +613,30 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               dangerMessage = "Rimuovere il carter e non toccare la cinghia di trasmissione";
             }
             
-            // Utilizza le traduzioni se disponibili
+            // Utilizza SEMPRE le traduzioni quando disponibili, anche se vuote
             if (languageId && module.content.translatedContent) {
-              // Titolo tradotto
-              if (module.content.translatedContent.title) {
+              // Titolo tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.title !== undefined) {
                 dangerTitle = module.content.translatedContent.title;
+                console.log(`Modulo danger ${module.id}: Usando titolo tradotto`);
               } else if (languageId !== 1) {
                 // Traduzioni predefinite se non è italiano
                 dangerTitle = 'DANGER';
               }
               
-              // Messaggio tradotto
-              if (module.content.translatedContent.message || module.content.translatedContent.text) {
-                dangerMessage = module.content.translatedContent.message || module.content.translatedContent.text;
+              // Messaggio tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.message !== undefined) {
+                dangerMessage = module.content.translatedContent.message;
+                console.log(`Modulo danger ${module.id}: Usando messaggio tradotto`);
+              } else if (module.content.translatedContent.text !== undefined) {
+                dangerMessage = module.content.translatedContent.text;
+                console.log(`Modulo danger ${module.id}: Usando testo tradotto come messaggio`);
               }
               
-              // Descrizione tradotta
-              if (module.content.translatedContent.description) {
+              // Descrizione tradotta - priorità ASSOLUTA
+              if (module.content.translatedContent.description !== undefined) {
                 dangerDescription = module.content.translatedContent.description;
+                console.log(`Modulo danger ${module.id}: Usando descrizione tradotta`);
               }
             }
               
@@ -633,7 +655,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'warning-alert':
-            // Prepara i dati dell'avviso con valori predefiniti
+            // Prepara i dati dell'avviso con valori predefiniti (fallback)
             let warningTitle = 'AVVERTENZA';
             let warningMessage = module.content.message || module.content.text || 'Questo è un messaggio di AVVERTENZA';
             let warningDescription = module.content.description || '';
@@ -643,24 +665,30 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               warningMessage = "Non avviare la macchina con i ripari aperti o danneggiati";
             }
             
-            // Utilizza le traduzioni se disponibili
+            // Utilizza SEMPRE le traduzioni quando disponibili, anche se vuote
             if (languageId && module.content.translatedContent) {
-              // Titolo tradotto
-              if (module.content.translatedContent.title) {
+              // Titolo tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.title !== undefined) {
                 warningTitle = module.content.translatedContent.title;
+                console.log(`Modulo warning ${module.id}: Usando titolo tradotto`);
               } else if (languageId !== 1) {
                 // Traduzioni predefinite se non è italiano
                 warningTitle = 'WARNING';
               }
               
-              // Messaggio tradotto
-              if (module.content.translatedContent.message || module.content.translatedContent.text) {
-                warningMessage = module.content.translatedContent.message || module.content.translatedContent.text;
+              // Messaggio tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.message !== undefined) {
+                warningMessage = module.content.translatedContent.message;
+                console.log(`Modulo warning ${module.id}: Usando messaggio tradotto`);
+              } else if (module.content.translatedContent.text !== undefined) {
+                warningMessage = module.content.translatedContent.text;
+                console.log(`Modulo warning ${module.id}: Usando testo tradotto come messaggio`);
               }
               
-              // Descrizione tradotta
-              if (module.content.translatedContent.description) {
+              // Descrizione tradotta - priorità ASSOLUTA
+              if (module.content.translatedContent.description !== undefined) {
                 warningDescription = module.content.translatedContent.description;
+                console.log(`Modulo warning ${module.id}: Usando descrizione tradotta`);
               }
             }
               
@@ -679,7 +707,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'caution':
-            // Prepara i dati dell'avviso con valori predefiniti
+            // Prepara i dati dell'avviso con valori predefiniti (fallback)
             let cautionTitle = 'ATTENZIONE';
             let cautionMessage = module.content.message || module.content.text || 'Questo è un messaggio di ATTENZIONE';
             let cautionDescription = module.content.description || '';
@@ -689,24 +717,30 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               cautionMessage = "Assicurarsi che tutti i dispositivi di sicurezza siano correttamente installati prima dell'avvio";
             }
             
-            // Utilizza le traduzioni se disponibili
+            // Utilizza SEMPRE le traduzioni quando disponibili, anche se vuote
             if (languageId && module.content.translatedContent) {
-              // Titolo tradotto
-              if (module.content.translatedContent.title) {
+              // Titolo tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.title !== undefined) {
                 cautionTitle = module.content.translatedContent.title;
+                console.log(`Modulo caution ${module.id}: Usando titolo tradotto`);
               } else if (languageId !== 1) {
                 // Traduzioni predefinite se non è italiano
                 cautionTitle = 'CAUTION';
               }
               
-              // Messaggio tradotto
-              if (module.content.translatedContent.message || module.content.translatedContent.text) {
-                cautionMessage = module.content.translatedContent.message || module.content.translatedContent.text;
+              // Messaggio tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.message !== undefined) {
+                cautionMessage = module.content.translatedContent.message;
+                console.log(`Modulo caution ${module.id}: Usando messaggio tradotto`);
+              } else if (module.content.translatedContent.text !== undefined) {
+                cautionMessage = module.content.translatedContent.text;
+                console.log(`Modulo caution ${module.id}: Usando testo tradotto come messaggio`);
               }
               
-              // Descrizione tradotta
-              if (module.content.translatedContent.description) {
+              // Descrizione tradotta - priorità ASSOLUTA
+              if (module.content.translatedContent.description !== undefined) {
                 cautionDescription = module.content.translatedContent.description;
+                console.log(`Modulo caution ${module.id}: Usando descrizione tradotta`);
               }
             }
               
@@ -725,7 +759,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'note':
-            // Prepara i dati della nota con valori predefiniti
+            // Prepara i dati della nota con valori predefiniti (fallback)
             let noteTitle = 'NOTA';
             let noteMessage = module.content.message || module.content.text || 'Questo è un messaggio informativo';
             let noteDescription = module.content.description || '';
@@ -735,24 +769,30 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               noteMessage = "Consultare il manuale tecnico per i dettagli completi di installazione";
             }
             
-            // Utilizza le traduzioni se disponibili
+            // Utilizza SEMPRE le traduzioni quando disponibili, anche se vuote
             if (languageId && module.content.translatedContent) {
-              // Titolo tradotto
-              if (module.content.translatedContent.title) {
+              // Titolo tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.title !== undefined) {
                 noteTitle = module.content.translatedContent.title;
+                console.log(`Modulo note ${module.id}: Usando titolo tradotto`);
               } else if (languageId !== 1) {
                 // Traduzioni predefinite se non è italiano
                 noteTitle = 'NOTE';
               }
               
-              // Messaggio tradotto
-              if (module.content.translatedContent.message || module.content.translatedContent.text) {
-                noteMessage = module.content.translatedContent.message || module.content.translatedContent.text;
+              // Messaggio tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.message !== undefined) {
+                noteMessage = module.content.translatedContent.message;
+                console.log(`Modulo note ${module.id}: Usando messaggio tradotto`);
+              } else if (module.content.translatedContent.text !== undefined) {
+                noteMessage = module.content.translatedContent.text;
+                console.log(`Modulo note ${module.id}: Usando testo tradotto come messaggio`);
               }
               
-              // Descrizione tradotta
-              if (module.content.translatedContent.description) {
+              // Descrizione tradotta - priorità ASSOLUTA
+              if (module.content.translatedContent.description !== undefined) {
                 noteDescription = module.content.translatedContent.description;
+                console.log(`Modulo note ${module.id}: Usando descrizione tradotta`);
               }
             }
               
@@ -771,7 +811,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'safety-instructions':
-            // Prepara i dati delle istruzioni di sicurezza con valori predefiniti
+            // Prepara i dati delle istruzioni di sicurezza con valori predefiniti (fallback)
             let safetyTitle = 'ISTRUZIONI DI SICUREZZA';
             let safetyMessage = module.content.message || module.content.text || 'Segui queste istruzioni di sicurezza';
             let safetyDescription = module.content.description || '';
@@ -781,24 +821,30 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               safetyMessage = "Utilizzare sempre dispositivi di protezione individuale durante le operazioni di manutenzione";
             }
             
-            // Utilizza le traduzioni se disponibili
+            // Utilizza SEMPRE le traduzioni quando disponibili, anche se vuote
             if (languageId && module.content.translatedContent) {
-              // Titolo tradotto
-              if (module.content.translatedContent.title) {
+              // Titolo tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.title !== undefined) {
                 safetyTitle = module.content.translatedContent.title;
+                console.log(`Modulo safety ${module.id}: Usando titolo tradotto`);
               } else if (languageId !== 1) {
                 // Traduzioni predefinite se non è italiano
                 safetyTitle = 'SAFETY INSTRUCTIONS';
               }
               
-              // Messaggio tradotto
-              if (module.content.translatedContent.message || module.content.translatedContent.text) {
-                safetyMessage = module.content.translatedContent.message || module.content.translatedContent.text;
+              // Messaggio tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.message !== undefined) {
+                safetyMessage = module.content.translatedContent.message;
+                console.log(`Modulo safety ${module.id}: Usando messaggio tradotto`);
+              } else if (module.content.translatedContent.text !== undefined) {
+                safetyMessage = module.content.translatedContent.text;
+                console.log(`Modulo safety ${module.id}: Usando testo tradotto come messaggio`);
               }
               
-              // Descrizione tradotta
-              if (module.content.translatedContent.description) {
+              // Descrizione tradotta - priorità ASSOLUTA
+              if (module.content.translatedContent.description !== undefined) {
                 safetyDescription = module.content.translatedContent.description;
+                console.log(`Modulo safety ${module.id}: Usando descrizione tradotta`);
               }
             }
               
@@ -817,23 +863,26 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'link':
-            // Prepara i dati del link con valori predefiniti
+            // Prepara i dati del link con valori predefiniti (fallback)
             let linkUrl = module.content.url || '';
             let linkText = module.content.text || module.content.url || 'Link';
             let linkCaption = module.content.caption || module.content.description || '';
             
-            // Utilizza le traduzioni se disponibili
+            // Utilizza SEMPRE le traduzioni quando disponibili, anche se vuote
             if (languageId && module.content.translatedContent) {
-              // Testo del link tradotto
-              if (module.content.translatedContent.text) {
+              // Testo del link tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.text !== undefined) {
                 linkText = module.content.translatedContent.text;
+                console.log(`Modulo link ${module.id}: Usando testo tradotto`);
               }
               
-              // Didascalia tradotta
-              if (module.content.translatedContent.caption) {
+              // Didascalia tradotta - priorità ASSOLUTA
+              if (module.content.translatedContent.caption !== undefined) {
                 linkCaption = module.content.translatedContent.caption;
-              } else if (module.content.translatedContent.description) {
+                console.log(`Modulo link ${module.id}: Usando didascalia tradotta`);
+              } else if (module.content.translatedContent.description !== undefined) {
                 linkCaption = module.content.translatedContent.description;
+                console.log(`Modulo link ${module.id}: Usando descrizione tradotta come didascalia`);
               }
             }
             
@@ -850,36 +899,41 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'threeDModel':
-            // Prepara i dati del modello 3D con valori predefiniti
+            // Prepara i dati del modello 3D con valori predefiniti (fallback)
             let modelTitle = module.content.title || '3D Model';
             let modelCaption = module.content.caption || '';
             let modelViewLabel = 'Visualizza modello 3D con tutti i componenti';
             let modelDownloadLabel = 'Scarica il modello completo (.zip)';
             let modelInstructions = 'Questo modello 3D richiede file esterni specifici per funzionare correttamente. Utilizza il pulsante qui sotto per visualizzare il modello con tutti i componenti.';
             
-            // Utilizza le traduzioni se disponibili
+            // Utilizza SEMPRE le traduzioni quando disponibili, anche se vuote
             if (languageId && module.content.translatedContent) {
-              // Titolo del modello tradotto
-              if (module.content.translatedContent.title) {
+              // Titolo del modello tradotto - priorità ASSOLUTA
+              if (module.content.translatedContent.title !== undefined) {
                 modelTitle = module.content.translatedContent.title;
+                console.log(`Modulo 3D ${module.id}: Usando titolo tradotto`);
               }
               
-              // Didascalia tradotta
-              if (module.content.translatedContent.caption) {
+              // Didascalia tradotta - priorità ASSOLUTA
+              if (module.content.translatedContent.caption !== undefined) {
                 modelCaption = module.content.translatedContent.caption;
+                console.log(`Modulo 3D ${module.id}: Usando didascalia tradotta`);
               }
               
-              // Etichette tradotte per il modello 3D
+              // Etichette tradotte per il modello 3D - priorità ASSOLUTA
               if (module.content.translatedContent.labels) {
                 // Usa le etichette tradotte se presenti
-                if (module.content.translatedContent.labels.viewModel) {
+                if (module.content.translatedContent.labels.viewModel !== undefined) {
                   modelViewLabel = module.content.translatedContent.labels.viewModel;
+                  console.log(`Modulo 3D ${module.id}: Usando etichetta viewModel tradotta`);
                 }
-                if (module.content.translatedContent.labels.download) {
+                if (module.content.translatedContent.labels.download !== undefined) {
                   modelDownloadLabel = module.content.translatedContent.labels.download;
+                  console.log(`Modulo 3D ${module.id}: Usando etichetta download tradotta`);
                 }
-                if (module.content.translatedContent.labels.instructions) {
+                if (module.content.translatedContent.labels.instructions !== undefined) {
                   modelInstructions = module.content.translatedContent.labels.instructions;
+                  console.log(`Modulo 3D ${module.id}: Usando istruzioni tradotte`);
                 }
               } else if (languageId && languageId !== 1) {
                 // Default in inglese se non ci sono etichette tradotte e non è italiano
