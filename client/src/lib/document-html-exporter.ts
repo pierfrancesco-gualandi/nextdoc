@@ -559,17 +559,38 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               `;
             } catch (e) {
               const errorMessage = e instanceof Error ? e.message : 'Errore sconosciuto';
+              
+              // Messaggi di errore tradotti
+              let errorTitle = 'La distinta base completa è disponibile nell\'applicazione originale.';
+              let errorMsg = `Errore nel caricamento della distinta: ${errorMessage}`;
+              let bomCaption = module.content.caption || '';
+              
+              // Usa traduzioni se disponibili, anche per i messaggi di errore
+              if (languageId && module.content.translatedContent) {
+                // Messaggio errore tradotto
+                if (module.content.translatedContent.errorTitle !== undefined) {
+                  errorTitle = module.content.translatedContent.errorTitle;
+                } else if (languageId === 2) { // inglese
+                  errorTitle = 'The complete bill of materials is available in the original application.';
+                }
+                
+                // Didascalia tradotta
+                if (module.content.translatedContent.caption !== undefined) {
+                  bomCaption = module.content.translatedContent.caption;
+                }
+              }
+              
               bomHtml = `
                 <figure class="bom-container">
                   <div class="bom-content">
-                    <p>La distinta base completa è disponibile nell'applicazione originale.</p>
+                    <p>${errorTitle}</p>
                     <div class="message warning">
                       <div class="message-body">
-                        <p>Errore nel caricamento della distinta: ${errorMessage}</p>
+                        <p>${errorMsg}</p>
                       </div>
                     </div>
                   </div>
-                  ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : ''}
+                  ${bomCaption ? `<figcaption class="module-caption">${bomCaption}</figcaption>` : ''}
                 </figure>
               `;
             }
@@ -686,10 +707,30 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             // Verifica se esiste un percorso src prima di utilizzarlo
             if (!module.content?.src) {
               console.warn('File/PDF senza percorso src:', module);
+              
+              // Messaggi di errore tradotti
+              let errorMsg = 'Errore: Percorso del file mancante';
+              let fileCaption = module.content.caption || '';
+              
+              // Usa traduzioni se disponibili
+              if (languageId && module.content.translatedContent) {
+                // Messaggio di errore tradotto
+                if (module.content.translatedContent.errorMsg !== undefined) {
+                  errorMsg = module.content.translatedContent.errorMsg;
+                } else if (languageId === 2) { // inglese
+                  errorMsg = 'Error: File path missing';
+                }
+                
+                // Didascalia tradotta - priorità ASSOLUTA
+                if (module.content.translatedContent.caption !== undefined) {
+                  fileCaption = module.content.translatedContent.caption;
+                }
+              }
+              
               content += `
                 <figure class="file-container">
-                  <p class="file-error">Errore: Percorso del file mancante</p>
-                  ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : ''}
+                  <p class="file-error">${errorMsg}</p>
+                  ${fileCaption ? `<figcaption class="module-caption">${fileCaption}</figcaption>` : ''}
                 </figure>
               `;
               break;
@@ -1125,10 +1166,22 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           default:
-            // Modulo non gestito
+            // Modulo non gestito con supporto traduzione
+            let unsupportedMsg = `Tipo di modulo '${module.type}' non supportato nell'esportazione HTML.`;
+            
+            // Usa traduzioni se disponibili
+            if (languageId && module.content.translatedContent) {
+              // Messaggio errore tradotto
+              if (module.content.translatedContent.unsupportedMsg !== undefined) {
+                unsupportedMsg = module.content.translatedContent.unsupportedMsg;
+              } else if (languageId === 2) { // inglese
+                unsupportedMsg = `Module type '${module.type}' not supported in HTML export.`;
+              }
+            }
+            
             content += `
               <div class="unknown-module">
-                <p>Tipo di modulo '${module.type}' non supportato nell'esportazione HTML.</p>
+                <p>${unsupportedMsg}</p>
               </div>
             `;
         }
