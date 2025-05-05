@@ -1860,6 +1860,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     // Accesso sicuro alle proprietà
                     const allDescriptions = moduleContent.descriptions || {};
                     const bomId = moduleContent.bomId || 13; // Ottiene l'ID della BOM di riferimento
+                    // Passiamo i componenti della BOM caricati a livello superiore
                     
                     // Utilizzeremo gli stati e i dati dai componenti a livello superiore
                     if (isLoadingBomComponents) {
