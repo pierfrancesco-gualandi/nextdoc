@@ -164,6 +164,9 @@ export interface IStorage {
   createTranslationAIRequest(request: InsertTranslationAIRequest): Promise<TranslationAIRequest>;
   updateTranslationAIRequest(id: number, request: Partial<InsertTranslationAIRequest>): Promise<TranslationAIRequest | undefined>;
   
+  // Static labels for translations
+  getStaticLabelsByLanguage(languageId: number): Promise<Record<string, string> | undefined>;
+  
   // Document translations - utility methods
   getDocumentTranslationStatus(documentId: number, languageId: number): Promise<{
     totalSections: number;
