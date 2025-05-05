@@ -504,100 +504,230 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             
           // Aggiunta di tipi di avviso specifici con miglioramenti visivi, icone e testi
           case 'danger':
-            // Esempio di testo specifico: rimuovere il carter e non toccare la cinghia di trasmissione
-            const pericoloText = section && (section.id === 20 || (section.title && section.title.includes("3"))) ? 
-              "Rimuovere il carter e non toccare la cinghia di trasmissione" : 
-              (module.content.message || module.content.text || 'Questo è un messaggio di PERICOLO');
+            // Prepara i dati dell'avviso con valori predefiniti
+            let dangerTitle = 'PERICOLO';
+            let dangerMessage = module.content.message || module.content.text || 'Questo è un messaggio di PERICOLO';
+            let dangerDescription = module.content.description || '';
+            
+            // Esempio di testo specifico per determinate sezioni
+            if(section && (section.id === 20 || (section.title && section.title.includes("3")))) {
+              dangerMessage = "Rimuovere il carter e non toccare la cinghia di trasmissione";
+            }
+            
+            // Utilizza le traduzioni se disponibili
+            if (languageId && module.content.translatedContent) {
+              // Titolo tradotto
+              if (module.content.translatedContent.title) {
+                dangerTitle = module.content.translatedContent.title;
+              } else if (languageId !== 1) {
+                // Traduzioni predefinite se non è italiano
+                dangerTitle = 'DANGER';
+              }
+              
+              // Messaggio tradotto
+              if (module.content.translatedContent.message || module.content.translatedContent.text) {
+                dangerMessage = module.content.translatedContent.message || module.content.translatedContent.text;
+              }
+              
+              // Descrizione tradotta
+              if (module.content.translatedContent.description) {
+                dangerDescription = module.content.translatedContent.description;
+              }
+            }
               
             content += `
               <div class="message danger" style="background-color: #ff0000; color: white; border: none;">
                 <div class="message-header" style="color: white;">
                   <span class="message-icon" style="color: white;">&#9888;</span> <!-- ⚠️ -->
-                  <h4 style="color: white;">PERICOLO</h4>
+                  <h4 style="color: white;">${dangerTitle}</h4>
                 </div>
                 <div class="message-body" style="color: white;">
-                  <p style="color: white;">${pericoloText}</p>
-                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
+                  <p style="color: white;">${dangerMessage}</p>
+                  ${dangerDescription ? `<p class="warning-description" style="color: white;">${dangerDescription}</p>` : ''}
                 </div>
               </div>
             `;
             break;
             
           case 'warning-alert':
-            // Esempio di testo specifico per la sezione 3
-            const avvertenzaText = section && (section.id === 20 || (section.title && section.title.includes("3"))) ? 
-              "Non avviare la macchina con i ripari aperti o danneggiati" : 
-              (module.content.message || module.content.text || 'Questo è un messaggio di AVVERTENZA');
+            // Prepara i dati dell'avviso con valori predefiniti
+            let warningTitle = 'AVVERTENZA';
+            let warningMessage = module.content.message || module.content.text || 'Questo è un messaggio di AVVERTENZA';
+            let warningDescription = module.content.description || '';
+            
+            // Esempio di testo specifico per determinate sezioni
+            if(section && (section.id === 20 || (section.title && section.title.includes("3")))) {
+              warningMessage = "Non avviare la macchina con i ripari aperti o danneggiati";
+            }
+            
+            // Utilizza le traduzioni se disponibili
+            if (languageId && module.content.translatedContent) {
+              // Titolo tradotto
+              if (module.content.translatedContent.title) {
+                warningTitle = module.content.translatedContent.title;
+              } else if (languageId !== 1) {
+                // Traduzioni predefinite se non è italiano
+                warningTitle = 'WARNING';
+              }
+              
+              // Messaggio tradotto
+              if (module.content.translatedContent.message || module.content.translatedContent.text) {
+                warningMessage = module.content.translatedContent.message || module.content.translatedContent.text;
+              }
+              
+              // Descrizione tradotta
+              if (module.content.translatedContent.description) {
+                warningDescription = module.content.translatedContent.description;
+              }
+            }
               
             content += `
               <div class="message warning" style="background-color: #ff8c00; color: white; border: none;">
                 <div class="message-header" style="color: white;">
                   <span class="message-icon" style="color: white;">&#9888;</span> <!-- ⚠️ -->
-                  <h4 style="color: white;">AVVERTENZA</h4>
+                  <h4 style="color: white;">${warningTitle}</h4>
                 </div>
                 <div class="message-body" style="color: white;">
-                  <p style="color: white;">${avvertenzaText}</p>
-                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
+                  <p style="color: white;">${warningMessage}</p>
+                  ${warningDescription ? `<p class="warning-description" style="color: white;">${warningDescription}</p>` : ''}
                 </div>
               </div>
             `;
             break;
             
           case 'caution':
-            // Esempio di testo specifico per la sezione 3
-            const attenzionText = section && (section.id === 20 || (section.title && section.title.includes("3"))) ? 
-              "Assicurarsi che tutti i dispositivi di sicurezza siano correttamente installati prima dell'avvio" : 
-              (module.content.message || module.content.text || 'Questo è un messaggio di ATTENZIONE');
+            // Prepara i dati dell'avviso con valori predefiniti
+            let cautionTitle = 'ATTENZIONE';
+            let cautionMessage = module.content.message || module.content.text || 'Questo è un messaggio di ATTENZIONE';
+            let cautionDescription = module.content.description || '';
+            
+            // Esempio di testo specifico per determinate sezioni
+            if(section && (section.id === 20 || (section.title && section.title.includes("3")))) {
+              cautionMessage = "Assicurarsi che tutti i dispositivi di sicurezza siano correttamente installati prima dell'avvio";
+            }
+            
+            // Utilizza le traduzioni se disponibili
+            if (languageId && module.content.translatedContent) {
+              // Titolo tradotto
+              if (module.content.translatedContent.title) {
+                cautionTitle = module.content.translatedContent.title;
+              } else if (languageId !== 1) {
+                // Traduzioni predefinite se non è italiano
+                cautionTitle = 'CAUTION';
+              }
+              
+              // Messaggio tradotto
+              if (module.content.translatedContent.message || module.content.translatedContent.text) {
+                cautionMessage = module.content.translatedContent.message || module.content.translatedContent.text;
+              }
+              
+              // Descrizione tradotta
+              if (module.content.translatedContent.description) {
+                cautionDescription = module.content.translatedContent.description;
+              }
+            }
               
             content += `
               <div class="message caution" style="background-color: #ffd600; color: white; border: none;">
                 <div class="message-header" style="color: white;">
                   <span class="message-icon" style="color: white;">&#9888;</span> <!-- ⚠️ -->
-                  <h4 style="color: white;">ATTENZIONE</h4>
+                  <h4 style="color: white;">${cautionTitle}</h4>
                 </div>
                 <div class="message-body" style="color: white;">
-                  <p style="color: white;">${attenzionText}</p>
-                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
+                  <p style="color: white;">${cautionMessage}</p>
+                  ${cautionDescription ? `<p class="warning-description" style="color: white;">${cautionDescription}</p>` : ''}
                 </div>
               </div>
             `;
             break;
             
           case 'note':
-            // Esempio di testo specifico per la sezione 3
-            const notaText = section && (section.id === 20 || (section.title && section.title.includes("3"))) ? 
-              "Consultare il manuale tecnico per i dettagli completi di installazione" : 
-              (module.content.message || module.content.text || 'Questo è un messaggio informativo');
+            // Prepara i dati della nota con valori predefiniti
+            let noteTitle = 'NOTA';
+            let noteMessage = module.content.message || module.content.text || 'Questo è un messaggio informativo';
+            let noteDescription = module.content.description || '';
+            
+            // Esempio di testo specifico per determinate sezioni
+            if(section && (section.id === 20 || (section.title && section.title.includes("3")))) {
+              noteMessage = "Consultare il manuale tecnico per i dettagli completi di installazione";
+            }
+            
+            // Utilizza le traduzioni se disponibili
+            if (languageId && module.content.translatedContent) {
+              // Titolo tradotto
+              if (module.content.translatedContent.title) {
+                noteTitle = module.content.translatedContent.title;
+              } else if (languageId !== 1) {
+                // Traduzioni predefinite se non è italiano
+                noteTitle = 'NOTE';
+              }
+              
+              // Messaggio tradotto
+              if (module.content.translatedContent.message || module.content.translatedContent.text) {
+                noteMessage = module.content.translatedContent.message || module.content.translatedContent.text;
+              }
+              
+              // Descrizione tradotta
+              if (module.content.translatedContent.description) {
+                noteDescription = module.content.translatedContent.description;
+              }
+            }
               
             content += `
               <div class="message info" style="background-color: #0070d1; color: white; border: none;">
                 <div class="message-header" style="color: white;">
                   <span class="message-icon" style="color: white;">&#9432;</span> <!-- ℹ️ -->
-                  <h4 style="color: white;">NOTA</h4>
+                  <h4 style="color: white;">${noteTitle}</h4>
                 </div>
                 <div class="message-body" style="color: white;">
-                  <p style="color: white;">${notaText}</p>
-                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
+                  <p style="color: white;">${noteMessage}</p>
+                  ${noteDescription ? `<p class="warning-description" style="color: white;">${noteDescription}</p>` : ''}
                 </div>
               </div>
             `;
             break;
             
           case 'safety-instructions':
-            // Esempio di testo specifico per la sezione 3
-            const sicurezzaText = section && (section.id === 20 || (section.title && section.title.includes("3"))) ? 
-              "Utilizzare sempre dispositivi di protezione individuale durante le operazioni di manutenzione" : 
-              (module.content.message || module.content.text || 'Segui queste istruzioni di sicurezza');
+            // Prepara i dati delle istruzioni di sicurezza con valori predefiniti
+            let safetyTitle = 'ISTRUZIONI DI SICUREZZA';
+            let safetyMessage = module.content.message || module.content.text || 'Segui queste istruzioni di sicurezza';
+            let safetyDescription = module.content.description || '';
+            
+            // Esempio di testo specifico per determinate sezioni
+            if(section && (section.id === 20 || (section.title && section.title.includes("3")))) {
+              safetyMessage = "Utilizzare sempre dispositivi di protezione individuale durante le operazioni di manutenzione";
+            }
+            
+            // Utilizza le traduzioni se disponibili
+            if (languageId && module.content.translatedContent) {
+              // Titolo tradotto
+              if (module.content.translatedContent.title) {
+                safetyTitle = module.content.translatedContent.title;
+              } else if (languageId !== 1) {
+                // Traduzioni predefinite se non è italiano
+                safetyTitle = 'SAFETY INSTRUCTIONS';
+              }
+              
+              // Messaggio tradotto
+              if (module.content.translatedContent.message || module.content.translatedContent.text) {
+                safetyMessage = module.content.translatedContent.message || module.content.translatedContent.text;
+              }
+              
+              // Descrizione tradotta
+              if (module.content.translatedContent.description) {
+                safetyDescription = module.content.translatedContent.description;
+              }
+            }
               
             content += `
               <div class="message success" style="background-color: #2e7d32; color: white; border: none;">
                 <div class="message-header" style="color: white;">
                   <span class="message-icon" style="color: white;">&#10003;</span> <!-- ✓ -->
-                  <h4 style="color: white;">ISTRUZIONI DI SICUREZZA</h4>
+                  <h4 style="color: white;">${safetyTitle}</h4>
                 </div>
                 <div class="message-body" style="color: white;">
-                  <p style="color: white;">${sicurezzaText}</p>
-                  ${module.content.description ? `<p class="warning-description" style="color: white;">${module.content.description}</p>` : ''}
+                  <p style="color: white;">${safetyMessage}</p>
+                  ${safetyDescription ? `<p class="warning-description" style="color: white;">${safetyDescription}</p>` : ''}
                 </div>
               </div>
             `;
