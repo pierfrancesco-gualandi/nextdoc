@@ -996,6 +996,26 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
         case 'checklist':
           return (
             <div className="space-y-4">
+              {moduleContent.title && (
+                <div>
+                  <Label htmlFor={`module-${module.id}-title`}>Titolo</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-neutral-50 rounded border text-sm">
+                      {moduleContent.title}
+                    </div>
+                    <TranslationEditableField
+                      originalValue={moduleContent.title}
+                      translatedValue={translatedContent.title || ''}
+                      onChange={(value) => handleContentChange({ title: value })}
+                      placeholder="Inserisci la traduzione del titolo..."
+                      errorCondition={moduleContent.title && !translatedContent.title}
+                      rows={1}
+                      fieldId={`checklist-title-${module.id}`}
+                    />
+                  </div>
+                </div>
+              )}
+              
               {moduleContent.caption && (
                 <div>
                   <Label htmlFor={`module-${module.id}-caption`}>Didascalia</Label>
