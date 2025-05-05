@@ -774,6 +774,49 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             `;
             break;
             
+          case 'threeDModel':
+            // Prepara i dati del modello 3D con valori predefiniti
+            let modelTitle = module.content.title || '3D Model';
+            let modelCaption = module.content.caption || '';
+            let modelViewLabel = 'Visualizza in 3D';
+            
+            // Utilizza le traduzioni se disponibili
+            if (languageId && module.content.translatedContent) {
+              // Titolo del modello tradotto
+              if (module.content.translatedContent.title) {
+                modelTitle = module.content.translatedContent.title;
+              }
+              
+              // Didascalia tradotta
+              if (module.content.translatedContent.caption) {
+                modelCaption = module.content.translatedContent.caption;
+              }
+              
+              // Etichetta tradotta per il pulsante di visualizzazione
+              if (module.content.translatedContent.labels && module.content.translatedContent.labels.view) {
+                modelViewLabel = module.content.translatedContent.labels.view;
+              } else if (languageId && languageId !== 1) {
+                // Default inglese se non c'è una traduzione specifica
+                modelViewLabel = 'View in 3D';
+              }
+            }
+            
+            // Nel caso dell'esportazione HTML, non possiamo includere il modello 3D interattivo,
+            // quindi mostriamo un messaggio con un link all'originale
+            content += `
+              <figure class="threeDModel-container">
+                <div class="threeDModel-content">
+                  ${modelTitle ? `<h4 class="threeDModel-title">${modelTitle}</h4>` : ''}
+                  <div class="threeDModel-placeholder">
+                    <div class="threeDModel-icon">🔄 3D</div>
+                    <p class="threeDModel-message">${modelViewLabel}</p>
+                  </div>
+                </div>
+                ${modelCaption ? `<figcaption class="module-caption">${modelCaption}</figcaption>` : ''}
+              </figure>
+            `;
+            break;
+            
           default:
             // Modulo non gestito
             content += `
@@ -1158,6 +1201,44 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
       
       .level-5 {
         padding-left: 85px;
+      }
+      
+      /* Stili per i modelli 3D */
+      .threeDModel-container {
+        margin: 20px 0;
+        padding: 15px;
+        background-color: #f5f5f5;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        text-align: center;
+      }
+      
+      .threeDModel-title {
+        margin-top: 0;
+        color: #333;
+        margin-bottom: 15px;
+      }
+      
+      .threeDModel-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #e9e9e9;
+        border: 1px dashed #ccc;
+        padding: 30px;
+        border-radius: 5px;
+      }
+      
+      .threeDModel-icon {
+        font-size: 32px;
+        margin-bottom: 15px;
+        color: #0070d1;
+      }
+      
+      .threeDModel-message {
+        font-style: italic;
+        color: #666;
       }
       
       /* Pie' di pagina del documento */
