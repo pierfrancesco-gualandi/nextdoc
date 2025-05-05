@@ -605,6 +605,10 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
     const [isLoadingModule, setIsLoadingModule] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     
+    // Aggiungiamo gli stati per la BOM a livello di componente
+    const [bomComponents, setBomComponents] = useState<Record<string, any>>({});
+    const [isLoadingBomComponents, setIsLoadingBomComponents] = useState(false);
+    
     // SOLUZIONE RADICALE: Stato globale per preservare quali moduli sono in editing
     useEffect(() => {
       // Crea un oggetto globale per mantenere lo stato dell'editing tra i render
@@ -642,6 +646,39 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
       
       setModuleContent(parseContent());
     }, [module, moduleContent]);
+    
+    // Carica i componenti della BOM di riferimento quando necessario
+    useEffect(() => {
+      if (moduleContent && module.type === 'bom' && isEditing) {
+        try {
+          const bomId = moduleContent.bomId || 13; // Ottiene l'ID della BOM di riferimento
+          
+          setIsLoadingBomComponents(true);
+          fetch(`/api/boms/${bomId}/items`)
+            .then(res => res.json())
+            .then(items => {
+              // Crea un dizionario di componenti indicizzato per codice
+              const componentsMap: Record<string, any> = {};
+              items.forEach((item: any) => {
+                if (item.component && item.component.code) {
+                  componentsMap[item.component.code] = item.component;
+                }
+              });
+              setBomComponents(componentsMap);
+              console.log(`Caricati ${Object.keys(componentsMap).length} componenti dalla BOM ${bomId}`);
+            })
+            .catch(err => {
+              console.error(`Errore nel caricamento dei componenti della BOM:`, err);
+            })
+            .finally(() => {
+              setIsLoadingBomComponents(false);
+            });
+        } catch (error) {
+          console.error("Errore nell'accesso alla BOM:", error);
+          setIsLoadingBomComponents(false);
+        }
+      }
+    }, [isEditing, moduleContent, module.type]);
     
     // Carica la traduzione esistente del modulo
     const translation = moduleTranslations[module.id];
