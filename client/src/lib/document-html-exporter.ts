@@ -102,6 +102,41 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             `;
             break;
             
+          case 'testp':
+            // Prepara i dati del file di testo con valori predefiniti
+            let textpTitle = module.content.title || '';
+            let textpDescription = module.content.description || '';
+            let textpContent = module.content.text || '';
+            
+            // Utilizza le traduzioni se disponibili
+            if (languageId && module.content.translatedContent) {
+              // Titolo tradotto
+              if (module.content.translatedContent.title) {
+                textpTitle = module.content.translatedContent.title;
+              }
+              
+              // Descrizione tradotta
+              if (module.content.translatedContent.description) {
+                textpDescription = module.content.translatedContent.description;
+              }
+              
+              // Testo tradotto
+              if (module.content.translatedContent.text) {
+                textpContent = module.content.translatedContent.text;
+              }
+            }
+            
+            content += `
+              <div class="text-container testp-container">
+                ${textpTitle ? `<h4 class="testp-title">${textpTitle}</h4>` : ''}
+                ${textpDescription ? `<p class="testp-description">${textpDescription}</p>` : ''}
+                <div class="testp-content">
+                  ${textpContent}
+                </div>
+              </div>
+            `;
+            break;
+            
           case 'image':
             // Prepara i dati dell'immagine con valori predefiniti
             let imgSrc = module.content.src || '';
@@ -919,6 +954,36 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
       /* Stili per i moduli di testo */
       .text-container {
         line-height: 1.8;
+      }
+      
+      /* Stili per il modulo testp */
+      .testp-container {
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        background-color: #f8fafc;
+      }
+      
+      .testp-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #1e293b;
+      }
+      
+      .testp-description {
+        font-style: italic;
+        color: #64748b;
+        margin-bottom: 1rem;
+        padding-left: 1rem;
+        border-left: 3px solid #cbd5e1;
+      }
+      
+      .testp-content {
+        padding: 0.5rem;
+        background-color: white;
+        border-radius: 0.375rem;
       }
       
       /* Stili per i moduli immagine */
