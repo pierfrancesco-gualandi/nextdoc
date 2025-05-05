@@ -1263,6 +1263,52 @@ export class MemStorage implements IStorage {
     return updatedRequest;
   }
   
+  // Static labels for translations
+  async getStaticLabelsByLanguage(languageId: number): Promise<Record<string, string> | undefined> {
+    // Verifica che la lingua esista
+    const language = await this.getLanguage(languageId);
+    if (!language) return undefined;
+    
+    // Se è italiano (lingua predefinita), restituisci undefined
+    if (languageId === 1) return {};
+    
+    // Per le altre lingue, restituisci un dizionario di etichette statiche
+    // che possono essere utilizzate durante l'esportazione
+    const staticLabels: Record<string, string> = {};
+    
+    if (languageId === 2) { // Inglese
+      staticLabels.documentFooterText = 'Document generated on';
+      staticLabels.versionLabel = 'Version:';
+      staticLabels.bomEmptyLabel = 'No items found in the bill of materials';
+      staticLabels.downloadLabel = 'Download file';
+      staticLabels.fileLabel = 'File name:';
+      staticLabels.viewModelLabel = 'View 3D model with all components';
+    } else if (languageId === 3) { // Francese
+      staticLabels.documentFooterText = 'Document généré le';
+      staticLabels.versionLabel = 'Version:';
+      staticLabels.bomEmptyLabel = 'Aucun élément trouvé dans la nomenclature';
+      staticLabels.downloadLabel = 'Télécharger le fichier';
+      staticLabels.fileLabel = 'Nom du fichier:';
+      staticLabels.viewModelLabel = 'Voir le modèle 3D avec tous les composants';
+    } else if (languageId === 4) { // Tedesco
+      staticLabels.documentFooterText = 'Dokument erstellt am';
+      staticLabels.versionLabel = 'Version:';
+      staticLabels.bomEmptyLabel = 'Keine Elemente in der Stückliste gefunden';
+      staticLabels.downloadLabel = 'Datei herunterladen';
+      staticLabels.fileLabel = 'Dateiname:';
+      staticLabels.viewModelLabel = '3D-Modell mit allen Komponenten anzeigen';
+    } else if (languageId === 5) { // Spagnolo
+      staticLabels.documentFooterText = 'Documento generado el';
+      staticLabels.versionLabel = 'Versión:';
+      staticLabels.bomEmptyLabel = 'No se encontraron elementos en la lista de materiales';
+      staticLabels.downloadLabel = 'Descargar archivo';
+      staticLabels.fileLabel = 'Nombre de archivo:';
+      staticLabels.viewModelLabel = 'Ver modelo 3D con todos los componentes';
+    }
+    
+    return staticLabels;
+  }
+  
   // Document translations - utility methods
   async getDocumentTranslationStatus(documentId: number, languageId: number): Promise<{
     totalSections: number;
@@ -2344,6 +2390,52 @@ export class DatabaseStorage implements IStorage {
       .where(eq(translationAIRequests.id, id))
       .returning();
     return updatedRequest;
+  }
+
+  // Static labels for translations
+  async getStaticLabelsByLanguage(languageId: number): Promise<Record<string, string> | undefined> {
+    // Verifica che la lingua esista
+    const language = await this.getLanguage(languageId);
+    if (!language) return undefined;
+    
+    // Se è italiano (lingua predefinita), restituisci un oggetto vuoto
+    if (languageId === 1) return {};
+    
+    // TODO: Implementare query per ottenere le etichette statiche dal database
+    // Questo è un placeholder che funziona come quello in MemStorage
+    const staticLabels: Record<string, string> = {};
+    
+    if (languageId === 2) { // Inglese
+      staticLabels.documentFooterText = 'Document generated on';
+      staticLabels.versionLabel = 'Version:';
+      staticLabels.bomEmptyLabel = 'No items found in the bill of materials';
+      staticLabels.downloadLabel = 'Download file';
+      staticLabels.fileLabel = 'File name:';
+      staticLabels.viewModelLabel = 'View 3D model with all components';
+    } else if (languageId === 3) { // Francese
+      staticLabels.documentFooterText = 'Document généré le';
+      staticLabels.versionLabel = 'Version:';
+      staticLabels.bomEmptyLabel = 'Aucun élément trouvé dans la nomenclature';
+      staticLabels.downloadLabel = 'Télécharger le fichier';
+      staticLabels.fileLabel = 'Nom du fichier:';
+      staticLabels.viewModelLabel = 'Voir le modèle 3D avec tous les composants';
+    } else if (languageId === 4) { // Tedesco
+      staticLabels.documentFooterText = 'Dokument erstellt am';
+      staticLabels.versionLabel = 'Version:';
+      staticLabels.bomEmptyLabel = 'Keine Elemente in der Stückliste gefunden';
+      staticLabels.downloadLabel = 'Datei herunterladen';
+      staticLabels.fileLabel = 'Dateiname:';
+      staticLabels.viewModelLabel = '3D-Modell mit allen Komponenten anzeigen';
+    } else if (languageId === 5) { // Spagnolo
+      staticLabels.documentFooterText = 'Documento generado el';
+      staticLabels.versionLabel = 'Versión:';
+      staticLabels.bomEmptyLabel = 'No se encontraron elementos en la lista de materiales';
+      staticLabels.downloadLabel = 'Descargar archivo';
+      staticLabels.fileLabel = 'Nombre de archivo:';
+      staticLabels.viewModelLabel = 'Ver modelo 3D con todos los componentes';
+    }
+    
+    return staticLabels;
   }
 
   // Document translations - utility methods
