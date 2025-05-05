@@ -1976,13 +1976,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/document-translations/:id", async (req: Request, res: Response) => {
     try {
-      const translation = await storage.getDocumentTranslation(Number(req.params.id));
-      if (!translation) {
-        return res.status(404).json({ message: "Document translation not found" });
+      // Verifica se è stato fornito un parametro languageId
+      const documentId = Number(req.params.id);
+      const languageId = req.query.languageId ? Number(req.query.languageId) : undefined;
+      
+      if (languageId) {
+        // Carica la traduzione specifica per la lingua richiesta
+        const translation = await storage.getDocumentTranslationByLanguage(documentId, languageId);
+        if (!translation) {
+          return res.status(404).json({ message: "Document translation not found for this language" });
+        }
+        return res.json(translation);
+      } else {
+        // Comportamento originale quando non è specificata una lingua
+        const translation = await storage.getDocumentTranslation(documentId);
+        if (!translation) {
+          return res.status(404).json({ message: "Document translation not found" });
+        }
+        return res.json(translation);
       }
-      res.json(translation);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch document translation" });
+    }
+  });
+  
+  // Aggiunta endpoint per etichette statiche utilizzate nell'esportazione
+  app.get("/api/static-labels", async (req: Request, res: Response) => {
+    try {
+      const languageId = req.query.languageId ? Number(req.query.languageId) : undefined;
+      
+      if (!languageId) {
+        return res.status(400).json({ message: "Language ID is required" });
+      }
+      
+      // Cerca le etichette statiche per la lingua richiesta
+      const staticLabels = await storage.getStaticLabelsByLanguage(languageId);
+      
+      // Se non esistono etichette statiche per questa lingua, restituisci un oggetto vuoto
+      if (!staticLabels) {
+        return res.json({});
+      }
+      
+      return res.json(staticLabels);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch static labels" });
     }
   });
 

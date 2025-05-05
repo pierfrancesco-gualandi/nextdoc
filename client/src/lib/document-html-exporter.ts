@@ -526,7 +526,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                   </table>
                 `;
               } else {
-                tableHtml = `<p class="bom-empty">Nessun elemento trovato nella distinta base</p>`;
+                tableHtml = `<p class="bom-empty">${bomEmptyLabel}</p>`;
               }
               
               // Prepara didascalia e descrizione per il BOM, utilizzando le traduzioni se disponibili
@@ -1719,25 +1719,66 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
     let documentFooterText = 'Documento generato il';
     let versionLabel = 'Versione:';
     let documentLang = 'it';
+    let bomEmptyLabel = 'Nessun elemento trovato nella distinta base'; // Usato nella riga 528
     
-    // Imposta la lingua e le traduzioni statiche in base alla lingua selezionata
+    // Carica le traduzioni delle etichette statiche dal server 
+    // oppure dalla cache locale se disponibili
     if (languageId) {
+      try {
+        // Tenta di caricare le traduzioni statiche personalizzate dal server
+        const staticLabelsResponse = await fetch(`/api/static-labels?languageId=${languageId}`);
+        if (staticLabelsResponse.ok) {
+          const staticLabels = await staticLabelsResponse.json();
+          
+          // Usa le traduzioni personalizzate SEMPRE, anche se vuote
+          if (staticLabels) {
+            if (staticLabels.documentFooterText !== undefined) {
+              documentFooterText = staticLabels.documentFooterText;
+              console.log(`Usando footer tradotto: "${documentFooterText}"`);
+            }
+            
+            if (staticLabels.versionLabel !== undefined) {
+              versionLabel = staticLabels.versionLabel;
+              console.log(`Usando etichetta versione tradotta: "${versionLabel}"`);
+            }
+            
+            if (staticLabels.bomEmptyLabel !== undefined) {
+              bomEmptyLabel = staticLabels.bomEmptyLabel;
+              console.log(`Usando label BOM vuoto tradotta: "${bomEmptyLabel}"`);
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Errore nel caricamento delle etichette statiche dal server:', error);
+      }
+      
+      // Fallback sul codice lingua e traduzioni predefinite se necessario
       if (languageId === 2) { // Inglese
-        documentFooterText = 'Document generated on';
-        versionLabel = 'Version:';
         documentLang = 'en';
+        
+        // Usa questi valori solo se non sono stati impostati tramite API
+        if (documentFooterText === 'Documento generato il') documentFooterText = 'Document generated on';
+        if (versionLabel === 'Versione:') versionLabel = 'Version:';
+        if (bomEmptyLabel === 'Nessun elemento trovato nella distinta base') 
+          bomEmptyLabel = 'No items found in the bill of materials';
       } else if (languageId === 3) { // Francese
-        documentFooterText = 'Document généré le';
-        versionLabel = 'Version:';
         documentLang = 'fr';
+        
+        // Usa questi valori solo se non sono stati impostati tramite API
+        if (documentFooterText === 'Documento generato il') documentFooterText = 'Document généré le';
+        if (versionLabel === 'Versione:') versionLabel = 'Version:';
       } else if (languageId === 4) { // Tedesco
-        documentFooterText = 'Dokument erstellt am';
-        versionLabel = 'Version:';
         documentLang = 'de';
+        
+        // Usa questi valori solo se non sono stati impostati tramite API
+        if (documentFooterText === 'Documento generato il') documentFooterText = 'Dokument erstellt am';
+        if (versionLabel === 'Versione:') versionLabel = 'Version:';
       } else if (languageId === 5) { // Spagnolo
-        documentFooterText = 'Documento generado el';
-        versionLabel = 'Versión:';
         documentLang = 'es';
+        
+        // Usa questi valori solo se non sono stati impostati tramite API
+        if (documentFooterText === 'Documento generato il') documentFooterText = 'Documento generado el';
+        if (versionLabel === 'Versione:') versionLabel = 'Versión:';
       }
       // Puoi aggiungere altre lingue se necessario
     }
