@@ -1822,6 +1822,36 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                   {(() => {
                     // Accesso sicuro alle proprietà
                     const allDescriptions = moduleContent.descriptions || {};
+                    const bomId = moduleContent.bomId || 13; // Ottiene l'ID della BOM di riferimento
+                    
+                    const [bomComponents, setBomComponents] = useState<Record<string, any>>({});
+                    const [isLoadingBomComponents, setIsLoadingBomComponents] = useState(true);
+                    
+                    // Carica i componenti della BOM di riferimento
+                    useEffect(() => {
+                      if (bomId) {
+                        setIsLoadingBomComponents(true);
+                        fetch(`/api/boms/${bomId}/items`)
+                          .then(res => res.json())
+                          .then(items => {
+                            // Crea un dizionario di componenti indicizzato per codice
+                            const componentsMap: Record<string, any> = {};
+                            items.forEach((item: any) => {
+                              if (item.component && item.component.code) {
+                                componentsMap[item.component.code] = item.component;
+                              }
+                            });
+                            setBomComponents(componentsMap);
+                            console.log(`Caricati ${Object.keys(componentsMap).length} componenti dalla BOM ${bomId}`);
+                          })
+                          .catch(err => {
+                            console.error(`Errore nel caricamento dei componenti della BOM ${bomId}:`, err);
+                          })
+                          .finally(() => {
+                            setIsLoadingBomComponents(false);
+                          });
+                      }
+                    }, [bomId]);
                     
                     // Prima verifichiamo se ci sono componenti filtrati specificati
                     let visibleCodes: string[] = [];
@@ -1853,6 +1883,15 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                       }
                     }
                                        
+                    if (isLoadingBomComponents) {
+                      return (
+                        <div className="p-3 border rounded bg-blue-50 text-sm flex items-center">
+                          <div className="animate-spin mr-2 h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                          Caricamento componenti dalla BOM di riferimento...
+                        </div>
+                      );
+                    }
+                    
                     if (visibleCodes.length === 0) {
                       return (
                         <div className="p-3 border rounded bg-yellow-50 text-sm">
@@ -1861,7 +1900,22 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                       );
                     }
                     
+                    // Log quali componenti sono disponibili
+                    console.log("Componenti disponibili nella BOM:", Object.keys(bomComponents));
+                    console.log("Codici visibili da mostrare:", visibleCodes);
+                    
                     const descriptions = translatedContent.descriptions || {};
+                    
+                    // Filtra i codici per mostrare solo quelli presenti nella BOM di riferimento
+                    const validCodes = visibleCodes.filter(code => bomComponents[code] || allDescriptions[code]);
+                    
+                    if (validCodes.length === 0) {
+                      return (
+                        <div className="p-3 border rounded bg-yellow-50 text-sm">
+                          Nessun componente dalla BOM di riferimento trovato con i codici selezionati.
+                        </div>
+                      );
+                    }
                     
                     // Rendi i campi più evidenti e accessibili
                     return (
@@ -1876,13 +1930,24 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                               </tr>
                             </thead>
                             <tbody>
-                              {visibleCodes.map((code: string, index) => {
-                                // Se abbiamo una descrizione originale, usala
-                                // Altrimenti mostra solo il codice come descrizione predefinita
-                                const description = allDescriptions[code] || `Componente ${code}`;
+                              {validCodes.map((code: string, index) => {
+                                // IMPORTANTE: Usa la descrizione dalla BOM di riferimento se disponibile
+                                // Altrimenti usa la descrizione locale se disponibile
+                                // Infine, come ultimo caso, usa un valore predefinito
+                                const bomComponent = bomComponents[code];
+                                const description = bomComponent 
+                                  ? bomComponent.description 
+                                  : (allDescriptions[code] || `Componente ${code}`);
                                 
                                 // Stile alternato per le righe
                                 const rowClass = index % 2 === 0 ? "bg-white" : "bg-neutral-50";
+                                
+                                // Badge che indica la fonte della descrizione
+                                const descriptionSource = bomComponent 
+                                  ? <span className="inline-block px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full ml-2">BOM Rif.</span>
+                                  : (allDescriptions[code] 
+                                      ? <span className="inline-block px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full ml-2">Locale</span>
+                                      : <span className="inline-block px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded-full ml-2">Predefinito</span>);
                                 
                                 return (
                                   <tr key={`description-${code}`} className={rowClass}>
@@ -1890,7 +1955,10 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                                       <span className="font-medium text-blue-700">{code}</span>
                                     </td>
                                     <td className="px-4 py-3 align-top border-t border-neutral-200">
-                                      {description}
+                                      <div className="flex items-start">
+                                        <span className="flex-grow">{description}</span>
+                                        {descriptionSource}
+                                      </div>
                                     </td>
                                     <td className="px-4 py-3 align-top border-t border-neutral-200">
                                       <TranslationEditableField
