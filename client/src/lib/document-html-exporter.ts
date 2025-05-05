@@ -116,23 +116,48 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'table':
+            // Prepara gli elementi tabella utilizzando valori predefiniti
+            let tableHeaders = module.content.headers || [];
+            let tableRows = module.content.rows || [];
+            let tableCaption = module.content.caption || '';
+            
+            // Verifica se ci sono traduzioni disponibili per questo modulo
+            if (languageId && module.content.translatedContent) {
+              // Utilizza le intestazioni tradotte se disponibili
+              if (Array.isArray(module.content.translatedContent.headers) &&
+                  module.content.translatedContent.headers.length > 0) {
+                tableHeaders = module.content.translatedContent.headers;
+              }
+              
+              // Utilizza le righe tradotte se disponibili
+              if (Array.isArray(module.content.translatedContent.rows) &&
+                  module.content.translatedContent.rows.length > 0) {
+                tableRows = module.content.translatedContent.rows;
+              }
+              
+              // Utilizza la didascalia tradotta se disponibile
+              if (module.content.translatedContent.caption) {
+                tableCaption = module.content.translatedContent.caption;
+              }
+            }
+            
             content += `
               <figure class="table-container">
                 <table>
                   <thead>
                     <tr>
-                      ${(module.content.headers || []).map((header: string) => 
+                      ${tableHeaders.map((header: string) => 
                         `<th>${header}</th>`
                       ).join('')}
                     </tr>
                   </thead>
                   <tbody>
-                    ${(module.content.rows || []).map((row: string[]) => 
+                    ${tableRows.map((row: string[]) => 
                       `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`
                     ).join('')}
                   </tbody>
                 </table>
-                ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : ''}
+                ${tableCaption ? `<figcaption class="module-caption">${tableCaption}</figcaption>` : ''}
               </figure>
             `;
             break;
@@ -294,18 +319,51 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'checklist':
+            // Verifica se ci sono traduzioni disponibili per questo modulo
+            let checklistItems = module.content.items || [];
+            let checklistTitle = module.content.title || '';
+            let checklistCaption = module.content.caption || '';
+            
+            // Utilizza le traduzioni se disponibili
+            if (languageId && module.content.translatedContent) {
+              // Aggiorna il titolo se disponibile nella traduzione
+              if (module.content.translatedContent.title) {
+                checklistTitle = module.content.translatedContent.title;
+              }
+              
+              // Aggiorna la didascalia se disponibile nella traduzione
+              if (module.content.translatedContent.caption) {
+                checklistCaption = module.content.translatedContent.caption;
+              }
+              
+              // Aggiorna gli elementi della checklist se disponibili nella traduzione
+              if (Array.isArray(module.content.translatedContent.items)) {
+                // Crea nuovi elementi unendo il flag 'checked' originale con il testo tradotto
+                checklistItems = checklistItems.map((item, index) => {
+                  const translatedItem = module.content.translatedContent.items[index];
+                  if (translatedItem && translatedItem.text) {
+                    return {
+                      ...item,
+                      text: translatedItem.text
+                    };
+                  }
+                  return item;
+                });
+              }
+            }
+            
             content += `
               <figure class="checklist-container">
+                ${checklistTitle ? `<h4 class="checklist-title">${checklistTitle}</h4>` : ''}
                 <ul class="checklist">
-                  ${(module.content.items || []).map((item: any, index: number) => 
+                  ${checklistItems.map((item: any, index: number) => 
                     `<li class="checklist-item">
                       <input type="checkbox" id="checkbox-${module.id}-${index}" class="checklist-checkbox" ${item.checked ? 'checked' : ''}> 
                       <label for="checkbox-${module.id}-${index}">${item.text}</label>
                     </li>`
                   ).join('')}
                 </ul>
-                ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : 
-                 (module.content.title ? `<figcaption class="module-caption">${module.content.title}</figcaption>` : '')}
+                ${checklistCaption ? `<figcaption class="module-caption">${checklistCaption}</figcaption>` : ''}
               </figure>
             `;
             break;
