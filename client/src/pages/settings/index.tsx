@@ -23,7 +23,8 @@ import {
   Shield,
   Bell,
   Database,
-  ChevronRight
+  ChevronRight,
+  Server
 } from 'lucide-react';
 
 const SettingsPage: React.FC = () => {
