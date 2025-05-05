@@ -1824,34 +1824,15 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     const allDescriptions = moduleContent.descriptions || {};
                     const bomId = moduleContent.bomId || 13; // Ottiene l'ID della BOM di riferimento
                     
-                    const [bomComponents, setBomComponents] = useState<Record<string, any>>({});
-                    const [isLoadingBomComponents, setIsLoadingBomComponents] = useState(true);
-                    
-                    // Carica i componenti della BOM di riferimento
-                    useEffect(() => {
-                      if (bomId) {
-                        setIsLoadingBomComponents(true);
-                        fetch(`/api/boms/${bomId}/items`)
-                          .then(res => res.json())
-                          .then(items => {
-                            // Crea un dizionario di componenti indicizzato per codice
-                            const componentsMap: Record<string, any> = {};
-                            items.forEach((item: any) => {
-                              if (item.component && item.component.code) {
-                                componentsMap[item.component.code] = item.component;
-                              }
-                            });
-                            setBomComponents(componentsMap);
-                            console.log(`Caricati ${Object.keys(componentsMap).length} componenti dalla BOM ${bomId}`);
-                          })
-                          .catch(err => {
-                            console.error(`Errore nel caricamento dei componenti della BOM ${bomId}:`, err);
-                          })
-                          .finally(() => {
-                            setIsLoadingBomComponents(false);
-                          });
-                      }
-                    }, [bomId]);
+                    // Utilizzeremo gli stati e i dati dai componenti a livello superiore
+                    if (isLoadingBomComponents) {
+                      return (
+                        <div className="p-3 border rounded bg-blue-50 text-sm flex items-center">
+                          <div className="animate-spin mr-2 h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                          Caricamento componenti dalla BOM di riferimento...
+                        </div>
+                      );
+                    }
                     
                     // Prima verifichiamo se ci sono componenti filtrati specificati
                     let visibleCodes: string[] = [];
