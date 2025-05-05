@@ -87,30 +87,78 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
         
         switch(module.type) {
           case 'text':
+            // Utilizza il testo tradotto se disponibile
+            let textContent = module.content.text || '';
+            
+            // Verifica se ci sono traduzioni disponibili per questo modulo
+            if (languageId && module.content.translatedContent && module.content.translatedContent.text) {
+              textContent = module.content.translatedContent.text;
+            }
+            
             content += `
               <div class="text-container">
-                ${module.content.text || ''}
+                ${textContent}
               </div>
             `;
             break;
             
           case 'image':
+            // Prepara i dati dell'immagine con valori predefiniti
+            let imgSrc = module.content.src || '';
+            let imgAlt = module.content.alt || '';
+            let imgCaption = module.content.caption || '';
+            
+            // Utilizza le traduzioni se disponibili
+            if (languageId && module.content.translatedContent) {
+              // Alt text ha sempre priorità per accessibilità
+              if (module.content.translatedContent.alt) {
+                imgAlt = module.content.translatedContent.alt;
+              }
+              
+              // Didascalia tradotta
+              if (module.content.translatedContent.caption) {
+                imgCaption = module.content.translatedContent.caption;
+              }
+            }
+            
             content += `
               <figure class="image-container">
-                <img src="${module.content.src}" alt="${module.content.alt || ''}" class="content-image" />
-                ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : ''}
+                <img src="${imgSrc}" alt="${imgAlt}" class="content-image" />
+                ${imgCaption ? `<figcaption class="module-caption">${imgCaption}</figcaption>` : ''}
               </figure>
             `;
             break;
             
           case 'video':
+            // Prepara i dati del video con valori predefiniti
+            let videoThumbnail = module.content.thumbnail || '';
+            let videoTitle = module.content.title || 'Video';
+            let videoCaption = module.content.caption || '';
+            
+            // Utilizza le traduzioni se disponibili
+            if (languageId && module.content.translatedContent) {
+              // Titolo tradotto
+              if (module.content.translatedContent.title) {
+                videoTitle = module.content.translatedContent.title;
+              }
+              
+              // Didascalia tradotta
+              if (module.content.translatedContent.caption) {
+                videoCaption = module.content.translatedContent.caption;
+              }
+            }
+            
+            // Messaggio in base alla lingua
+            const videoMessage = languageId ? 'The video is available in the original application.' : 'Il video è disponibile nell\'applicazione originale.';
+            
             content += `
               <figure class="video-container">
                 <div class="video-placeholder">
-                  <p>Il video è disponibile nell'applicazione originale.</p>
-                  <img src="${module.content.thumbnail || ''}" alt="Anteprima video" class="video-thumbnail" />
+                  <p>${videoMessage}</p>
+                  <p>${videoTitle}</p>
+                  <img src="${videoThumbnail}" alt="Video thumbnail" class="video-thumbnail" />
                 </div>
-                ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : ''}
+                ${videoCaption ? `<figcaption class="module-caption">${videoCaption}</figcaption>` : ''}
               </figure>
             `;
             break;
@@ -299,21 +347,46 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'component':
+            // Prepara i dati del componente con valori predefiniti
+            let componentCaption = module.content.caption || '';
+            let componentLabels = {
+              id: 'ID Componente',
+              qty: 'Quantità'
+            };
+            
+            // Utilizza le traduzioni se disponibili
+            if (languageId && module.content.translatedContent) {
+              // Didascalia tradotta
+              if (module.content.translatedContent.caption) {
+                componentCaption = module.content.translatedContent.caption;
+              }
+              
+              // Etichette tradotte
+              if (module.content.translatedContent.labels) {
+                if (module.content.translatedContent.labels.id) {
+                  componentLabels.id = module.content.translatedContent.labels.id;
+                }
+                if (module.content.translatedContent.labels.qty) {
+                  componentLabels.qty = module.content.translatedContent.labels.qty;
+                }
+              }
+            }
+            
             content += `
               <figure class="component-container">
                 <div class="component-content">
                   <table>
                     <tr>
-                      <th>ID Componente</th>
+                      <th>${componentLabels.id}</th>
                       <td>${module.content.componentId}</td>
                     </tr>
                     <tr>
-                      <th>Quantità</th>
+                      <th>${componentLabels.qty}</th>
                       <td>${module.content.quantity}</td>
                     </tr>
                   </table>
                 </div>
-                ${module.content.caption ? `<figcaption class="module-caption">${module.content.caption}</figcaption>` : ''}
+                ${componentCaption ? `<figcaption class="module-caption">${componentCaption}</figcaption>` : ''}
               </figure>
             `;
             break;
@@ -382,24 +455,49 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               break;
             }
             
+            // Prepara i dati del file con valori predefiniti
+            let fileTitle = module.content.title || '';
+            let fileCaption = module.content.caption || module.content.description || '';
+            let fileFilename = module.content.filename || module.content.src.split('/').pop() || 'File';
+            let fileLabel = 'Nome file:';
+            let downloadText = 'Scarica file';
+            
+            // Utilizza le traduzioni se disponibili
+            if (languageId && module.content.translatedContent) {
+              // Titolo tradotto
+              if (module.content.translatedContent.title) {
+                fileTitle = module.content.translatedContent.title;
+              }
+              
+              // Didascalia/descrizione tradotta
+              if (module.content.translatedContent.caption) {
+                fileCaption = module.content.translatedContent.caption;
+              } else if (module.content.translatedContent.description) {
+                fileCaption = module.content.translatedContent.description;
+              }
+              
+              // Adatta l'etichetta e il testo di download alla lingua
+              if (languageId && languageId !== 1) { // Se non è italiano
+                fileLabel = 'File name:';
+                downloadText = 'Download file';
+              }
+            }
+            
             // Verifica se il percorso è relativo o assoluto
             const fileSrc = module.content.src.startsWith('/') ? 
               window.location.origin + module.content.src :
               module.content.src;
             
-            const filename = module.content.filename || module.content.src.split('/').pop() || 'File';
-            
             content += `
               <figure class="file-container">
                 <div class="file-info">
-                  ${module.content.title ? `<p><strong>${module.content.title}</strong></p>` : ''}
-                  <p><strong>Nome file:</strong> ${filename}</p>
+                  ${fileTitle ? `<p><strong>${fileTitle}</strong></p>` : ''}
+                  <p><strong>${fileLabel}</strong> ${fileFilename}</p>
                   <a href="${fileSrc}" target="_blank" class="download-button">
-                    <span class="download-icon">⬇</span> Scarica file
+                    <span class="download-icon">⬇</span> ${downloadText}
                   </a>
                 </div>
-                ${module.content.caption ? `<figcaption class="module-caption text-center">${module.content.caption}</figcaption>` : 
-                  (module.content.description ? `<figcaption class="module-caption text-center">${module.content.description}</figcaption>` : '')}
+                ${fileCaption ? `<figcaption class="module-caption text-center">${fileCaption}</figcaption>` : ''}
               </figure>
             `;
             break;
@@ -506,15 +604,34 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'link':
+            // Prepara i dati del link con valori predefiniti
+            let linkUrl = module.content.url || '';
+            let linkText = module.content.text || module.content.url || 'Link';
+            let linkCaption = module.content.caption || module.content.description || '';
+            
+            // Utilizza le traduzioni se disponibili
+            if (languageId && module.content.translatedContent) {
+              // Testo del link tradotto
+              if (module.content.translatedContent.text) {
+                linkText = module.content.translatedContent.text;
+              }
+              
+              // Didascalia tradotta
+              if (module.content.translatedContent.caption) {
+                linkCaption = module.content.translatedContent.caption;
+              } else if (module.content.translatedContent.description) {
+                linkCaption = module.content.translatedContent.description;
+              }
+            }
+            
             content += `
               <figure class="link-container">
                 <div class="link-content">
-                  <a href="${module.content.url}" target="_blank" class="external-link">
-                    <span class="link-icon">🔗</span> ${module.content.text || module.content.url}
+                  <a href="${linkUrl}" target="_blank" class="external-link">
+                    <span class="link-icon">🔗</span> ${linkText}
                   </a>
                 </div>
-                ${module.content.caption ? `<figcaption class="module-caption text-center">${module.content.caption}</figcaption>` : 
-                 (module.content.description ? `<figcaption class="module-caption text-center">${module.content.description}</figcaption>` : '')}
+                ${linkCaption ? `<figcaption class="module-caption text-center">${linkCaption}</figcaption>` : ''}
               </figure>
             `;
             break;
