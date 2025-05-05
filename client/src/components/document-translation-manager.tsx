@@ -1791,8 +1791,21 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
               </div>
               
               {/* Descrizioni componenti - mostrate se ci sono componenti */}
-              <div>
-                <Label>Descrizioni Componenti</Label>
+              <div className="mt-6 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-lg font-semibold">Descrizioni Componenti</Label>
+                  <div className="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                    Area di traduzione delle descrizioni
+                  </div>
+                </div>
+                
+                <div className="mt-4 bg-blue-50 p-4 rounded mb-4 border border-blue-200">
+                  <p className="text-sm mb-2">
+                    <span className="font-medium">Traduci le descrizioni dei componenti</span> che appaiono nella tabella BOM. 
+                    Queste traduzioni saranno utilizzate nell'esportazione del documento nella lingua selezionata.
+                  </p>
+                </div>
+                
                 <div className="mt-2">
                   {/* Debug dei filtri applicati */}
                   {moduleContent.filterSettings && (
@@ -1850,44 +1863,66 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     
                     const descriptions = translatedContent.descriptions || {};
                     
-                    // Per ogni codice componente visibile, mostra il campo di modifica
-                    return visibleCodes.map((code: string) => {
-                      // Se abbiamo una descrizione originale, usala
-                      // Altrimenti mostra solo il codice come descrizione predefinita
-                      const description = allDescriptions[code] || `Componente ${code}`;
-                      
-                      return (
-                        <div key={`description-${code}`} className="mt-4">
-                          <Label htmlFor={`description-${code}`}>{code}</Label>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                            <div className="p-3 bg-neutral-50 rounded border text-sm">
-                              {description}
-                            </div>
-                            <TranslationEditableField
-                              originalValue={description}
-                              translatedValue={descriptions[code] || ''}
-                              onChange={(newValue) => {
-                                // Crea una copia dello stato esistente
-                                const newDescriptions = {
-                                  ...descriptions,
-                                  [code]: newValue
-                                };
+                    // Rendi i campi più evidenti e accessibili
+                    return (
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
+                          <table className="w-full border-collapse">
+                            <thead>
+                              <tr className="bg-neutral-100">
+                                <th className="px-4 py-2 text-left w-1/4">Codice</th>
+                                <th className="px-4 py-2 text-left w-2/5">Descrizione originale</th>
+                                <th className="px-4 py-2 text-left w-2/5">Descrizione tradotta</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {visibleCodes.map((code: string, index) => {
+                                // Se abbiamo una descrizione originale, usala
+                                // Altrimenti mostra solo il codice come descrizione predefinita
+                                const description = allDescriptions[code] || `Componente ${code}`;
                                 
-                                // Aggiorna il contenuto con un breve ritardo per prestazioni migliori
-                                clearTimeout((window as any).saveTimeout);
-                                (window as any).saveTimeout = setTimeout(() => {
-                                  handleContentChange({ descriptions: newDescriptions });
-                                }, 300);
-                              }}
-                              placeholder="Inserisci la traduzione..."
-                              errorCondition={!descriptions[code]}
-                              rows={1}
-                              fieldId={`bom-description-${module.id}-${code}`}
-                            />
-                          </div>
+                                // Stile alternato per le righe
+                                const rowClass = index % 2 === 0 ? "bg-white" : "bg-neutral-50";
+                                
+                                return (
+                                  <tr key={`description-${code}`} className={rowClass}>
+                                    <td className="px-4 py-3 align-top border-t border-neutral-200">
+                                      <span className="font-medium text-blue-700">{code}</span>
+                                    </td>
+                                    <td className="px-4 py-3 align-top border-t border-neutral-200">
+                                      {description}
+                                    </td>
+                                    <td className="px-4 py-3 align-top border-t border-neutral-200">
+                                      <TranslationEditableField
+                                        originalValue={description}
+                                        translatedValue={descriptions[code] || ''}
+                                        onChange={(newValue) => {
+                                          // Crea una copia dello stato esistente
+                                          const newDescriptions = {
+                                            ...descriptions,
+                                            [code]: newValue
+                                          };
+                                          
+                                          // Aggiorna il contenuto con un breve ritardo per prestazioni migliori
+                                          clearTimeout((window as any).saveTimeout);
+                                          (window as any).saveTimeout = setTimeout(() => {
+                                            handleContentChange({ descriptions: newDescriptions });
+                                          }, 300);
+                                        }}
+                                        placeholder="Inserisci la traduzione..."
+                                        errorCondition={!descriptions[code]}
+                                        rows={2}
+                                        fieldId={`bom-description-${module.id}-${code}`}
+                                      />
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
                         </div>
-                      );
-                    });
+                      </div>
+                    );
                   })()}
                 </div>
               </div>
