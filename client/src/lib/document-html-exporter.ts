@@ -477,7 +477,15 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               }
               
               // Adatta l'etichetta e il testo di download alla lingua
-              if (languageId && languageId !== 1) { // Se non è italiano
+              if (module.content.translatedContent.labels) {
+                // Usa le etichette tradotte se presenti
+                if (module.content.translatedContent.labels.fileLabel) {
+                  fileLabel = module.content.translatedContent.labels.fileLabel;
+                }
+                if (module.content.translatedContent.labels.download) {
+                  downloadText = module.content.translatedContent.labels.download;
+                }
+              } else if (languageId && languageId !== 1) { // Se non è italiano e non ci sono etichette tradotte
                 fileLabel = 'File name:';
                 downloadText = 'Download file';
               }
