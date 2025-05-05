@@ -680,7 +680,9 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
             }
           }
           
-          return !translatedContent.title && moduleContent?.title;
+          // Verifica se manca titolo o didascalia (quando presenti nell'originale)
+          return (moduleContent?.title && !translatedContent.title) || 
+                 (moduleContent?.caption && !translatedContent.caption);
           
         case 'pdf':
           // Per i PDF, solo la didascalia è necessaria
