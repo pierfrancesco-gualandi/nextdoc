@@ -1297,12 +1297,76 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
         text-align: center;
       }
       
+      .threeDModel-content {
+        padding: 20px;
+        background-color: #f9f9f9;
+        border-radius: 5px;
+      }
+      
       .threeDModel-title {
         margin-top: 0;
         color: #333;
         margin-bottom: 15px;
+        font-size: 1.2em;
       }
       
+      .threeDModel-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+        padding: 20px;
+        background-color: #eee;
+        border-radius: 5px;
+      }
+      
+      .threeDModel-instructions {
+        color: #555;
+        line-height: 1.5;
+        margin-bottom: 15px;
+        max-width: 600px;
+        text-align: center;
+      }
+      
+      .threeDModel-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+        max-width: 350px;
+      }
+      
+      .threeDModel-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 15px;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: bold;
+        color: white;
+        transition: all 0.2s ease;
+      }
+      
+      .threeDModel-button.view-button {
+        background-color: #2a80eb;
+      }
+      
+      .threeDModel-button.download-button {
+        background-color: #0066cc;
+      }
+      
+      .threeDModel-button:hover {
+        opacity: 0.9;
+        transform: translateY(-2px);
+      }
+      
+      .button-icon {
+        margin-right: 8px;
+        font-size: 1.2em;
+      }
+      
+      /* Stili legacy per compatibilità */
       .threeDModel-placeholder {
         display: flex;
         flex-direction: column;
@@ -1344,12 +1408,41 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
     
     // Data corrente per il footer
     const currentDate = new Date();
-    const dateString = currentDate.toLocaleDateString('it-IT');
+    
+    // Traduzioni per elementi statici del documento
+    let documentFooterText = 'Documento generato il';
+    let versionLabel = 'Versione:';
+    let documentLang = 'it';
+    
+    // Imposta la lingua e le traduzioni statiche in base alla lingua selezionata
+    if (languageId) {
+      if (languageId === 2) { // Inglese
+        documentFooterText = 'Document generated on';
+        versionLabel = 'Version:';
+        documentLang = 'en';
+      } else if (languageId === 3) { // Francese
+        documentFooterText = 'Document généré le';
+        versionLabel = 'Version:';
+        documentLang = 'fr';
+      } else if (languageId === 4) { // Tedesco
+        documentFooterText = 'Dokument erstellt am';
+        versionLabel = 'Version:';
+        documentLang = 'de';
+      } else if (languageId === 5) { // Spagnolo
+        documentFooterText = 'Documento generado el';
+        versionLabel = 'Versión:';
+        documentLang = 'es';
+      }
+      // Puoi aggiungere altre lingue se necessario
+    }
+    
+    // Formatta la data in base alla lingua selezionata
+    const dateString = currentDate.toLocaleDateString(documentLang === 'it' ? 'it-IT' : documentLang === 'en' ? 'en-US' : documentLang === 'fr' ? 'fr-FR' : documentLang === 'de' ? 'de-DE' : documentLang === 'es' ? 'es-ES' : 'it-IT');
     
     // Costruisci l'HTML completo
     const html = `
       <!DOCTYPE html>
-      <html lang="it">
+      <html lang="${documentLang}">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1361,7 +1454,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
           <header class="document-header">
             <h1 class="document-title">${documentTitle}</h1>
             <p class="document-description">${documentDescription}</p>
-            <p class="document-version">Versione: ${documentVersion}</p>
+            <p class="document-version">${versionLabel} ${documentVersion}</p>
           </header>
           
           <main class="document-content">
@@ -1369,7 +1462,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
           </main>
           
           <footer class="document-footer">
-            <p>Documento generato il ${dateString}</p>
+            <p>${documentFooterText} ${dateString}</p>
           </footer>
         </div>
       </body>
