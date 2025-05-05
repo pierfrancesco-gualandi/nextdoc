@@ -9,7 +9,37 @@ import { isDisegno3DSection, generateComponentsListHtml, getSpecificComponentsFo
  * @param languageId ID della lingua di destinazione per traduzione (opzionale)
  */
 export async function exportDocumentHtml(document: any, sections: any[], modules: any[], languageId?: string | number) {
-  const title = document?.title || 'Documento Esportato';
+  // Valori di default dal documento originale
+  let documentTitle = document?.title || 'Documento Esportato';
+  let documentDescription = document?.description || '';
+  let documentVersion = document?.version || '1.0';
+  
+  // Se è specificata una lingua, cerchiamo la traduzione del documento
+  if (languageId) {
+    try {
+      const documentTranslationResponse = await fetch(`/api/document-translations/${document.id}?languageId=${languageId}`);
+      if (documentTranslationResponse.ok) {
+        const documentTranslation = await documentTranslationResponse.json();
+        
+        // Applica le traduzioni se disponibili
+        if (documentTranslation) {
+          documentTitle = documentTranslation.title || documentTitle;
+          documentDescription = documentTranslation.description || documentDescription;
+          
+          // Se il documento include traduzioni per la versione, la utilizziamo
+          if (documentTranslation.version) {
+            documentVersion = documentTranslation.version;
+          }
+          
+          console.log(`Applicata traduzione al documento: ${documentTitle}`);
+        }
+      } else {
+        console.warn(`Traduzione del documento non trovata per la lingua ${languageId}`);
+      }
+    } catch (error) {
+      console.error('Errore nel recupero della traduzione del documento:', error);
+    }
+  }
   
   try {
     // Organizza le sezioni in una struttura gerarchica (albero)
@@ -845,14 +875,15 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${title}</title>
+        <title>${documentTitle}</title>
         <style>${css}</style>
       </head>
       <body>
         <div class="document-container">
           <header class="document-header">
-            <h1 class="document-title">${title}</h1>
-            <p class="document-description">${document.description || ''}</p>
+            <h1 class="document-title">${documentTitle}</h1>
+            <p class="document-description">${documentDescription}</p>
+            <p class="document-version">Versione: ${documentVersion}</p>
           </header>
           
           <main class="document-content">
@@ -891,8 +922,8 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
       // Crea un blob con l'HTML processato
       const blob = new Blob([processedHtml], { type: 'text/html;charset=utf-8' });
       
-      // Nome del file
-      const filename = `${document.title.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
+      // Nome del file con il titolo tradotto
+      const filename = `${documentTitle.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
       
       // Scarica il file
       saveAs(blob, filename);
@@ -903,7 +934,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
       
       // In caso di errore, usa la versione originale
       const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-      const filename = `${document.title.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
+      const filename = `${documentTitle.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
       saveAs(blob, filename);
       
       return html;
