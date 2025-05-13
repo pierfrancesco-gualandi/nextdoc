@@ -1,33 +1,141 @@
-import React, { useState } from 'react';
-import { useSettings } from '@/contexts/SettingsContext';
+import React, { useState, useEffect } from 'react';
+
+// Definiamo interfacce per le impostazioni solo per questo componente
+interface AppSettings {
+  appName: string;
+  logo: string | null;
+  theme: string;
+  language: string;
+  showSidebar: boolean;
+}
+
+interface HtmlExportSettings {
+  pageTitle: string;
+  metaDescription: string;
+  customCss: string;
+  headerHtml: string;
+  footerHtml: string;
+  includeJs: boolean;
+  includeToc: boolean;
+}
+
+interface DomainSettings {
+  customDomain: string | null;
+  defaultDomain: string;
+}
+
+interface Settings {
+  app: AppSettings;
+  htmlExport: HtmlExportSettings;
+  domain: DomainSettings;
+  version: number;
+  lastUpdated: string;
+}
 
 interface SettingsPageProps {
   toggleSidebar: () => void;
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ toggleSidebar }) => {
-  // Usa il contesto delle impostazioni
-  const { 
-    settings, 
-    isLoading, 
-    saveSettings, 
-    updateAppSettings, 
-    updateHtmlExportSettings, 
-    updateDomainSettings 
-  } = useSettings();
+  // Valori predefiniti per le impostazioni
+  const defaultSettings: Settings = {
+    app: {
+      appName: 'VKS Studio',
+      logo: null,
+      theme: 'blue',
+      language: 'it',
+      showSidebar: true
+    },
+    htmlExport: {
+      pageTitle: '[Titolo documento]',
+      metaDescription: '[Descrizione documento]',
+      customCss: '',
+      headerHtml: '',
+      footerHtml: '',
+      includeJs: true,
+      includeToc: true
+    },
+    domain: {
+      customDomain: null,
+      defaultDomain: 'app-nome.replit.app'
+    },
+    version: 1,
+    lastUpdated: new Date().toISOString()
+  };
   
+  const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [activeTab, setActiveTab] = useState('generale');
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   
+  // Carica le impostazioni all'avvio
+  useEffect(() => {
+    const loadSettings = () => {
+      setIsLoading(true);
+      try {
+        // Carica dal localStorage o usa i valori predefiniti
+        const savedSettings = localStorage.getItem('appSettings');
+        if (savedSettings) {
+          setSettings(JSON.parse(savedSettings));
+        } else {
+          setSettings(defaultSettings);
+          localStorage.setItem('appSettings', JSON.stringify(defaultSettings));
+        }
+      } catch (err) {
+        console.error('Errore nel caricamento delle impostazioni:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, []);
+  
+  // Aggiorna le impostazioni dell'applicazione
+  const updateAppSettings = (app: Partial<AppSettings>) => {
+    setSettings(prev => ({
+      ...prev,
+      app: { ...prev.app, ...app }
+    }));
+  };
+
+  // Aggiorna le impostazioni per l'esportazione HTML
+  const updateHtmlExportSettings = (htmlExport: Partial<HtmlExportSettings>) => {
+    setSettings(prev => ({
+      ...prev,
+      htmlExport: { ...prev.htmlExport, ...htmlExport }
+    }));
+  };
+
+  // Aggiorna le impostazioni del dominio
+  const updateDomainSettings = (domain: Partial<DomainSettings>) => {
+    setSettings(prev => ({
+      ...prev,
+      domain: { ...prev.domain, ...domain }
+    }));
+  };
+  
   // Gestisce il salvataggio globale delle impostazioni
-  const handleSaveAll = async () => {
+  const saveSettings = async () => {
     setIsSaving(true);
     try {
-      await saveSettings(settings);
+      // Aggiorna lastUpdated e version
+      const updatedSettings = {
+        ...settings,
+        lastUpdated: new Date().toISOString(),
+        version: settings.version + 1
+      };
+      
+      // Salva nel localStorage
+      localStorage.setItem('appSettings', JSON.stringify(updatedSettings));
+      
+      setSettings(updatedSettings);
       alert('Impostazioni salvate con successo!');
-    } catch (error) {
-      console.error('Errore nel salvataggio delle impostazioni:', error);
+      return Promise.resolve();
+    } catch (err) {
+      console.error('Errore nel salvataggio delle impostazioni:', err);
       alert('Errore nel salvataggio delle impostazioni.');
+      return Promise.reject(err);
     } finally {
       setIsSaving(false);
     }
@@ -67,7 +175,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ toggleSidebar }) => {
         <div className="flex items-center space-x-2">
           <button 
             className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50"
-            onClick={handleSaveAll}
+            onClick={saveSettings}
             disabled={isSaving}
           >
             {isSaving ? (
@@ -306,8 +414,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ toggleSidebar }) => {
                 className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark"
                 onClick={() => {
                   // Salva solo le impostazioni HTML
-                  saveSettings(settings).then(() => {
-                    alert('Configurazione HTML salvata con successo!');
+                  saveSettings().then(() => {
+                    // L'alert è già mostrato dalla funzione saveSettings
                   });
                 }}
               >
@@ -358,7 +466,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ toggleSidebar }) => {
               <button 
                 className="px-4 py-2 bg-primary text-white rounded-r-md"
                 onClick={() => {
-                  saveSettings(settings).then(() => {
+                  saveSettings().then(() => {
                     alert('Dominio personalizzato aggiornato con successo!');
                   });
                 }}
