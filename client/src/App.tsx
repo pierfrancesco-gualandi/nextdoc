@@ -167,10 +167,12 @@ function Router() {
             <Route path="/module-translation/:id" component={({ params }) => <ModuleTranslation toggleSidebar={toggleSidebar} />} />
             <Route path="/document/:id/export-translations" component={({ params }) => <DocumentTranslationExport />} />
             <Route path="/document/:id/translate" component={({ params }) => <DocumentTranslationTree toggleSidebar={toggleSidebar} />} />
-            {/* Nuove rotte per le impostazioni */}
-            <Route path="/settings" component={() => <SettingsRedirect path="settings" toggleSidebar={toggleSidebar} />} />
-            <Route path="/settings/domain" component={() => <SettingsRedirect path="domain" />} />
-            <Route path="/settings/deploy" component={() => <SettingsRedirect path="deploy" />} />
+            {/* Rotte per le impostazioni */}
+            <Route path="/settings" component={() => {
+              // Importiamo direttamente la pagina di impostazioni
+              const SettingsPage = require("@/pages/settings").default;
+              return <SettingsPage toggleSidebar={toggleSidebar} />;
+            }} />
             <Route component={NotFound} />
           </Switch>
         </div>
