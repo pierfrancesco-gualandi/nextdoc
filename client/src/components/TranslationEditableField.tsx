@@ -38,6 +38,27 @@ if (typeof window !== 'undefined' && !(window as any).closeModuleEditing) {
     (window as any)._activeFieldData.focusLock = false;
     (window as any)._activeFieldData.activeFieldId = null;
     (window as any)._activeFieldData.moduleInEditMode = null;
+    
+    // Rimuovi il focus da tutti i campi di input e textarea
+    if (document.activeElement instanceof HTMLElement) {
+      (document.activeElement as HTMLElement).blur();
+    }
+  };
+}
+
+/**
+ * Funzione globale per rimuovere il focus dopo un salvataggio
+ */
+if (typeof window !== 'undefined' && !(window as any).clearFieldFocus) {
+  (window as any).clearFieldFocus = () => {
+    (window as any)._activeFieldData.textFieldsInEditMode.clear();
+    (window as any)._activeFieldData.focusLock = false;
+    (window as any)._activeFieldData.activeFieldId = null;
+    
+    // Rimuovi il focus da tutti i campi di input e textarea
+    if (document.activeElement instanceof HTMLElement) {
+      (document.activeElement as HTMLElement).blur();
+    }
   };
 }
 

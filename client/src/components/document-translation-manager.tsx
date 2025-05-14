@@ -281,6 +281,11 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
   const saveDocumentInfo = async (showNotification = true) => {
     if (!selectedLanguage || !document) return;
     
+    // Rimuovi il focus dai campi di input per prevenire che si mantenga dopo il salvataggio
+    if (typeof window !== 'undefined' && (window as any).clearFieldFocus) {
+      (window as any).clearFieldFocus();
+    }
+    
     if (showNotification) {
       setSavingDocumentInfo(true);
     }
