@@ -357,15 +357,16 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           const documentTranslationData = {
             documentId: parseInt(documentId),
             languageId: parseInt(selectedLanguage),
-            title: documentTitleTranslation !== undefined ? documentTitleTranslation : document.title,
-            version: documentVersionTranslation !== undefined ? documentVersionTranslation : document.version,
-            description: documentDescriptionTranslation !== undefined ? documentDescriptionTranslation : document.description,
+            title: documentTitleTranslation, // Usa il valore esatto impostato dall'utente
+            version: documentVersionTranslation, // Usa il valore esatto impostato dall'utente
+            description: documentDescriptionTranslation, // Usa il valore esatto impostato dall'utente
             status: 'translated'
           };
           
-          console.log("Valori titolo:", {
-            documentTitleTranslationExact: documentTitleTranslation,
-            usandoValoreTitolo: documentTitleTranslation !== undefined ? documentTitleTranslation : document.title
+          console.log("Valori titolo salvati:", {
+            titolo: documentTitleTranslation,
+            versione: documentVersionTranslation,
+            descrizione: documentDescriptionTranslation
           });
           
           console.log("Salvando traduzione documento:", documentTranslationData);
@@ -403,7 +404,27 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           }
           
           // Invalida la cache per aggiornare i dati visualizzati
+          // Invalida sia le query generiche che quelle specifiche con parametri
           queryClient.invalidateQueries({ queryKey: [`/api/document-translations`] });
+          
+          // Ricarica manualmente i dati di traduzione del documento
+          const newDocTranslationResponse = await fetch(`/api/document-translations?documentId=${documentId}&languageId=${selectedLanguage}`);
+          if (newDocTranslationResponse.ok) {
+            const newDocTranslationData = await newDocTranslationResponse.json();
+            if (newDocTranslationData && newDocTranslationData.length > 0) {
+              const newDocTranslation = newDocTranslationData[0];
+              // Aggiorna gli stati con i nuovi valori salvati
+              setDocumentTitleTranslation(newDocTranslation.title !== undefined ? newDocTranslation.title : '');
+              setDocumentVersionTranslation(newDocTranslation.version !== undefined ? newDocTranslation.version : '');
+              setDocumentDescriptionTranslation(newDocTranslation.description !== undefined ? newDocTranslation.description : '');
+              
+              console.log("Ricaricati dati documento dopo salvataggio:", {
+                titolo: newDocTranslation.title,
+                versione: newDocTranslation.version,
+                descrizione: newDocTranslation.description
+              });
+            }
+          }
         } catch (docTranslationError) {
           console.error("Errore nel salvataggio della traduzione del documento:", docTranslationError);
           // Non interrompere l'intero processo di salvataggio se questa parte fallisce
