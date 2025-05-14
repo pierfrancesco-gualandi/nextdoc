@@ -423,97 +423,15 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
     });
   };
   
-  // Salva tutte le traduzioni modificate
+  // Salva tutte le traduzioni delle sezioni e dei moduli (esclude le informazioni del documento)
   const saveAllTranslations = async () => {
     if (!selectedLanguage) return;
     
     setSavingTranslation(true);
     
     try {
-      // Salva la traduzione del documento (titolo, versione, descrizione)
-      if (document) {
-        try {
-          // Verifica se esiste già una traduzione per questo documento e lingua
-          const checkDocumentTranslationResponse = await fetch(`/api/document-translations?documentId=${documentId}&languageId=${selectedLanguage}`);
-          const documentTranslations = await checkDocumentTranslationResponse.json();
-          const existingDocumentTranslation = documentTranslations.length > 0 ? documentTranslations[0] : null;
-          
-          const documentTranslationData = {
-            documentId: parseInt(documentId),
-            languageId: parseInt(selectedLanguage),
-            title: documentTitleTranslation, // Usa il valore esatto impostato dall'utente
-            version: documentVersionTranslation, // Usa il valore esatto impostato dall'utente
-            description: documentDescriptionTranslation, // Usa il valore esatto impostato dall'utente
-            status: 'translated'
-          };
-          
-          console.log("Valori titolo salvati:", {
-            titolo: documentTitleTranslation,
-            versione: documentVersionTranslation,
-            descrizione: documentDescriptionTranslation
-          });
-          
-          console.log("Salvando traduzione documento:", documentTranslationData);
-          
-          if (existingDocumentTranslation) {
-            // Aggiorna la traduzione esistente
-            const updateResponse = await fetch(`/api/document-translations/${existingDocumentTranslation.id}`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(documentTranslationData),
-            });
-            
-            if (!updateResponse.ok) {
-              const errorText = await updateResponse.text();
-              console.error("Errore nell'aggiornamento della traduzione del documento:", errorText);
-              throw new Error(`Errore nell'aggiornamento della traduzione del documento: ${errorText}`);
-            }
-          } else {
-            // Crea una nuova traduzione
-            const createResponse = await fetch('/api/document-translations', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(documentTranslationData),
-            });
-            
-            if (!createResponse.ok) {
-              const errorText = await createResponse.text();
-              console.error("Errore nella creazione della traduzione del documento:", errorText);
-              throw new Error(`Errore nella creazione della traduzione del documento: ${errorText}`);
-            }
-          }
-          
-          // Invalida la cache per aggiornare i dati visualizzati
-          // Invalida sia le query generiche che quelle specifiche con parametri
-          queryClient.invalidateQueries({ queryKey: [`/api/document-translations`] });
-          
-          // Ricarica manualmente i dati di traduzione del documento
-          const newDocTranslationResponse = await fetch(`/api/document-translations?documentId=${documentId}&languageId=${selectedLanguage}`);
-          if (newDocTranslationResponse.ok) {
-            const newDocTranslationData = await newDocTranslationResponse.json();
-            if (newDocTranslationData && newDocTranslationData.length > 0) {
-              const newDocTranslation = newDocTranslationData[0];
-              // Aggiorna gli stati con i nuovi valori salvati
-              setDocumentTitleTranslation(newDocTranslation.title !== undefined ? newDocTranslation.title : '');
-              setDocumentVersionTranslation(newDocTranslation.version !== undefined ? newDocTranslation.version : '');
-              setDocumentDescriptionTranslation(newDocTranslation.description !== undefined ? newDocTranslation.description : '');
-              
-              console.log("Ricaricati dati documento dopo salvataggio:", {
-                titolo: newDocTranslation.title,
-                versione: newDocTranslation.version,
-                descrizione: newDocTranslation.description
-              });
-            }
-          }
-        } catch (docTranslationError) {
-          console.error("Errore nel salvataggio della traduzione del documento:", docTranslationError);
-          // Non interrompere l'intero processo di salvataggio se questa parte fallisce
-        }
-      }
+      // Le informazioni del documento (titolo, versione, descrizione) devono essere salvate 
+      // separatamente usando il pulsante dedicato "Salva informazioni documento"
       
       // Salva le traduzioni delle sezioni
       for (const sectionId in sectionTranslations) {
@@ -2538,7 +2456,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                       ) : (
                         <>
                           <SaveIcon className="mr-2 h-4 w-4" />
-                          Salva tutte le traduzioni
+                          Salva traduzioni sezioni/moduli
                         </>
                       )}
                     </Button>
@@ -2677,6 +2595,27 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                     </div>
                   </div>
                 )}
+                
+                {/* Pulsante per salvare solo le informazioni del documento */}
+                <div className="flex justify-end mt-6">
+                  <Button 
+                    variant="secondary" 
+                    onClick={saveDocumentInfo}
+                    disabled={savingDocumentInfo}
+                  >
+                    {savingDocumentInfo ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Salvando informazioni...
+                      </>
+                    ) : (
+                      <>
+                        <SaveIcon className="mr-2 h-4 w-4" />
+                        Salva informazioni documento
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
