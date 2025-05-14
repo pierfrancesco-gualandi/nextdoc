@@ -157,6 +157,11 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
       return await response.json();
     },
     onSuccess: () => {
+      // Rimuovi il focus dai campi di input dopo il salvataggio
+      if (typeof window !== 'undefined' && (window as any).clearFieldFocus) {
+        (window as any).clearFieldFocus();
+      }
+      
       queryClient.invalidateQueries({ queryKey: [`/api/documents/${documentId}/translation-status/${selectedLanguage}`] });
     },
   });
@@ -179,6 +184,11 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
       return await response.json();
     },
     onSuccess: () => {
+      // Rimuovi il focus dai campi di input dopo il salvataggio
+      if (typeof window !== 'undefined' && (window as any).clearFieldFocus) {
+        (window as any).clearFieldFocus();
+      }
+      
       queryClient.invalidateQueries({ queryKey: [`/api/documents/${documentId}/translation-status/${selectedLanguage}`] });
     },
   });
@@ -440,6 +450,11 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
   // Salva tutte le traduzioni, incluse le informazioni del documento
   const saveAllTranslations = async () => {
     if (!selectedLanguage) return;
+    
+    // Rimuovi il focus dai campi di input per prevenire che si mantenga dopo il salvataggio
+    if (typeof window !== 'undefined' && (window as any).clearFieldFocus) {
+      (window as any).clearFieldFocus();
+    }
     
     setSavingTranslation(true);
     
