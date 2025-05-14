@@ -278,10 +278,12 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
   };
   
   // Salva solo le informazioni del documento (titolo, versione, descrizione)
-  const saveDocumentInfo = async () => {
+  const saveDocumentInfo = async (showNotification = true) => {
     if (!selectedLanguage || !document) return;
     
-    setSavingDocumentInfo(true);
+    if (showNotification) {
+      setSavingDocumentInfo(true);
+    }
     
     try {
       // Verifica se esiste già una traduzione per questo documento e lingua
@@ -343,20 +345,27 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
         }
       }
       
-      toast({
-        title: "Informazioni documento salvate",
-        description: "Le informazioni del documento sono state salvate con successo.",
-      });
+      if (showNotification) {
+        toast({
+          title: "Informazioni documento salvate",
+          description: "Le informazioni del documento sono state salvate con successo.",
+        });
+      }
       
     } catch (error) {
       console.error('Errore durante il salvataggio delle informazioni del documento:', error);
-      toast({
-        title: "Errore",
-        description: error.message || "Si è verificato un errore durante il salvataggio delle informazioni del documento.",
-        variant: "destructive"
-      });
+      
+      if (showNotification) {
+        toast({
+          title: "Errore",
+          description: error.message || "Si è verificato un errore durante il salvataggio delle informazioni del documento.",
+          variant: "destructive"
+        });
+      }
     } finally {
-      setSavingDocumentInfo(false);
+      if (showNotification) {
+        setSavingDocumentInfo(false);
+      }
     }
   };
   
@@ -2600,7 +2609,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                 <div className="flex justify-end mt-6">
                   <Button 
                     variant="secondary" 
-                    onClick={saveDocumentInfo}
+                    onClick={() => saveDocumentInfo(true)}
                     disabled={savingDocumentInfo}
                   >
                     {savingDocumentInfo ? (
