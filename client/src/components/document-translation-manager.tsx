@@ -84,6 +84,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
   const [documentDescriptionTranslation, setDocumentDescriptionTranslation] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('edit');
   const [savingTranslation, setSavingTranslation] = useState(false);
+  const [savingDocumentInfo, setSavingDocumentInfo] = useState(false);
   
   // Carica il documento
   const { data: document, isLoading: isLoadingDocument } = useQuery({
@@ -274,6 +275,89 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
     setSelectedLanguage(value);
     setSectionTranslations({});
     setModuleTranslations({});
+  };
+  
+  // Salva solo le informazioni del documento (titolo, versione, descrizione)
+  const saveDocumentInfo = async () => {
+    if (!selectedLanguage || !document) return;
+    
+    setSavingDocumentInfo(true);
+    
+    try {
+      // Verifica se esiste già una traduzione per questo documento e lingua
+      const checkDocumentTranslationResponse = await fetch(`/api/document-translations?documentId=${documentId}&languageId=${selectedLanguage}`);
+      const documentTranslations = await checkDocumentTranslationResponse.json();
+      const existingDocumentTranslation = documentTranslations.length > 0 ? documentTranslations[0] : null;
+      
+      const documentTranslationData = {
+        documentId: parseInt(documentId),
+        languageId: parseInt(selectedLanguage),
+        title: documentTitleTranslation,
+        version: documentVersionTranslation,
+        description: documentDescriptionTranslation,
+        status: 'translated'
+      };
+      
+      console.log("Salvando informazioni del documento:", documentTranslationData);
+      
+      let response;
+      
+      if (existingDocumentTranslation) {
+        // Aggiorna la traduzione esistente
+        response = await fetch(`/api/document-translations/${existingDocumentTranslation.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(documentTranslationData),
+        });
+      } else {
+        // Crea una nuova traduzione
+        response = await fetch('/api/document-translations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(documentTranslationData),
+        });
+      }
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Errore nel salvataggio delle informazioni del documento: ${errorText}`);
+      }
+      
+      // Invalida la cache per aggiornare i dati visualizzati
+      queryClient.invalidateQueries({ queryKey: [`/api/document-translations`] });
+      
+      // Ricarica manualmente i dati di traduzione del documento
+      const newDocTranslationResponse = await fetch(`/api/document-translations?documentId=${documentId}&languageId=${selectedLanguage}`);
+      if (newDocTranslationResponse.ok) {
+        const newDocTranslationData = await newDocTranslationResponse.json();
+        if (newDocTranslationData && newDocTranslationData.length > 0) {
+          const newDocTranslation = newDocTranslationData[0];
+          // Aggiorna gli stati con i nuovi valori salvati
+          setDocumentTitleTranslation(newDocTranslation.title !== undefined ? newDocTranslation.title : '');
+          setDocumentVersionTranslation(newDocTranslation.version !== undefined ? newDocTranslation.version : '');
+          setDocumentDescriptionTranslation(newDocTranslation.description !== undefined ? newDocTranslation.description : '');
+        }
+      }
+      
+      toast({
+        title: "Informazioni documento salvate",
+        description: "Le informazioni del documento sono state salvate con successo.",
+      });
+      
+    } catch (error) {
+      console.error('Errore durante il salvataggio delle informazioni del documento:', error);
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante il salvataggio delle informazioni del documento.",
+        variant: "destructive"
+      });
+    } finally {
+      setSavingDocumentInfo(false);
+    }
   };
   
   // Gestisce l'espansione/contrazione delle sezioni
