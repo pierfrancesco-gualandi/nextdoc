@@ -423,15 +423,15 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
     });
   };
   
-  // Salva tutte le traduzioni delle sezioni e dei moduli (esclude le informazioni del documento)
+  // Salva tutte le traduzioni, incluse le informazioni del documento
   const saveAllTranslations = async () => {
     if (!selectedLanguage) return;
     
     setSavingTranslation(true);
     
     try {
-      // Le informazioni del documento (titolo, versione, descrizione) devono essere salvate 
-      // separatamente usando il pulsante dedicato "Salva informazioni documento"
+      // Salva prima la traduzione del documento (titolo, versione, descrizione)
+      await saveDocumentInfo(false); // Passa false per non mostrare il toast e non impostare setSavingDocumentInfo
       
       // Salva le traduzioni delle sezioni
       for (const sectionId in sectionTranslations) {
@@ -2456,7 +2456,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                       ) : (
                         <>
                           <SaveIcon className="mr-2 h-4 w-4" />
-                          Salva traduzioni sezioni/moduli
+                          Salva tutte le traduzioni
                         </>
                       )}
                     </Button>
