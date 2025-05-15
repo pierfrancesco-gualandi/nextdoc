@@ -288,7 +288,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
   };
   
   // Salva solo le informazioni del documento (titolo, versione, descrizione)
-  const saveDocumentInfo = async (showNotification = true) => {
+  const saveDocumentInfo = async (showNotification = true, updateStates = true) => {
     if (!selectedLanguage || !document) return;
     
     // Rimuovi il focus dai campi di input per prevenire che si mantenga dopo il salvataggio
@@ -351,7 +351,8 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
       const newDocTranslationResponse = await fetch(`/api/document-translations?documentId=${documentId}&languageId=${selectedLanguage}`);
       if (newDocTranslationResponse.ok) {
         const newDocTranslationData = await newDocTranslationResponse.json();
-        if (newDocTranslationData && newDocTranslationData.length > 0) {
+        if (newDocTranslationData && newDocTranslationData.length > 0 && updateStates) {
+          // Aggiorna gli stati solo se updateStates è true (non durante il salvataggio completo)
           const newDocTranslation = newDocTranslationData[0];
           // Aggiorna gli stati con i nuovi valori salvati
           setDocumentTitleTranslation(newDocTranslation.title !== undefined ? newDocTranslation.title : '');
@@ -460,7 +461,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
     
     try {
       // Salva prima la traduzione del documento (titolo, versione, descrizione)
-      await saveDocumentInfo(false); // Passa false per non mostrare il toast e non impostare setSavingDocumentInfo
+      await saveDocumentInfo(false, false); // Passa (showNotification=false, updateStates=false) per non mostrare il toast e non aggiornare gli stati
       
       // Salva le traduzioni delle sezioni
       for (const sectionId in sectionTranslations) {
