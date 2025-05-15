@@ -1476,7 +1476,6 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           
         case 'image':
         case 'video':
-        case '3d-model':
           return (
             <div className="space-y-4">
               {moduleContent.title && (
