@@ -775,9 +775,15 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           
         case 'image':
         case 'video':
-          // Per immagini e video, solo verifica che ci sia almeno la didascalia
-          // Alcuni campi potrebbero non essere sempre necessari
-          return !translatedContent.caption;
+          // Per immagini e video, verifica i campi necessari
+          const needsTitle = moduleContent.title && !translatedContent.title;
+          const needsDescription = moduleContent.description && !translatedContent.description;
+          const needsCaption = moduleContent.caption && !translatedContent.caption;
+          
+          // Non richiedere etichette interfaccia 3D per questi moduli
+          console.log(`Modulo ${module.id} (${module.type}) - campi da tradurre:`, { needsTitle, needsDescription, needsCaption });
+          
+          return needsTitle || needsDescription || needsCaption;
           
         case 'warning':
         case 'danger':
