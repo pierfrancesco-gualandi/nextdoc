@@ -2593,6 +2593,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                         translatedValue={documentVersionTranslation}
                         onChange={(value) => setDocumentVersionTranslation(value)}
                         placeholder="Inserisci la traduzione della versione del documento..."
+                        errorCondition={false} // Aggiungiamo errorCondition per uniformità con altri campi
                         rows={1}
                         fieldId="document-version-translation"
                       />

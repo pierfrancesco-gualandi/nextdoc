@@ -51,12 +51,20 @@ if (typeof window !== 'undefined' && !(window as any).closeModuleEditing) {
  */
 if (typeof window !== 'undefined' && !(window as any).clearFieldFocus) {
   (window as any).clearFieldFocus = () => {
+    console.log('Pulizia focus campi di input dopo salvataggio');
     (window as any)._activeFieldData.textFieldsInEditMode.clear();
     (window as any)._activeFieldData.focusLock = false;
     (window as any)._activeFieldData.activeFieldId = null;
     
-    // Rimuovi il focus da tutti i campi di input e textarea
+    // Rimuovi esplicitamente il focus da tutti i campi document-*-translation
+    document.querySelectorAll('textarea[id^="document-"]').forEach(el => {
+      console.log('Rimozione focus da:', el.id);
+      (el as HTMLElement).blur();
+    });
+    
+    // Rimuovi il focus da qualsiasi elemento attivo
     if (document.activeElement instanceof HTMLElement) {
+      console.log('Rimozione focus dal campo attualmente attivo:', document.activeElement.id || 'senza id');
       (document.activeElement as HTMLElement).blur();
     }
   };
@@ -91,17 +99,18 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
   const [localValue, setLocalValue] = useState(translatedValue || '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  // Determine if this is a text field (for special handling)
+  // Determine if this is a text field or document field (for special handling)
   const isTextField = fieldId?.includes('text-') || false;
+  const isDocumentField = fieldId?.includes('document-') || false;
   
-  // Registra questo campo come in modalità editing se è un campo di testo
+  // Registra questo campo come in modalità editing se è un campo di testo o documento
   useEffect(() => {
-    if (fieldId && isTextField) {
+    if (fieldId && (isTextField || isDocumentField)) {
       // Add this field to the set of text fields in edit mode
       (window as any)._activeFieldData.textFieldsInEditMode.add(fieldId);
       
-      // Activate focus lock for text fields
-      if (isTextField) {
+      // Activate focus lock for text fields or document fields
+      if (isTextField || isDocumentField) {
         (window as any)._activeFieldData.focusLock = true;
       }
       
@@ -110,7 +119,7 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
         (window as any)._activeFieldData.textFieldsInEditMode.delete(fieldId);
       };
     }
-  }, [fieldId, isTextField]);
+  }, [fieldId, isTextField, isDocumentField]);
   
   // Aggiorniamo il valore locale SOLO quando cambia il valore iniziale
   useEffect(() => {
