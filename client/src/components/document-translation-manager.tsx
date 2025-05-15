@@ -1539,11 +1539,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
                 </div>
               )}
               
-              {/* Etichette specifiche per il modello 3D */}
-              <div>
-                <Label>Etichette interfaccia modello 3D</Label>
-                <div className="p-4 bg-gray-50 rounded-md border mt-2">
-                  {/* Testo istruzioni modello 3D */}
+              {/* Nessuna etichetta per moduli immagine/video */}
                   <div className="mb-4">
                     <Label htmlFor={`module-${module.id}-label-3d-instructions`}>Testo istruzioni</Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
