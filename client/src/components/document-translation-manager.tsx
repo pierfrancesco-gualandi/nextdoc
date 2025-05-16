@@ -834,11 +834,11 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           });
           
           // Verifica separata per titolo e didascalia, considerando come tradotto se non esistono nell'originale
-          const needsTitle = moduleContent?.title && !translatedContent.title;
-          const needsCaption = moduleContent?.caption && !translatedContent.caption;
+          const titleMissing = moduleContent?.title && !translatedContent.title;
+          const captionMissing = moduleContent?.caption && !translatedContent.caption;
           
           // Un modulo è completamente tradotto solo se tutti i campi richiesti sono tradotti
-          return needsTitle || needsCaption;
+          return titleMissing || captionMissing;
           
         case 'pdf':
           // Per i PDF, solo la didascalia è necessaria
