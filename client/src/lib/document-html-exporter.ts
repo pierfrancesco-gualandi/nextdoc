@@ -90,12 +90,11 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
       
       // 2. Carica esplicitamente tutte le traduzioni dei MODULI
       try {
-        // Recupera tutte le traduzioni dei moduli per la lingua selezionata
-        const moduleTranslationsResponse = await fetch(`/api/module-translations`);
+        // Recupera tutte le traduzioni dei moduli PER LA LINGUA SELEZIONATA direttamente dal server
+        // Modificato per evitare di caricare tutte le traduzioni e poi filtrarle
+        const moduleTranslationsResponse = await fetch(`/api/module-translations?languageId=${languageId}`);
         if (moduleTranslationsResponse.ok) {
-          const allModuleTranslations = await moduleTranslationsResponse.json();
-          // Filtra per lingua corrente
-          const moduleTranslations = allModuleTranslations.filter((t: any) => t.languageId == languageId);
+          const moduleTranslations = await moduleTranslationsResponse.json();
           console.log(`Caricate ${moduleTranslations.length} traduzioni di moduli per la lingua ${languageId}`);
           
           // Mappa le traduzioni ai moduli - applicazione FORZATA delle traduzioni
@@ -105,12 +104,25 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             if (translation) {
               console.log(`Trovata traduzione per il modulo ${module.id} (tipo: ${module.type})`);
               
+              // Prepara il contenuto tradotto come oggetto se è una stringa
+              let translatedContentObj = {};
+              if (translation.content) {
+                try {
+                  translatedContentObj = typeof translation.content === 'string' 
+                    ? JSON.parse(translation.content) 
+                    : translation.content;
+                } catch (e) {
+                  console.error(`Errore nel parsing del contenuto tradotto per il modulo ${module.id}:`, e);
+                  translatedContentObj = {};
+                }
+              }
+              
               // Aggiungi la traduzione direttamente al modulo
               return {
                 ...module,
                 content: {
                   ...module.content,
-                  translatedContent: translation.content || {} // Imposta un oggetto vuoto anche se non c'è contenuto
+                  translatedContent: translatedContentObj
                 }
               };
             }
