@@ -776,9 +776,11 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
         case 'image':
         case 'video':
           // Per immagini e video, verifica i campi necessari
-          const needsTitle = moduleContent.title && !translatedContent.title;
-          const needsDescription = moduleContent.description && !translatedContent.description;
-          const needsCaption = moduleContent.caption && !translatedContent.caption;
+          if (!moduleContent) return true; // Se non c'è contenuto, consideriamo come non tradotto
+          
+          const needsTitle = moduleContent?.title && !translatedContent?.title;
+          const needsDescription = moduleContent?.description && !translatedContent?.description;
+          const needsCaption = moduleContent?.caption && !translatedContent?.caption;
           
           // Non richiedere etichette interfaccia 3D per questi moduli
           console.log(`Modulo ${module.id} (${module.type}) - campi da tradurre:`, { needsTitle, needsDescription, needsCaption });
