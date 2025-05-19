@@ -775,15 +775,20 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           const model3DCaptionMissing = moduleContent.caption && !translatedContent?.caption;
           
           // Per il campo "view", consideriamo che sia obbligatorio per i modelli 3D
-          // Solo se esiste moduleContent.src o moduleContent.model (indica un modello 3D valido)
-          const has3DContent = moduleContent.src || moduleContent.model;
-          const model3DViewLabelMissing = has3DContent && !translatedContent?.labels?.view;
+          // Ma non richiediamo questa traduzione se non ci sono già etichette definite
+          const has3DContent = moduleContent.src || moduleContent.model || moduleContent.url;
+          
+          // Verifica il caso in cui l'etichetta view è necessaria:
+          // 1. Solo se c'è un modello 3D valido
+          // 2. Solo se la label non è già stata tradotta
+          // Se non c'è etichetta originale o il campo non esiste, non dovrebbe essere richiesto
+          const needsViewLabel = has3DContent && !translatedContent?.labels?.view;
           
           // Debug - mostriamo lo stato di traduzione per ciascun campo
           console.log(`Modulo 3D ${module.id} - stato traduzione:`, { 
             model3DTitleMissing, 
             model3DCaptionMissing, 
-            model3DViewLabelMissing,
+            needsViewLabel,
             originalTitle: moduleContent.title,
             originalCaption: moduleContent.caption,
             translatedTitle: translatedContent?.title,
@@ -792,8 +797,21 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
             has3DContent
           });
           
+          // Debug - mostro il risultato del controllo di completezza
+          const isIncomplete = model3DTitleMissing || model3DCaptionMissing || needsViewLabel;
+          
+          // Log separato per il risultato finale
+          console.log(`Modulo 3D ${module.id} - completamento:`, {
+            isIncomplete,
+            campiRichiesti: {
+              titolo: Boolean(moduleContent.title),
+              didascalia: Boolean(moduleContent.caption),
+              etichettaView: has3DContent
+            }
+          });
+          
           // Un modulo è incompleto se manca anche solo uno dei campi obbligatori
-          return model3DTitleMissing || model3DCaptionMissing || model3DViewLabelMissing;
+          return isIncomplete;
         }
           
         case 'image':
