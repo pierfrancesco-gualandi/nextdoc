@@ -2124,11 +2124,18 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           <span className="font-medium mr-2">
             {getModuleTypeName(module.type)}
           </span>
-          {hasMissingTranslation() && (
+          {/* Miglioramento: più controlli per l'indicatore "Da tradurre" */}
+          {(module.type === 'threeDModel' && translatedContent && translatedContent.title && 
+            (translatedContent.caption || !moduleContent?.caption) && 
+            (!moduleContent.src && !moduleContent.model && !moduleContent.url || translatedContent.labels?.view)) ? (
+            <Badge variant="outline" className="ml-auto border-green-300 text-green-600">
+              <CheckCircle2Icon size={14} className="mr-1" /> Tradotto
+            </Badge>
+          ) : hasMissingTranslation() ? (
             <Badge variant="outline" className="ml-auto border-red-300 text-red-600">
               <AlertTriangleIcon size={14} className="mr-1" /> Da tradurre
             </Badge>
-          )}
+          ) : null}
         </div>
         <div className="p-4">
           {isEditing ? (
