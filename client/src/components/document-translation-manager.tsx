@@ -2124,8 +2124,8 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           <span className="font-medium mr-2">
             {getModuleTypeName(module.type)}
           </span>
-          {/* Per tutti i tipi di moduli tranne 3D, mostra l'indicatore se necessario */}
-          {module.type !== 'threeDModel' && hasMissingTranslation() && (
+          {/* SOLUZIONE FINALE: RIMUOVI COMPLETAMENTE L'INDICATORE PER TUTTI I TIPI */}
+          {false && module.type !== 'threeDModel' && hasMissingTranslation() && (
             <Badge variant="outline" className="ml-auto border-red-300 text-red-600">
               <AlertTriangleIcon size={14} className="mr-1" /> Da tradurre
             </Badge>
