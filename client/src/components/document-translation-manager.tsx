@@ -2124,20 +2124,12 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           <span className="font-medium mr-2">
             {getModuleTypeName(module.type)}
           </span>
-          {/* SOLUZIONE: per i moduli 3D, controlla solo il titolo e la didascalia */}
-          {module.type === 'threeDModel' ? (
-            // Per i modelli 3D, mostra l'indicatore SOLO se entrambi i campi sono vuoti
-            !translatedContent?.title && !translatedContent?.caption ? (
-              <Badge variant="outline" className="ml-auto border-red-300 text-red-600">
-                <AlertTriangleIcon size={14} className="mr-1" /> Da tradurre
-              </Badge>
-            ) : null
-          ) : hasMissingTranslation() ? (
-            // Per tutti gli altri tipi di moduli, usa la logica esistente
+          {/* Per tutti i tipi di moduli tranne 3D, mostra l'indicatore se necessario */}
+          {module.type !== 'threeDModel' && hasMissingTranslation() && (
             <Badge variant="outline" className="ml-auto border-red-300 text-red-600">
               <AlertTriangleIcon size={14} className="mr-1" /> Da tradurre
             </Badge>
-          ) : null}
+          )}
         </div>
         <div className="p-4">
           {isEditing ? (

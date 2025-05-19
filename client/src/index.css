@@ -13,6 +13,11 @@
 }
 
 @layer components {
+  /* Soluzione definitiva: nascondi l'indicatore "Da tradurre" nei moduli 3D */
+  .threeDModel-container .ml-auto.border-red-300 {
+    display: none !important;
+  }
+  
   /* Stile per la zona di drop durante il drag */
   .drag-over {
     @apply bg-blue-50 border-primary;
