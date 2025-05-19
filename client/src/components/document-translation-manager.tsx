@@ -638,6 +638,18 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
   const getTranslationProgress = () => {
     if (!translationStatus) return 0;
     
+    // Verifica se tutte le sezioni sono completamente tradotte
+    const allSectionsComplete = selectedSections.every(section => {
+      const status = checkSectionTranslationStatus(section);
+      return status.isComplete;
+    });
+
+    // Se tutte le sezioni sono complete, restituisci 100%
+    if (allSectionsComplete) {
+      return 100;
+    }
+    
+    // Altrimenti calcola in base ai dati API
     // Estrai i conteggi dallo stato di traduzione
     const totalSections = translationStatus.totalSections || 0;
     const translatedSections = translationStatus.translatedSections || 0;
