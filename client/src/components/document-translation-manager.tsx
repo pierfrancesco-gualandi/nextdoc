@@ -768,9 +768,30 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           
         case 'threeDModel':
           // Verifica titolo, didascalia e etichette per i modelli 3D
-          const hasTitle = !moduleContent.title || !!translatedContent.title;
-          const hasCaption = !moduleContent.caption || !!translatedContent.caption;
-          const hasLabels = !translatedContent.labels || !!translatedContent.labels?.view;
+          if (!moduleContent) return true; // Se non c'è contenuto, consideriamo come non tradotto
+          
+          // Verifica che il titolo sia tradotto se presente nell'originale
+          const hasTitle = moduleContent.title ? !!translatedContent?.title : true;
+          
+          // Verifica che la didascalia sia tradotta se presente nell'originale
+          const hasCaption = moduleContent.caption ? !!translatedContent?.caption : true;
+          
+          // Verifica che l'etichetta "view" sia tradotta
+          const hasLabels = translatedContent?.labels?.view ? true : false;
+          
+          // Debug - mostriamo lo stato di traduzione per ciascun campo
+          console.log(`Modulo 3D ${module.id} - stato traduzione:`, { 
+            hasTitle, 
+            hasCaption, 
+            hasLabels,
+            originalTitle: moduleContent.title,
+            originalCaption: moduleContent.caption,
+            translatedTitle: translatedContent?.title,
+            translatedCaption: translatedContent?.caption,
+            translatedLabels: translatedContent?.labels
+          });
+          
+          // Un modulo è completamente tradotto solo se tutti i campi richiesti sono tradotti
           return !hasTitle || !hasCaption || !hasLabels;
           
         case 'image':
