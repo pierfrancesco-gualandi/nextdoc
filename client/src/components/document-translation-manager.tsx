@@ -766,47 +766,54 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           // Verifica i campi di testo per i file di testo
           return !translatedContent.title || !translatedContent.description;
           
-        case 'threeDModel':
+        case 'threeDModel': {
           // Verifica titolo, didascalia e etichette per i modelli 3D
           if (!moduleContent) return true; // Se non c'è contenuto, consideriamo come non tradotto
           
-          // Verifica che il titolo sia tradotto se presente nell'originale
-          const hasTitle = moduleContent.title ? !!translatedContent?.title : true;
+          // Controllo se i campi obbligatori sono tradotti
+          const model3DTitleMissing = moduleContent.title && !translatedContent?.title;
+          const model3DCaptionMissing = moduleContent.caption && !translatedContent?.caption;
           
-          // Verifica che la didascalia sia tradotta se presente nell'originale
-          const hasCaption = moduleContent.caption ? !!translatedContent?.caption : true;
-          
-          // Verifica che l'etichetta "view" sia tradotta
-          const hasLabels = translatedContent?.labels?.view ? true : false;
+          // Per il campo "view", consideriamo che sia obbligatorio per i modelli 3D
+          // Solo se esiste moduleContent.src o moduleContent.model (indica un modello 3D valido)
+          const has3DContent = moduleContent.src || moduleContent.model;
+          const model3DViewLabelMissing = has3DContent && !translatedContent?.labels?.view;
           
           // Debug - mostriamo lo stato di traduzione per ciascun campo
           console.log(`Modulo 3D ${module.id} - stato traduzione:`, { 
-            hasTitle, 
-            hasCaption, 
-            hasLabels,
+            model3DTitleMissing, 
+            model3DCaptionMissing, 
+            model3DViewLabelMissing,
             originalTitle: moduleContent.title,
             originalCaption: moduleContent.caption,
             translatedTitle: translatedContent?.title,
             translatedCaption: translatedContent?.caption,
-            translatedLabels: translatedContent?.labels
+            translatedLabels: translatedContent?.labels,
+            has3DContent
           });
           
-          // Un modulo è completamente tradotto solo se tutti i campi richiesti sono tradotti
-          return !hasTitle || !hasCaption || !hasLabels;
+          // Un modulo è incompleto se manca anche solo uno dei campi obbligatori
+          return model3DTitleMissing || model3DCaptionMissing || model3DViewLabelMissing;
+        }
           
         case 'image':
-        case 'video':
+        case 'video': {
           // Per immagini e video, verifica i campi necessari
           if (!moduleContent) return true; // Se non c'è contenuto, consideriamo come non tradotto
           
-          const needsTitle = moduleContent?.title && !translatedContent?.title;
-          const needsDescription = moduleContent?.description && !translatedContent?.description;
-          const needsCaption = moduleContent?.caption && !translatedContent?.caption;
+          const mediaTitleMissing = moduleContent?.title && !translatedContent?.title;
+          const mediaDescMissing = moduleContent?.description && !translatedContent?.description;
+          const mediaCaptionMissing = moduleContent?.caption && !translatedContent?.caption;
           
           // Non richiedere etichette interfaccia 3D per questi moduli
-          console.log(`Modulo ${module.id} (${module.type}) - campi da tradurre:`, { needsTitle, needsDescription, needsCaption });
+          console.log(`Modulo ${module.id} (${module.type}) - campi da tradurre:`, { 
+            mediaTitleMissing, 
+            mediaDescMissing, 
+            mediaCaptionMissing 
+          });
           
-          return needsTitle || needsDescription || needsCaption;
+          return mediaTitleMissing || mediaDescMissing || mediaCaptionMissing;
+        }
           
         case 'warning':
         case 'danger':
