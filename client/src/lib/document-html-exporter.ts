@@ -758,7 +758,15 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               }
               
               // Prepara titolo, didascalia e descrizione per il BOM, utilizzando le traduzioni se disponibili
-              let bomTitle = module.content.title || 'Elenco Componenti';
+              // Titolo predefinito basato sulla lingua
+              let bomTitle = '';
+              if (languageId === 1 || languageId === undefined) {
+                // Se è italiano o nessuna lingua specificata, usa il titolo originale o valore predefinito in italiano
+                bomTitle = module.content.title || 'Elenco Componenti';
+              } else {
+                // Per altre lingue, usa un valore predefinito in inglese
+                bomTitle = module.content.title || 'Components List';
+              }
               let bomCaption = module.content.caption || '';
               let bomDescription = module.content.description || '';
               
@@ -1380,11 +1388,28 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             
           case 'threeDModel':
             // Prepara i dati del modello 3D con valori predefiniti (fallback)
-            let modelTitle = module.content.title || '3D Model';
-            let modelCaption = module.content.caption || '';
-            let modelViewLabel = 'Visualizza modello 3D con tutti i componenti';
-            let modelDownloadLabel = 'Scarica il modello completo (.zip)';
-            let modelInstructions = 'Questo modello 3D richiede file esterni specifici per funzionare correttamente. Utilizza il pulsante qui sotto per visualizzare il modello con tutti i componenti.';
+            // Inizializza con valori adatti alla lingua
+            let modelTitle = '';
+            let modelCaption = '';
+            let modelViewLabel = '';
+            let modelDownloadLabel = '';
+            let modelInstructions = '';
+            
+            // Solo se è italiano, usa i valori predefiniti in italiano
+            if (languageId === 1 || languageId === undefined) {
+              modelTitle = module.content.title || '3D Model';
+              modelCaption = module.content.caption || '';
+              modelViewLabel = 'Visualizza modello 3D con tutti i componenti';
+              modelDownloadLabel = 'Scarica il modello completo (.zip)';
+              modelInstructions = 'Questo modello 3D richiede file esterni specifici per funzionare correttamente. Utilizza il pulsante qui sotto per visualizzare il modello con tutti i componenti.';
+            } else {
+              // Per altre lingue, inizializza con valori predefiniti in inglese
+              modelTitle = module.content.title || '3D Model';
+              modelCaption = '';
+              modelViewLabel = 'View 3D model with all components';
+              modelDownloadLabel = 'Download complete model (.zip)';
+              modelInstructions = 'This 3D model requires specific external files to work correctly. Use the button below to view the model with all components.';
+            }
             
             // Utilizza SEMPRE le traduzioni quando disponibili, anche se vuote
             if (languageId && module.content.translatedContent) {
