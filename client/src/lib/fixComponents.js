@@ -197,25 +197,50 @@ export function getSpecificComponentsForSection(sectionId, sectionTitle = '') {
 /**
  * Genera l'HTML per la lista dei componenti
  * @param {Array} components - Array di componenti
+ * @param {number} languageId - ID della lingua (1 = italiano, altro = lingua tradotta)
  * @returns {string} HTML formattato
  */
-export function generateComponentsListHtml(components) {
+export function generateComponentsListHtml(components, languageId = 1) {
   if (!components || components.length === 0) {
-    return '<p>Nessun componente trovato</p>';
+    // Messaggio multilingua
+    const emptyMessage = languageId === 1 ? 'Nessun componente trovato' : 'No components found';
+    return `<p>${emptyMessage}</p>`;
+  }
+  
+  // Titoli multilingua
+  let title = 'Elenco Componenti';
+  let headers = {
+    number: 'N°',
+    level: 'Livello',
+    code: 'Codice',
+    description: 'Descrizione',
+    quantity: 'Quantità'
+  };
+  
+  // Se non è italiano, usa titoli in inglese o stringhe vuote
+  if (languageId !== 1) {
+    title = 'Components List';
+    headers = {
+      number: '#',
+      level: 'Level',
+      code: 'Code',
+      description: 'Description',
+      quantity: 'Quantity'
+    };
   }
   
   let html = `
     <div class="bom-container">
-      <h4 class="bom-title">Elenco Componenti</h4>
+      <h4 class="bom-title">${title}</h4>
       <div class="bom-content">
         <table class="bom-table">
           <thead>
             <tr>
-              <th>N°</th>
-              <th>Livello</th>
-              <th>Codice</th>
-              <th>Descrizione</th>
-              <th>Quantità</th>
+              <th>${headers.number}</th>
+              <th>${headers.level}</th>
+              <th>${headers.code}</th>
+              <th>${headers.description}</th>
+              <th>${headers.quantity}</th>
             </tr>
           </thead>
           <tbody>

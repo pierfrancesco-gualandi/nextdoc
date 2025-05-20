@@ -607,6 +607,37 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               
               console.log(`Elementi BOM trasformati: ${bomItems.length} (include N°)`);
               
+              // Preparazione dei titoli specifici per determinate sezioni
+              let specificTitle = '';
+              
+              // Determina i titoli specifici in base alla lingua selezionata
+              if (languageId === 1 || languageId === undefined) {
+                // Se è italiano o nessuna lingua specificata, usa titoli in italiano
+                // Verifica se siamo in una sezione particolare e generiamo un titolo specifico
+                if (isDisegno3DSection(sectionId, sectionTitle)) {
+                  specificTitle = 'Elenco disegno 3D';
+                } 
+                else if (sectionId === 6 || (sectionTitle && sectionTitle.toLowerCase().includes('descrizione'))) {
+                  if (specificItems && specificItems.length > 0) {
+                    specificTitle = specificItems.length === 1 ? 
+                      'Elenco descrizione 1' : 
+                      'Elenco descrizione 2';
+                  }
+                }
+              } else {
+                // Per altre lingue, usa titoli in inglese
+                if (isDisegno3DSection(sectionId, sectionTitle)) {
+                  specificTitle = '3D Drawing List';
+                } 
+                else if (sectionId === 6 || (sectionTitle && (sectionTitle.toLowerCase().includes('descrizione') || 
+                       sectionTitle.toLowerCase().includes('description')))) {
+                  if (specificItems && specificItems.length > 0) {
+                    specificTitle = specificItems.length === 1 ? 
+                      'Description List 1' : 
+                      'Description List 2';
+                  }
+                }
+              }
               
               // Genera la tabella HTML direttamente nell'output
               let tableHtml = '';
@@ -758,14 +789,14 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               }
               
               // Prepara titolo, didascalia e descrizione per il BOM, utilizzando le traduzioni se disponibili
-              // Titolo predefinito basato sulla lingua
+              // Titolo predefinito basato sulla lingua e sul titolo specifico se presente
               let bomTitle = '';
               if (languageId === 1 || languageId === undefined) {
-                // Se è italiano o nessuna lingua specificata, usa il titolo originale o valore predefinito in italiano
-                bomTitle = module.content.title || 'Elenco Componenti';
+                // Se è italiano o nessuna lingua specificata, usa il titolo originale, il titolo specifico o valore predefinito in italiano
+                bomTitle = module.content.title || specificTitle || 'Elenco Componenti';
               } else {
-                // Per altre lingue, usa un valore predefinito in inglese
-                bomTitle = module.content.title || 'Components List';
+                // Per altre lingue, usa il titolo specifico se presente o valore predefinito in inglese
+                bomTitle = module.content.title || specificTitle || 'Components List';
               }
               let bomCaption = module.content.caption || '';
               let bomDescription = module.content.description || '';
