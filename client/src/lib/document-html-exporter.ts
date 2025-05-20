@@ -577,19 +577,16 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                     // Formato array semplice [codice, descrizione, quantità]
                     const headers = module.content.translatedContent.headers;
                     translatedHeaders = {
-                      'number': defaultTranslations.number,
-                      'level': defaultTranslations.level,
-                      'code': headers[0] !== undefined ? headers[0] : defaultTranslations.code,
-                      'description': headers[1] !== undefined ? headers[1] : defaultTranslations.description,
-                      'quantity': headers[2] !== undefined ? headers[2] : defaultTranslations.quantity
+                      'number': '',  // Usa stringhe vuote invece di valori predefiniti
+                      'level': '',
+                      'code': headers[0] !== undefined ? headers[0] : '',
+                      'description': headers[1] !== undefined ? headers[1] : '',
+                      'quantity': headers[2] !== undefined ? headers[2] : ''
                     };
-                    console.log(`Modulo BOM ${module.id}: Usando intestazioni tradotte in formato array`);
+                    console.log(`Modulo BOM ${module.id}: Usando SOLO intestazioni tradotte in formato array:`, translatedHeaders);
                   }
-                  // Fallback lingua inglese
-                  else if (languageId === 2) {
-                    translatedHeaders = defaultTranslations;
-                    console.log(`Modulo BOM ${module.id}: Usando intestazioni tradotte predefinite per inglese`);
-                  }
+                  // Aggiungi codice di debug per verificare cosa abbiamo ottenuto
+                  console.log(`Intestazioni finali per modulo BOM ${module.id}:`, translatedHeaders);
                 }
                 
                 tableHtml = `
@@ -620,7 +617,28 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                   </table>
                 `;
               } else {
-                tableHtml = `<p class="bom-empty">${bomEmptyLabel}</p>`;
+                // Ottieni l'etichetta tradotta per "Nessun componente disponibile" dalla traduzione
+                let emptyLabel = '';
+                
+                // Se stiamo esportando in una lingua specifica e il modulo ha traduzioni
+                if (languageId && module.content.translatedContent && module.content.translatedContent.messages) {
+                  // Cerca il messaggio "empty" nella traduzione
+                  if (module.content.translatedContent.messages.empty !== undefined) {
+                    emptyLabel = module.content.translatedContent.messages.empty;
+                    console.log(`Modulo BOM ${module.id}: Usando messaggio "empty" tradotto: "${emptyLabel}"`);
+                  }
+                  // Cerca un messaggio generico "noData" o simili
+                  else if (module.content.translatedContent.messages.noData !== undefined) {
+                    emptyLabel = module.content.translatedContent.messages.noData;
+                    console.log(`Modulo BOM ${module.id}: Usando messaggio "noData" tradotto: "${emptyLabel}"`);
+                  }
+                  // Se non ci sono messaggi tradotti specifici, usa una stringa vuota
+                  else {
+                    console.log(`Modulo BOM ${module.id}: Nessun messaggio "empty" tradotto trovato, usando stringa vuota`);
+                  }
+                }
+                
+                tableHtml = `<p class="bom-empty">${emptyLabel}</p>`;
               }
               
               // Prepara didascalia e descrizione per il BOM, utilizzando le traduzioni se disponibili
