@@ -34,23 +34,48 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
           if (documentTranslation.title !== undefined) {
             documentTitle = documentTranslation.title;
             console.log(`Titolo tradotto: "${documentTitle}"`);
+          } else if (languageId !== 1) { // Se non è italiano
+            documentTitle = '';
+            console.log(`Titolo documento: Nessuna traduzione, nascosto testo originale`);
           }
           
           if (documentTranslation.description !== undefined) {
             documentDescription = documentTranslation.description;
             console.log(`Descrizione tradotta: "${documentDescription}"`);
+          } else if (languageId !== 1) { // Se non è italiano
+            documentDescription = '';
+            console.log(`Descrizione documento: Nessuna traduzione, nascosto testo originale`);
           }
           
           if (documentTranslation.version !== undefined) {
             documentVersion = documentTranslation.version;
             console.log(`Versione tradotta: "${documentVersion}"`);
+          } else if (languageId !== 1) { // Se non è italiano
+            documentVersion = '';
+            console.log(`Versione documento: Nessuna traduzione, nascosto testo originale`);
           }
         } else {
           console.warn(`Nessuna traduzione del documento trovata per ID=${document.id}, lingua=${languageId}`);
+          
+          // Se non ci sono traduzioni e non è italiano, nascondi tutti i contenuti originali
+          if (languageId !== 1) {
+            documentTitle = '';
+            documentDescription = '';
+            documentVersion = '';
+            console.log(`Nessuna traduzione disponibile per il documento, nascosti tutti i testi originali`);
+          }
         }
       } else {
         const errorText = await documentTranslationResponse.text();
         console.error(`Errore nel caricamento della traduzione del documento: ${errorText}`);
+        
+        // In caso di errore, se non è italiano, nascondi tutti i testi originali
+        if (languageId !== 1) {
+          documentTitle = '';
+          documentDescription = '';
+          documentVersion = '';
+          console.log(`Errore nel caricamento delle traduzioni: nascosti tutti i testi originali`);
+        }
       }
       
       // METODO COMPLETO MIGLIORATO: carica direttamente tutte le traduzioni necessarie dall'API
