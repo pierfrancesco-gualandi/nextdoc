@@ -320,28 +320,37 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'image':
-            // Prepara i dati dell'immagine con valori predefiniti (fallback)
+            // Prepara i dati dell'immagine
             let imgSrc = module.content.src || '';
-            let imgAlt = module.content.alt || '';
-            let imgCaption = module.content.caption || '';
+            let imgAlt = '';
+            let imgCaption = '';
+            let imgTitle = '';
+            
+            // Usa valori predefiniti SOLO in italiano
+            if (languageId === 1 || languageId === undefined) {
+              imgAlt = module.content.alt || '';
+              imgCaption = module.content.caption || '';
+              imgTitle = module.content.title || '';
+            }
             
             // Utilizza SEMPRE le traduzioni quando disponibili, anche se vuote
             if (languageId && module.content.translatedContent) {
               // Alt text - priorità ASSOLUTA
               if (module.content.translatedContent.alt !== undefined) {
                 imgAlt = module.content.translatedContent.alt;
-                console.log(`Modulo immagine ${module.id}: Usando alt text tradotto`);
+                console.log(`Modulo immagine ${module.id}: Usando alt text tradotto: "${imgAlt}"`);
               }
               
               // Didascalia - priorità ASSOLUTA
               if (module.content.translatedContent.caption !== undefined) {
                 imgCaption = module.content.translatedContent.caption;
-                console.log(`Modulo immagine ${module.id}: Usando didascalia tradotta`);
+                console.log(`Modulo immagine ${module.id}: Usando didascalia tradotta: "${imgCaption}"`);
               }
               
               // Titolo - priorità ASSOLUTA
               if (module.content.translatedContent.title !== undefined) {
-                console.log(`Modulo immagine ${module.id}: Usando titolo tradotto`);
+                imgTitle = module.content.translatedContent.title;
+                console.log(`Modulo immagine ${module.id}: Usando titolo tradotto: "${imgTitle}"`);
               }
             }
             
@@ -354,23 +363,29 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'video':
-            // Prepara i dati del video con valori predefiniti (fallback)
+            // Prepara i dati del video
             let videoThumbnail = module.content.thumbnail || '';
-            let videoTitle = module.content.title || 'Video';
-            let videoCaption = module.content.caption || '';
+            let videoTitle = '';
+            let videoCaption = '';
+            
+            // Usa valori predefiniti SOLO in italiano
+            if (languageId === 1 || languageId === undefined) {
+              videoTitle = module.content.title || 'Video';
+              videoCaption = module.content.caption || '';
+            }
             
             // Utilizza SEMPRE le traduzioni quando disponibili, anche se vuote
             if (languageId && module.content.translatedContent) {
               // Titolo tradotto - priorità ASSOLUTA
               if (module.content.translatedContent.title !== undefined) {
                 videoTitle = module.content.translatedContent.title;
-                console.log(`Modulo video ${module.id}: Usando titolo tradotto`);
+                console.log(`Modulo video ${module.id}: Usando titolo tradotto: "${videoTitle}"`);
               }
               
               // Didascalia tradotta - priorità ASSOLUTA
               if (module.content.translatedContent.caption !== undefined) {
                 videoCaption = module.content.translatedContent.caption;
-                console.log(`Modulo video ${module.id}: Usando didascalia tradotta`);
+                console.log(`Modulo video ${module.id}: Usando didascalia tradotta: "${videoCaption}"`);
               }
             }
             
@@ -390,10 +405,19 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'table':
-            // Prepara gli elementi tabella utilizzando valori predefiniti (fallback)
-            let tableHeaders = module.content.headers || [];
-            let tableRows = module.content.rows || [];
-            let tableCaption = module.content.caption || '';
+            // Prepara gli elementi tabella
+            let tableHeaders = [];
+            let tableRows = [];
+            let tableCaption = '';
+            let tableTitle = '';
+            
+            // Usa i valori originali solo in italiano
+            if (languageId === 1 || languageId === undefined) {
+              tableHeaders = module.content.headers || [];
+              tableRows = module.content.rows || [];
+              tableCaption = module.content.caption || '';
+              tableTitle = module.content.title || '';
+            }
             
             // PRIORITÀ ASSOLUTA alle traduzioni, anche se sono array vuoti o stringhe vuote
             if (languageId && module.content.translatedContent) {
@@ -423,9 +447,19 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               
               // Titolo tradotto - priorità ASSOLUTA
               if (module.content.translatedContent.title !== undefined) {
-                console.log(`Modulo tabella ${module.id}: Usando titolo tradotto`);
+                tableTitle = module.content.translatedContent.title;
+                console.log(`Modulo tabella ${module.id}: Usando titolo tradotto: ${tableTitle}`);
               }
             }
+            
+            // Log per debug
+            console.log(`Modulo tabella ${module.id} finale:`, { 
+              headers: tableHeaders.length, 
+              rows: tableRows.length, 
+              caption: tableCaption ? 'presente' : 'assente',
+              title: tableTitle ? 'presente' : 'assente',
+              languageId
+            });
             
             content += `
               <figure class="table-container">
