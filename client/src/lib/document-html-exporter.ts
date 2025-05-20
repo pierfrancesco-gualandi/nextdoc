@@ -791,15 +791,38 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               // Prepara titolo, didascalia e descrizione per il BOM, utilizzando le traduzioni se disponibili
               // Titolo predefinito basato sulla lingua e sul titolo specifico se presente
               let bomTitle = '';
-              if (languageId === 1 || languageId === undefined) {
-                // Se è italiano o nessuna lingua specificata, usa il titolo originale, il titolo specifico o valore predefinito in italiano
-                bomTitle = module.content.title || specificTitle || 'Elenco Componenti';
-              } else {
-                // Per altre lingue, usa il titolo specifico se presente o valore predefinito in inglese
-                bomTitle = module.content.title || specificTitle || 'Components List';
+              
+              // Usa SEMPRE le traduzioni se disponibili, anche per titoli specifici
+              if (languageId && module.content.translatedContent && module.content.translatedContent.title !== undefined) {
+                // Se c'è una traduzione del titolo, usala sempre (anche se vuota)
+                bomTitle = module.content.translatedContent.title;
+                console.log(`Modulo BOM ${module.id}: Usando titolo tradotto: "${bomTitle}"`);
               }
+              // Se non c'è traduzione ma è richiesta una lingua diversa dall'italiano
+              else if (languageId && languageId !== 1) {
+                // Per altre lingue, usa il titolo specifico se presente o valore predefinito in inglese
+                bomTitle = specificTitle || '';
+                console.log(`Modulo BOM ${module.id}: Nessuna traduzione disponibile, usando specifico: "${bomTitle}"`);
+              }
+              // Se è italiano o nessuna lingua specificata
+              else {
+                // Usa il titolo originale, il titolo specifico o valore predefinito in italiano
+                bomTitle = module.content.title || specificTitle || 'Elenco Componenti';
+              }
+              // Inizializza caption e description vuoti per sicurezza
               let bomCaption = module.content.caption || '';
               let bomDescription = module.content.description || '';
+              
+              // Se stiamo utilizzando una lingua diversa dall'italiano e non abbiamo traduzioni, 
+              // nascondi il testo originale completamente
+              if (languageId && languageId !== 1 && 
+                  (!module.content.translatedContent || 
+                   (module.content.translatedContent.caption === undefined && 
+                    module.content.translatedContent.description === undefined))) {
+                bomCaption = '';
+                bomDescription = '';
+                console.log(`Modulo BOM ${module.id}: Nessuna traduzione per didascalia e descrizione, nascondi originali`);
+              }
               
               // Usa SEMPRE le traduzioni quando disponibili, anche se vuote
               if (languageId && module.content.translatedContent) {
