@@ -524,17 +524,30 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                   
                   console.log(`✅ Applicate ${Object.keys(module.content.translatedContent.descriptions).length} traduzioni ai componenti`);
                 } else {
-                  // Nessuna traduzione disponibile, usiamo i valori originali
-                  bomItems = specificItems.map((item: any) => ({
-                    level: item.level,
-                    component: {
-                      code: item.code,
-                      description: item.description
-                    },
-                    quantity: item.quantity
-                  }));
-                  
-                  console.log(`⚠️ Nessuna traduzione disponibile per i componenti`);
+                  // Nessuna traduzione disponibile
+                  if (languageId !== 1) {
+                    // Se non è italiano, nascondi i testi originali utilizzando stringhe vuote
+                    bomItems = specificItems.map((item: any) => ({
+                      level: item.level,
+                      component: {
+                        code: item.code,
+                        description: '' // Nascondi descrizioni originali
+                      },
+                      quantity: item.quantity
+                    }));
+                    console.log(`⚠️ Lingua ${languageId}: Nessuna traduzione disponibile per i componenti, nascondo testi originali`);
+                  } else {
+                    // Se è italiano, usiamo i valori originali
+                    bomItems = specificItems.map((item: any) => ({
+                      level: item.level,
+                      component: {
+                        code: item.code,
+                        description: item.description
+                      },
+                      quantity: item.quantity
+                    }));
+                    console.log(`⚠️ Nessuna traduzione disponibile per i componenti, mantengo testi in italiano`);
+                  }
                 }
               } else {
                 // Nessun item trovato
