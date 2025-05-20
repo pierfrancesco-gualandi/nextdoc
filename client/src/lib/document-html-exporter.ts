@@ -641,12 +641,24 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                 tableHtml = `<p class="bom-empty">${emptyLabel}</p>`;
               }
               
-              // Prepara didascalia e descrizione per il BOM, utilizzando le traduzioni se disponibili
+              // Prepara titolo, didascalia e descrizione per il BOM, utilizzando le traduzioni se disponibili
+              let bomTitle = module.content.title || 'Elenco Componenti';
               let bomCaption = module.content.caption || '';
               let bomDescription = module.content.description || '';
               
               // Usa SEMPRE le traduzioni quando disponibili, anche se vuote
               if (languageId && module.content.translatedContent) {
+                // Titolo tradotto - priorità ASSOLUTA
+                if (module.content.translatedContent.title !== undefined) {
+                  bomTitle = module.content.translatedContent.title;
+                  console.log(`Modulo BOM ${module.id}: Usando titolo tradotto: "${bomTitle}"`);
+                } else {
+                  // Se non c'è traduzione del titolo ma siamo in modalità traduzione,
+                  // usa una stringa vuota invece del titolo di default
+                  bomTitle = '';
+                  console.log(`Modulo BOM ${module.id}: Nessuna traduzione per il titolo, usando stringa vuota`);
+                }
+                
                 // Didascalia tradotta - priorità ASSOLUTA
                 if (module.content.translatedContent.caption !== undefined) {
                   bomCaption = module.content.translatedContent.caption;
@@ -662,6 +674,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               
               bomHtml = `
                 <figure class="bom-container">
+                  ${bomTitle ? `<h3 class="bom-title">${bomTitle}</h3>` : ''}
                   <div class="bom-content">
                     ${tableHtml}
                   </div>
@@ -673,34 +686,50 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               const errorMessage = e instanceof Error ? e.message : 'Errore sconosciuto';
               
               // Messaggi di errore tradotti
-              let errorTitle = 'La distinta base completa è disponibile nell\'applicazione originale.';
-              let errorMsg = `Errore nel caricamento della distinta: ${errorMessage}`;
-              let bomCaption = module.content.caption || '';
+              let errorTitle = '';
+              let errorMsg = '';
+              let bomCaption = '';
+              let bomTitle = '';
               
-              // Usa traduzioni se disponibili, anche per i messaggi di errore
+              // Usa SEMPRE e SOLO le traduzioni se disponibili
               if (languageId && module.content.translatedContent) {
+                // Titolo tradotto
+                if (module.content.translatedContent.title !== undefined) {
+                  bomTitle = module.content.translatedContent.title;
+                  console.log(`Modulo BOM ${module.id} errore: Usando titolo tradotto: "${bomTitle}"`);
+                }
+                
                 // Messaggio errore tradotto
                 if (module.content.translatedContent.errorTitle !== undefined) {
                   errorTitle = module.content.translatedContent.errorTitle;
-                } else if (languageId === 2) { // inglese
-                  errorTitle = 'The complete bill of materials is available in the original application.';
+                  console.log(`Modulo BOM ${module.id} errore: Usando errore tradotto: "${errorTitle}"`);
+                }
+                
+                // Messaggio di errore tradotto
+                if (module.content.translatedContent.errorMessage !== undefined) {
+                  errorMsg = module.content.translatedContent.errorMessage;
+                  console.log(`Modulo BOM ${module.id} errore: Usando messaggio errore tradotto: "${errorMsg}"`);
                 }
                 
                 // Didascalia tradotta
                 if (module.content.translatedContent.caption !== undefined) {
                   bomCaption = module.content.translatedContent.caption;
+                  console.log(`Modulo BOM ${module.id} errore: Usando didascalia tradotta: "${bomCaption}"`);
                 }
               }
               
               bomHtml = `
                 <figure class="bom-container">
+                  ${bomTitle ? `<h3 class="bom-title">${bomTitle}</h3>` : ''}
                   <div class="bom-content">
-                    <p>${errorTitle}</p>
-                    <div class="message warning">
-                      <div class="message-body">
-                        <p>${errorMsg}</p>
+                    ${errorTitle ? `<p>${errorTitle}</p>` : ''}
+                    ${errorMsg ? `
+                      <div class="message warning">
+                        <div class="message-body">
+                          <p>${errorMsg}</p>
+                        </div>
                       </div>
-                    </div>
+                    ` : ''}
                   </div>
                   ${bomCaption ? `<figcaption class="module-caption">${bomCaption}</figcaption>` : ''}
                 </figure>
