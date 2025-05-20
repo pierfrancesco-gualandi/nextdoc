@@ -521,40 +521,58 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                 
                 // Se stiamo esportando con una lingua specifica e il modulo ha traduzioni
                 if (languageId && module.content.translatedContent) {
-                  // Verifica se esistono traduzioni per le intestazioni
-                  if (module.content.translatedContent.headers) {
-                    // Usa le traduzioni fornite dall'utente o le traduzioni predefinite
+                  console.log(`Verificando intestazioni tradotte per modulo BOM ${module.id}:`, module.content.translatedContent);
+                  
+                  // NUOVO COMPORTAMENTO: Usa SEMPRE le traduzioni, anche se sono stringhe vuote
+                  // in questo modo garantiamo che vengano usate solo le traduzioni
+                  
+                  // Intestazioni in formato oggetto (il più comune)
+                  if (module.content.translatedContent.headers && typeof module.content.translatedContent.headers === 'object') {
                     translatedHeaders = {
                       'number': module.content.translatedContent.headers.number !== undefined ? 
-                        module.content.translatedContent.headers.number : defaultTranslations.number,
+                        module.content.translatedContent.headers.number : '',
                       'level': module.content.translatedContent.headers.level !== undefined ? 
-                        module.content.translatedContent.headers.level : defaultTranslations.level,
+                        module.content.translatedContent.headers.level : '',
                       'code': module.content.translatedContent.headers.code !== undefined ? 
-                        module.content.translatedContent.headers.code : defaultTranslations.code,
+                        module.content.translatedContent.headers.code : '',
                       'description': module.content.translatedContent.headers.description !== undefined ? 
-                        module.content.translatedContent.headers.description : defaultTranslations.description,
+                        module.content.translatedContent.headers.description : '',
                       'quantity': module.content.translatedContent.headers.quantity !== undefined ? 
-                        module.content.translatedContent.headers.quantity : defaultTranslations.quantity
+                        module.content.translatedContent.headers.quantity : ''
                     };
-                    console.log(`Modulo BOM ${module.id}: Usando intestazioni tradotte complete`);
+                    console.log(`Modulo BOM ${module.id}: Usando SOLO intestazioni tradotte in formato oggetto:`, translatedHeaders);
                   } 
-                  // Verifica anche se ci sono tableHeaders come alternativa
-                  else if (module.content.translatedContent.tableHeaders) {
+                  // Formato alternativo tableHeaders (per retrocompatibilità)
+                  else if (module.content.translatedContent.tableHeaders && typeof module.content.translatedContent.tableHeaders === 'object') {
                     translatedHeaders = {
                       'number': module.content.translatedContent.tableHeaders.number !== undefined ? 
-                        module.content.translatedContent.tableHeaders.number : defaultTranslations.number,
+                        module.content.translatedContent.tableHeaders.number : '',
                       'level': module.content.translatedContent.tableHeaders.level !== undefined ? 
-                        module.content.translatedContent.tableHeaders.level : defaultTranslations.level,
+                        module.content.translatedContent.tableHeaders.level : '',
                       'code': module.content.translatedContent.tableHeaders.code !== undefined ? 
-                        module.content.translatedContent.tableHeaders.code : defaultTranslations.code,
+                        module.content.translatedContent.tableHeaders.code : '',
                       'description': module.content.translatedContent.tableHeaders.description !== undefined ? 
-                        module.content.translatedContent.tableHeaders.description : defaultTranslations.description,
+                        module.content.translatedContent.tableHeaders.description : '',
                       'quantity': module.content.translatedContent.tableHeaders.quantity !== undefined ? 
-                        module.content.translatedContent.tableHeaders.quantity : defaultTranslations.quantity
+                        module.content.translatedContent.tableHeaders.quantity : ''
                     };
-                    console.log(`Modulo BOM ${module.id}: Usando tableHeaders tradotte`);
+                    console.log(`Modulo BOM ${module.id}: Usando SOLO tableHeaders tradotte:`, translatedHeaders);
                   }
-                  // Verifica intestazioni come array semplice
+                  // Se non ci sono traduzioni specifiche, usa stringhe vuote
+                  else {
+                    // Se stiamo traducendo ma non ci sono intestazioni tradotte, usa stringhe vuote
+                    // Questo garantisce che vengano usate solo traduzioni
+                    translatedHeaders = {
+                      'number': '',
+                      'level': '',
+                      'code': '',
+                      'description': '',
+                      'quantity': ''
+                    };
+                    console.log(`Modulo BOM ${module.id}: Nessuna intestazione tradotta trovata, usando stringhe vuote`);
+                  }
+                  
+                  // Verifica intestazioni come array semplice (formato legacy)
                   else if (Array.isArray(module.content.translatedContent.headers) && module.content.translatedContent.headers.length >= 3) {
                     // Formato array semplice [codice, descrizione, quantità]
                     const headers = module.content.translatedContent.headers;
