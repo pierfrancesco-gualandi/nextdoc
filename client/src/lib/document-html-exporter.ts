@@ -174,14 +174,39 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
         if (translatedSection) {
           // Titolo della sezione tradotto - priorità ASSOLUTA
           if (translatedSection.title !== undefined) {
+            // Usa SEMPRE la traduzione, anche se è una stringa vuota
             sectionTitle = translatedSection.title;
-            console.log(`Sezione ${sectionId}: Usando titolo tradotto "${sectionTitle}"`);
+            console.log(`Sezione ${sectionId}: Usando titolo tradotto "${sectionTitle}" (originale: "${section.title}")`);
+          } else {
+            // Se manca la traduzione del titolo ma siamo in modalità traduzione, 
+            // lasciare vuoto invece di mostrare il titolo originale (priorità assoluta)
+            if (languageId) {
+              console.log(`Sezione ${sectionId}: ATTENZIONE - Titolo non tradotto in lingua ${languageId}`);
+            }
           }
           
           // Descrizione della sezione tradotta - priorità ASSOLUTA
           if (translatedSection.description !== undefined) {
+            // Usa SEMPRE la traduzione, anche se è una stringa vuota
             sectionDescription = translatedSection.description;
-            console.log(`Sezione ${sectionId}: Usando descrizione tradotta`);
+            console.log(`Sezione ${sectionId}: Usando descrizione tradotta (originale: "${section.description?.substring(0, 20)}...")`);
+          } else {
+            // Se manca la traduzione della descrizione ma siamo in modalità traduzione,
+            // lasciare vuoto invece di mostrare la descrizione originale (priorità assoluta)
+            if (languageId) {
+              console.log(`Sezione ${sectionId}: ATTENZIONE - Descrizione non tradotta in lingua ${languageId}`);
+            }
+          }
+        } else {
+          // Avvisa che non c'è traduzione per questa sezione
+          console.log(`Sezione ${sectionId}: ATTENZIONE - Nessuna traduzione trovata per questa sezione in lingua ${languageId}`);
+          
+          // Se siamo in modalità traduzione ma non c'è alcuna traduzione per questa sezione,
+          // NON mostrare i contenuti originali quando si esporta in un'altra lingua
+          if (languageId !== 1) { // Se non è italiano (lingua originale)
+            sectionTitle = '';
+            sectionDescription = '';
+            console.log(`Sezione ${sectionId}: Testo originale nascosto per esportazione in lingua ${languageId}`);
           }
         }
       }
@@ -820,6 +845,14 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                         text: translatedItem.text
                       };
                     }
+                    // Se siamo in modalità traduzione ma non c'è traduzione per questo elemento,
+                    // restituisci una stringa vuota invece del testo originale
+                    if (languageId !== 1) { // Se non è italiano (lingua originale)
+                      return {
+                        ...item,
+                        text: ''
+                      };
+                    }
                     return item;
                   });
                   console.log(`Modulo checklist ${module.id}: Usando elementi tradotti`);
@@ -1013,8 +1046,9 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                 warningTitle = module.content.translatedContent.title;
                 console.log(`Modulo warning ${module.id}: Usando titolo tradotto`);
               } else if (languageId !== 1) {
-                // Traduzioni predefinite se non è italiano
-                warningTitle = 'WARNING';
+                // Se non è italiano e non c'è traduzione, usa stringa vuota
+                warningTitle = '';
+                console.log(`Modulo warning ${module.id}: Nessuna traduzione del titolo, nascondendo testo originale`);
               }
               
               // Messaggio tradotto - priorità ASSOLUTA
@@ -1024,13 +1058,27 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               } else if (module.content.translatedContent.text !== undefined) {
                 warningMessage = module.content.translatedContent.text;
                 console.log(`Modulo warning ${module.id}: Usando testo tradotto come messaggio`);
+              } else if (languageId !== 1) {
+                // Se non è italiano e non c'è traduzione, usa stringa vuota
+                warningMessage = '';
+                console.log(`Modulo warning ${module.id}: Nessuna traduzione del messaggio, nascondendo testo originale`);
               }
               
               // Descrizione tradotta - priorità ASSOLUTA
               if (module.content.translatedContent.description !== undefined) {
                 warningDescription = module.content.translatedContent.description;
                 console.log(`Modulo warning ${module.id}: Usando descrizione tradotta`);
+              } else if (languageId !== 1) {
+                // Se non è italiano e non c'è traduzione, usa stringa vuota
+                warningDescription = '';
+                console.log(`Modulo warning ${module.id}: Nessuna traduzione della descrizione, nascondendo testo originale`);
               }
+            } else if (languageId !== 1) {
+              // Se non è italiano e non ci sono traduzioni per il modulo, nascondi tutti i testi
+              warningTitle = '';
+              warningMessage = '';
+              warningDescription = '';
+              console.log(`Modulo warning ${module.id}: Nessuna traduzione per il modulo, nascondendo tutti i testi originali`);
             }
               
             content += `
