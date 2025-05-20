@@ -611,26 +611,29 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               // Genera la tabella HTML direttamente nell'output
               let tableHtml = '';
               if (bomItems.length > 0) {
-                // Definizioni delle intestazioni predefinite (in italiano)
-                const defaultHeaders = {
-                  'number': 'N°',
-                  'level': 'Livello',
-                  'code': 'Codice',
-                  'description': 'Descrizione',
-                  'quantity': 'Quantità'
-                };
+                // Definizione iniziale delle intestazioni basata sulla lingua selezionata
+                let translatedHeaders;
                 
-                // Traduzioni predefinite (in inglese) da usare se non ci sono traduzioni personalizzate
-                const defaultTranslations = {
-                  'number': 'N.',
-                  'level': 'Level',
-                  'code': 'Code',
-                  'description': 'Description',
-                  'quantity': 'Qty'
-                };
-                
-                // Ottieni le intestazioni tradotte dal modulo se disponibili
-                let translatedHeaders = defaultHeaders;
+                // Se stiamo esportando in italiano, usa intestazioni predefinite in italiano
+                if (languageId === 1 || languageId === undefined) {
+                  translatedHeaders = {
+                    'number': 'N°',
+                    'level': 'Livello',
+                    'code': 'Codice',
+                    'description': 'Descrizione',
+                    'quantity': 'Quantità'
+                  };
+                } else {
+                  // Se non è italiano, inizializza con stringhe vuote per evitare testo italiano
+                  translatedHeaders = {
+                    'number': '',
+                    'level': '',
+                    'code': '',
+                    'description': '',
+                    'quantity': ''
+                  };
+                  console.log(`Modulo BOM ${module.id}: Inizializzato con intestazioni vuote per lingua ${languageId}`);
+                }
                 
                 // Se stiamo esportando con una lingua specifica e il modulo ha traduzioni
                 if (languageId && module.content.translatedContent) {

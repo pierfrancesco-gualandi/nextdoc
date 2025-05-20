@@ -1,0 +1,88 @@
+Riporto un elenco degli errori dei punti dove continua a comparire il testo in italiano  nel docunento MANUALE DI SITRUZIONI TEST:
+
+description:
+questo testo serve per provare
+questo testo serve per provare
+questo testo serve per provare
+
+Elenco descrizione 1:
+N°	Livello	Codice	Descrizione	Quantità
+
+Elenco descrizione 2
+N°	Livello	Codice	Descrizione	Quantità
+
+1.1 Declaration of conformity
+Organizzare meglio i filtri per la visualizzazione dei codici nel modulo BOM: filtro per livello selezionabile con flag, filtro per codice selezionabile con flag, filtro per descrizione selezionabile con flag. una volta impostati i filtri, devono essere inseriti in una tabella gli elementi della distinta selezionati in base ad i fltri. Ogni riga, che corrisponde ad un elemendo della distinta deve essere preceduta da un numero progerssivo FATTO miglorare la funzione di ordinamento delle sezioni: non riesco a spostare la sezione 3 sotto alla sezione 2 FATTO bisogna migliorare il modulo testo: aggiungi un maggior numero di stili imitando word FATTO.............................................................................................
+
+2.1 3D drawing
+Elenco disegno 3D
+N°	Livello	Codice	Descrizione	Quantità
+
+3.1 safety
+Intestazione 1	Intestazione 2	Intestazione 3	Intestazione 4
+
+3		14		15		1900
+16		17		18		2000
+34		568		889		999
+Tabella delle misure
+
+Questo è un test
+Elemento 1
+Elemento 2
+Elemento 3
+Elenco di controllo
+
+Elenco del gruppo1
+N°	Livello	Codice	Descrizione	Quantità
+
+video di smontaggio
+
+mmagine del mulino
+
+PERICOLO
+pericolo di folgorazione
+
+AVVERTENZA
+movimentazione carichi
+
+ATTENZIONE
+lama affilata. pericolo di taglio
+
+NOTA
+nota aggointiva al pericolo di taglio
+
+ISTRUZIONI DI SICUREZZA
+procedura di apertura delle protezioni
+
+Manuale di istruzioni
+
+Nome file: 1745328647898-2bf81926d5e38c7acf9f786584044d44.pdf
+
+Manuale di istruzioni
+Nome file: 1745328647898-2bf81926d5e38c7acf9f786584044d44.pdf
+Scarica PDF
+File relativo alla procedura
+
+A4B09778.htm
+Anteprima modello 3D
+Visualizza modello 3D con tutti i componenti
+Nota: Fare clic sul pulsante verde sopra per visualizzare il modello 3D interattivo completo.
+Disegno 3D del mulino
+
+A4B10789.htm
+Anteprima modello 3D
+Visualizza modello 3D con tutti i componenti
+Nota: Fare clic sul pulsante verde sopra per visualizzare il modello 3D interattivo completo.
+Disegno 3D del SAP
+
+🔗
+apertura in un'altra finestra
+Apertura del file 123
+
+3.1.1 safety protections
+figura ultima
+
+ATTENZIONE
+NON SMONTARE PARTI DELLA CARCASSA QUANDO IL MULINO è IN FUNZIONE
+
+TI SEMBRA DI AVER RISOLOTO IL PROBLEMA DELLA ESPOSRTAZIONE NEL FILE HTML NELLAM LINGUA SELEZIONATA?
