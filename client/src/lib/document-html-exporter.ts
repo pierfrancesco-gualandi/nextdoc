@@ -259,19 +259,28 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
         
         switch(module.type) {
           case 'text':
-            // Utilizza SEMPRE il testo tradotto quando disponibile, anche se vuoto
-            // Il testo originale è solo un fallback
-            let textContent = module.content.text || '';
+            // Prepara il contenuto testuale
+            let textContent = '';
+            
+            // Usa valori predefiniti SOLO in italiano
+            if (languageId === 1 || languageId === undefined) {
+              textContent = module.content.text || '';
+            }
             
             // Verifica se ci sono traduzioni disponibili per questo modulo
             if (languageId && module.content.translatedContent) {
               // Se la traduzione esiste (anche se è vuota), la utilizziamo SEMPRE
               if (module.content.translatedContent.text !== undefined) {
                 textContent = module.content.translatedContent.text;
-                console.log(`Modulo testo ${module.id}: Usando testo tradotto`);
-              } else {
-                console.log(`Modulo testo ${module.id}: Traduzione non disponibile, usando testo originale`);
+                console.log(`Modulo testo ${module.id}: Usando testo tradotto: "${textContent.substring(0, 30)}..."`);
+              } else if (languageId !== 1) {
+                textContent = '';
+                console.log(`Modulo testo ${module.id}: Traduzione non disponibile, nascondo testo originale`);
               }
+            } else if (languageId !== 1) {
+              // Se non ci sono traduzioni e non è italiano, non mostriamo nulla
+              textContent = '';
+              console.log(`Modulo testo ${module.id}: Nessuna traduzione disponibile, nascondo testo originale`);
             }
             
             content += `
@@ -282,29 +291,36 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             break;
             
           case 'testp':
-            // Prepara i dati del file di testo con valori predefiniti (fallback)
-            let textpTitle = module.content.title || '';
-            let textpDescription = module.content.description || '';
-            let textpContent = module.content.text || '';
+            // Prepara i dati del file di testo
+            let textpTitle = '';
+            let textpDescription = '';
+            let textpContent = '';
+            
+            // Usa valori predefiniti SOLO in italiano
+            if (languageId === 1 || languageId === undefined) {
+              textpTitle = module.content.title || '';
+              textpDescription = module.content.description || '';
+              textpContent = module.content.text || '';
+            }
             
             // Utilizza SEMPRE le traduzioni quando disponibili, anche se sono stringhe vuote
             if (languageId && module.content.translatedContent) {
               // Titolo tradotto - priorità ASSOLUTA
               if (module.content.translatedContent.title !== undefined) {
                 textpTitle = module.content.translatedContent.title;
-                console.log(`Modulo testp ${module.id}: Usando titolo tradotto`);
+                console.log(`Modulo testp ${module.id}: Usando titolo tradotto: "${textpTitle}"`);
               }
               
               // Descrizione tradotta - priorità ASSOLUTA
               if (module.content.translatedContent.description !== undefined) {
                 textpDescription = module.content.translatedContent.description;
-                console.log(`Modulo testp ${module.id}: Usando descrizione tradotta`);
+                console.log(`Modulo testp ${module.id}: Usando descrizione tradotta: "${textpDescription.substring(0, 30)}..."`);
               }
               
               // Testo tradotto - priorità ASSOLUTA
               if (module.content.translatedContent.text !== undefined) {
                 textpContent = module.content.translatedContent.text;
-                console.log(`Modulo testp ${module.id}: Usando testo tradotto`);
+                console.log(`Modulo testp ${module.id}: Usando testo tradotto: "${textpContent.substring(0, 30)}..."`);
               }
             }
             
@@ -1126,14 +1142,14 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               // Messaggio tradotto - priorità ASSOLUTA
               if (module.content.translatedContent.message !== undefined) {
                 warningMessage = module.content.translatedContent.message;
-                console.log(`Modulo warning ${module.id}: Usando messaggio tradotto`);
+                console.log(`Modulo warning ${module.id}: Usando messaggio tradotto: "${warningMessage.substring(0, 30)}..."`);
               } else if (module.content.translatedContent.text !== undefined) {
                 warningMessage = module.content.translatedContent.text;
-                console.log(`Modulo warning ${module.id}: Usando testo tradotto come messaggio`);
+                console.log(`Modulo warning ${module.id}: Usando testo tradotto come messaggio: "${warningMessage.substring(0, 30)}..."`);
               } else if (languageId !== 1) {
-                // Se non è italiano e non c'è traduzione, usa stringa vuota
+                // Se non c'è traduzione e non è italiano, nascondi il messaggio originale
                 warningMessage = '';
-                console.log(`Modulo warning ${module.id}: Nessuna traduzione del messaggio, nascondendo testo originale`);
+                console.log(`Modulo warning ${module.id}: Nessuna traduzione per il messaggio, nascosto testo originale`);
               }
               
               // Descrizione tradotta - priorità ASSOLUTA
