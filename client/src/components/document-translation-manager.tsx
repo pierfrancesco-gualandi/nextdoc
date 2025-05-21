@@ -306,12 +306,22 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
       const documentTranslations = await checkDocumentTranslationResponse.json();
       const existingDocumentTranslation = documentTranslations.length > 0 ? documentTranslations[0] : null;
       
+      console.log("[DEBUG] Dati traduzione documento prima del salvataggio:", {
+        documentId: parseInt(documentId),
+        languageId: parseInt(selectedLanguage),
+        title: documentTitleTranslation || "",
+        version: documentVersionTranslation || "",
+        description: documentDescriptionTranslation || "",
+        existingTranslation: existingDocumentTranslation ? 'trovata' : 'non trovata',
+        existingId: existingDocumentTranslation?.id
+      });
+      
       const documentTranslationData = {
         documentId: parseInt(documentId),
         languageId: parseInt(selectedLanguage),
-        title: documentTitleTranslation,
-        version: documentVersionTranslation,
-        description: documentDescriptionTranslation,
+        title: documentTitleTranslation || "",  // Assicura che non sia undefined
+        version: documentVersionTranslation || "",  // Assicura che non sia undefined
+        description: documentDescriptionTranslation || "",  // Assicura che non sia undefined
         status: 'translated'
       };
       
@@ -321,6 +331,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
       
       if (existingDocumentTranslation) {
         // Aggiorna la traduzione esistente
+        console.log(`Aggiornamento traduzione documento ID ${existingDocumentTranslation.id}`);
         response = await fetch(`/api/document-translations/${existingDocumentTranslation.id}`, {
           method: 'PUT',
           headers: {
@@ -330,6 +341,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
         });
       } else {
         // Crea una nuova traduzione
+        console.log("Creazione nuova traduzione documento");
         response = await fetch('/api/document-translations', {
           method: 'POST',
           headers: {
@@ -341,16 +353,25 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
       
       if (!response.ok) {
         const errorText = await response.text();
+        console.error("Errore risposta server:", response.status, errorText);
         throw new Error(`Errore nel salvataggio delle informazioni del documento: ${errorText}`);
       }
       
+      const savedData = await response.json();
+      console.log("Risposta salvataggio traduzione documento:", savedData);
+      
       // Invalida la cache per aggiornare i dati visualizzati
-      queryClient.invalidateQueries({ queryKey: [`/api/document-translations`] });
+      await queryClient.invalidateQueries({ queryKey: [`/api/document-translations`] });
+      
+      // Forza una richiesta fresca al server (dopo l'invalidazione della cache)
+      await queryClient.refetchQueries({ queryKey: [`/api/document-translations`] });
       
       // Ricarica manualmente i dati di traduzione del documento
       const newDocTranslationResponse = await fetch(`/api/document-translations?documentId=${documentId}&languageId=${selectedLanguage}`);
       if (newDocTranslationResponse.ok) {
         const newDocTranslationData = await newDocTranslationResponse.json();
+        console.log("Nuovi dati traduzione documento dopo salvataggio:", newDocTranslationData);
+        
         if (newDocTranslationData && newDocTranslationData.length > 0 && updateStates) {
           // Aggiorna gli stati solo se updateStates è true (non durante il salvataggio completo)
           const newDocTranslation = newDocTranslationData[0];
@@ -358,7 +379,17 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           setDocumentTitleTranslation(newDocTranslation.title !== undefined ? newDocTranslation.title : '');
           setDocumentVersionTranslation(newDocTranslation.version !== undefined ? newDocTranslation.version : '');
           setDocumentDescriptionTranslation(newDocTranslation.description !== undefined ? newDocTranslation.description : '');
+          
+          console.log("Stati aggiornati dopo ricaricamento:", {
+            title: newDocTranslation.title,
+            version: newDocTranslation.version,
+            description: newDocTranslation.description
+          });
+        } else {
+          console.warn("Nessun dato di traduzione trovato dopo il salvataggio");
         }
+      } else {
+        console.error("Errore durante il ricaricamento dei dati dopo il salvataggio:", newDocTranslationResponse.status);
       }
       
       if (showNotification) {

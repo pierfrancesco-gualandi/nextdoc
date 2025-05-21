@@ -346,17 +346,19 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
   });
   
   return (
-    <Textarea
-      ref={textareaRef}
-      value={localValue}
-      onChange={handleChange}
-      placeholder={placeholder}
-      className={errorCondition ? "border-red-300" : ""}
-      rows={rows}
-      // Rimuoviamo autoFocus per prevenire il salto da un campo all'altro
-      id={fieldId}
-      // Impostiamo una altezza minima adeguata al contenuto
-      style={{ minHeight: rows === 1 ? '50px' : '120px' }}
+    <div className="w-full">
+      <div className="text-xs font-medium text-muted-foreground mb-1 uppercase">Traduzione</div>
+      <Textarea
+        ref={textareaRef}
+        value={localValue}
+        onChange={handleChange}
+        placeholder={placeholder}
+        className={errorCondition ? "border-red-300" : ""}
+        rows={rows}
+        // Rimuoviamo autoFocus per prevenire il salto da un campo all'altro
+        id={fieldId}
+        // Impostiamo una altezza minima adeguata al contenuto
+        style={{ minHeight: rows === 1 ? '50px' : '120px' }}
       // Questi eventi mantengono un registro della posizione del cursore
       onFocus={() => {
         const textarea = textareaRef.current;
