@@ -199,7 +199,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
     });
     
     // Dichiarazione della funzione ricorsiva all'esterno del blocco try
-    const buildSectionHtml = (sectionId: number, level: number = 1): string => {
+    const buildSectionHtml = (sectionId: number, level: number = 1, moduleTranslations: any[] = []): string => {
       const section = sectionsMap[sectionId];
       if (!section) return '';
       
