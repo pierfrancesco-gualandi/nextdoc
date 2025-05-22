@@ -262,25 +262,36 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             // Prepara il contenuto testuale
             let textContent = '';
             
-            // Usa valori predefiniti SOLO in italiano
-            if (languageId === 1 || languageId === undefined) {
-              textContent = module.content.text || '';
-            }
-            
-            // Verifica se ci sono traduzioni disponibili per questo modulo
-            if (languageId && module.content.translatedContent) {
-              // Se la traduzione esiste (anche se è vuota), la utilizziamo SEMPRE
-              if (module.content.translatedContent.text !== undefined) {
-                textContent = module.content.translatedContent.text;
-                console.log(`Modulo testo ${module.id}: Usando testo tradotto: "${textContent.substring(0, 30)}..."`);
-              } else if (languageId !== 1) {
+            // Determina il contenuto in base alla lingua
+            if (languageId !== 1 && moduleTranslation) {
+              // Per lingue diverse dall'italiano, usa SOLO il contenuto dal campo TRADUZIONE
+              try {
+                const translatedData = typeof moduleTranslation.content === 'string' 
+                  ? JSON.parse(moduleTranslation.content) 
+                  : moduleTranslation.content;
+                
+                // Usa ESCLUSIVAMENTE il testo tradotto
+                textContent = translatedData.text || '';
+                console.log(`Modulo testo ${module.id}: Usando ESCLUSIVAMENTE testo tradotto dal campo TRADUZIONE`);
+              } catch (e) {
+                console.error(`Errore nel parsing della traduzione per modulo ${module.id}:`, e);
                 textContent = '';
-                console.log(`Modulo testo ${module.id}: Traduzione non disponibile, nascondo testo originale`);
               }
-            } else if (languageId !== 1) {
-              // Se non ci sono traduzioni e non è italiano, non mostriamo nulla
+            } else if (languageId === 1) {
+              // Solo per italiano, usa il testo originale
+              try {
+                const content = typeof module.content === 'string' 
+                  ? JSON.parse(module.content)
+                  : module.content;
+                textContent = content.text || '';
+              } catch (e) {
+                console.error(`Errore nel parsing del contenuto originale per modulo ${module.id}:`, e);
+                textContent = '';
+              }
+            } else {
+              // Se è richiesta una lingua diversa dall'italiano ma non c'è traduzione, lascia vuoto
               textContent = '';
-              console.log(`Modulo testo ${module.id}: Nessuna traduzione disponibile, nascondo testo originale`);
+              console.log(`Modulo testo ${module.id}: Nessuna traduzione disponibile, campo lasciato vuoto`);
             }
             
             content += `
@@ -793,53 +804,62 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               let bomTitle = '';
               
               // Se è richiesta una lingua diversa dall'italiano
-              if (languageId && languageId !== 1) {
-                // Per lingue diverse dall'italiano, usa ESCLUSIVAMENTE la traduzione
-                if (module.content.translatedContent && module.content.translatedContent.title !== undefined) {
-                  // Se c'è una traduzione del titolo, usala sempre (anche se vuota)
-                  bomTitle = module.content.translatedContent.title;
-                  console.log(`Modulo BOM ${module.id}: Usando titolo tradotto: "${bomTitle}"`);
-                } else {
-                  // Se non c'è traduzione, lascia il campo vuoto
+              if (languageId && languageId !== 1 && moduleTranslation) {
+                // Per lingue diverse dall'italiano, usa ESCLUSIVAMENTE la traduzione dal campo TRADUZIONE
+                try {
+                  const translatedData = typeof moduleTranslation.content === 'string'
+                    ? JSON.parse(moduleTranslation.content)
+                    : moduleTranslation.content;
+                    
+                  // Usa SOLO il titolo dal campo TRADUZIONE
+                  bomTitle = translatedData.title || '';
+                  console.log(`Modulo BOM ${module.id}: Usando ESCLUSIVAMENTE titolo tradotto dal campo TRADUZIONE: "${bomTitle}"`);
+                } catch (e) {
+                  console.error(`Errore nel parsing della traduzione per modulo BOM ${module.id}:`, e);
                   bomTitle = '';
-                  console.log(`Modulo BOM ${module.id}: Nessuna traduzione disponibile, nascondi titolo`);
                 }
               }
               // Se è italiano o nessuna lingua specificata
-              else {
+              else if (languageId === 1) {
                 // Usa il titolo originale, il titolo specifico o valore predefinito in italiano
                 bomTitle = module.content.title || specificTitle || 'Elenco Componenti';
+              } else {
+                // Se non c'è traduzione disponibile, lascia il campo vuoto
+                bomTitle = '';
+                console.log(`Modulo BOM ${module.id}: Nessuna traduzione disponibile, campo titolo lasciato vuoto`);
               }
               // Inizializza caption e description vuoti per sicurezza
               let bomCaption = '';
               let bomDescription = '';
               
               // Se è richiesta una lingua diversa dall'italiano
-              if (languageId && languageId !== 1) {
-                // Usa ESCLUSIVAMENTE le traduzioni quando disponibili, altrimenti lascia vuoto
-                if (module.content.translatedContent) {
-                  if (module.content.translatedContent.caption !== undefined) {
-                    bomCaption = module.content.translatedContent.caption;
-                    console.log(`Modulo BOM ${module.id}: Usando didascalia tradotta: "${bomCaption}"`);
-                  } else {
-                    bomCaption = '';
-                    console.log(`Modulo BOM ${module.id}: Nessuna traduzione per didascalia, nascondi originale`);
-                  }
-                  
-                  if (module.content.translatedContent.description !== undefined) {
-                    bomDescription = module.content.translatedContent.description;
-                    console.log(`Modulo BOM ${module.id}: Usando descrizione tradotta: "${bomDescription}"`);
-                  } else {
-                    bomDescription = '';
-                    console.log(`Modulo BOM ${module.id}: Nessuna traduzione per descrizione, nascondi originale`);
-                  }
-                } else {
-                  console.log(`Modulo BOM ${module.id}: Nessuna traduzione per didascalia e descrizione, nascondi originali`);
+              if (languageId && languageId !== 1 && moduleTranslation) {
+                // Per lingue diverse dall'italiano, usa ESCLUSIVAMENTE le traduzioni dal campo TRADUZIONE
+                try {
+                  const translatedData = typeof moduleTranslation.content === 'string'
+                    ? JSON.parse(moduleTranslation.content)
+                    : moduleTranslation.content;
+                    
+                  // Usa SOLO la didascalia e descrizione dal campo TRADUZIONE
+                  bomCaption = translatedData.caption || '';
+                  bomDescription = translatedData.description || '';
+                  console.log(`Modulo BOM ${module.id}: Usando ESCLUSIVAMENTE testi tradotti dal campo TRADUZIONE`);
+                  console.log(`-- Didascalia: "${bomCaption}"`);
+                  console.log(`-- Descrizione: "${bomDescription}"`);
+                } catch (e) {
+                  console.error(`Errore nel parsing della traduzione per modulo BOM ${module.id}:`, e);
+                  bomCaption = '';
+                  bomDescription = '';
                 }
-              } else {
+              } else if (languageId === 1) {
                 // Solo per italiano, usa i valori originali
                 bomCaption = module.content.caption || '';
                 bomDescription = module.content.description || '';
+              } else {
+                // Se è richiesta una lingua diversa dall'italiano ma non c'è traduzione, lascia vuoto
+                bomCaption = '';
+                bomDescription = '';
+                console.log(`Modulo BOM ${module.id}: Nessuna traduzione disponibile, campi lasciati vuoti`);
               }
               
               // Usa SEMPRE le traduzioni quando disponibili, anche se vuote
