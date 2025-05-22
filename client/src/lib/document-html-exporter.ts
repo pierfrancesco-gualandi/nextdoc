@@ -614,6 +614,11 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               // 🎯 CORREZIONE: Usa gli stessi filtri del documento di base invece di specificItems hardcoded
               let itemsToExport = [];
               
+              // DEBUG: Verifica cosa contiene il modulo
+              console.log(`🔍 DEBUG Modulo BOM ${module.id} content:`, module.content);
+              console.log(`🔍 DEBUG filterSettings from module:`, module.content.filterSettings);
+              console.log(`🔍 DEBUG filteredComponentCodes from module:`, module.content.filteredComponentCodes);
+              
               // Prima controlla se il modulo ha filteredComponentCodes (stessi del documento di base)
               if (module.content.filteredComponentCodes && module.content.filteredComponentCodes.length > 0) {
                 console.log(`🎯 Modulo BOM ${module.id}: Usando filteredComponentCodes dal documento di base:`, module.content.filteredComponentCodes);
