@@ -11,12 +11,31 @@ import { isDisegno3DSection, generateComponentsListHtml, getSpecificComponentsFo
 export async function exportDocumentHtml(document: any, sections: any[], modules: any[], languageId?: string | number) {
   console.log(`Esportazione in formato html con lingua: ${languageId}`);
 
-  // Valori di default dal documento originale - usati SOLO se non ci sono traduzioni
+  // MODIFICA RADICALE: Usa getDocumentWithTranslations che applica correttamente le traduzioni dai campi TRADUZIONE
+  // e assicura che per le lingue diverse dall'italiano vengano usati ESCLUSIVAMENTE i testi tradotti
+  
+  if (languageId && languageId !== 1) {
+    try {
+      // Importa la funzione dinamicamente per evitare dipendenze circolari
+      const { getDocumentWithTranslations } = await import('./document-translation-utils');
+      
+      // Recupera il documento con tutte le traduzioni già applicate correttamente
+      const result = await getDocumentWithTranslations(document.id, languageId);
+      
+      // Sostituisci document e sections con quelli già tradotti
+      document = result.document;
+      sections = result.sections;
+      
+      console.log(`✅ Documento e sezioni caricate con traduzioni per lingua ${languageId}`);
+    } catch (error) {
+      console.error('❌ Errore nel caricamento delle traduzioni:', error);
+    }
+  }
+  
+  // Valori di default dal documento (che ora potrebbero già essere tradotti)
   let documentTitle = document?.title || 'Documento Esportato';
   let documentDescription = document?.description || '';
   let documentVersion = document?.version || '1.0';
-  
-  // Se è specificata una lingua, cerchiamo la traduzione del documento
   if (languageId) {
     try {
       // Carica le traduzioni del documento - CORRETTO uso dell'endpoint API
