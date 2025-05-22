@@ -59,8 +59,8 @@ export async function getDocumentWithTranslations(documentId: string | number, l
           }, {});
         }
         
-        // 3.2 Recupera le traduzioni dei moduli usando l'endpoint corretto
-        const moduleTranslationsResponse = await fetch(`/api/content-module-translations?languageId=${languageId}`);
+        // 3.2 Recupera le traduzioni dei moduli usando l'endpoint esistente
+        const moduleTranslationsResponse = await fetch(`/api/module-translations?languageId=${languageId}`);
         if (moduleTranslationsResponse.ok) {
           const moduleTranslationsData = await moduleTranslationsResponse.json();
           moduleTranslations = moduleTranslationsData.reduce((acc: Record<number, any>, translation: any) => {
