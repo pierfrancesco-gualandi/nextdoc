@@ -355,42 +355,39 @@ const TranslationEditableField: React.FC<TranslationEditableFieldProps> = ({
         placeholder={placeholder}
         className={errorCondition ? "border-red-300" : ""}
         rows={rows}
-        // Rimuoviamo autoFocus per prevenire il salto da un campo all'altro
         id={fieldId}
-        // Impostiamo una altezza minima adeguata al contenuto
         style={{ minHeight: rows === 1 ? '50px' : '120px' }}
-      // Questi eventi mantengono un registro della posizione del cursore
-      onFocus={() => {
-        const textarea = textareaRef.current;
-        if (textarea) {
-          savedSelection.current = {
-            start: textarea.selectionStart,
-            end: textarea.selectionEnd
-          };
-          
-          // Aggiorna il campo attivo quando riceve il focus
-          setThisFieldActive();
-        }
-      }}
-      onClick={() => {
-        const textarea = textareaRef.current;
-        if (textarea) {
-          savedSelection.current = {
-            start: textarea.selectionStart,
-            end: textarea.selectionEnd
-          };
-          
-          // Aggiorna il campo attivo quando si fa clic
-          setThisFieldActive();
-        }
-      }}
-      // Previene la perdita delle info di selezione quando si usa il mouse
-      onMouseDown={() => {
-        if (fieldId) {
-          setThisFieldActive();
-        }
-      }}
-    />
+        onFocus={() => {
+          const textarea = textareaRef.current;
+          if (textarea) {
+            savedSelection.current = {
+              start: textarea.selectionStart,
+              end: textarea.selectionEnd
+            };
+            
+            // Aggiorna il campo attivo quando riceve il focus
+            setThisFieldActive();
+          }
+        }}
+        onClick={() => {
+          const textarea = textareaRef.current;
+          if (textarea) {
+            savedSelection.current = {
+              start: textarea.selectionStart,
+              end: textarea.selectionEnd
+            };
+            
+            // Aggiorna il campo attivo quando si fa clic
+            setThisFieldActive();
+          }
+        }}
+        onMouseDown={() => {
+          if (fieldId) {
+            setThisFieldActive();
+          }
+        }}
+      />
+    </div>
   );
 };
 
