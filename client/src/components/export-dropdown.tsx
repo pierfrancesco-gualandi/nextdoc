@@ -99,7 +99,7 @@ export function ExportDropdown({ documentId, selectedLanguage }: ExportDropdownP
             onClick={() => handleExport('pdf')}
             className="block w-full text-left px-4 py-2 text-sm hover:bg-neutral-lightest"
           >
-            <span className="material-icons text-sm mr-2">picture_as_pdf</span>
+            <span className="material-icons text-sm mr-2">file_download</span>
             PDF
           </button>
           <button 
