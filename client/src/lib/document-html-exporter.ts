@@ -617,29 +617,57 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                                        module.content.translatedContent && 
                                        module.content.translatedContent.descriptions;
                 
-                if (hasTranslations) {
-                  // Convertiamo gli elementi nel formato atteso MA applicando le traduzioni
-                  bomItems = specificItems.map((item: any) => {
-                    const code = item.code;
-                    let description = item.description;
+                // Verifica se c'è una traduzione per questo modulo dal database
+                const moduleTranslation = moduleTranslations.find((t: any) => t.moduleId === module.id);
+                
+                if (moduleTranslation) {
+                  console.log(`🎯 Trovata traduzione per modulo BOM ${module.id}:`, moduleTranslation.content);
+                  
+                  try {
+                    const translatedData = typeof moduleTranslation.content === 'string' 
+                      ? JSON.parse(moduleTranslation.content) 
+                      : moduleTranslation.content;
                     
-                    // Se abbiamo una traduzione per questo componente, utilizzala SEMPRE
-                    if (code && module.content.translatedContent.descriptions[code] !== undefined) {
-                      description = module.content.translatedContent.descriptions[code];
-                      console.log(`Componente ${code}: Usando descrizione tradotta`);
-                    }
+                    // Convertiamo gli elementi applicando le traduzioni dal database
+                    bomItems = specificItems.map((item: any) => {
+                      const code = item.code;
+                      let description = item.description;
+                      
+                      // Se abbiamo una traduzione per questo componente, utilizzala SEMPRE
+                      if (code && translatedData.descriptions && translatedData.descriptions[code] !== undefined) {
+                        description = translatedData.descriptions[code];
+                        console.log(`🎯 Componente ${code}: Usando descrizione tradotta DB: "${description}"`);
+                      } else if (languageId !== 1) {
+                        // Se non c'è traduzione e non è italiano, usa stringa vuota
+                        description = '';
+                        console.log(`⚠️ Componente ${code}: Nessuna traduzione, usando stringa vuota`);
+                      }
+                      
+                      return {
+                        level: item.level,
+                        component: {
+                          code: code,
+                          description: description
+                        },
+                        quantity: item.quantity
+                      };
+                    });
                     
-                    return {
+                    const translatedCount = translatedData.descriptions ? Object.keys(translatedData.descriptions).length : 0;
+                    console.log(`✅ Applicate ${translatedCount} traduzioni ai componenti dal database`);
+                  } catch (e) {
+                    console.error(`❌ Errore nel parsing della traduzione per modulo BOM ${module.id}:`, e);
+                    // Fallback: usa stringhe vuote per le descrizioni se non è italiano
+                    bomItems = specificItems.map((item: any) => ({
                       level: item.level,
                       component: {
-                        code: code,
-                        description: description
+                        code: item.code,
+                        description: languageId !== 1 ? '' : item.description
                       },
                       quantity: item.quantity
-                    };
-                  });
-                  
-                  console.log(`✅ Applicate ${Object.keys(module.content.translatedContent.descriptions).length} traduzioni ai componenti`);
+                    }));
+                  }
+                }
                 } else {
                   // Nessuna traduzione disponibile
                   if (languageId !== 1) {
