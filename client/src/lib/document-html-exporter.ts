@@ -875,13 +875,17 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                     ? JSON.parse(moduleTranslation.content)
                     : moduleTranslation.content;
                     
+                  console.log(`🔍 DEBUG BOM ${module.id}: Dati traduzione completi:`, translatedData);
+                    
                   // Usa SOLO il titolo dal campo TRADUZIONE
                   bomTitle = translatedData.title || '';
-                  console.log(`Modulo BOM ${module.id}: Usando ESCLUSIVAMENTE titolo tradotto dal campo TRADUZIONE: "${bomTitle}"`);
+                  console.log(`🎯 Modulo BOM ${module.id}: Usando ESCLUSIVAMENTE titolo tradotto dal campo TRADUZIONE: "${bomTitle}"`);
                 } catch (e) {
-                  console.error(`Errore nel parsing della traduzione per modulo BOM ${module.id}:`, e);
+                  console.error(`❌ Errore nel parsing della traduzione per modulo BOM ${module.id}:`, e);
                   bomTitle = '';
                 }
+              } else {
+                console.log(`⚠️ DEBUG BOM ${module.id}: Nessuna traduzione trovata per languageId=${languageId}, moduleTranslation=`, moduleTranslation);
               }
               // Se è italiano o nessuna lingua specificata
               else if (languageId === 1) {
