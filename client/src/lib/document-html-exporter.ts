@@ -618,12 +618,20 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               if (module.content.filteredComponentCodes && module.content.filteredComponentCodes.length > 0) {
                 console.log(`🎯 Modulo BOM ${module.id}: Usando filteredComponentCodes dal documento di base:`, module.content.filteredComponentCodes);
                 
-                // Filtra gli elementi per includere solo quelli nei filteredComponentCodes
-                itemsToExport = allBomItems.filter((item: any) => 
-                  item.component && module.content.filteredComponentCodes.includes(item.component.code)
-                );
+                // Crea gli elementi BOM usando SOLO i codici filtrati del documento di base
+                itemsToExport = module.content.filteredComponentCodes.map((code: string, index: number) => {
+                  // Trova il componente nella BOM completa o usa dati di fallback
+                  const foundItem = bomData?.find((item: any) => item.component?.code === code);
+                  
+                  return {
+                    code: code,
+                    description: foundItem?.component?.description || '',
+                    level: foundItem?.level || 0,
+                    quantity: foundItem?.quantity || 1
+                  };
+                });
                 
-                console.log(`🎯 Export HTML: Trovati ${itemsToExport.length} elementi che corrispondono ai filtri del documento di base`);
+                console.log(`🎯 Export HTML: Creati ${itemsToExport.length} elementi usando i filtri del documento di base`);
               } else if (specificItems && specificItems.length > 0) {
                 // Fallback alla logica precedente solo se non ci sono filtri salvati
                 console.log(`⚠️ Modulo BOM ${module.id}: Nessun filtro salvato, usando specificItems di fallback`);
