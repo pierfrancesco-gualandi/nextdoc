@@ -189,7 +189,8 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
   // Se è specificata una lingua, carica le traduzioni dei moduli
   if (languageId) {
     try {
-      const moduleTranslationsResponse = await fetch(`/api/module-translations?languageId=${languageId}`);
+      // Prova prima l'endpoint esistente per le traduzioni dei moduli di contenuto
+      const moduleTranslationsResponse = await fetch(`/api/content-module-translations?languageId=${languageId}`);
       if (moduleTranslationsResponse.ok) {
         moduleTranslations = await moduleTranslationsResponse.json();
         console.log(`🎯 CARICATE ${moduleTranslations.length} traduzioni di moduli per la lingua ${languageId}`);
@@ -199,7 +200,17 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
           console.log(`🔍 Traduzione modulo ${translation.moduleId}: ${JSON.stringify(translation.content).substring(0, 50)}...`);
         });
       } else {
-        console.error('❌ Errore nel caricamento delle traduzioni dei moduli');
+        console.error(`❌ Errore nel caricamento delle traduzioni dei moduli: ${moduleTranslationsResponse.status} ${moduleTranslationsResponse.statusText}`);
+        // Prova come fallback l'endpoint alternativo
+        try {
+          const fallbackResponse = await fetch(`/api/module-translations?languageId=${languageId}`);
+          if (fallbackResponse.ok) {
+            moduleTranslations = await fallbackResponse.json();
+            console.log(`🎯 FALLBACK: CARICATE ${moduleTranslations.length} traduzioni di moduli per la lingua ${languageId}`);
+          }
+        } catch (fallbackError) {
+          console.error('❌ Anche il fallback è fallito:', fallbackError);
+        }
       }
     } catch (error) {
       console.error('❌ Errore nel recupero delle traduzioni dei moduli:', error);
