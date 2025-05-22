@@ -210,12 +210,17 @@ const BomViewContent = ({
       const code = item.component.code || '';
       const description = item.component.description || '';
       
+      // Debug: log del filtro in applicazione
+      console.log(`🔍 Filtraggio item: ${code} (livello ${item.level})`);
+      console.log(`🔍 Filtri attivi: codeFilter="${codeFilter}", levelFilter=${levelFilterValue}, childCodes=[${childCodes.join(', ')}]`);
+      
       // Gestione speciale per filtro codice se abbiamo trovato una gerarchia
       let codeMatch = true;  // Predefinito a true se non c'è filtro
       if (codeFilter) {
         if (childCodes.length > 0) {
           // Usa la logica gerarchica se abbiamo trovato il codice specificato
           codeMatch = childCodes.includes(code);
+          console.log(`🔍 ${code}: codeMatch (gerarchia) = ${codeMatch}`);
         } else {
           // Altrimenti usa il filtro normale
           switch (codeFilterType) {
@@ -254,10 +259,14 @@ const BomViewContent = ({
       let levelMatch = true;
       if (levelFilterValue !== undefined) {
         levelMatch = item.level === levelFilterValue;
+        console.log(`🔍 ${code}: levelMatch (${item.level} === ${levelFilterValue}) = ${levelMatch}`);
       }
       
+      const finalResult = codeMatch && descriptionMatch && levelMatch;
+      console.log(`🔍 ${code}: FINALE = ${finalResult} (code: ${codeMatch}, desc: ${descriptionMatch}, level: ${levelMatch})`);
+      
       // Tutte le condizioni devono essere soddisfatte
-      return codeMatch && descriptionMatch && levelMatch;
+      return finalResult;
     });
   }, [bomItems, codeFilter, codeFilterType, descriptionFilter, descriptionFilterType, levelFilterValue, enableFiltering, filterSettings]);
 
