@@ -183,6 +183,29 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
     }
   }
   
+  // Dichiarazione della variabile moduleTranslations
+  let moduleTranslations: any[] = [];
+  
+  // Se è specificata una lingua, carica le traduzioni dei moduli
+  if (languageId) {
+    try {
+      const moduleTranslationsResponse = await fetch(`/api/module-translations?languageId=${languageId}`);
+      if (moduleTranslationsResponse.ok) {
+        moduleTranslations = await moduleTranslationsResponse.json();
+        console.log(`🎯 CARICATE ${moduleTranslations.length} traduzioni di moduli per la lingua ${languageId}`);
+        
+        // Log di debug per verificare le traduzioni caricate
+        moduleTranslations.forEach((translation: any) => {
+          console.log(`🔍 Traduzione modulo ${translation.moduleId}: ${JSON.stringify(translation.content).substring(0, 50)}...`);
+        });
+      } else {
+        console.error('❌ Errore nel caricamento delle traduzioni dei moduli');
+      }
+    } catch (error) {
+      console.error('❌ Errore nel recupero delle traduzioni dei moduli:', error);
+    }
+  }
+
   try {
     // Organizza le sezioni in una struttura gerarchica (albero)
     const sectionsMap: {[key: number]: any} = {};
@@ -2128,7 +2151,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
     // Costruisci il contenuto principale del documento
     let mainContent = '';
     rootSections.forEach(section => {
-      mainContent += buildSectionHtml(section.id);
+      mainContent += buildSectionHtml(section.id, 1, moduleTranslations);
     });
     
     // Data corrente per il footer
