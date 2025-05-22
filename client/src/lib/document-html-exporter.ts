@@ -772,20 +772,6 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                     };
                     console.log(`Modulo BOM ${module.id}: Usando SOLO tableHeaders tradotte:`, translatedHeaders);
                   }
-                  // Se non ci sono traduzioni specifiche, usa stringhe vuote
-                  else {
-                    // Se stiamo traducendo ma non ci sono intestazioni tradotte, usa stringhe vuote
-                    // Questo garantisce che vengano usate solo traduzioni
-                    translatedHeaders = {
-                      'number': '',
-                      'level': '',
-                      'code': '',
-                      'description': '',
-                      'quantity': ''
-                    };
-                    console.log(`Modulo BOM ${module.id}: Nessuna intestazione tradotta trovata, usando stringhe vuote`);
-                  }
-                  
                   // Verifica intestazioni come array semplice (formato legacy)
                   else if (Array.isArray(module.content.translatedContent.headers) && module.content.translatedContent.headers.length >= 3) {
                     // Formato array semplice [codice, descrizione, quantità]
