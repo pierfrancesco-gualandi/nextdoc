@@ -785,6 +785,18 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                     };
                     console.log(`Modulo BOM ${module.id}: Usando SOLO intestazioni tradotte in formato array:`, translatedHeaders);
                   }
+                  // Se non ci sono traduzioni specifiche, usa stringhe vuote per forza
+                  else {
+                    translatedHeaders = {
+                      'number': '',
+                      'level': '',
+                      'code': '',
+                      'description': '',
+                      'quantity': ''
+                    };
+                    console.log(`Modulo BOM ${module.id}: Nessuna intestazione tradotta trovata, usando stringhe vuote`);
+                  }
+                  
                   // Aggiungi codice di debug per verificare cosa abbiamo ottenuto
                   console.log(`Intestazioni finali per modulo BOM ${module.id}:`, translatedHeaders);
                 }
