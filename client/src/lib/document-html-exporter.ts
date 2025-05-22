@@ -667,7 +667,6 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                       quantity: item.quantity
                     }));
                   }
-                }
                 } else {
                   // Nessuna traduzione disponibile
                   if (languageId !== 1) {
@@ -1105,27 +1104,40 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             let checklistTitle = module.content.title || '';
             let checklistCaption = module.content.caption || '';
             
-            // Utilizza SEMPRE le traduzioni quando disponibili, anche se sono vuote
-            if (languageId && module.content.translatedContent) {
-              // Titolo tradotto - priorità ASSOLUTA
-              if (module.content.translatedContent.title !== undefined) {
-                checklistTitle = module.content.translatedContent.title;
-                console.log(`Modulo checklist ${module.id}: Usando titolo tradotto`);
-              }
+            // Cerca la traduzione per questo modulo dal database
+            const checklistModuleTranslation = moduleTranslations.find((t: any) => t.moduleId === module.id);
+            
+            if (languageId && languageId !== 1 && checklistModuleTranslation) {
+              console.log(`🎯 Trovata traduzione checklist per modulo ${module.id}:`, checklistModuleTranslation.content);
               
-              // Didascalia tradotta - priorità ASSOLUTA
-              if (module.content.translatedContent.caption !== undefined) {
-                checklistCaption = module.content.translatedContent.caption;
-                console.log(`Modulo checklist ${module.id}: Usando didascalia tradotta`);
-              }
+              try {
+                const translatedData = typeof checklistModuleTranslation.content === 'string' 
+                  ? JSON.parse(checklistModuleTranslation.content) 
+                  : checklistModuleTranslation.content;
+                
+                // Titolo tradotto - priorità ASSOLUTA dalle traduzioni DB
+                if (translatedData.title !== undefined) {
+                  checklistTitle = translatedData.title;
+                  console.log(`🎯 Modulo checklist ${module.id}: Usando titolo tradotto DB: "${checklistTitle}"`);
+                } else if (languageId !== 1) {
+                  checklistTitle = ''; // Usa stringa vuota se non c'è traduzione
+                }
+                
+                // Didascalia tradotta - priorità ASSOLUTA dalle traduzioni DB
+                if (translatedData.caption !== undefined) {
+                  checklistCaption = translatedData.caption;
+                  console.log(`🎯 Modulo checklist ${module.id}: Usando didascalia tradotta DB: "${checklistCaption}"`);
+                } else if (languageId !== 1) {
+                  checklistCaption = ''; // Usa stringa vuota se non c'è traduzione
+                }
               
-              // Elementi della checklist tradotti - priorità ASSOLUTA
-              if (module.content.translatedContent.items !== undefined) {
-                if (Array.isArray(module.content.translatedContent.items)) {
-                  // Crea nuovi elementi unendo il flag 'checked' originale con il testo tradotto
-                  checklistItems = checklistItems.map((item, index) => {
-                    const translatedItem = module.content.translatedContent.items[index];
-                    // Usa la traduzione se esiste per questo elemento specifico
+                // Elementi della checklist tradotti - priorità ASSOLUTA dalle traduzioni DB
+                if (translatedData.items !== undefined) {
+                  if (Array.isArray(translatedData.items)) {
+                    // Crea nuovi elementi unendo il flag 'checked' originale con il testo tradotto
+                    checklistItems = checklistItems.map((item, index) => {
+                      const translatedItem = translatedData.items[index];
+                      // Usa la traduzione se esiste per questo elemento specifico
                     if (translatedItem && translatedItem.text !== undefined) {
                       return {
                         ...item,
