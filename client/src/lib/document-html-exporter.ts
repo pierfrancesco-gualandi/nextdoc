@@ -611,7 +611,26 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               // Convertiamo gli elementi nel formato atteso E applichiamo le traduzioni
               let bomItems = [];
               
-              if (specificItems && specificItems.length > 0) {
+              // 🎯 CORREZIONE: Usa gli stessi filtri del documento di base invece di specificItems hardcoded
+              let itemsToExport = [];
+              
+              // Prima controlla se il modulo ha filteredComponentCodes (stessi del documento di base)
+              if (module.content.filteredComponentCodes && module.content.filteredComponentCodes.length > 0) {
+                console.log(`🎯 Modulo BOM ${module.id}: Usando filteredComponentCodes dal documento di base:`, module.content.filteredComponentCodes);
+                
+                // Filtra gli elementi per includere solo quelli nei filteredComponentCodes
+                itemsToExport = allBomItems.filter((item: any) => 
+                  item.component && module.content.filteredComponentCodes.includes(item.component.code)
+                );
+                
+                console.log(`🎯 Export HTML: Trovati ${itemsToExport.length} elementi che corrispondono ai filtri del documento di base`);
+              } else if (specificItems && specificItems.length > 0) {
+                // Fallback alla logica precedente solo se non ci sono filtri salvati
+                console.log(`⚠️ Modulo BOM ${module.id}: Nessun filtro salvato, usando specificItems di fallback`);
+                itemsToExport = specificItems;
+              }
+              
+              if (itemsToExport && itemsToExport.length > 0) {
                 // Verifica se abbiamo traduzioni disponibili
                 const hasTranslations = languageId && 
                                        module.content.translatedContent && 
