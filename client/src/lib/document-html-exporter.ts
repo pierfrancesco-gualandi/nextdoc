@@ -276,6 +276,9 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
       sectionModules.sort((a, b) => a.order - b.order).forEach(module => {
         let content = '';
         
+        // Recupera la traduzione specifica per questo modulo
+        const moduleTranslation = moduleTranslations.find(t => t.moduleId === module.id && t.languageId === languageId);
+        
         switch(module.type) {
           case 'text':
             // Prepara il contenuto testuale
@@ -291,7 +294,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                 
                 // Usa ESCLUSIVAMENTE il testo tradotto
                 textContent = translatedData.text || '';
-                console.log(`Modulo testo ${module.id}: Usando ESCLUSIVAMENTE testo tradotto dal campo TRADUZIONE`);
+                console.log(`Modulo testo ${module.id}: Usando ESCLUSIVAMENTE testo tradotto dal campo TRADUZIONE: "${textContent}"`);
               } catch (e) {
                 console.error(`Errore nel parsing della traduzione per modulo ${module.id}:`, e);
                 textContent = '';
@@ -299,10 +302,10 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             } else if (languageId === 1) {
               // Solo per italiano, usa il testo originale
               try {
-                const content = typeof module.content === 'string' 
+                const moduleContent = typeof module.content === 'string' 
                   ? JSON.parse(module.content)
                   : module.content;
-                textContent = content.text || '';
+                textContent = moduleContent.text || '';
               } catch (e) {
                 console.error(`Errore nel parsing del contenuto originale per modulo ${module.id}:`, e);
                 textContent = '';
