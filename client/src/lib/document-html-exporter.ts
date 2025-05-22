@@ -1264,9 +1264,8 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               <figure class="file-container">
                 <div class="file-info">
                   ${fileTitle ? `<p><strong>${fileTitle}</strong></p>` : ''}
-                  <p><strong>${fileLabel}</strong> ${fileFilename}</p>
                   <a href="${fileSrc}" target="_blank" class="download-button">
-                    <span class="download-icon">⬇</span> ${downloadText}
+                    <span class="download-icon">⬇</span>
                   </a>
                 </div>
                 ${fileCaption ? `<figcaption class="module-caption text-center">${fileCaption}</figcaption>` : ''}
