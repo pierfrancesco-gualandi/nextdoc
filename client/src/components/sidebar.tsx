@@ -158,18 +158,7 @@ export default function Sidebar({ activePath }: SidebarProps) {
         </ul>
       </nav>
       
-      {activePath.startsWith('/documents/') && activePath !== '/documents/new' && (
-        <div className="px-4 py-2 border-t border-neutral-light">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-medium text-sm text-neutral-dark">STRUTTURA DOCUMENTO</h3>
-            <button className="text-primary hover:text-primary-dark">
-              <span className="material-icons text-sm">add</span>
-            </button>
-          </div>
-          
-          <SimpleSectionTree documentId={activePath.split('/')[2]} />
-        </div>
-      )}
+
     </aside>
   );
 }
