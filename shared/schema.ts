@@ -489,6 +489,7 @@ export const documentTranslations = pgTable("document_translations", {
   documentId: integer("document_id").notNull(),
   languageId: integer("language_id").notNull(),
   title: text("title").notNull(),
+  version: text("version"),
   description: text("description"),
   status: text("status").notNull().default("not_translated"), // not_translated, ai_suggested, in_review, approved
   translatedById: integer("translated_by_id"),
@@ -500,6 +501,7 @@ export const insertDocumentTranslationSchema = createInsertSchema(documentTransl
   documentId: true,
   languageId: true,
   title: true,
+  version: true,
   description: true,
   status: true,
   translatedById: true,
