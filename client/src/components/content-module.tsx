@@ -798,7 +798,7 @@ export default function ContentModule({
           // Traduzioni per il BOM (se disponibili)
           let bomTranslation;
           if (selectedLanguage) {
-            bomTranslation = parseTranslation(module, selectedLanguage);
+            bomTranslation = parseTranslation(module, selectedLanguage, moduleTranslations);
             console.log("Traduzioni per il modulo BOM:", bomTranslation);
           }
           
@@ -898,7 +898,7 @@ export default function ContentModule({
               useFilters={isPreview ? false : content.useFilters}  // In anteprima, non mostrare i controlli di filtro
               filterSettings={content.filterSettings}
               translation={isPreview ? (() => {
-                const translationData = parseTranslation(module, selectedLanguage);
+                const translationData = parseTranslation(module, selectedLanguage, moduleTranslations);
                 console.log("Dati di traduzione completi passati a BomViewContent:", translationData);
                 return translationData;
               })() : undefined}
