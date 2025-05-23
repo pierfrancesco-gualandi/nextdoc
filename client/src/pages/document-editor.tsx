@@ -983,6 +983,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                                   level={0}
                                   userRole={currentUserRole}
                                   userId={currentUserId}
+                                  selectedLanguage={selectedLanguage} // Passa la lingua selezionata
                                 />
                               )
                             ))}
