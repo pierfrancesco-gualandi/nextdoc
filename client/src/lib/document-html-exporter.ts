@@ -614,33 +614,37 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               // 🎯 CORREZIONE: Usa gli stessi filtri del documento di base invece di specificItems hardcoded
               let itemsToExport = [];
               
-              // DEBUG: Verifica cosa contiene il modulo
-              console.log(`🔍 DEBUG Modulo BOM ${module.id} content:`, module.content);
-              console.log(`🔍 DEBUG filterSettings from module:`, module.content.filterSettings);
-              console.log(`🔍 DEBUG filteredComponentCodes from module:`, module.content.filteredComponentCodes);
+              // 🎯 SOLUZIONE DEFINITIVA: Usa i dati già renderizzati nel documento di base
+              // Invece di ricreare la logica di filtraggio, prendiamo i dati dalle tabelle già esistenti
               
-              // Prima controlla se il modulo ha filteredComponentCodes (stessi del documento di base)
-              if (module.content.filteredComponentCodes && module.content.filteredComponentCodes.length > 0) {
-                console.log(`🎯 Modulo BOM ${module.id}: Usando filteredComponentCodes dal documento di base:`, module.content.filteredComponentCodes);
+              console.log(`🎯 Modulo BOM ${module.id}: Cercando tabella BOM già renderizzata nel documento di base`);
+              
+              // Trova l'elemento BOM già renderizzato nel DOM del documento di base
+              const existingBomTable = document.querySelector(`[data-module-id="${module.id}"] table tbody`);
+              
+              if (existingBomTable) {
+                console.log(`✅ Trovata tabella BOM esistente per modulo ${module.id}`);
                 
-                // Crea gli elementi BOM usando SOLO i codici filtrati del documento di base
-                itemsToExport = module.content.filteredComponentCodes.map((code: string, index: number) => {
-                  // Trova il componente nella BOM completa o usa dati di fallback
-                  const foundItem = bomData?.find((item: any) => item.component?.code === code);
-                  
-                  return {
-                    code: code,
-                    description: foundItem?.component?.description || '',
-                    level: foundItem?.level || 0,
-                    quantity: foundItem?.quantity || 1
-                  };
-                });
+                // Estrai i dati dalla tabella già renderizzata
+                const rows = existingBomTable.querySelectorAll('tr');
+                itemsToExport = Array.from(rows).map((row: any) => {
+                  const cells = row.querySelectorAll('td');
+                  if (cells.length >= 3) {
+                    return {
+                      code: cells[0]?.textContent?.trim() || '',
+                      description: cells[1]?.textContent?.trim() || '',
+                      quantity: cells[2]?.textContent?.trim() || '1',
+                      level: 0 // Non importante per l'export
+                    };
+                  }
+                  return null;
+                }).filter(item => item !== null);
                 
-                console.log(`🎯 Export HTML: Creati ${itemsToExport.length} elementi usando i filtri del documento di base`);
-              } else if (specificItems && specificItems.length > 0) {
-                // Fallback alla logica precedente solo se non ci sono filtri salvati
-                console.log(`⚠️ Modulo BOM ${module.id}: Nessun filtro salvato, usando specificItems di fallback`);
-                itemsToExport = specificItems;
+                console.log(`🎯 Export HTML: Estratti ${itemsToExport.length} elementi dalla tabella esistente del documento di base`);
+              } else {
+                // Fallback: usa specificItems solo se non troviamo la tabella renderizzata
+                console.log(`⚠️ Modulo BOM ${module.id}: Tabella non trovata nel DOM, usando specificItems di fallback`);
+                itemsToExport = specificItems || [];
               }
               
               if (itemsToExport && itemsToExport.length > 0) {
