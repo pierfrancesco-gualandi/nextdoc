@@ -15,6 +15,7 @@ interface DocumentSectionPreviewProps {
   level: number;
   userRole?: string;
   userId?: number;
+  selectedLanguage?: any; // Lingua selezionata per le traduzioni
 }
 
 export default function DocumentSectionPreview({ 
@@ -23,7 +24,8 @@ export default function DocumentSectionPreview({
   documentId,
   level,
   userRole,
-  userId
+  userId,
+  selectedLanguage
 }: DocumentSectionPreviewProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -32,6 +34,13 @@ export default function DocumentSectionPreview({
   // Ottiene i moduli per questa sezione
   const { data: modules } = useQuery({
     queryKey: [`/api/sections/${section.id}/modules`],
+    staleTime: 30000,
+  });
+
+  // Ottiene le traduzioni per questa sezione se è selezionata una lingua diversa dall'italiano
+  const { data: sectionTranslation } = useQuery({
+    queryKey: [`/api/section-translations`, { sectionId: section.id, languageId: selectedLanguage?.id }],
+    enabled: !!selectedLanguage && selectedLanguage.code !== 'it',
     staleTime: 30000,
   });
   
@@ -102,10 +111,19 @@ export default function DocumentSectionPreview({
     }
   };
   
+  // Determina il titolo e la descrizione da utilizzare (tradotti se disponibili)
+  const displayTitle = (selectedLanguage && selectedLanguage.code !== 'it' && sectionTranslation && Array.isArray(sectionTranslation) && sectionTranslation.length > 0) 
+    ? (sectionTranslation[0].title || section.title) 
+    : section.title;
+    
+  const displayDescription = (selectedLanguage && selectedLanguage.code !== 'it' && sectionTranslation && Array.isArray(sectionTranslation) && sectionTranslation.length > 0) 
+    ? (sectionTranslation[0].description || section.description) 
+    : section.description;
+
   return (
     <div className={`mb-8 ${indentClass}`}>
-      <h2 className={getHeadingClass()}>{section.title}</h2>
-      {section.description && <p className="mb-4">{section.description}</p>}
+      <h2 className={getHeadingClass()}>{displayTitle}</h2>
+      {displayDescription && <p className="mb-4">{displayDescription}</p>}
       
       {/* Mostra i moduli della sezione */}
       {modules && Array.isArray(modules) && modules.length > 0 && (
@@ -118,6 +136,7 @@ export default function DocumentSectionPreview({
                 onUpdate={() => {}} // Funzione vuota perché in anteprima non serve
                 documentId={documentId}
                 isPreview={true} // Flag per indicare che è in modalità anteprima
+                selectedLanguage={selectedLanguage} // Passa la lingua selezionata
               />
               
               {/* Pulsante "Aggiungi nota" dopo ogni modulo in anteprima */}
@@ -195,6 +214,7 @@ export default function DocumentSectionPreview({
               level={level + 1}
               userRole={userRole}
               userId={userId}
+              selectedLanguage={selectedLanguage} // Passa la lingua selezionata alle sottosezioni
             />
           ))}
         </div>
