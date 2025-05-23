@@ -273,6 +273,9 @@ const BomViewContent = ({
       // Estrai i codici dei componenti visualizzati per aggiungere ai filtri
       const visibleComponentCodes = filteredItems.map(item => item?.component?.code).filter(Boolean);
       
+      // Debug: Log dei componenti filtrati
+      console.log(`🔍 BomViewContent - Filtro: "${codeFilter}", Livello: ${levelFilterValue}, Componenti trovati:`, visibleComponentCodes);
+      
       const newFilterSettings = {
         codeFilter,
         codeFilterType,
