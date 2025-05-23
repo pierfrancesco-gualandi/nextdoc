@@ -2203,22 +2203,27 @@ img, video, iframe {
     }
     
     .main-content {
-      flex: 1;
       padding: 30px;
-      margin-left: 0; /* Non usiamo margin-left qui */
-      max-width: calc(100% - 30px); /* Controllo larghezza massima */
-      width: 100%;
       box-sizing: border-box;
-      position: absolute;
-      left: 280px; /* Posizionato accanto alla sidebar */
-      right: 0;
-      transition: left 0.3s ease, width 0.3s ease;
+      /* LAYOUT CENTRATO: Il contenuto rimane sempre centrato rispetto alla finestra */
+      margin-left: 280px; /* Spazio fisso per la sidebar */
+      margin-right: auto;
+      width: calc(100% - 280px); /* Larghezza disponibile dopo la sidebar */
+      display: flex;
+      justify-content: center; /* Centra il contenuto orizzontalmente */
+      transition: margin-left 0.3s ease;
     }
     
     .main-content.full-width {
-      left: 0; /* Quando la sidebar è nascosta */
+      margin-left: 0; /* Quando la sidebar è nascosta, il contenuto rimane centrato */
       width: 100%;
-      max-width: 100%;
+    }
+    
+    /* Contenitore interno centrato per il contenuto del documento */
+    .document-content-wrapper {
+      max-width: 900px; /* Larghezza massima del contenuto */
+      width: 100%;
+      margin: 0 auto; /* Centra il contenuto */
     }
     
     /* Stili per il tree view delle sezioni - ESATTAMENTE come nel documento originale */
@@ -2427,8 +2432,10 @@ img, video, iframe {
     </div>
     
     <div class="main-content" id="main-content">
-      ${content}
-      ${cssDownloadLink}
+      <div class="document-content-wrapper">
+        ${content}
+        ${cssDownloadLink}
+      </div>
     </div>
   </div>
   
