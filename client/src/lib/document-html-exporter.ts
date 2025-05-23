@@ -1651,6 +1651,32 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               }
             }
             
+            // Genera l'URL corretto del modello 3D utilizzando la stessa struttura del documento base
+            let modelUrl = '#';
+            let downloadUrl = '#';
+            
+            if (module.content.src) {
+              // Estrai il nome del file dal path originale
+              const originalSrc = module.content.src;
+              const filename = originalSrc.split('/').pop() || '';
+              
+              // Rimuovi l'ID univoco dal nome del file (formato: 1234567890-hash.nome_file.estensione)
+              const cleanFilename = filename.replace(/^\d+-[a-f0-9]+\.(.+)$/, '$1');
+              const parts = cleanFilename.split('.');
+              const fileExtension = parts.pop() || 'htm';
+              const baseFileName = parts.join('.');
+              
+              // Il nome della cartella deriva dal nome del file o da folderPath se specificato
+              const folderName = module.content.folderPath || baseFileName;
+              
+              // Costruisci l'URL usando la stessa struttura del documento base
+              const baseUrl = window.location.origin || 'https://6e1740a1-e98f-4c3d-a38b-847a758a93ad-00-2i3y4aa7x13k5.janeway.replit.dev';
+              modelUrl = `${baseUrl}/uploads/${folderName}/${folderName}.${fileExtension}`;
+              downloadUrl = `${baseUrl}/uploads/${folderName}.zip`;
+              
+              console.log(`Modulo 3D ${module.id}: URL generato = ${modelUrl}`);
+            }
+            
             // Nel caso dell'esportazione HTML, mostriamo un'interfaccia completa per interagire con il modello 3D
             content += `
               <figure class="threeDModel-container">
@@ -1659,10 +1685,10 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                   <div class="threeDModel-wrapper">
                     <p class="threeDModel-instructions">${modelInstructions}</p>
                     <div class="threeDModel-actions">
-                      <a href="#" class="threeDModel-button view-button">
+                      <a href="${modelUrl}" target="_blank" rel="noopener noreferrer" class="threeDModel-button view-button">
                         <span class="button-icon">🔄</span> ${modelViewLabel}
                       </a>
-                      <a href="#" class="threeDModel-button download-button">
+                      <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" class="threeDModel-button download-button">
                         <span class="button-icon">⬇</span> ${modelDownloadLabel}
                       </a>
                     </div>
