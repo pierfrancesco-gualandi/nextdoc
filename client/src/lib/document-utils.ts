@@ -2203,23 +2203,22 @@ img, video, iframe {
     }
     
     .main-content {
+      flex: 1;
       padding: 30px;
+      margin-left: 0; /* Non usiamo margin-left qui */
+      max-width: calc(100% - 30px); /* Controllo larghezza massima */
+      width: 100%;
       box-sizing: border-box;
-      /* LAYOUT CENTRATO: Il contenuto mantiene la larghezza normale ma è centrato */
-      position: fixed; /* Posizione fissa per rimanere sempre centrato */
-      left: 50%; /* Inizia dal centro della finestra */
-      transform: translateX(-50%); /* Centra perfettamente */
-      top: 60px; /* Sotto la barra superiore */
-      width: calc(100vw - 280px - 60px); /* Larghezza totale meno sidebar e padding */
-      height: calc(100vh - 60px - 60px); /* Altezza disponibile */
-      overflow-y: auto; /* Scroll se necessario */
-      transition: width 0.3s ease, transform 0.3s ease;
+      position: absolute;
+      left: 280px; /* Posizionato accanto alla sidebar */
+      right: 0;
+      transition: left 0.3s ease, width 0.3s ease;
     }
     
     .main-content.full-width {
-      width: calc(100vw - 60px); /* Quando la sidebar è nascosta, usa tutta la larghezza */
-      left: 50%;
-      transform: translateX(-50%); /* Rimane sempre centrato */
+      left: 0; /* Quando la sidebar è nascosta */
+      width: 100%;
+      max-width: 100%;
     }
     
     /* Stili per il tree view delle sezioni - ESATTAMENTE come nel documento originale */
