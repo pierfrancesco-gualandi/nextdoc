@@ -2205,25 +2205,21 @@ img, video, iframe {
     .main-content {
       padding: 30px;
       box-sizing: border-box;
-      /* LAYOUT CENTRATO: Il contenuto rimane sempre centrato rispetto alla finestra */
-      margin-left: 280px; /* Spazio fisso per la sidebar */
-      margin-right: auto;
-      width: calc(100% - 280px); /* Larghezza disponibile dopo la sidebar */
-      display: flex;
-      justify-content: center; /* Centra il contenuto orizzontalmente */
-      transition: margin-left 0.3s ease;
+      /* LAYOUT CENTRATO: Il contenuto mantiene la larghezza normale ma è centrato */
+      position: fixed; /* Posizione fissa per rimanere sempre centrato */
+      left: 50%; /* Inizia dal centro della finestra */
+      transform: translateX(-50%); /* Centra perfettamente */
+      top: 60px; /* Sotto la barra superiore */
+      width: calc(100vw - 280px - 60px); /* Larghezza totale meno sidebar e padding */
+      height: calc(100vh - 60px - 60px); /* Altezza disponibile */
+      overflow-y: auto; /* Scroll se necessario */
+      transition: width 0.3s ease, transform 0.3s ease;
     }
     
     .main-content.full-width {
-      margin-left: 0; /* Quando la sidebar è nascosta, il contenuto rimane centrato */
-      width: 100%;
-    }
-    
-    /* Contenitore interno centrato per il contenuto del documento */
-    .document-content-wrapper {
-      max-width: 900px; /* Larghezza massima del contenuto */
-      width: 100%;
-      margin: 0 auto; /* Centra il contenuto */
+      width: calc(100vw - 60px); /* Quando la sidebar è nascosta, usa tutta la larghezza */
+      left: 50%;
+      transform: translateX(-50%); /* Rimane sempre centrato */
     }
     
     /* Stili per il tree view delle sezioni - ESATTAMENTE come nel documento originale */
@@ -2432,10 +2428,8 @@ img, video, iframe {
     </div>
     
     <div class="main-content" id="main-content">
-      <div class="document-content-wrapper">
-        ${content}
-        ${cssDownloadLink}
-      </div>
+      ${content}
+      ${cssDownloadLink}
     </div>
   </div>
   
