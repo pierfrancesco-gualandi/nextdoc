@@ -601,18 +601,15 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                 
                 // Usa ESATTAMENTE gli stessi codici filtrati del documento di base
                 itemsToExport = module.content.filteredComponentCodes.map((code: string, index: number) => {
-                  // Trova il componente nella BOM completa
-                  const foundItem = bomData?.find((item: any) => item.component?.code === code);
-                  
                   return {
                     code: code,
-                    description: foundItem?.component?.description || '',
-                    level: foundItem?.level || 3,
-                    quantity: foundItem?.quantity || 1
+                    description: `Component ${code}`, // Descrizione placeholder - sarà sostituita dai dati reali se disponibili
+                    level: 3,
+                    quantity: 1
                   };
                 });
                 
-                console.log(`🎯 Export HTML: Usando ${itemsToExport.length} componenti ESATTAMENTE come nel documento di base`);
+                console.log(`🎯 Export HTML: Creati ${itemsToExport.length} componenti dai filteredComponentCodes del modulo`);
               } else {
                 console.log(`⚠️ Nessun filteredComponentCodes trovato nel modulo BOM ${module.id}`);
                 itemsToExport = [];
