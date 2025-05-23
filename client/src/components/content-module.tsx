@@ -79,9 +79,25 @@ interface ContentModuleProps {
 }
 
 // Funzione per estrarre la traduzione dai dati del modulo
-const parseTranslation = (module: any, selectedLanguage?: string): any => {
+const parseTranslation = (module: any, selectedLanguage?: string, moduleTranslations?: any): any => {
   try {
     console.log("Analisi translation per modulo:", module.id, "tipo:", module.type, "lingua:", selectedLanguage);
+    console.log("Traduzioni caricate dal server:", moduleTranslations);
+    
+    // Se abbiamo traduzioni caricate dal server, usale
+    if (moduleTranslations && Array.isArray(moduleTranslations) && moduleTranslations.length > 0) {
+      const translation = moduleTranslations[0];
+      if (translation && translation.content) {
+        let translationContent;
+        if (typeof translation.content === 'string') {
+          translationContent = JSON.parse(translation.content);
+        } else {
+          translationContent = translation.content;
+        }
+        console.log("Utilizzando traduzione dal server:", translationContent);
+        return translationContent;
+      }
+    }
     
     // SOLUZIONE TEMPORANEA: Se è un modulo BOM e lingua 2 (inglese), ritorna una traduzione hardcoded
     if (module.type === "bom" && selectedLanguage === "2") {
@@ -225,6 +241,13 @@ export default function ContentModule({
     setIsEditingState(value);
   };
   
+  // Carica le traduzioni del modulo se è selezionata una lingua diversa dall'italiano
+  const { data: moduleTranslations } = useQuery({
+    queryKey: [`/api/module-translations`, { moduleId: module.id, languageId: selectedLanguage }],
+    enabled: !!selectedLanguage && selectedLanguage !== 'it' && selectedLanguage !== '0' && isPreview,
+    staleTime: 30000,
+  });
+
   const updateModuleMutation = useMutation({
     mutationFn: async (data: any) => {
       const res = await apiRequest('PUT', `/api/modules/${module.id}`, data);
