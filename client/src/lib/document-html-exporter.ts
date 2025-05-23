@@ -1655,9 +1655,28 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
             let modelUrl = '#';
             let downloadUrl = '#';
             
-            if (module.content.src) {
+            // Cerca il percorso del modello 3D nei contenuti tradotti o originali
+            let modelSrc = module.content.src;
+            let folderPath = module.content.folderPath;
+            
+            // Se stiamo esportando una traduzione, controlla anche nei contenuti tradotti
+            if (languageId && module.content.translatedContent) {
+              if (module.content.translatedContent.src) {
+                modelSrc = module.content.translatedContent.src;
+              }
+              if (module.content.translatedContent.folderPath) {
+                folderPath = module.content.translatedContent.folderPath;
+              }
+            }
+            
+            // Se non abbiamo src ma abbiamo folderPath, costruisci il percorso
+            if (!modelSrc && folderPath) {
+              modelSrc = `/uploads/${folderPath}/${folderPath}.htm`;
+            }
+            
+            if (modelSrc) {
               // Estrai il nome del file dal path originale
-              const originalSrc = module.content.src;
+              const originalSrc = modelSrc;
               const filename = originalSrc.split('/').pop() || '';
               
               // Rimuovi l'ID univoco dal nome del file (formato: 1234567890-hash.nome_file.estensione)
