@@ -592,45 +592,30 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               // 🎯 CORREZIONE: Usa gli stessi filtri del documento di base invece di specificItems hardcoded
               let itemsToExport = [];
               
-              // 🎯 SOLUZIONE DEFINITIVA: Usa esattamente i filteredComponentCodes del documento di base
+              // 🎯 SOLUZIONE UNIVERSALE: Usa SEMPRE i filteredComponentCodes salvati nel modulo BOM
               console.log(`🎯 Modulo BOM ${module.id} nella sezione ${sectionTitle} (ID: ${sectionId})`);
               
-              // Definisci esattamente i componenti per ogni sezione (come nel documento di base)
-              let filteredCodes = [];
-              
-              if (sectionId === 16 || (sectionTitle && sectionTitle.toLowerCase().includes('3d'))) {
-                // Sezione 2.1 disegno 3D: SOLO 1 componente livello 2
-                filteredCodes = ["A5B03532"];
-                console.log(`✅ Sezione 2.1 disegno 3D: usando 1 componente livello 2`);
-              } else if (sectionId === 39 || (sectionTitle && sectionTitle.toLowerCase().includes('sicurezza'))) {
-                // Sezione 3.1 Sicurezza: ESATTAMENTE 9 componenti livello 3 (dai log del documento di base)
-                filteredCodes = ["A8B25040509","A8C614-31","A8C624-54","A8C624-55","A8C815-45","A8C815-48","A8C815-61","A8C910-7","A8C942-67"];
-                console.log(`✅ Sezione 3.1 Sicurezza: usando 9 componenti livello 3`);
-              } else if (sectionId === 20 || (sectionTitle && sectionTitle.toLowerCase().includes('dichiarazione'))) {
-                // Sezione 1.1 Dichiarazione di conformità: Componenti filtrati per A5B13899 Livello 3
-                filteredCodes = ["A5B13899"]; // Aggiungi qui altri componenti se necessario basandoti sui dati del documento
-                console.log(`✅ Sezione 1.1 Dichiarazione di conformità: usando componenti filtrati per A5B13899`);
-              } else {
-                // Per altre sezioni, lascia vuoto
-                console.log(`⚠️ Sezione ${sectionTitle}: nessun componente definito`);
-                itemsToExport = [];
-              }
-              
-              if (filteredCodes.length > 0) {
-                // Crea gli elementi usando ESATTAMENTE i codici del documento di base
-                itemsToExport = filteredCodes.map((code, index) => {
+              // Controlla se il modulo ha filteredComponentCodes (stessi del documento di base)
+              if (module.content && module.content.filteredComponentCodes && Array.isArray(module.content.filteredComponentCodes) && module.content.filteredComponentCodes.length > 0) {
+                console.log(`✅ TROVATI filteredComponentCodes nel modulo BOM ${module.id}:`, module.content.filteredComponentCodes);
+                
+                // Usa ESATTAMENTE gli stessi codici filtrati del documento di base
+                itemsToExport = module.content.filteredComponentCodes.map((code: string, index: number) => {
                   // Trova il componente nella BOM completa
                   const foundItem = bomData?.find((item: any) => item.component?.code === code);
                   
                   return {
                     code: code,
                     description: foundItem?.component?.description || '',
-                    level: foundItem?.level || (sectionId === 16 ? 2 : 3),
+                    level: foundItem?.level || 3,
                     quantity: foundItem?.quantity || 1
                   };
                 });
                 
-                console.log(`🎯 Export HTML: Creati ${itemsToExport.length} elementi identici al documento di base`);
+                console.log(`🎯 Export HTML: Usando ${itemsToExport.length} componenti ESATTAMENTE come nel documento di base`);
+              } else {
+                console.log(`⚠️ Nessun filteredComponentCodes trovato nel modulo BOM ${module.id}`);
+                itemsToExport = [];
               }
               
               if (itemsToExport && itemsToExport.length > 0) {
