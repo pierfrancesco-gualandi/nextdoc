@@ -606,6 +606,10 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                 // Sezione 3.1 Sicurezza: ESATTAMENTE 9 componenti livello 3 (dai log del documento di base)
                 filteredCodes = ["A8B25040509","A8C614-31","A8C624-54","A8C624-55","A8C815-45","A8C815-48","A8C815-61","A8C910-7","A8C942-67"];
                 console.log(`✅ Sezione 3.1 Sicurezza: usando 9 componenti livello 3`);
+              } else if (sectionId === 20 || (sectionTitle && sectionTitle.toLowerCase().includes('dichiarazione'))) {
+                // Sezione 1.1 Dichiarazione di conformità: Componenti filtrati per A5B13899 Livello 3
+                filteredCodes = ["A5B13899"]; // Aggiungi qui altri componenti se necessario basandoti sui dati del documento
+                console.log(`✅ Sezione 1.1 Dichiarazione di conformità: usando componenti filtrati per A5B13899`);
               } else {
                 // Per altre sezioni, lascia vuoto
                 console.log(`⚠️ Sezione ${sectionTitle}: nessun componente definito`);
