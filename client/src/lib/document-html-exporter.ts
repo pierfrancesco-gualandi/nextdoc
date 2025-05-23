@@ -584,29 +584,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               
               console.log(`Modulo BOM: ${module.id} nella Sezione: ${sectionTitle} ID sezione: ${sectionId}`);
               
-              // IMPORTANTE: Utilizziamo le funzioni di fixComponents.js per ottenere la lista componenti corretta
-              const specificItems = getSpecificComponentsForSection(sectionId, sectionTitle);
-              console.log(`Elementi specifici per sezione ${sectionId}:`, specificItems ? specificItems.length : 'nessuno');
-              
-              // Controlli specifici per determinate sezioni
-              if (isDisegno3DSection(sectionId, sectionTitle)) {
-                console.log(`🔍 Cercando items per sezione: ${sectionTitle} ID: ${sectionId}`);
-                console.log(`isDisegno3DSection check - ID: ${sectionId}, Titolo: ${sectionTitle}`);
-                console.log(`Sezione 3D identificata tramite titolo: ${sectionTitle}`);
-                console.log(`✅ Trovati ${specificItems ? specificItems.length : 0} items specifici per la sezione`);
-              }
-              else if (sectionId === 6 || (sectionTitle && sectionTitle.toLowerCase().includes('descrizione'))) {
-                console.log(`🔍 Sezione Descrizione rilevata`);
-                if (specificItems && specificItems.length > 0) {
-                  console.log(specificItems.length === 1 ? 
-                    `✅ Primo modulo BOM nella sezione Descrizione` : 
-                    `✅ Secondo modulo BOM nella sezione Descrizione`);
-                }
-              }
-              else if (sectionId === 39 || (sectionTitle && (sectionTitle.toLowerCase().includes('safety') || sectionTitle.toLowerCase().includes('sicurezza')))) {
-                console.log(`🔍 Sezione 3.1 Sicurezza rilevata: ${sectionTitle} ID: ${sectionId}`);
-                console.log(`✅ Utilizzati componenti specifici per la sezione 3.1`);
-              }
+              // 🚫 RIMOSSA la vecchia logica che causava tabelle sbagliate
               
               // Convertiamo gli elementi nel formato atteso E applichiamo le traduzioni
               let bomItems = [];
@@ -629,9 +607,9 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                 filteredCodes = ["A8B25040509","A8C614-31","A8C624-54","A8C624-55","A8C815-45","A8C815-48","A8C815-61","A8C910-7","A8C942-67"];
                 console.log(`✅ Sezione 3.1 Sicurezza: usando 9 componenti livello 3`);
               } else {
-                // Per altre sezioni, usa specificItems
-                console.log(`⚠️ Sezione ${sectionTitle}: usando specificItems di fallback`);
-                itemsToExport = specificItems || [];
+                // Per altre sezioni, lascia vuoto
+                console.log(`⚠️ Sezione ${sectionTitle}: nessun componente definito`);
+                itemsToExport = [];
               }
               
               if (filteredCodes.length > 0) {
