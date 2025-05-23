@@ -1132,7 +1132,9 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
                   checklistCaption = translatedData.caption;
                   console.log(`🎯 Modulo checklist ${module.id}: Usando didascalia tradotta DB: "${checklistCaption}"`);
                 } else if (languageId !== 1) {
-                  checklistCaption = ''; // Usa stringa vuota se non c'è traduzione
+                  // Se non c'è traduzione della didascalia, usa il testo originale come fallback
+                  checklistCaption = module.content.caption || '';
+                  console.log(`🎯 Modulo checklist ${module.id}: Usando didascalia originale come fallback: "${checklistCaption}"`);
                 }
               
                 // Elementi della checklist tradotti - priorità ASSOLUTA dalle traduzioni DB
