@@ -2542,6 +2542,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rotta specifica per il download dei file ZIP dei modelli 3D
+  app.get("/downloads/:modelName\\.:extension", (req: Request, res: Response) => {
+    if (req.params.extension !== 'zip') {
+      return res.status(404).json({ message: "Solo file ZIP supportati" });
+    }
+    const modelName = req.params.modelName;
+    const uploadsDir = path.join(process.cwd(), "uploads");
+    
+    // Cerca il file ZIP corrispondente
+    let zipFilePath = path.join(uploadsDir, `${modelName}.zip`);
+    
+    // Se non esiste, cerca tra i file con timestamp
+    if (!fs.existsSync(zipFilePath)) {
+      const files = fs.readdirSync(uploadsDir);
+      const matchingZip = files.find(file => 
+        file.endsWith('.zip') && file.includes(modelName)
+      );
+      
+      if (matchingZip) {
+        zipFilePath = path.join(uploadsDir, matchingZip);
+      }
+    }
+    
+    // Verifica se il file esiste
+    if (!fs.existsSync(zipFilePath)) {
+      return res.status(404).json({ message: "File ZIP non trovato" });
+    }
+    
+    // Imposta headers per il download
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${modelName}.zip"`);
+    
+    // Invia il file
+    res.sendFile(zipFilePath, (err) => {
+      if (err) {
+        console.error('Errore nel download del file ZIP:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ message: "Errore nel download del file" });
+        }
+      }
+    });
+  });
+
   app.use("/uploads", (req: Request, res: Response, next: NextFunction) => {
     // Path richiesto originale
     const requestedPath = req.path;

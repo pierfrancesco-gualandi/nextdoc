@@ -1693,7 +1693,7 @@ export async function exportDocumentHtml(document: any, sections: any[], modules
               // Costruisci l'URL usando la stessa struttura del documento base
               const baseUrl = window.location.origin || 'https://6e1740a1-e98f-4c3d-a38b-847a758a93ad-00-2i3y4aa7x13k5.janeway.replit.dev';
               modelUrl = `${baseUrl}/uploads/${folderName}/${folderName}.${fileExtension}`;
-              downloadUrl = `${baseUrl}/uploads/${folderName}.zip`;
+              downloadUrl = `${baseUrl}/downloads/${folderName}.zip`;
               
               console.log(`Modulo 3D ${module.id}: URL generato = ${modelUrl}`);
             }

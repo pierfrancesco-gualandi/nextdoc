@@ -435,7 +435,7 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
         
         <div style={{ marginTop: '15px', fontSize: '13px', color: '#777', textAlign: 'center' }}>
           <a 
-            href={`/uploads/${folderName}.zip`}
+            href={`/downloads/${folderName}.zip`}
             style={{
               display: 'inline-block',
               marginTop: '10px',
