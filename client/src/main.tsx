@@ -15,6 +15,6 @@ robotoFontLink.rel = "stylesheet";
 document.head.appendChild(robotoFontLink);
 
 // Set document title
-document.title = "VKS Studio - Visual Knowledge System";
+document.title = "N@xtDoc";
 
 createRoot(document.getElementById("root")!).render(<App />);
