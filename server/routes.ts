@@ -251,6 +251,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Autenticazione riuscita - salva l'ID utente nella sessione
       (req.session as any).selectedUserId = user.id;
+      console.log(`[Auth Debug] User authenticated: ${user.username}, ID: ${user.id}, Session ID: ${(req.session as any).id}`);
+      console.log(`[Auth Debug] Session after save:`, (req.session as any));
       
       // Restituisci i dati utente senza password
       const { password: _, ...userWithoutPassword } = user;
@@ -355,6 +357,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(documents);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch assigned documents for user" });
+    }
+  });
+
+  // Endpoint di test per verificare il filtraggio documenti per utente specifico
+  app.get("/api/test/user-documents/:userId", async (req: Request, res: Response) => {
+    try {
+      const userId = Number(req.params.userId);
+      
+      // Test diretto del filtro documenti
+      const allDocuments = await storage.getDocuments();
+      const filteredDocuments = await storage.getDocuments(userId);
+      const assignedDocuments = await storage.getAssignedDocumentsForUser(userId);
+      const user = await storage.getUser(userId);
+      
+      res.json({
+        userId,
+        userInfo: user ? {
+          id: user.id,
+          username: user.username,
+          role: user.role
+        } : null,
+        totalDocuments: allDocuments.length,
+        filteredDocuments: filteredDocuments.length,
+        assignedDocuments: assignedDocuments.length,
+        allDocuments: allDocuments.map(d => ({ id: d.id, title: d.title })),
+        filteredDocumentsList: filteredDocuments.map(d => ({ id: d.id, title: d.title })),
+        assignedDocumentsList: assignedDocuments.map(d => ({ id: d.id, title: d.title }))
+      });
+    } catch (error) {
+      console.error("Error in test endpoint:", error);
+      res.status(500).json({ message: "Test failed", error: String(error) });
     }
   });
 

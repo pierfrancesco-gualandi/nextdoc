@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
@@ -9,6 +10,19 @@ import { corsMiddleware } from "./middleware/cors-middleware";
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Configurazione sessioni Express
+app.use(session({
+  secret: 'nextdoc-session-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // true in produzione con HTTPS
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 ore
+  }
+}));
+
 app.use(corsMiddleware);
 
 // Make sure uploads directory exists
