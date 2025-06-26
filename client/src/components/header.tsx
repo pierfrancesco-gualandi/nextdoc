@@ -152,25 +152,28 @@ export default function Header({
                 <span className="tooltip -mt-10">Cronologia</span>
               </button>
               
-              {versionMenuOpen && documentVersions && Array.isArray(documentVersions) && documentVersions.length > 0 && (
-                <div className="absolute right-0 mt-2 bg-white p-2 rounded shadow-lg z-50">
-                  <h4 className="text-sm font-medium text-neutral-dark mb-2 px-2">Versioni recenti</h4>
-                  {documentVersions.slice(0, 3).map((version: any) => (
-                    <div key={version.id} className="px-2 py-1 hover:bg-neutral-lightest rounded text-sm">
-                      <div className="flex justify-between">
-                        <span className="font-medium">v{version.version}</span>
-                        <span className="text-neutral-medium text-xs">
-                          {new Date(version.createdAt).toLocaleDateString()}
-                        </span>
+              {versionMenuOpen && documentVersions && Array.isArray(documentVersions) && documentVersions.length > 0 && (() => {
+                const versions = documentVersions as any[];
+                return (
+                  <div className="absolute right-0 mt-2 bg-white p-2 rounded shadow-lg z-50">
+                    <h4 className="text-sm font-medium text-neutral-dark mb-2 px-2">Versioni recenti</h4>
+                    {versions.slice(0, 3).map((version: any) => (
+                      <div key={version.id} className="px-2 py-1 hover:bg-neutral-lightest rounded text-sm">
+                        <div className="flex justify-between">
+                          <span className="font-medium">v{version.version}</span>
+                          <span className="text-neutral-medium text-xs">
+                            {new Date(version.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="text-xs text-neutral-dark">{version.notes || "Nessuna nota"}</div>
                       </div>
-                      <div className="text-xs text-neutral-dark">{version.notes || "Nessuna nota"}</div>
+                    ))}
+                    <div className="mt-2 text-center">
+                      <a href="#" className="text-primary text-xs font-medium">Visualizza tutte</a>
                     </div>
-                  ))}
-                  <div className="mt-2 text-center">
-                    <a href="#" className="text-primary text-xs font-medium">Visualizza tutte</a>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
             
             <button 

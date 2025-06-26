@@ -158,19 +158,19 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   const canTranslate = selectedUser?.role === 'admin' || selectedUser?.role === 'translator';
   
   // Fetch sections when document ID is available
-  const { data: sections, isLoading: sectionsLoading } = useQuery({
+  const { data: sections, isLoading: sectionsLoading } = useQuery<any[]>({
     queryKey: [`/api/documents/${id}/sections`],
     enabled: id !== 'new' && !!document,
   });
   
   // Fetch content modules when a section is selected
-  const { data: contentModules, isLoading: modulesLoading } = useQuery({
+  const { data: contentModules, isLoading: modulesLoading } = useQuery<any[]>({
     queryKey: [`/api/sections/${selectedSection?.id}/modules`],
     enabled: !!selectedSection,
   });
   
   // Fetch associated BOM components for selected section
-  const { data: sectionComponents, isLoading: sectionComponentsLoading } = useQuery({
+  const { data: sectionComponents, isLoading: sectionComponentsLoading } = useQuery<any[]>({
     queryKey: [`/api/sections/${selectedSection?.id}/components`],
     enabled: !!selectedSection,
   });
