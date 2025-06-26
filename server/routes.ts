@@ -312,11 +312,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/user-document-assignments", async (req: Request, res: Response) => {
     try {
       const { userId, documentId } = req.body;
+      const assignedById = (req as any).userId || 1; // ID dell'utente che effettua l'assegnazione
+      
       if (!userId || !documentId) {
         return res.status(400).json({ message: "userId and documentId are required" });
       }
       
-      const assignment = await storage.createUserDocumentAssignment({ userId, documentId });
+      const assignment = await storage.createUserDocumentAssignment({ 
+        userId, 
+        documentId, 
+        assignedById 
+      });
       res.status(201).json(assignment);
     } catch (error) {
       res.status(500).json({ message: "Failed to create user document assignment" });
@@ -370,7 +376,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             const assignment = await storage.createUserDocumentAssignment({
               userId: user.id,
-              documentId: documents[i].id
+              documentId: documents[i].id,
+              assignedById: 1 // Admin che crea le assegnazioni di test
             });
             assignments.push(assignment);
           } catch (error) {

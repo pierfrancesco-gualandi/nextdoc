@@ -221,6 +221,9 @@ export class MemStorage implements IStorage {
   private translationImports: Map<number, TranslationImport>;
   private translationAIRequests: Map<number, TranslationAIRequest>;
   private uploadedFiles: Map<number, UploadedFile>;
+  
+  // User-Document assignments
+  private userDocumentAssignments: Map<number, UserDocumentAssignment>;
 
   private currentUserId: number;
   private currentDocumentId: number;
@@ -242,6 +245,7 @@ export class MemStorage implements IStorage {
   private currentTranslationImportId: number;
   private currentTranslationAIRequestId: number;
   private currentUploadedFileId: number;
+  private currentUserDocumentAssignmentId: number;
 
   constructor() {
     this.users = new Map();
@@ -264,6 +268,7 @@ export class MemStorage implements IStorage {
     this.translationImports = new Map();
     this.translationAIRequests = new Map();
     this.uploadedFiles = new Map();
+    this.userDocumentAssignments = new Map();
 
     this.currentUserId = 1;
     this.currentDocumentId = 1;
@@ -285,6 +290,7 @@ export class MemStorage implements IStorage {
     this.currentTranslationImportId = 1;
     this.currentTranslationAIRequestId = 1;
     this.currentUploadedFileId = 1;
+    this.currentUserDocumentAssignmentId = 1;
 
     // Add an initial admin user
     this.createUser({
