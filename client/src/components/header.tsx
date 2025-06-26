@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LogOut } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { Avatar, AvatarFallback } from "./ui/avatar";
+import DocumentStatusSelector from "./document-status-selector";
 
 interface HeaderProps {
   title?: string;
@@ -44,6 +45,12 @@ export default function Header({
   
   const { data: documentVersions } = useQuery({
     queryKey: documentId ? [`/api/documents/${documentId}/versions`] : ["no-versions"],
+    enabled: !!documentId && documentId !== 'new',
+  });
+
+  // Fetch current document data to get the status
+  const { data: currentDocument } = useQuery({
+    queryKey: documentId ? [`/api/documents/${documentId}`] : ["no-document"],
     enabled: !!documentId && documentId !== 'new',
   });
   
@@ -115,10 +122,15 @@ export default function Header({
           </button>
           <div className="flex items-center space-x-4">
             <h2 className="text-lg font-medium">{title}</h2>
-            {status && (
-              <span className={`status-badge ${statusDisplay.bgClass}`}>
-                {statusDisplay.label}
-              </span>
+            {documentId && currentDocument && currentDocument.status && (
+              <DocumentStatusSelector
+                documentId={documentId}
+                currentStatus={currentDocument.status}
+                onStatusChange={(newStatus) => {
+                  // Il componente gestisce già l'aggiornamento della cache
+                  console.log(`Stato documento ${documentId} cambiato in: ${newStatus}`);
+                }}
+              />
             )}
             {selectedUser && (
               <div 

@@ -42,16 +42,31 @@ function generateTreeView(sections: any[], childrenMap: Record<number, any[]>): 
 export function formatDocumentStatus(status: string) {
   switch (status) {
     case 'draft':
-      return 'Bozza';
+      return { label: 'Bozza', bgClass: 'bg-yellow-100 text-yellow-800' };
     case 'review':
-      return 'In Revisione';
+      return { label: 'In Revisione', bgClass: 'bg-blue-100 text-blue-800' };
     case 'approved':
-      return 'Approvato';
+      return { label: 'Approvato', bgClass: 'bg-green-100 text-green-800' };
     case 'published':
-      return 'Pubblicato';
+      return { label: 'Pubblicato', bgClass: 'bg-emerald-100 text-emerald-800' };
+    case 'archived':
+      return { label: 'Archiviato', bgClass: 'bg-gray-100 text-gray-800' };
     default:
-      return status;
+      return { label: status, bgClass: 'bg-gray-100 text-gray-800' };
   }
+}
+
+/**
+ * Get all available document statuses
+ */
+export function getDocumentStatuses() {
+  return [
+    { value: 'draft', label: 'Bozza', bgClass: 'bg-yellow-100 text-yellow-800' },
+    { value: 'review', label: 'In Revisione', bgClass: 'bg-blue-100 text-blue-800' },
+    { value: 'approved', label: 'Approvato', bgClass: 'bg-green-100 text-green-800' },
+    { value: 'published', label: 'Pubblicato', bgClass: 'bg-emerald-100 text-emerald-800' },
+    { value: 'archived', label: 'Archiviato', bgClass: 'bg-gray-100 text-gray-800' }
+  ];
 }
 
 /**
