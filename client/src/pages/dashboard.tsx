@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUser } from "@/contexts/UserContext";
 
 interface DashboardProps {
   toggleSidebar?: () => void;
@@ -28,6 +29,7 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<any>(null);
+  const { selectedUser } = useUser();
   const { toast } = useToast();
   
   // Accesso al context per i documenti aperti
@@ -67,14 +69,28 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
   }, []);
   
   const { data: documents, isLoading } = useQuery({
-    queryKey: ['/api/documents', searchQuery],
+    queryKey: ['/api/documents', searchQuery, selectedUser?.id],
     queryFn: async ({ queryKey }) => {
-      const [_, query] = queryKey;
-      const url = query ? `/api/documents?q=${encodeURIComponent(query)}` : '/api/documents';
+      const [_, query, userId] = queryKey;
+      let url = '/api/documents';
+      const params = new URLSearchParams();
+      
+      if (query) {
+        params.append('q', query);
+      }
+      if (userId) {
+        params.append('userId', userId.toString());
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
       const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch documents');
       return await res.json();
     },
+    enabled: !!selectedUser, // Only run query when user is selected
   });
   
   const deleteDocumentMutation = useMutation({

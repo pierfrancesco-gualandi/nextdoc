@@ -440,7 +440,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/documents", async (req: Request, res: Response) => {
     try {
       const query = req.query.q as string | undefined;
-      const userId = (req as any).userId; // ID utente dalla sessione autenticata
+      const userIdParam = req.query.userId ? Number(req.query.userId) : null;
+      const sessionUserId = (req as any).userId; // ID utente dalla sessione autenticata
+      const userId = userIdParam || sessionUserId;
+      
+      console.log(`[Documents API] Query: ${query}, UserID param: ${userIdParam}, Session: ${sessionUserId}, Final: ${userId}`);
+      
       let documents;
       
       if (query) {
