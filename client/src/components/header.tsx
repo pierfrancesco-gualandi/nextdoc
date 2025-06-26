@@ -12,7 +12,6 @@ interface HeaderProps {
   title?: string;
   documentId?: string;
   status?: string;
-  showTabs?: boolean;
   selectedLanguage?: string;
   onSave?: () => void;
   onClose?: () => void;
@@ -23,14 +22,12 @@ export default function Header({
   title = "", 
   documentId,
   status = "draft",
-  showTabs = false,
   selectedLanguage,
   onSave,
   onClose,
   toggleSidebar
 }: HeaderProps) {
   const [, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState("editor");
   const { toast } = useToast();
   
   // Stati per gestire i dropdown
@@ -236,40 +233,7 @@ export default function Header({
         )}
       </div>
       
-      {showTabs && (
-        <div className="flex px-4 border-t border-neutral-light">
-          <button 
-            className={`px-4 py-2 border-b-2 ${activeTab === 'editor' ? 'border-primary text-primary font-medium' : 'border-transparent text-neutral-dark hover:text-neutral-darkest'}`}
-            onClick={() => setActiveTab('editor')}
-          >
-            Editor
-          </button>
-          <button 
-            className={`px-4 py-2 border-b-2 ${activeTab === 'preview' ? 'border-primary text-primary font-medium' : 'border-transparent text-neutral-dark hover:text-neutral-darkest'}`}
-            onClick={() => setActiveTab('preview')}
-          >
-            Anteprima
-          </button>
-          <button 
-            className={`px-4 py-2 border-b-2 ${activeTab === 'bom' ? 'border-primary text-primary font-medium' : 'border-transparent text-neutral-dark hover:text-neutral-darkest'}`}
-            onClick={() => setActiveTab('bom')}
-          >
-            Distinta Base
-          </button>
-          <button 
-            className={`px-4 py-2 border-b-2 ${activeTab === 'permissions' ? 'border-primary text-primary font-medium' : 'border-transparent text-neutral-dark hover:text-neutral-darkest'}`}
-            onClick={() => setActiveTab('permissions')}
-          >
-            Permessi
-          </button>
-          <button 
-            className={`px-4 py-2 border-b-2 ${activeTab === 'history' ? 'border-primary text-primary font-medium' : 'border-transparent text-neutral-dark hover:text-neutral-darkest'}`}
-            onClick={() => setActiveTab('history')}
-          >
-            Cronologia
-          </button>
-        </div>
-      )}
+
     </header>
   );
 }
