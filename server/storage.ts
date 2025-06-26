@@ -433,8 +433,24 @@ export class MemStorage implements IStorage {
   }
 
   async getDocuments(userId?: number): Promise<Document[]> {
-    // MemStorage sempre restituisce tutti i documenti (non implementa assegnazioni)
-    return Array.from(this.documents.values());
+    const allDocuments = Array.from(this.documents.values());
+    
+    // Se non è fornito userId, restituisci tutti i documenti
+    if (!userId) {
+      return allDocuments;
+    }
+    
+    // Verifica se l'utente è admin
+    const user = await this.getUser(userId);
+    if (!user || user.role === 'admin') {
+      return allDocuments;
+    }
+    
+    // Per utenti non-admin, filtra per documenti assegnati
+    const assignedDocuments = await this.getAssignedDocumentsForUser(userId);
+    const assignedIds = assignedDocuments.map(d => d.id);
+    
+    return allDocuments.filter(doc => assignedIds.includes(doc.id));
   }
 
   async createDocument(document: InsertDocument): Promise<Document> {

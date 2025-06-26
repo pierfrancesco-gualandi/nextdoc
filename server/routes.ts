@@ -62,8 +62,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Middleware per estrarre l'ID utente dalla sessione
   app.use((req: Request, res: Response, next: NextFunction) => {
     const selectedUserId = (req.session as any)?.selectedUserId;
+    console.log(`[Session Debug] Path: ${req.path}, Session ID: ${(req.session as any)?.id}, Selected User ID: ${selectedUserId}`);
     if (selectedUserId) {
       (req as any).userId = selectedUserId;
+      console.log(`[Session Debug] User ID set to: ${selectedUserId}`);
     }
     next();
   });
