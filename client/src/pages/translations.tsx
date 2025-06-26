@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import Header from "@/components/header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -1358,18 +1359,22 @@ function AITranslation() {
 // Componente principale della pagina
 export default function Translations({ toggleSidebar }: { toggleSidebar: () => void }) {
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <header className="bg-white border-b border-neutral-light p-4 flex justify-between items-center">
-        <div className="flex items-center">
-          <button onClick={toggleSidebar} className="mr-4 md:hidden">
-            <span className="material-icons">menu</span>
-          </button>
-          <h1 className="text-2xl font-semibold text-neutral-dark">Gestione Traduzioni</h1>
-        </div>
-      </header>
-
-      <main className="flex-1 overflow-y-auto p-6 bg-neutral-lightest">
-        <Tabs defaultValue="languages" className="w-full">
+    <>
+      <Header title="Gestione Traduzioni" toggleSidebar={toggleSidebar} />
+      
+      <main className="flex-1 overflow-y-auto bg-neutral-lightest p-6">
+        <div className="max-w-7xl mx-auto">
+          {/* Header principale della pagina */}
+          <div className="mb-8">
+            <div className="flex justify-between items-start">
+              <div className="space-y-1">
+                <h1 className="text-3xl font-bold text-neutral-darkest tracking-tight">Gestione Traduzioni</h1>
+                <p className="text-lg text-neutral-medium">Amministra traduzioni e lingue del sistema</p>
+              </div>
+            </div>
+          </div>
+          
+          <Tabs defaultValue="languages" className="w-full">
           <TabsList className="grid grid-cols-6 w-full max-w-6xl mx-auto mb-8">
             <TabsTrigger value="languages">Lingue</TabsTrigger>
             <TabsTrigger value="assignments">Assegnazioni</TabsTrigger>
@@ -1404,8 +1409,9 @@ export default function Translations({ toggleSidebar }: { toggleSidebar: () => v
               <AITranslation />
             </TabsContent>
           </div>
-        </Tabs>
+          </Tabs>
+        </div>
       </main>
-    </div>
+    </>
   );
 }

@@ -59,10 +59,13 @@ export default function ModulesLibrary({ toggleSidebar }: ModulesLibraryProps) {
       
       <main className="flex-1 overflow-y-auto bg-neutral-lightest p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-neutral-darkest">Libreria Moduli</h1>
-              <p className="text-neutral-dark">Gestisci e riutilizza moduli salvati</p>
+          {/* Header principale della pagina */}
+          <div className="mb-8">
+            <div className="flex justify-between items-start">
+              <div className="space-y-1">
+                <h1 className="text-3xl font-bold text-neutral-darkest tracking-tight">Libreria Moduli</h1>
+                <p className="text-lg text-neutral-medium">Gestisci e riutilizza moduli salvati nei tuoi documenti</p>
+              </div>
             </div>
           </div>
           

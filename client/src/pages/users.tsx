@@ -119,6 +119,16 @@ export default function Users({ toggleSidebar }: UsersProps) {
       
       <main className="flex-1 overflow-y-auto bg-neutral-lightest p-6">
         <div className="max-w-7xl mx-auto">
+          {/* Header principale della pagina */}
+          <div className="mb-8">
+            <div className="flex justify-between items-start">
+              <div className="space-y-1">
+                <h1 className="text-3xl font-bold text-neutral-darkest tracking-tight">Gestione Utenti</h1>
+                <p className="text-lg text-neutral-medium">Amministra utenti e permessi del sistema</p>
+              </div>
+            </div>
+          </div>
+          
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Utenti</CardTitle>
