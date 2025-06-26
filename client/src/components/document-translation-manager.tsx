@@ -2404,9 +2404,64 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
     });
   }, [sections]);
   
+  // Funzione ricorsiva per renderizzare le sezioni con gerarchia
+  const renderSectionRecursive = (section: any, level: number = 0) => {
+    const HeadingTag = level === 0 ? 'h2' : level === 1 ? 'h3' : level === 2 ? 'h4' : 'h5';
+    const headingClasses = level === 0 
+      ? "text-2xl font-semibold border-b pb-2" 
+      : level === 1 
+      ? "text-xl font-semibold mt-6 mb-3"
+      : "text-lg font-medium mt-4 mb-2";
+    
+    return (
+      <div key={section.id} className={`space-y-4 ${level > 0 ? 'ml-6' : ''}`}>
+        <HeadingTag className={headingClasses}>
+          {sectionTranslations[section.id]?.title || section.title}
+        </HeadingTag>
+        
+        {section.description && (
+          <p className="text-neutral-700">
+            {sectionTranslations[section.id]?.description || section.description}
+          </p>
+        )}
+        
+        {/* Renderizza i moduli della sezione corrente */}
+        {section.modules && section.modules.map((module: any) => (
+          <div key={module.id} className="my-6">
+            {moduleTranslations[module.id] ? (
+              <TranslatedContentModule 
+                module={module}
+                translation={moduleTranslations[module.id]}
+                documentId={documentId}
+                isPreview={true}
+              />
+            ) : (
+              <ContentModule
+                module={module}
+                onDelete={() => {}}
+                onUpdate={() => {}}
+                documentId={documentId}
+                isPreview={true}
+              />
+            )}
+          </div>
+        ))}
+        
+        {/* Renderizza ricorsivamente le sottosezioni */}
+        {sections
+          .filter((childSection: any) => childSection.parentId === section.id)
+          .map((childSection: any) => renderSectionRecursive(childSection, level + 1))
+        }
+      </div>
+    );
+  };
+
   // Renderizza l'anteprima della traduzione
   const renderPreview = () => {
     if (!document || !sections || !selectedLanguage) return null;
+    
+    // Trova solo le sezioni di primo livello (senza parentId)
+    const rootSections = sections.filter((section: any) => !section.parentId);
     
     return (
       <div className="space-y-8">
@@ -2415,40 +2470,7 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           <p>{document.description}</p>
         </div>
         
-        {sections.map((section: any) => (
-          <div key={section.id} className="space-y-4">
-            <h2 className="text-2xl font-semibold border-b pb-2">
-              {sectionTranslations[section.id]?.title || section.title}
-            </h2>
-            
-            {section.description && (
-              <p className="text-neutral-700">
-                {sectionTranslations[section.id]?.description || section.description}
-              </p>
-            )}
-            
-            {section.modules && section.modules.map((module: any) => (
-              <div key={module.id} className="my-6">
-                {moduleTranslations[module.id] ? (
-                  <TranslatedContentModule 
-                    module={module}
-                    translation={moduleTranslations[module.id]}
-                    documentId={documentId}
-                    isPreview={true}
-                  />
-                ) : (
-                  <ContentModule
-                    module={module}
-                    onDelete={() => {}}
-                    onUpdate={() => {}}
-                    documentId={documentId}
-                    isPreview={true}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        ))}
+        {rootSections.map((section: any) => renderSectionRecursive(section, 0))}
       </div>
     );
   };
