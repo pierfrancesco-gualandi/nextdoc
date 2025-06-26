@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { useUser } from "@/contexts/UserContext";
 
 interface DocumentsProps {
   toggleSidebar: () => void;
@@ -23,12 +24,34 @@ export default function Documents({ toggleSidebar }: DocumentsProps) {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<any>(null);
+  const { selectedUser } = useUser();
 
   const { openDocuments, addOpenDocument, removeOpenDocument, isDocumentOpen } = useOpenDocuments();
 
   // Fetch documents
   const { data: documents, isLoading } = useQuery<any[]>({
-    queryKey: ['/api/documents'],
+    queryKey: ['/api/documents', searchQuery, selectedUser?.id],
+    queryFn: async ({ queryKey }) => {
+      const [_, query, userId] = queryKey;
+      let url = '/api/documents';
+      const params = new URLSearchParams();
+      
+      if (query) {
+        params.append('q', String(query));
+      }
+      if (userId) {
+        params.append('userId', String(userId));
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
+      const res = await fetch(url, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch documents');
+      return await res.json();
+    },
+    enabled: !!selectedUser,
   });
 
   // Filtra i documenti in base alla ricerca

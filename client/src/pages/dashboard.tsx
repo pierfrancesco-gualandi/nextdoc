@@ -76,10 +76,10 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
       const params = new URLSearchParams();
       
       if (query) {
-        params.append('q', query);
+        params.append('q', String(query));
       }
       if (userId) {
-        params.append('userId', userId.toString());
+        params.append('userId', String(userId));
       }
       
       if (params.toString()) {
