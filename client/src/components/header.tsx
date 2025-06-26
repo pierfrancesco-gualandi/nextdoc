@@ -4,9 +4,9 @@ import { ExportDropdown } from "./export-dropdown";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { User } from "lucide-react";
-import { useUserContext } from "../contexts/UserContext";
-import UserSelectorDialog from "./user-selector-dialog";
+import { LogOut } from "lucide-react";
+import { useUser } from "@/contexts/UserContext";
+import { Avatar, AvatarFallback } from "./ui/avatar";
 
 interface HeaderProps {
   title?: string;
@@ -53,7 +53,7 @@ export default function Header({
   });
   
   // Usa il contesto utente
-  const { selectedUser } = useUserContext();
+  const { selectedUser, clearUserSelection } = useUser();
 
   // Format status for display
   const getStatusDisplay = (status: string) => {
@@ -122,28 +122,22 @@ export default function Header({
             )}
             {selectedUser && (
               <div 
-                className="flex items-center ml-4 px-3 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity bg-primary/10 text-primary border border-primary/20"
-                onClick={() => setUserSelectorOpen(true)}
+                className="flex items-center ml-4 px-3 py-1 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors bg-primary/10 text-primary border border-primary/20"
+                onClick={() => clearUserSelection()}
                 title="Clicca per cambiare utente"
               >
-                <User className="w-4 h-4 mr-1" />
-                <span className="text-sm font-medium">{selectedUser.name}</span>
+                <Avatar className="h-6 w-6 mr-2">
+                  <AvatarFallback className="bg-primary/20 text-primary font-semibold text-xs">
+                    {selectedUser.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="text-left">
+                  <span className="text-sm font-medium">{selectedUser.name}</span>
+                  <span className="text-xs text-gray-500 ml-1">@{selectedUser.username}</span>
+                </div>
+                <LogOut className="h-3 w-3 ml-2 text-gray-400" />
               </div>
             )}
-            
-            {/* Dialog per la selezione dell'utente */}
-            <UserSelectorDialog 
-              isOpen={userSelectorOpen}
-              onClose={(userId, userRole, displayName, badgeColor) => {
-                setUserDetails(userId, userRole, displayName, badgeColor);
-                setUserSelectorOpen(false);
-                toast({
-                  title: "Utente cambiato",
-                  description: `Ora stai utilizzando ${displayName} con ruolo ${userRole}`
-                });
-              }}
-              onCancel={() => setUserSelectorOpen(false)}
-            />
           </div>
         </div>
         

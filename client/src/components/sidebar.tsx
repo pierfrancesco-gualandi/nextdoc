@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useOpenDocuments } from "@/App";
-import UserDisplay from "@/components/user-display";
+
 
 interface SidebarProps {
   activePath: string;
@@ -35,8 +35,7 @@ export default function Sidebar({ activePath }: SidebarProps) {
         <h1 className="text-lg font-semibold">N@xtDoc</h1>
       </div>
 
-      {/* Visualizzazione utente selezionato */}
-      <UserDisplay />
+
 
       <nav className="px-2 py-4">
         <div className="mb-4">
