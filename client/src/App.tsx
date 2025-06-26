@@ -158,34 +158,44 @@ function Router() {
   
 
 
+  const { isAuthenticated, selectedUser } = useUser();
+
   return (
     <OpenDocumentsContext.Provider value={openDocumentsValue}>
-      {/* Mostra il selettore utente se nessun utente è selezionato */}
-      {!isUserSelected && <UserSelector />}
-      
-      <div className="flex h-screen overflow-hidden bg-neutral-lightest">
-        {showSidebar && <Sidebar activePath={location} />}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Switch>
-            <Route path="/login" component={Login} />
-            <Route path="/" component={() => <Dashboard toggleSidebar={toggleSidebar} />} />
-            <Route path="/documents" component={() => <Documents toggleSidebar={toggleSidebar} />} />
-            <Route path="/documents/:id" component={({ params }) => <DocumentEditor id={params.id} toggleSidebar={toggleSidebar} />} />
-            <Route path="/modules" component={() => <ModulesLibrary toggleSidebar={toggleSidebar} />} />
-            <Route path="/components" component={() => <BomManagement toggleSidebar={toggleSidebar} />} />
-            <Route path="/bom-comparison" component={() => <BomComparison toggleSidebar={toggleSidebar} />} />
-            <Route path="/users" component={() => <Users toggleSidebar={toggleSidebar} />} />
-            <Route path="/translations" component={() => <Translations toggleSidebar={toggleSidebar} />} />
-            <Route path="/module-translation/:id" component={({ params }) => <ModuleTranslation toggleSidebar={toggleSidebar} />} />
-            <Route path="/document/:id/export-translations" component={({ params }) => <DocumentTranslationExport />} />
-            <Route path="/document/:id/translate" component={({ params }) => <DocumentTranslationTree toggleSidebar={toggleSidebar} />} />
-            {/* Rotte per le impostazioni */}
-            <Route path="/settings" component={() => <SettingsPage toggleSidebar={toggleSidebar} />} />
-            <Route component={NotFound} />
-          </Switch>
-        </div>
-        <Toaster />
-      </div>
+      {/* Se non autenticato, mostra la pagina di login */}
+      {!isAuthenticated ? (
+        <Switch>
+          <Route path="/login" component={Login} />
+          <Route component={Login} />
+        </Switch>
+      ) : (
+        <>
+          {/* Mostra il selettore utente se autenticato ma nessun utente è selezionato */}
+          {!isUserSelected && <UserSelector />}
+          
+          <div className="flex h-screen overflow-hidden bg-neutral-lightest">
+            {showSidebar && <Sidebar activePath={location} />}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <Switch>
+                <Route path="/" component={() => <Dashboard toggleSidebar={toggleSidebar} />} />
+                <Route path="/documents" component={() => <Documents toggleSidebar={toggleSidebar} />} />
+                <Route path="/documents/:id" component={({ params }) => <DocumentEditor id={params.id} toggleSidebar={toggleSidebar} />} />
+                <Route path="/modules" component={() => <ModulesLibrary toggleSidebar={toggleSidebar} />} />
+                <Route path="/components" component={() => <BomManagement toggleSidebar={toggleSidebar} />} />
+                <Route path="/bom-comparison" component={() => <BomComparison toggleSidebar={toggleSidebar} />} />
+                <Route path="/users" component={() => <Users toggleSidebar={toggleSidebar} />} />
+                <Route path="/translations" component={() => <Translations toggleSidebar={toggleSidebar} />} />
+                <Route path="/module-translation/:id" component={({ params }) => <ModuleTranslation toggleSidebar={toggleSidebar} />} />
+                <Route path="/document/:id/export-translations" component={({ params }) => <DocumentTranslationExport />} />
+                <Route path="/document/:id/translate" component={({ params }) => <DocumentTranslationTree toggleSidebar={toggleSidebar} />} />
+                <Route path="/settings" component={() => <SettingsPage toggleSidebar={toggleSidebar} />} />
+                <Route component={NotFound} />
+              </Switch>
+            </div>
+            <Toaster />
+          </div>
+        </>
+      )}
     </OpenDocumentsContext.Provider>
   );
 }

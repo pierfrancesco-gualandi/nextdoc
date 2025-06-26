@@ -1,171 +1,236 @@
-import type { User } from "@shared/schema";
+import type { AuthenticatedUser } from '@/contexts/UserContext';
 
-// Tipi di permessi disponibili
-export type Permission = "read" | "edit" | "admin" | "translate";
+// Definizione dei ruoli disponibili
+export type UserRole = 'admin' | 'editor' | 'traduttore' | 'reader';
 
-// Ruoli utente con i loro permessi di default
-export const DEFAULT_ROLE_PERMISSIONS: Record<string, Permission[]> = {
-  admin: ["read", "edit", "admin", "translate"], // Accesso completo a tutto
-  editor: ["read", "edit"], // Tutto tranne impostazioni
-  translator: ["translate"], // Solo traduzioni
-  reader: ["read"] // Solo lettura/anteprima
+// Interfaccia per la definizione dei permessi
+export interface Permission {
+  canViewDocuments: boolean;
+  canEditDocuments: boolean;
+  canCreateDocuments: boolean;
+  canDeleteDocuments: boolean;
+  canManageUsers: boolean;
+  canManageSettings: boolean;
+  canTranslate: boolean;
+  canReviewTranslations: boolean;
+  canManageComponents: boolean;
+  canViewModulesLibrary: boolean;
+  canEditModulesLibrary: boolean;
+  canExportDocuments: boolean;
+}
+
+// Configurazione dei permessi per ogni ruolo
+const rolePermissions: Record<UserRole, Permission> = {
+  admin: {
+    canViewDocuments: true,
+    canEditDocuments: true,
+    canCreateDocuments: true,
+    canDeleteDocuments: true,
+    canManageUsers: true,
+    canManageSettings: true,
+    canTranslate: true,
+    canReviewTranslations: true,
+    canManageComponents: true,
+    canViewModulesLibrary: true,
+    canEditModulesLibrary: true,
+    canExportDocuments: true,
+  },
+  editor: {
+    canViewDocuments: true,
+    canEditDocuments: true,
+    canCreateDocuments: true,
+    canDeleteDocuments: true,
+    canManageUsers: false,
+    canManageSettings: false,
+    canTranslate: true,
+    canReviewTranslations: true,
+    canManageComponents: true,
+    canViewModulesLibrary: true,
+    canEditModulesLibrary: true,
+    canExportDocuments: true,
+  },
+  traduttore: {
+    canViewDocuments: true,
+    canEditDocuments: false,
+    canCreateDocuments: false,
+    canDeleteDocuments: false,
+    canManageUsers: false,
+    canManageSettings: false,
+    canTranslate: true,
+    canReviewTranslations: false,
+    canManageComponents: false,
+    canViewModulesLibrary: false,
+    canEditModulesLibrary: false,
+    canExportDocuments: false,
+  },
+  reader: {
+    canViewDocuments: true,
+    canEditDocuments: false,
+    canCreateDocuments: false,
+    canDeleteDocuments: false,
+    canManageUsers: false,
+    canManageSettings: false,
+    canTranslate: false,
+    canReviewTranslations: false,
+    canManageComponents: false,
+    canViewModulesLibrary: false,
+    canEditModulesLibrary: false,
+    canExportDocuments: false,
+  },
 };
 
-// Permessi specifici per azioni
-export const ACTION_PERMISSIONS = {
-  // Visualizzazione documenti
-  viewDocument: ["read", "edit", "admin", "translate"] as Permission[],
-  viewDocumentPreview: ["read", "edit", "admin", "translate"] as Permission[],
-  
-  // Modifica documenti
-  editDocument: ["edit", "admin"] as Permission[],
-  createDocument: ["edit", "admin"] as Permission[],
-  deleteDocument: ["admin"] as Permission[],
-  changeDocumentStatus: ["admin"] as Permission[],
-  
-  // Traduzioni
-  accessTranslations: ["translate", "admin"] as Permission[],
-  translateDocument: ["translate", "admin"] as Permission[],
-  
-  // Gestione utenti e impostazioni
-  manageUsers: ["admin"] as Permission[],
-  accessSettings: ["admin"] as Permission[],
-  viewUsers: ["admin"] as Permission[],
-  createUser: ["admin"] as Permission[],
-  editUser: ["admin"] as Permission[],
-  deleteUser: ["admin"] as Permission[],
-  
-  // Dashboard
-  accessDashboard: ["read", "edit", "admin", "translate"] as Permission[],
-  accessModulesLibrary: ["edit", "admin"] as Permission[],
-  accessComponents: ["edit", "admin"] as Permission[],
-  accessBom: ["edit", "admin"] as Permission[]
-};
+// Funzione per ottenere i permessi di un utente
+export function getUserPermissions(user: AuthenticatedUser | null): Permission {
+  if (!user) {
+    return rolePermissions.reader; // Permessi minimi per utenti non autenticati
+  }
 
-// Verifica se un utente ha un permesso specifico (globale)
-export function hasGlobalPermission(user: User | null, requiredPermissions: Permission[]): boolean {
-  if (!user || !user.isActive) return false;
-  
-  // Admin ha sempre tutti i permessi
-  if (user.role === 'admin') return true;
-  
-  // Verifica permessi del ruolo
-  const rolePermissions = DEFAULT_ROLE_PERMISSIONS[user.role] || [];
-  return requiredPermissions.some(permission => rolePermissions.includes(permission));
+  const role = user.role as UserRole;
+  return rolePermissions[role] || rolePermissions.reader;
 }
 
-// Verifica se un utente può eseguire una specifica azione
-export function canPerformAction(user: User | null, action: keyof typeof ACTION_PERMISSIONS): boolean {
-  if (!user || !user.isActive) return false;
+// Funzioni di utilità per verificare permessi specifici
+export function canUserEditDocuments(user: AuthenticatedUser | null): boolean {
+  return getUserPermissions(user).canEditDocuments;
+}
+
+export function canUserManageUsers(user: AuthenticatedUser | null): boolean {
+  return getUserPermissions(user).canManageUsers;
+}
+
+export function canUserManageSettings(user: AuthenticatedUser | null): boolean {
+  return getUserPermissions(user).canManageSettings;
+}
+
+export function canUserTranslate(user: AuthenticatedUser | null): boolean {
+  return getUserPermissions(user).canTranslate;
+}
+
+export function canUserManageComponents(user: AuthenticatedUser | null): boolean {
+  return getUserPermissions(user).canManageComponents;
+}
+
+export function canUserViewModulesLibrary(user: AuthenticatedUser | null): boolean {
+  return getUserPermissions(user).canViewModulesLibrary;
+}
+
+export function canUserEditModulesLibrary(user: AuthenticatedUser | null): boolean {
+  return getUserPermissions(user).canEditModulesLibrary;
+}
+
+// Funzione per verificare se un utente può accedere a una specifica rotta
+export function canUserAccessRoute(user: AuthenticatedUser | null, route: string): boolean {
+  const permissions = getUserPermissions(user);
   
-  const requiredPermissions = ACTION_PERMISSIONS[action];
-  return hasGlobalPermission(user, requiredPermissions);
+  switch (route) {
+    case '/users':
+      return permissions.canManageUsers;
+    case '/settings':
+      return permissions.canManageSettings;
+    case '/translations':
+      return permissions.canTranslate;
+    case '/modules':
+      return permissions.canViewModulesLibrary;
+    case '/components':
+      return permissions.canManageComponents;
+    case '/documents':
+      return permissions.canViewDocuments;
+    default:
+      return true; // Route pubbliche (dashboard, etc.)
+  }
 }
 
-// Verifica se un utente può modificare lo status di un documento
-export function canChangeDocumentStatus(user: User | null, documentCreatorId?: number): boolean {
-  if (!user || !user.isActive) return false;
+// Funzione per ottenere le rotte accessibili per un utente
+export function getAccessibleRoutes(user: AuthenticatedUser | null): string[] {
+  const routes = ['/'];
+  const permissions = getUserPermissions(user);
   
-  // Solo admin può modificare status
-  return user.role === 'admin';
+  if (permissions.canViewDocuments) routes.push('/documents');
+  if (permissions.canViewModulesLibrary) routes.push('/modules');
+  if (permissions.canManageComponents) routes.push('/components');
+  if (permissions.canTranslate) routes.push('/translations');
+  if (permissions.canManageUsers) routes.push('/users');
+  if (permissions.canManageSettings) routes.push('/settings');
+  
+  return routes;
 }
 
-// Funzioni specifiche per ogni ruolo
-export function isTranslatorOnly(user: User | null): boolean {
-  return user?.role === 'translator' && user?.isActive === true;
-}
-
-export function isReaderOnly(user: User | null): boolean {
-  return user?.role === 'reader' && user?.isActive === true;
-}
-
-// Verifica accesso alle diverse sezioni della dashboard
-export function canAccessDashboardSection(user: User | null, section: string): boolean {
-  if (!user || !user.isActive) return false;
+// Funzioni legacy per compatibilità con i componenti esistenti
+export function canAccessDashboardSection(user: AuthenticatedUser | null, section: string): boolean {
+  const permissions = getUserPermissions(user);
   
   switch (section) {
     case 'documents':
-      return canPerformAction(user, 'accessDashboard');
-    case 'translations':
-      return canPerformAction(user, 'accessTranslations');
-    case 'users':
-      return canPerformAction(user, 'manageUsers');
-    case 'settings':
-      return canPerformAction(user, 'accessSettings');
+      return permissions.canViewDocuments;
     case 'modules':
-      return canPerformAction(user, 'accessModulesLibrary');
+      return permissions.canViewModulesLibrary;
     case 'components':
-      return canPerformAction(user, 'accessComponents');
-    case 'bom':
-      return canPerformAction(user, 'accessBom');
+      return permissions.canManageComponents;
+    case 'translations':
+      return permissions.canTranslate;
+    case 'users':
+      return permissions.canManageUsers;
+    case 'settings':
+      return permissions.canManageSettings;
+    default:
+      return true;
+  }
+}
+
+export function canPerformAction(user: AuthenticatedUser | null, action: string): boolean {
+  const permissions = getUserPermissions(user);
+  
+  switch (action) {
+    case 'edit-documents':
+      return permissions.canEditDocuments;
+    case 'create-documents':
+      return permissions.canCreateDocuments;
+    case 'delete-documents':
+      return permissions.canDeleteDocuments;
+    case 'manage-users':
+      return permissions.canManageUsers;
+    case 'manage-settings':
+      return permissions.canManageSettings;
+    case 'translate':
+      return permissions.canTranslate;
+    case 'review-translations':
+      return permissions.canReviewTranslations;
+    case 'manage-components':
+      return permissions.canManageComponents;
+    case 'edit-modules':
+      return permissions.canEditModulesLibrary;
+    case 'export-documents':
+      return permissions.canExportDocuments;
     default:
       return false;
   }
 }
 
-// Verifica se un utente può accedere a un documento
-export function canAccessDocument(user: User | null): boolean {
-  if (!user || !user.isActive) return false;
-  return canPerformAction(user, 'viewDocument');
+export function canChangeDocumentStatus(user: AuthenticatedUser | null): boolean {
+  return getUserPermissions(user).canEditDocuments;
 }
 
-// Verifica se un utente può modificare un documento
-export function canEditDocument(user: User | null, documentCreatorId?: number): boolean {
-  if (!user || !user.isActive) return false;
-  
-  // Admin può sempre modificare
-  if (user.role === 'admin') return true;
-  
-  // Editor può modificare se ha i permessi giusti
-  if (user.role === 'editor') return true;
-  
-  // Il creatore può sempre modificare il proprio documento
-  if (documentCreatorId && user.id === documentCreatorId) return true;
-  
-  return false;
+export function canEditDocument(user: AuthenticatedUser | null): boolean {
+  return getUserPermissions(user).canEditDocuments;
 }
 
-// Filtra documenti basandosi sui permessi utente
-export function filterDocumentsByPermissions<T extends { createdById: number }>(
-  documents: T[], 
-  user: User | null
-): T[] {
-  if (!user || !user.isActive) return [];
-  
-  // Admin vede tutti i documenti
-  if (user.role === 'admin') return documents;
-  
-  // Gli altri vedono solo i documenti che possono leggere
-  // Per ora manteniamo la logica semplice: tutti possono vedere tutti i documenti
-  // ma con azioni limitate basate sui permessi
-  return documents;
-}
-
-// Ottiene le azioni disponibili per un utente su un documento
-export function getAvailableDocumentActions(user: User | null, documentCreatorId?: number) {
-  const actions = {
-    canView: canAccessDocument(user),
-    canEdit: canEditDocument(user, documentCreatorId),
-    canChangeStatus: canChangeDocumentStatus(user, documentCreatorId),
-    canDelete: user?.role === 'admin',
-    canTranslate: canPerformAction(user, 'translateDocument'),
-    canManagePermissions: user?.role === 'admin'
-  };
-  
-  return actions;
-}
-
-// Messaggio di errore per permessi insufficienti
 export function getPermissionErrorMessage(action: string): string {
-  return `Non hai i permessi necessari per ${action}. Contatta un amministratore se credi che sia un errore.`;
-}
-
-// Verifica se l'utente corrente è un amministratore
-export function isAdmin(user: User | null): boolean {
-  return user?.role === 'admin' && user?.isActive === true;
-}
-
-// Verifica se l'utente corrente può gestire altri utenti
-export function canManageUsers(user: User | null): boolean {
-  return isAdmin(user);
+  switch (action) {
+    case 'edit-documents':
+      return 'Non hai i permessi per modificare i documenti';
+    case 'create-documents':
+      return 'Non hai i permessi per creare documenti';
+    case 'delete-documents':
+      return 'Non hai i permessi per eliminare documenti';
+    case 'manage-users':
+      return 'Non hai i permessi per gestire gli utenti';
+    case 'manage-settings':
+      return 'Non hai i permessi per gestire le impostazioni';
+    case 'translate':
+      return 'Non hai i permessi per tradurre';
+    case 'manage-components':
+      return 'Non hai i permessi per gestire i componenti';
+    default:
+      return 'Non hai i permessi per eseguire questa azione';
+  }
 }

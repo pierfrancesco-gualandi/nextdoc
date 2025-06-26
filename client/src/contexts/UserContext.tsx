@@ -73,7 +73,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         selectedUser, 
         setSelectedUser, 
         isUserSelected,
-        clearUserSelection
+        clearUserSelection,
+        isAuthenticated
       }}
     >
       {children}
