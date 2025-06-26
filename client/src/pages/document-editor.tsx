@@ -24,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createDocumentVersion } from "@/lib/document-utils";
+// import { createDocumentVersion } from "@/lib/document-utils"; // Non più necessario
 import { Trash2, X } from "lucide-react";
 import { useOpenDocuments } from "@/App";
 import { 
@@ -116,7 +116,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   const [selectedLanguage, setSelectedLanguage] = useState<string>("0"); // Lingua predefinita (originale)
   
   // Fetch document data
-  const { data: document, isLoading: documentLoading } = useQuery({
+  const { data: document, isLoading: documentLoading } = useQuery<any>({
     queryKey: [`/api/documents/${id}`],
     enabled: id !== 'new'
   });
@@ -149,43 +149,13 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     }
   }, [document, id, addOpenDocument]);
   
-  // State per il selettore utente e l'utente corrente
-  const [showUserSelector, setShowUserSelector] = useState<boolean>(true);
-  const [userSelectCanceled, setUserSelectCanceled] = useState<boolean>(false);
-  const [currentUserId, setCurrentUserId] = useState<number>(1);
-  const [currentUserRole, setCurrentUserRole] = useState<string>("reader");
-  const [displayName, setDisplayName] = useState<string>("");
-  const [userBadgeColor, setUserBadgeColor] = useState<string>("#3b82f6");
+  // Usa il contesto utente per gestire l'utente selezionato e i permessi
+  const { selectedUser } = useUserContext();
   
-  // State per i permessi basati sul ruolo
-  const [canEdit, setCanEdit] = useState<boolean>(false);
-  const [canManageUsers, setCanManageUsers] = useState<boolean>(false);
-  const [canTranslate, setCanTranslate] = useState<boolean>(false);
-  
-  // Carica tutti gli utenti
-  const { data: users } = useQuery({
-    queryKey: ['/api/users'],
-  });
-  
-  // Usa il contesto utente
-  const { selectedUser } = useUser();
-  
-  // Gestisce la chiusura del selettore utente con selezione
-  // Gestione delle autorizzazioni basata sull'utente dal contesto
-  // Non più necessario gestire manualmente la selezione utente
-  
-  // Gestisce la chiusura del selettore utente senza selezione
-  const handleUserSelectCancel = () => {
-    // Se è stato annullato una volta, non mostriamo più il selettore
-    setUserSelectCanceled(true);
-    setShowUserSelector(false);
-    
-    // Usiamo l'utente di default (primo utente, solitamente admin)
-    toast({
-      title: "Selezione utente annullata",
-      description: "Stai visualizzando il documento con i permessi di default",
-    });
-  };
+  // Deriva i permessi dal ruolo dell'utente selezionato
+  const canEdit = selectedUser?.role === 'admin' || selectedUser?.role === 'editor';
+  const canManageUsers = selectedUser?.role === 'admin';
+  const canTranslate = selectedUser?.role === 'admin' || selectedUser?.role === 'translator';
   
   // Fetch sections when document ID is available
   const { data: sections, isLoading: sectionsLoading } = useQuery({
@@ -381,7 +351,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
         documentId: Number(id),
         version: document.version,
         content: documentData,
-        createdById: currentUserId,
+        createdById: selectedUser?.id || 1,
         notes: "Salvataggio manuale"
       };
       
@@ -559,42 +529,8 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     deleteSectionMutation.mutate(sectionId);
   };
   
-  // Effect to update permissions when user role changes in the context
-  useEffect(() => {
-    if (selectedUser?.role) {
-      console.log('User role changed to:', selectedUser.role);
-      // Aggiorna le variabili di permesso in base al nuovo ruolo
-      switch(selectedUser.role) {
-        case 'admin':
-          setCanEdit(true);
-          setCanManageUsers(true);
-          setCanTranslate(true);
-          break;
-        case 'editor':
-          setCanEdit(true);
-          setCanManageUsers(false);
-          setCanTranslate(false);
-          break;
-        case 'translator':
-          setCanEdit(false);
-          setCanManageUsers(false);
-          setCanTranslate(true);
-          break;
-        case 'reader':
-          setCanEdit(false);
-          setCanManageUsers(false);
-          setCanTranslate(false);
-          break;
-        default:
-          setCanEdit(false);
-          setCanManageUsers(false);
-          setCanTranslate(false);
-      }
-      
-      // Aggiorna lo stato locale per mantenerlo sincronizzato col contesto
-      setCurrentUserRole(selectedUser.role);
-    }
-  }, [selectedUser?.role]);
+  // I permessi sono ora derivati direttamente dal contesto utente, non servono più useEffect
+  // per gestire i permessi
 
   // Effect to handle drag events for trash bin
   useEffect(() => {
@@ -692,7 +628,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                     <CardContent>
                       <DocumentDetails 
                         document={null} 
-                        userId={currentUserId}
+                        userId={selectedUser?.id || 1}
                       />
                     </CardContent>
                   </Card>
