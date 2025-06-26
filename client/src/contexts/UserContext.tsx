@@ -52,9 +52,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const isUserSelected = selectedUser !== null;
 
-  // Debug: mostra lo stato dell'utente selezionato
-  console.log('UserContext - selectedUser:', selectedUser, 'isUserSelected:', isUserSelected);
-
   return (
     <UserContext.Provider 
       value={{ 

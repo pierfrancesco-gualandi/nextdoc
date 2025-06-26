@@ -154,8 +154,7 @@ function Router() {
     getLastOpenDocument
   };
   
-  // Debug per capire il problema con la selezione utente
-  console.log('App.tsx - isUserSelected:', isUserSelected);
+
 
   return (
     <OpenDocumentsContext.Provider value={openDocumentsValue}>

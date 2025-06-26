@@ -134,6 +134,7 @@ Changelog:
   - Implementato click diretto per cambio utente nell'header
   - Selezione persiste durante tutta la sessione senza richiedere nuove selezioni
   - L'utente viene scelto una volta per sessione e rimane fisso finché non cambiato
+  - Risolto problema di timing nell'inizializzazione per evitare UserSelector duplicato
 ```
 
 ## User Preferences
