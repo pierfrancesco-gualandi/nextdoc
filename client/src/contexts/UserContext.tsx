@@ -19,29 +19,29 @@ const UserContext = createContext<UserContextType | null>(null);
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [selectedUser, setSelectedUserState] = useState<User | null>(null);
 
-  // Carica l'utente selezionato dal localStorage all'avvio
+  // Carica l'utente selezionato dal sessionStorage all'avvio
   useEffect(() => {
-    const savedUser = localStorage.getItem('selectedUser');
+    const savedUser = sessionStorage.getItem('selectedUser');
     if (savedUser) {
       try {
         const user = JSON.parse(savedUser);
         setSelectedUserState(user);
-        console.log('Utente ripristinato dal localStorage:', user);
+        console.log('Utente ripristinato dal sessionStorage:', user);
       } catch (error) {
         console.error('Errore nel ripristino dell\'utente:', error);
-        localStorage.removeItem('selectedUser');
+        sessionStorage.removeItem('selectedUser');
       }
     }
   }, []);
 
-  // Funzione per impostare l'utente selezionato
+  // Funzione per impostare l'utente selezionato (solo al primo accesso)
   const setSelectedUser = (user: User | null) => {
     setSelectedUserState(user);
     if (user) {
-      localStorage.setItem('selectedUser', JSON.stringify(user));
+      sessionStorage.setItem('selectedUser', JSON.stringify(user));
       console.log('Utente selezionato e salvato:', user);
     } else {
-      localStorage.removeItem('selectedUser');
+      sessionStorage.removeItem('selectedUser');
       console.log('Selezione utente cancellata');
     }
   };
