@@ -59,6 +59,15 @@ function validateBody(schema: any, data: any) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Middleware per estrarre l'ID utente dalla sessione
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const selectedUserId = (req.session as any)?.selectedUserId;
+    if (selectedUserId) {
+      (req as any).userId = selectedUserId;
+    }
+    next();
+  });
+
   // Endpoint per la lista componenti della sezione 2.1
   app.get("/api/section21/components", (req: Request, res: Response) => {
     try {
@@ -279,16 +288,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User-Document assignment routes
+  app.get("/api/users/:userId/document-assignments", async (req: Request, res: Response) => {
+    try {
+      const userId = Number(req.params.userId);
+      const assignments = await storage.getUserDocumentAssignments(userId);
+      res.json(assignments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch user document assignments" });
+    }
+  });
+
+  app.get("/api/documents/:documentId/user-assignments", async (req: Request, res: Response) => {
+    try {
+      const documentId = Number(req.params.documentId);
+      const assignments = await storage.getDocumentAssignments(documentId);
+      res.json(assignments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch document user assignments" });
+    }
+  });
+
+  app.post("/api/user-document-assignments", async (req: Request, res: Response) => {
+    try {
+      const { userId, documentId } = req.body;
+      if (!userId || !documentId) {
+        return res.status(400).json({ message: "userId and documentId are required" });
+      }
+      
+      const assignment = await storage.createUserDocumentAssignment({ userId, documentId });
+      res.status(201).json(assignment);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create user document assignment" });
+    }
+  });
+
+  app.delete("/api/users/:userId/documents/:documentId/assignment", async (req: Request, res: Response) => {
+    try {
+      const userId = Number(req.params.userId);
+      const documentId = Number(req.params.documentId);
+      const success = await storage.deleteUserDocumentAssignment(userId, documentId);
+      if (!success) {
+        return res.status(404).json({ message: "Assignment not found" });
+      }
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete user document assignment" });
+    }
+  });
+
+  app.get("/api/users/:userId/assigned-documents", async (req: Request, res: Response) => {
+    try {
+      const userId = Number(req.params.userId);
+      const documents = await storage.getAssignedDocumentsForUser(userId);
+      res.json(documents);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch assigned documents for user" });
+    }
+  });
+
+  // Endpoint per creare assegnazioni di test (solo per sviluppo)
+  app.post("/api/test/create-document-assignments", async (req: Request, res: Response) => {
+    try {
+      // Ottieni tutti gli utenti e documenti
+      const users = await storage.getUsers();
+      const documents = await storage.getDocuments();
+      
+      if (users.length === 0 || documents.length === 0) {
+        return res.status(400).json({ message: "No users or documents found" });
+      }
+
+      // Crea assegnazioni di test
+      const assignments = [];
+      
+      // Assegna alcuni documenti agli utenti non-admin
+      const nonAdminUsers = users.filter(user => user.role !== 'admin');
+      
+      for (const user of nonAdminUsers) {
+        // Assegna i primi 2 documenti a ogni utente non-admin
+        for (let i = 0; i < Math.min(2, documents.length); i++) {
+          try {
+            const assignment = await storage.createUserDocumentAssignment({
+              userId: user.id,
+              documentId: documents[i].id
+            });
+            assignments.push(assignment);
+          } catch (error) {
+            // Ignora errori di duplicazione
+          }
+        }
+      }
+      
+      res.json({ 
+        message: "Test assignments created",
+        assignments: assignments.length,
+        totalUsers: nonAdminUsers.length,
+        totalDocuments: documents.length
+      });
+    } catch (error) {
+      console.error("Error creating test assignments:", error);
+      res.status(500).json({ message: "Failed to create test assignments" });
+    }
+  });
+
   // Document routes
   app.get("/api/documents", async (req: Request, res: Response) => {
     try {
       const query = req.query.q as string | undefined;
+      const userId = (req as any).userId; // ID utente dalla sessione autenticata
       let documents;
       
       if (query) {
         documents = await storage.searchDocuments(query);
+        // Filtra i risultati della ricerca per utenti non-admin
+        if (userId) {
+          const user = await storage.getUser(userId);
+          if (user?.role !== 'admin') {
+            const assignedDocuments = await storage.getAssignedDocumentsForUser(userId);
+            const assignedIds = assignedDocuments.map(d => d.id);
+            documents = documents.filter(doc => assignedIds.includes(doc.id));
+          }
+        }
       } else {
-        documents = await storage.getDocuments();
+        documents = await storage.getDocuments(userId);
       }
       
       res.json(documents);

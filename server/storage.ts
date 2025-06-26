@@ -426,7 +426,8 @@ export class MemStorage implements IStorage {
     return this.documents.get(id);
   }
 
-  async getDocuments(): Promise<Document[]> {
+  async getDocuments(userId?: number): Promise<Document[]> {
+    // MemStorage sempre restituisce tutti i documenti (non implementa assegnazioni)
     return Array.from(this.documents.values());
   }
 
