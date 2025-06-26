@@ -14,8 +14,6 @@ interface HeaderProps {
   status?: string;
   showTabs?: boolean;
   selectedLanguage?: string;
-  activeTab?: string;
-  onTabChange?: (tab: string) => void;
   onSave?: () => void;
   onClose?: () => void;
   toggleSidebar?: () => void;
@@ -27,13 +25,12 @@ export default function Header({
   status = "draft",
   showTabs = false,
   selectedLanguage,
-  activeTab = "editor",
-  onTabChange,
   onSave,
   onClose,
   toggleSidebar
 }: HeaderProps) {
   const [, navigate] = useLocation();
+  const [activeTab, setActiveTab] = useState("editor");
   const { toast } = useToast();
   
   // Stati per gestire i dropdown

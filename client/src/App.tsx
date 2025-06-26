@@ -21,7 +21,7 @@ import { UserProvider, useUser } from "./contexts/UserContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-
+import UserSelector from "@/components/user-selector";
 
 // Definizione delle interfacce per i documenti aperti
 export interface OpenDocument {
@@ -158,6 +158,9 @@ function Router() {
 
   return (
     <OpenDocumentsContext.Provider value={openDocumentsValue}>
+      {/* Mostra il selettore utente se nessun utente è selezionato */}
+      {!isUserSelected && <UserSelector />}
+      
       <div className="flex h-screen overflow-hidden bg-neutral-lightest">
         {showSidebar && <Sidebar activePath={location} />}
         <div className="flex-1 flex flex-col overflow-hidden">

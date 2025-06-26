@@ -135,8 +135,6 @@ Changelog:
   - Selezione persiste durante tutta la sessione senza richiedere nuove selezioni
   - L'utente viene scelto una volta per sessione e rimane fisso finché non cambiato
   - Risolto problema di timing nell'inizializzazione per evitare UserSelector duplicato
-  - Rimossa barra di selezione utente superiore duplicata, mantenuta solo quella nell'header
-  - Rimossa barra di selezione tab duplicata nell'Header del document editor, mantenuta solo quella funzionante nel body
 ```
 
 ## User Preferences
