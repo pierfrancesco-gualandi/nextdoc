@@ -212,7 +212,7 @@ export default function Users({ toggleSidebar }: UsersProps) {
   ) || [];
 
   // Check if user has access
-  if (!canPerformAction(selectedUser, 'manageUsers')) {
+  if (!canPerformAction(selectedUser, 'manage-users')) {
     return (
       <div className="flex flex-col min-h-screen bg-neutral-lightest">
         <Header toggleSidebar={toggleSidebar} />
