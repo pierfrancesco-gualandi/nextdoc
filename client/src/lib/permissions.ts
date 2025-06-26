@@ -5,22 +5,41 @@ export type Permission = "read" | "edit" | "admin" | "translate";
 
 // Ruoli utente con i loro permessi di default
 export const DEFAULT_ROLE_PERMISSIONS: Record<string, Permission[]> = {
-  admin: ["read", "edit", "admin", "translate"],
-  editor: ["read", "edit"],
-  translator: ["read", "translate"],
-  reader: ["read"]
+  admin: ["read", "edit", "admin", "translate"], // Accesso completo a tutto
+  editor: ["read", "edit"], // Tutto tranne impostazioni
+  translator: ["translate"], // Solo traduzioni
+  reader: ["read"] // Solo lettura/anteprima
 };
 
 // Permessi specifici per azioni
 export const ACTION_PERMISSIONS = {
+  // Visualizzazione documenti
   viewDocument: ["read", "edit", "admin", "translate"] as Permission[],
+  viewDocumentPreview: ["read", "edit", "admin", "translate"] as Permission[],
+  
+  // Modifica documenti
   editDocument: ["edit", "admin"] as Permission[],
-  adminDocument: ["admin"] as Permission[],
-  translateDocument: ["translate", "admin"] as Permission[],
-  changeDocumentStatus: ["admin"] as Permission[],
+  createDocument: ["edit", "admin"] as Permission[],
   deleteDocument: ["admin"] as Permission[],
+  changeDocumentStatus: ["admin"] as Permission[],
+  
+  // Traduzioni
+  accessTranslations: ["translate", "admin"] as Permission[],
+  translateDocument: ["translate", "admin"] as Permission[],
+  
+  // Gestione utenti e impostazioni
   manageUsers: ["admin"] as Permission[],
-  viewUsers: ["admin", "editor"] as Permission[]
+  accessSettings: ["admin"] as Permission[],
+  viewUsers: ["admin"] as Permission[],
+  createUser: ["admin"] as Permission[],
+  editUser: ["admin"] as Permission[],
+  deleteUser: ["admin"] as Permission[],
+  
+  // Dashboard
+  accessDashboard: ["read", "edit", "admin", "translate"] as Permission[],
+  accessModulesLibrary: ["edit", "admin"] as Permission[],
+  accessComponents: ["edit", "admin"] as Permission[],
+  accessBom: ["edit", "admin"] as Permission[]
 };
 
 // Verifica se un utente ha un permesso specifico (globale)
@@ -47,13 +66,41 @@ export function canPerformAction(user: User | null, action: keyof typeof ACTION_
 export function canChangeDocumentStatus(user: User | null, documentCreatorId?: number): boolean {
   if (!user || !user.isActive) return false;
   
-  // Admin può sempre modificare
-  if (user.role === 'admin') return true;
+  // Solo admin può modificare status
+  return user.role === 'admin';
+}
+
+// Funzioni specifiche per ogni ruolo
+export function isTranslatorOnly(user: User | null): boolean {
+  return user?.role === 'translator' && user?.isActive === true;
+}
+
+export function isReaderOnly(user: User | null): boolean {
+  return user?.role === 'reader' && user?.isActive === true;
+}
+
+// Verifica accesso alle diverse sezioni della dashboard
+export function canAccessDashboardSection(user: User | null, section: string): boolean {
+  if (!user || !user.isActive) return false;
   
-  // Il creatore del documento può modificare lo status
-  if (documentCreatorId && user.id === documentCreatorId) return true;
-  
-  return false;
+  switch (section) {
+    case 'documents':
+      return canPerformAction(user, 'accessDashboard');
+    case 'translations':
+      return canPerformAction(user, 'accessTranslations');
+    case 'users':
+      return canPerformAction(user, 'manageUsers');
+    case 'settings':
+      return canPerformAction(user, 'accessSettings');
+    case 'modules':
+      return canPerformAction(user, 'accessModulesLibrary');
+    case 'components':
+      return canPerformAction(user, 'accessComponents');
+    case 'bom':
+      return canPerformAction(user, 'accessBom');
+    default:
+      return false;
+  }
 }
 
 // Verifica se un utente può accedere a un documento
