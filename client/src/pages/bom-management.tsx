@@ -266,12 +266,18 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
       
       <main className="flex-1 overflow-y-auto bg-neutral-lightest p-6">
         <div className="max-w-7xl mx-auto">
+          {/* Header principale della pagina */}
+          <div className="mb-8">
+            <div className="flex justify-between items-start">
+              <div className="space-y-1">
+                <h1 className="text-3xl font-bold text-neutral-darkest tracking-tight">Distinte Base</h1>
+                <p className="text-lg text-neutral-medium">Gestisci componenti e distinte base per i tuoi progetti</p>
+              </div>
+            </div>
+          </div>
+          
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <div className="flex justify-between items-center mb-6">
-              <div>
-                <h1 className="text-2xl font-bold text-neutral-darkest">Distinte Base</h1>
-                <p className="text-neutral-dark">Gestisci componenti e distinte base</p>
-              </div>
               <TabsList>
                 <TabsTrigger value="boms">Distinte</TabsTrigger>
                 <TabsTrigger value="components">Componenti</TabsTrigger>
