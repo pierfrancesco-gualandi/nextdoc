@@ -240,8 +240,8 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
                             <CardHeader>
                               <div className="flex justify-between items-start">
                                 <CardTitle className="text-lg">{doc.title}</CardTitle>
-                                <span className={`status-badge ${statusDisplay.bgClass}`}>
-                                  {statusDisplay.label}
+                                <span className={`status-badge ${statusDisplay?.bgClass || 'bg-gray-100 text-gray-800'}`}>
+                                  {statusDisplay?.label || doc.status}
                                 </span>
                               </div>
                               <CardDescription>

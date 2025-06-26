@@ -117,25 +117,23 @@ export default function Documents({ toggleSidebar }: DocumentsProps) {
       <Header title="Documenti" toggleSidebar={toggleSidebar} />
       
       <main className="flex-1 overflow-y-auto bg-neutral-lightest p-6">
-        <main className="flex-1 overflow-y-auto bg-neutral-lightest p-6">
-          <div className="max-w-7xl mx-auto">
-            {/* Header principale della pagina */}
-            <div className="mb-8">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <h1 className="text-3xl font-bold text-neutral-darkest tracking-tight">Libreria Moduli</h1>
-                  <p className="text-lg text-neutral-medium">Gestisci e riutilizza moduli salvati nei tuoi documenti</p>
-                </div>
+        <div className="max-w-7xl mx-auto">
+          {/* Header principale della pagina */}
+          <div className="mb-8">
+            <div className="flex justify-between items-start">
+              <div className="space-y-1">
+                <h1 className="text-3xl font-bold text-neutral-darkest tracking-tight">Documenti</h1>
+                <p className="text-lg text-neutral-medium">Gestisci i tuoi documenti tecnici</p>
               </div>
-              <Button onClick={handleCreateNew} size="lg" className="mt-2">
-                <span className="material-icons text-sm mr-2">add</span>
-                Nuovo Documento
-              </Button>
             </div>
+            <Button onClick={handleCreateNew} size="lg" className="mt-2">
+              <span className="material-icons text-sm mr-2">add</span>
+              Nuovo Documento
+            </Button>
           </div>
-          
-          {/* Documenti aperti */}
-          {openDocuments.length > 0 && (
+        
+        {/* Documenti aperti */}
+        {openDocuments.length > 0 && (
             <div className="mb-6">
               <h2 className="text-lg font-medium text-neutral-dark mb-3">Documenti Aperti</h2>
               <div className="bg-white rounded-md shadow">
