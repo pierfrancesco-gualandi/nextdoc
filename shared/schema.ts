@@ -553,6 +553,26 @@ export type InsertTranslationImport = z.infer<typeof insertTranslationImportSche
 export type TranslationAIRequest = typeof translationAIRequests.$inferSelect;
 export type InsertTranslationAIRequest = z.infer<typeof insertTranslationAIRequestSchema>;
 
+// User-Document assignments (which documents each user can see)
+export const userDocumentAssignments = pgTable("user_document_assignments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  documentId: integer("document_id").notNull(),
+  assignedById: integer("assigned_by_id").notNull(),
+  assignedAt: timestamp("assigned_at").notNull().defaultNow(),
+}, (table) => ({
+  userDocumentUnique: uniqueIndex("user_document_unique").on(table.userId, table.documentId),
+}));
+
+export const insertUserDocumentAssignmentSchema = createInsertSchema(userDocumentAssignments).pick({
+  userId: true,
+  documentId: true,
+  assignedById: true,
+});
+
+export type UserDocumentAssignment = typeof userDocumentAssignments.$inferSelect;
+export type InsertUserDocumentAssignment = z.infer<typeof insertUserDocumentAssignmentSchema>;
+
 // Create upload schema
 export const insertUploadedFileSchema = createInsertSchema(uploadedFiles).pick({
   filename: true,

@@ -17,7 +17,8 @@ import {
   contentModuleTranslations, ContentModuleTranslation, InsertContentModuleTranslation,
   documentTranslations, DocumentTranslation, InsertDocumentTranslation,
   translationImports, TranslationImport, InsertTranslationImport,
-  translationAIRequests, TranslationAIRequest, InsertTranslationAIRequest
+  translationAIRequests, TranslationAIRequest, InsertTranslationAIRequest,
+  userDocumentAssignments, UserDocumentAssignment, InsertUserDocumentAssignment
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, like, or, desc, asc, isNull, count, inArray } from "drizzle-orm";
@@ -167,6 +168,13 @@ export interface IStorage {
   
   // Static labels for translations
   getStaticLabelsByLanguage(languageId: number): Promise<Record<string, string> | undefined>;
+
+  // User-Document assignment operations
+  getUserDocumentAssignments(userId: number): Promise<UserDocumentAssignment[]>;
+  getDocumentAssignments(documentId: number): Promise<UserDocumentAssignment[]>;
+  createUserDocumentAssignment(assignment: InsertUserDocumentAssignment): Promise<UserDocumentAssignment>;
+  deleteUserDocumentAssignment(userId: number, documentId: number): Promise<boolean>;
+  getAssignedDocumentsForUser(userId: number): Promise<Document[]>;
   
   // Document translations - utility methods
   getDocumentTranslationStatus(documentId: number, languageId: number): Promise<{
@@ -2648,6 +2656,63 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUploadedFile(id: number): Promise<boolean> {
     return this.uploadedFiles.delete(id);
+  }
+
+  // User-Document assignment operations
+  async getUserDocumentAssignments(userId: number): Promise<UserDocumentAssignment[]> {
+    return db
+      .select()
+      .from(userDocumentAssignments)
+      .where(eq(userDocumentAssignments.userId, userId));
+  }
+
+  async getDocumentAssignments(documentId: number): Promise<UserDocumentAssignment[]> {
+    return db
+      .select()
+      .from(userDocumentAssignments)
+      .where(eq(userDocumentAssignments.documentId, documentId));
+  }
+
+  async createUserDocumentAssignment(assignment: InsertUserDocumentAssignment): Promise<UserDocumentAssignment> {
+    const [newAssignment] = await db
+      .insert(userDocumentAssignments)
+      .values({
+        ...assignment,
+        assignedAt: new Date()
+      })
+      .returning();
+    return newAssignment;
+  }
+
+  async deleteUserDocumentAssignment(userId: number, documentId: number): Promise<boolean> {
+    const result = await db
+      .delete(userDocumentAssignments)
+      .where(
+        and(
+          eq(userDocumentAssignments.userId, userId),
+          eq(userDocumentAssignments.documentId, documentId)
+        )
+      );
+    return !!result;
+  }
+
+  async getAssignedDocumentsForUser(userId: number): Promise<Document[]> {
+    const assignments = await db
+      .select({
+        documentId: userDocumentAssignments.documentId
+      })
+      .from(userDocumentAssignments)
+      .where(eq(userDocumentAssignments.userId, userId));
+
+    if (assignments.length === 0) {
+      return [];
+    }
+
+    const documentIds = assignments.map(a => a.documentId);
+    return db
+      .select()
+      .from(documents)
+      .where(inArray(documents.id, documentIds));
   }
 }
 
