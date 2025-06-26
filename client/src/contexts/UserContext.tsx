@@ -17,22 +17,21 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | null>(null);
 
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [selectedUser, setSelectedUserState] = useState<User | null>(null);
-
-  // Carica l'utente selezionato dal sessionStorage all'avvio
-  useEffect(() => {
-    const savedUser = sessionStorage.getItem('selectedUser');
-    if (savedUser) {
-      try {
+  // Inizializza direttamente dal sessionStorage per evitare problemi di timing
+  const [selectedUser, setSelectedUserState] = useState<User | null>(() => {
+    try {
+      const savedUser = sessionStorage.getItem('selectedUser');
+      if (savedUser) {
         const user = JSON.parse(savedUser);
-        setSelectedUserState(user);
         console.log('Utente ripristinato dal sessionStorage:', user);
-      } catch (error) {
-        console.error('Errore nel ripristino dell\'utente:', error);
-        sessionStorage.removeItem('selectedUser');
+        return user;
       }
+    } catch (error) {
+      console.error('Errore nel ripristino dell\'utente:', error);
+      sessionStorage.removeItem('selectedUser');
     }
-  }, []);
+    return null;
+  });
 
   // Funzione per impostare l'utente selezionato (solo al primo accesso)
   const setSelectedUser = (user: User | null) => {
@@ -52,6 +51,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const isUserSelected = selectedUser !== null;
+
+  // Debug: mostra lo stato dell'utente selezionato
+  console.log('UserContext - selectedUser:', selectedUser, 'isUserSelected:', isUserSelected);
 
   return (
     <UserContext.Provider 
