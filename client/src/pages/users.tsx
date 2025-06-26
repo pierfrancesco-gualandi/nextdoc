@@ -35,7 +35,7 @@ export default function Users({ toggleSidebar }: UsersProps) {
 
   // Verifica permessi - solo admin può accedere
   useEffect(() => {
-    if (!canPerformAction(selectedUser, 'manageUsers')) {
+    if (!canPerformAction(selectedUser, 'manage-users')) {
       toast({
         title: "Accesso negato",
         description: "Non hai i permessi per accedere alla gestione utenti",
