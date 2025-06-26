@@ -166,6 +166,8 @@ export function canAccessDashboardSection(user: AuthenticatedUser | null, sectio
       return permissions.canViewModulesLibrary;
     case 'components':
       return permissions.canManageComponents;
+    case 'bom':
+      return permissions.canManageComponents; // Solo admin e editor possono vedere confronto BOM
     case 'translations':
       return permissions.canTranslate;
     case 'users':
@@ -173,7 +175,7 @@ export function canAccessDashboardSection(user: AuthenticatedUser | null, sectio
     case 'settings':
       return permissions.canManageSettings;
     default:
-      return true;
+      return false; // Cambio il default a false per sicurezza
   }
 }
 
