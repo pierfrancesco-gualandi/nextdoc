@@ -9,13 +9,21 @@ import DocumentTreeView from "@/components/document-tree-view";
 import ModuleToolbar from "@/components/module-toolbar";
 import ContentModule from "@/components/content-module";
 import DocumentDetails from "@/components/document-details";
+import VersionComparison from "@/components/version-comparison";
+import BomManager from "@/components/bom-manager";
+import SectionBomAssociator from "@/components/section-bom-associator";
 import SectionBomSummary from "@/components/section-bom-summary";
+import DocumentSectionPreview from "@/components/DocumentSectionPreview";
+import TranslatedDocumentSectionPreview from "@/components/TranslatedDocumentSectionPreview";
+import LanguageSelector from "@/components/language-selector";
 
 import { useUserContext } from "../contexts/UserContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2, X } from "lucide-react";
 import { useOpenDocuments } from "@/App";
 import { 
@@ -104,6 +112,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   const [showTrashBin, setShowTrashBin] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<string>("editor");
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("0"); // Lingua predefinita (originale)
   
   // Fetch document data
   const { data: document, isLoading: documentLoading } = useQuery<any>({
