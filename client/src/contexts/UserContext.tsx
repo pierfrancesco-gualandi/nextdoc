@@ -1,100 +1,76 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { useQuery } from '@tanstack/react-query';
+
+interface User {
+  id: number;
+  username: string;
+  name: string;
+  role: string;
+}
 
 interface UserContextType {
-  currentUserId: number;
-  currentUserRole: string;
-  displayName: string;
-  userBadgeColor: string;
-  setUserDetails: (userId: number, userRole: string, displayName: string, badgeColor: string) => void;
+  selectedUser: User | null;
+  setSelectedUser: (user: User | null) => void;
+  isUserSelected: boolean;
+  clearUserSelection: () => void;
 }
 
-const defaultContext: UserContextType = {
-  currentUserId: 1,
-  currentUserRole: 'reader',
-  displayName: '',
-  userBadgeColor: '#3b82f6',
-  setUserDetails: () => {},
-};
+const UserContext = createContext<UserContextType | null>(null);
 
-const UserContext = createContext<UserContextType>(defaultContext);
+export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [selectedUser, setSelectedUserState] = useState<User | null>(null);
 
-export const useUser = () => useContext(UserContext);
-
-interface UserProviderProps {
-  children: ReactNode;
-}
-
-export const UserProvider = ({ children }: UserProviderProps) => {
-  const [currentUserId, setCurrentUserId] = useState<number>(
-    parseInt(sessionStorage.getItem('selectedUserId') || '1')
-  );
-  const [currentUserRole, setCurrentUserRole] = useState<string>(
-    sessionStorage.getItem('selectedUserRole') || 'reader'
-  );
-  const [displayName, setDisplayName] = useState<string>(
-    sessionStorage.getItem('selectedUserName') || ''
-  );
-  const [userBadgeColor, setUserBadgeColor] = useState<string>(
-    sessionStorage.getItem('selectedUserColor') || '#3b82f6'
-  );
-
-  // Carica gli utenti dal server
-  const { data: users } = useQuery({
-    queryKey: ['/api/users'],
-  });
-
-  // Se non abbiamo un nome utente ma abbiamo un ID, proviamo a ottenerlo dagli utenti
+  // Carica l'utente selezionato dal localStorage all'avvio
   useEffect(() => {
-    if (!displayName && users && Array.isArray(users) && currentUserId) {
-      const user = users.find((user: any) => user.id === currentUserId);
-      if (user) {
-        setDisplayName(user.name || user.username);
-        setCurrentUserRole(user.role);
-        
-        // Imposta il colore predefinito in base al ruolo
-        const roleColors: Record<string, string> = {
-          'admin': '#3b82f6',  // blu
-          'editor': '#16a34a',  // verde
-          'translator': '#ca8a04',  // giallo
-          'reader': '#db2777',  // rosa
-        };
-        
-        setUserBadgeColor(roleColors[user.role] || '#3b82f6');
-        
-        // Salva nel sessionStorage
-        sessionStorage.setItem('selectedUserId', currentUserId.toString());
-        sessionStorage.setItem('selectedUserRole', user.role);
-        sessionStorage.setItem('selectedUserName', user.name || user.username);
-        sessionStorage.setItem('selectedUserColor', roleColors[user.role] || '#3b82f6');
+    const savedUser = localStorage.getItem('selectedUser');
+    if (savedUser) {
+      try {
+        const user = JSON.parse(savedUser);
+        setSelectedUserState(user);
+        console.log('Utente ripristinato dal localStorage:', user);
+      } catch (error) {
+        console.error('Errore nel ripristino dell\'utente:', error);
+        localStorage.removeItem('selectedUser');
       }
     }
-  }, [users, currentUserId, displayName]);
+  }, []);
 
-  const setUserDetails = (userId: number, userRole: string, name: string, badgeColor: string) => {
-    setCurrentUserId(userId);
-    setCurrentUserRole(userRole);
-    setDisplayName(name);
-    setUserBadgeColor(badgeColor);
-
-    // Salva nel sessionStorage
-    sessionStorage.setItem('selectedUserId', userId.toString());
-    sessionStorage.setItem('selectedUserRole', userRole);
-    sessionStorage.setItem('selectedUserName', name);
-    sessionStorage.setItem('selectedUserColor', badgeColor);
+  // Funzione per impostare l'utente selezionato
+  const setSelectedUser = (user: User | null) => {
+    setSelectedUserState(user);
+    if (user) {
+      localStorage.setItem('selectedUser', JSON.stringify(user));
+      console.log('Utente selezionato e salvato:', user);
+    } else {
+      localStorage.removeItem('selectedUser');
+      console.log('Selezione utente cancellata');
+    }
   };
 
+  // Funzione per cancellare la selezione utente
+  const clearUserSelection = () => {
+    setSelectedUser(null);
+  };
+
+  const isUserSelected = selectedUser !== null;
+
   return (
-    <UserContext.Provider
-      value={{
-        currentUserId,
-        currentUserRole,
-        displayName,
-        userBadgeColor,
-        setUserDetails,
+    <UserContext.Provider 
+      value={{ 
+        selectedUser, 
+        setSelectedUser, 
+        isUserSelected,
+        clearUserSelection
       }}
     >
       {children}
     </UserContext.Provider>
   );
+};
+
+export const useUserContext = () => {
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error('useUserContext deve essere usato all\'interno di un UserProvider');
+  }
+  return context;
 };

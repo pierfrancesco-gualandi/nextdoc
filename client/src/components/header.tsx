@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "lucide-react";
-import { useUser } from "../contexts/UserContext";
+import { useUserContext } from "../contexts/UserContext";
 import UserSelectorDialog from "./user-selector-dialog";
 
 interface HeaderProps {
@@ -53,7 +53,7 @@ export default function Header({
   });
   
   // Usa il contesto utente
-  const { currentUserId, displayName, userBadgeColor, currentUserRole, setUserDetails } = useUser();
+  const { selectedUser } = useUserContext();
 
   // Format status for display
   const getStatusDisplay = (status: string) => {

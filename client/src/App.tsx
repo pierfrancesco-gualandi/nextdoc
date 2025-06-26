@@ -17,10 +17,11 @@ import Sidebar from "@/components/sidebar";
 import React, { useState, createContext, useContext, useEffect } from "react";
 import SettingsRedirect from "@/pages/settings-redirect";
 import SettingsPage from "@/pages/settings-page";
-import { UserProvider } from "./contexts/UserContext";
+import { UserProvider, useUserContext } from "./contexts/UserContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import UserSelector from "@/components/user-selector";
 
 // Definizione delle interfacce per i documenti aperti
 export interface OpenDocument {
