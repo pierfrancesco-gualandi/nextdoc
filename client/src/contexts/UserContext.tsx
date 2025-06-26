@@ -74,3 +74,6 @@ export const useUserContext = () => {
   }
   return context;
 };
+
+// Alias per compatibilità con codice esistente
+export const useUser = useUserContext;

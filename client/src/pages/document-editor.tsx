@@ -17,7 +17,7 @@ import DocumentSectionPreview from "@/components/DocumentSectionPreview";
 import TranslatedDocumentSectionPreview from "@/components/TranslatedDocumentSectionPreview";
 import LanguageSelector from "@/components/language-selector";
 import UserSelectorDialog from "@/components/user-selector-dialog";
-import { useUser } from "../contexts/UserContext";
+import { useUserContext } from "../contexts/UserContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -168,7 +168,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   });
   
   // Usa il contesto utente
-  const { setUserDetails, currentUserRole: contextUserRole } = useUser();
+  const { selectedUser } = useUserContext();
   
   // Gestisce la chiusura del selettore utente con selezione
   const handleUserSelect = (userId: number, userRole: string, customName: string, badgeColor: string) => {
@@ -971,8 +971,8 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                                   level={0}
                                   languageId={selectedLanguage}
                                   highlightMissingTranslations={true}
-                                  userRole={currentUserRole}
-                                  userId={currentUserId}
+                                  userRole={selectedUser?.role || 'viewer'}
+                                  userId={selectedUser?.id || 1}
                                 />
                               ) : (
                                 <DocumentSectionPreview 
@@ -981,8 +981,8 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
                                   allSections={sections}
                                   documentId={id}
                                   level={0}
-                                  userRole={currentUserRole}
-                                  userId={currentUserId}
+                                  userRole={selectedUser?.role || 'viewer'}
+                                  userId={selectedUser?.id || 1}
                                   selectedLanguage={selectedLanguage} // Passa la lingua selezionata
                                 />
                               )

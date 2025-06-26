@@ -56,6 +56,7 @@ function Router() {
   const [location] = useLocation();
   const [showSidebar, setShowSidebar] = useState(true);
   const [currentDocumentId, setCurrentDocumentId] = useState<number | null>(null);
+  const { isUserSelected } = useUserContext();
   
   // Recupera documenti aperti dal localStorage all'avvio
   const [openDocuments, setOpenDocuments] = useState<OpenDocument[]>(() => {
@@ -155,6 +156,9 @@ function Router() {
   
   return (
     <OpenDocumentsContext.Provider value={openDocumentsValue}>
+      {/* Mostra il selettore utente se nessun utente è selezionato */}
+      {!isUserSelected && <UserSelector />}
+      
       <div className="flex h-screen overflow-hidden bg-neutral-lightest">
         {showSidebar && <Sidebar activePath={location} />}
         <div className="flex-1 flex flex-col overflow-hidden">
