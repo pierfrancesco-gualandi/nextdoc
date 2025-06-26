@@ -16,7 +16,7 @@ import SectionBomSummary from "@/components/section-bom-summary";
 import DocumentSectionPreview from "@/components/DocumentSectionPreview";
 import TranslatedDocumentSectionPreview from "@/components/TranslatedDocumentSectionPreview";
 import LanguageSelector from "@/components/language-selector";
-import UserSelectorDialog from "@/components/user-selector-dialog";
+
 import { useUserContext } from "../contexts/UserContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -168,66 +168,11 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   });
   
   // Usa il contesto utente
-  const { selectedUser } = useUserContext();
+  const { selectedUser } = useUser();
   
   // Gestisce la chiusura del selettore utente con selezione
-  const handleUserSelect = (userId: number, userRole: string, customName: string, badgeColor: string) => {
-    setCurrentUserId(userId);
-    setCurrentUserRole(userRole);
-    setDisplayName(customName);
-    setUserBadgeColor(badgeColor);
-    setShowUserSelector(false);
-    
-    // Aggiorna il contesto utente
-    setUserDetails(userId, userRole, customName, badgeColor);
-    
-    // Salva nel sessionStorage
-    sessionStorage.setItem('selectedUserId', userId.toString());
-    sessionStorage.setItem('selectedUserRole', userRole);
-    sessionStorage.setItem('selectedUserName', customName);
-    sessionStorage.setItem('selectedUserColor', badgeColor);
-    
-    // Imposta i permessi in base al ruolo
-    switch(userRole) {
-      case 'admin':
-        setCanEdit(true);
-        setCanManageUsers(true);
-        setCanTranslate(true);
-        break;
-      case 'editor':
-        setCanEdit(true);
-        setCanManageUsers(false);
-        setCanTranslate(false);
-        break;
-      case 'translator':
-        setCanEdit(false);
-        setCanManageUsers(false);
-        setCanTranslate(true);
-        break;
-      case 'reader':
-        setCanEdit(false);
-        setCanManageUsers(false);
-        setCanTranslate(false);
-        break;
-      default:
-        setCanEdit(false);
-        setCanManageUsers(false);
-        setCanTranslate(false);
-    }
-    
-    // Visualizza il ruolo in italiano per il toast
-    const roleInItalian = {
-      'admin': 'amministratore',
-      'editor': 'editore',
-      'translator': 'traduttore',
-      'reader': 'lettore'
-    };
-    
-    toast({
-      title: "Utente selezionato",
-      description: `Stai visualizzando il documento con i permessi di ${roleInItalian[userRole as keyof typeof roleInItalian]}`,
-    });
-  };
+  // Gestione delle autorizzazioni basata sull'utente dal contesto
+  // Non più necessario gestire manualmente la selezione utente
   
   // Gestisce la chiusura del selettore utente senza selezione
   const handleUserSelectCancel = () => {
@@ -667,12 +612,7 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   
   return (
     <>
-      {/* Dialog per selezione utente */}
-      <UserSelectorDialog 
-        isOpen={showUserSelector} 
-        onClose={handleUserSelect}
-        onCancel={handleUserSelectCancel}
-      />
+      {/* Sistema di selezione utente ora gestito tramite contesto globale */}
       
       <Header 
         title={documentTitle} 
