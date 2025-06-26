@@ -4,27 +4,8 @@ import { storage } from "./storage";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { upload, saveFileInfo, getFileUrl } from "./upload";
-import { handleZipUpload, handleMultiZipUpload } from "./zip-handler";
-import { handleWebGLModelUpload, initializeWebGLModelFiles } from "./webgl-model-handler";
-import { upload as folderUpload, processUploadedFolder, extractZipFile } from "./api/upload-folder";
-import { upload3DModel, handle3DModelUpload } from "./api/upload-3d-model";
-import { listFiles, createModelFolder } from "./api/files";
-import { createWordDocument } from "./word-export";
 import path from "path";
-// Importazioni dirette ESM
-import { getComponentsForSection21 } from './api/components.js';
-import { getSpecificComponentsForSection21 } from './api/section21components.js';
-import { applyPostProcessing, saveExportedHtml } from './export-utils.mjs';
 import fs from "fs";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
-
-// Ottieni il percorso corrente in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-import { read, utils } from 'xlsx';
-import { parse } from 'csv-parse/sync';
-import type { jsonb } from "drizzle-orm/pg-core";
 import {
   insertUserSchema,
   insertDocumentSchema,
@@ -41,8 +22,7 @@ import {
   insertSectionTranslationSchema,
   insertContentModuleTranslationSchema,
   insertTranslationImportSchema,
-  insertTranslationAIRequestSchema,
-  insertDocumentTranslationSchema
+  insertTranslationAIRequestSchema
 } from "@shared/schema";
 
 // Helper function to validate request body against a schema
@@ -58,79 +38,6 @@ function validateBody(schema: any, data: any) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Endpoint per la lista componenti della sezione 2.1
-  app.get("/api/section21/components", (req: Request, res: Response) => {
-    try {
-      console.log("API section21/components chiamata");
-      const components = getSpecificComponentsForSection21();
-      
-      // Genera l'HTML per la tabella dei componenti
-      const htmlContent = `
-        <div class="bom-container">
-          <h4 class="bom-title">Elenco Componenti Disegno 3D</h4>
-          <div class="bom-content">
-            <table class="bom-table">
-              <thead>
-                <tr>
-                  <th>N°</th>
-                  <th>Codice</th>
-                  <th>Descrizione</th>
-                  <th>Quantità</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${components.map((item, index) => `
-                  <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.code || '-'}</td>
-                    <td>${item.description || '-'}</td>
-                    <td>${item.quantity || 1}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
-      
-      console.log("HTML generato:", htmlContent.substring(0, 100) + "...");
-      res.send(htmlContent);
-    } catch (error) {
-      console.error("Errore nell'API section21/components:", error);
-      res.status(500).send("Errore nel recupero dei componenti specifici per la sezione 2.1");
-    }
-  });
-  
-  // Endpoint per verificare il riconoscimento della sezione 2.1
-  app.get("/api/section21/check/:sectionId/:sectionTitle?", (req: Request, res: Response) => {
-    try {
-      const sectionId = parseInt(req.params.sectionId);
-      const sectionTitle = req.params.sectionTitle || '';
-      
-      console.log(`Verifica sezione 2.1: ID=${sectionId}, Titolo=${sectionTitle}`);
-      
-      // Determina se è la sezione 2.1 (DISEGNO 3D)
-      const isSection21 = (
-        sectionId === 16 || 
-        sectionId === 21 ||
-        (sectionTitle && sectionTitle.includes('DISEGNO 3D')) ||
-        sectionTitle.includes('2.1')
-      );
-      
-      res.json({
-        sectionId,
-        sectionTitle,
-        isSection21: isSection21,
-        components: isSection21 ? getSpecificComponentsForSection21() : []
-      });
-    } catch (error) {
-      console.error("Errore nella verifica della sezione 2.1:", error);
-      res.status(500).json({ 
-        error: "Errore nella verifica della sezione 2.1",
-        message: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
   // User routes
   app.get("/api/users", async (req: Request, res: Response) => {
     try {
@@ -389,36 +296,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/modules/:id", async (req: Request, res: Response) => {
     try {
-      const moduleId = Number(req.params.id);
-      const languageId = req.query.languageId ? Number(req.query.languageId) : undefined;
-      
-      // Ottieni il modulo di base
-      const module = await storage.getContentModule(moduleId);
+      const module = await storage.getContentModule(Number(req.params.id));
       if (!module) {
         return res.status(404).json({ message: "Content module not found" });
       }
-      
-      // Se è richiesta una lingua specifica, ottieni anche la traduzione
-      if (languageId) {
-        try {
-          // Cerca la traduzione per questo modulo nella lingua richiesta
-          const translations = await storage.getContentModuleTranslationsByModuleId(moduleId, languageId);
-          
-          if (translations && translations.length > 0) {
-            // Aggiungi la traduzione al modulo
-            const moduleWithTranslation = {
-              ...module,
-              translation: translations[0]
-            };
-            return res.json(moduleWithTranslation);
-          }
-        } catch (translationError) {
-          console.error("Errore nel recupero della traduzione:", translationError);
-          // Non fallire se non troviamo la traduzione, restituisci solo il modulo di base
-        }
-      }
-      
-      // Restituisci il modulo senza traduzione
       res.json(module);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch content module" });
@@ -432,33 +313,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: error });
       }
       
-      // Calcola automaticamente l'ordine se non è specificato
-      if (data.order === undefined) {
-        try {
-          // Ottieni tutti i moduli esistenti nella sezione
-          const existingModules = await storage.getContentModulesBySectionId(data.sectionId);
-          
-          // Trova l'ordine più alto e aggiungi 1
-          const highestOrder = existingModules.length > 0 
-            ? Math.max(...existingModules.map(m => m.order)) 
-            : -1;
-            
-          data.order = highestOrder + 1;
-        } catch (err) {
-          console.error("Errore nel calcolo dell'ordine automatico:", err);
-          data.order = 100; // Valore di fallback
-        }
-      }
-      
-      try {
-        const module = await storage.createContentModule(data);
-        res.status(201).json(module);
-      } catch (err) {
-        console.error("Errore nella creazione del modulo:", err);
-        res.status(500).json({ message: "Failed to create content module", error: err.message });
-      }
+      const module = await storage.createContentModule(data);
+      res.status(201).json(module);
     } catch (error) {
-      console.error("Errore generico:", error);
       res.status(500).json({ message: "Failed to create content module" });
     }
   });
@@ -466,27 +323,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/modules/:id", async (req: Request, res: Response) => {
     try {
       const moduleId = Number(req.params.id);
-      
-      // Gestione speciale per il formato del content
-      let moduleData = req.body;
-      
-      // Se il contenuto è una stringa, proviamo a convertirlo in oggetto
-      if (req.body.module && typeof req.body.module.content === 'string') {
-        try {
-          const parsedContent = JSON.parse(req.body.module.content);
-          moduleData = {
-            ...req.body.module,
-            content: parsedContent
-          };
-        } catch (parseError) {
-          console.error("Errore nel parsing del content:", parseError);
-          // Mantieni il content così com'è se non può essere analizzato
-        }
-      }
-      
-      const { data, error } = validateBody(insertContentModuleSchema.partial(), moduleData);
+      const { data, error } = validateBody(insertContentModuleSchema.partial(), req.body);
       if (error) {
-        console.error("Errore di validazione:", error);
         return res.status(400).json({ message: error });
       }
       
@@ -497,7 +335,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(module);
     } catch (error) {
-      console.error("Errore nell'aggiornamento del modulo:", error);
       res.status(500).json({ message: "Failed to update content module" });
     }
   });
@@ -663,78 +500,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get BOMs associated with a document
-  app.get("/api/documents/:documentId/boms", async (req: Request, res: Response) => {
-    try {
-      const documentId = Number(req.params.documentId);
-      
-      // Get all sections in the document
-      const sections = await storage.getSectionsByDocumentId(documentId);
-      
-      // Get content modules for each section
-      const bomModules = [];
-      for (const section of sections) {
-        const modules = await storage.getContentModulesBySectionId(section.id);
-        
-        // Filter for BOM modules
-        const sectionBomModules = modules.filter(module => {
-          if (module.type !== 'bom') return false;
-          
-          // Parse content to get BOM ID
-          try {
-            let content;
-            if (typeof module.content === 'string') {
-              content = JSON.parse(module.content);
-            } else {
-              content = module.content;
-            }
-            
-            return content && content.bomId;
-          } catch (e) {
-            return false;
-          }
-        });
-        
-        bomModules.push(...sectionBomModules);
-      }
-      
-      // Extract unique BOM IDs
-      const bomIds = new Set();
-      bomModules.forEach(module => {
-        try {
-          let content;
-          if (typeof module.content === 'string') {
-            content = JSON.parse(module.content);
-          } else {
-            content = module.content;
-          }
-          
-          if (content && content.bomId) {
-            bomIds.add(content.bomId);
-          }
-        } catch (e) {
-          // Skip invalid content
-        }
-      });
-      
-      // Get BOM details for each ID
-      const boms = [];
-      const bomIdsArray = Array.from(bomIds);
-      for (let i = 0; i < bomIdsArray.length; i++) {
-        const bomId = bomIdsArray[i];
-        const bom = await storage.getBom(Number(bomId));
-        if (bom) {
-          boms.push(bom);
-        }
-      }
-      
-      res.json(boms);
-    } catch (error) {
-      console.error("Error fetching document BOMs:", error);
-      res.status(500).json({ message: "Failed to fetch document BOMs" });
-    }
-  });
-
   app.get("/api/boms/:id", async (req: Request, res: Response) => {
     try {
       const bom = await storage.getBom(Number(req.params.id));
@@ -783,325 +548,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/boms/:id", async (req: Request, res: Response) => {
     try {
       const bomId = Number(req.params.id);
-      
-      // Prima eliminiamo tutti i componenti BOM associati
-      await storage.deleteBomItems(bomId);
-      
-      // Poi eliminiamo la BOM stessa
       const success = await storage.deleteBom(bomId);
       if (!success) {
         return res.status(404).json({ message: "BOM not found" });
       }
-      
-      // Risposta senza body per 204 No Content
       res.status(204).end();
     } catch (error) {
-      console.error("Errore durante l'eliminazione della BOM:", error);
       res.status(500).json({ message: "Failed to delete BOM" });
-    }
-  });
-  
-  // Endpoint per l'importazione di BOM da file Excel o CSV
-  app.post("/api/boms/import", upload.single("file"), async (req: Request, res: Response) => {
-    console.log("Richiesta di importazione BOM ricevuta", req.body);
-    console.log("File ricevuto:", req.file);
-    try {
-      if (!req.file) {
-        return res.status(400).json({ message: "Nessun file caricato" });
-      }
-      
-      const filePath = req.file.path;
-      const fileExt = req.file.originalname.split('.').pop()?.toLowerCase();
-      let bomItems = [];
-      
-      // Verifica il tipo di file e lo elabora di conseguenza
-      if (fileExt === 'csv') {
-        // Importazione CSV        
-        const fileContent = fs.readFileSync(filePath, 'utf8');
-        const records = parse(fileContent, {
-          columns: true,
-          skip_empty_lines: true,
-          trim: true
-        });
-        
-        if (!records || records.length === 0) {
-          return res.status(400).json({
-            message: "Il file CSV non contiene dati validi"
-          });
-        }
-        
-        bomItems = records;
-        console.log("Dati CSV importati:", JSON.stringify(bomItems.slice(0, 2)));
-      } else if (fileExt === 'xlsx' || fileExt === 'xls') {
-        // Importazione Excel
-        const allowedTypes = [
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'application/octet-stream',
-          'application/xlsx', 
-          'application/excel'
-        ];
-        
-        if (!allowedTypes.includes(req.file.mimetype) && !['xlsx', 'xls'].includes(fileExt)) {
-          return res.status(400).json({ 
-            message: "Formato file non supportato. Caricare un file Excel (.xls o .xlsx) o CSV (.csv)" 
-          });
-        }
-        
-        const workbook = read(fs.readFileSync(filePath));
-        
-        // Assume che il primo foglio del file Excel contenga i dati BOM
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        
-        // Converte i dati del foglio in un array di oggetti
-        bomItems = utils.sheet_to_json(worksheet);
-        console.log("Dati Excel importati:", JSON.stringify(bomItems.slice(0, 2)));
-      } else {
-        return res.status(400).json({
-          message: "Formato file non supportato. Caricare un file Excel (.xls o .xlsx) o CSV (.csv)"
-        });
-      }
-      
-      if (!bomItems || bomItems.length === 0) {
-        return res.status(400).json({ 
-          message: "Il file non contiene dati validi" 
-        });
-      }
-      
-      // Crea una nuova BOM
-      const bomTitle = req.body.title || `BOM importata il ${new Date().toLocaleString()}`;
-      const newBom = await storage.createBom({
-        title: bomTitle,
-        description: req.body.description || `Importata da ${fileExt.toUpperCase()}: ${req.file.originalname}`
-      });
-      
-      // Converte ogni riga in un componente BOM
-      const components = [];
-      const bomItemsToCreate = [];
-      
-      // Identificazione delle colonne in base alle intestazioni
-      const firstRow = bomItems[0];
-      const columnHeaders = Object.keys(firstRow);
-      
-      // Mappa delle colonne
-      const columnMap: { 
-        level: string | null; 
-        code: string | null; 
-        description: string | null; 
-        quantity: string | null; 
-        uom: string | null; 
-      } = {
-        level: null,
-        code: null,
-        description: null,
-        quantity: null,
-        uom: null
-      };
-      
-      // Rileva i nomi delle colonne cercando corrispondenze (più priorità ai match esatti)
-      columnHeaders.forEach(header => {
-        const lowerHeader = header.toLowerCase().trim();
-        
-        // Priorità ai match esatti per livello
-        if (lowerHeader === 'livello' || lowerHeader === 'level' || lowerHeader === 'liv') {
-          columnMap.level = header;
-        }
-        // Match parziali per livello se non c'è un match esatto
-        else if (!columnMap.level && (lowerHeader.includes('liv') || lowerHeader.includes('lev'))) {
-          columnMap.level = header;
-        }
-        
-        // Priorità ai match esatti per codice
-        if (lowerHeader === 'codice' || lowerHeader === 'code' || lowerHeader === 'cod') {
-          columnMap.code = header;
-        }
-        // Match parziali per codice se non c'è un match esatto
-        else if (!columnMap.code && (lowerHeader.includes('cod') || lowerHeader.includes('part'))) {
-          columnMap.code = header;
-        }
-        
-        // Priorità ai match esatti per descrizione
-        if (lowerHeader === 'descrizione' || lowerHeader === 'description' || lowerHeader === 'desc') {
-          columnMap.description = header;
-        }
-        // Match parziali per descrizione se non c'è un match esatto
-        else if (!columnMap.description && (lowerHeader.includes('desc') || lowerHeader.includes('nome'))) {
-          columnMap.description = header;
-        }
-        
-        // Opzionali: priorità ai match esatti per quantità
-        if (lowerHeader === 'quantità' || lowerHeader === 'quantita' || lowerHeader === 'quantity' || lowerHeader === 'qty') {
-          columnMap.quantity = header;
-        }
-        // Match parziali per quantità se non c'è un match esatto
-        else if (!columnMap.quantity && (lowerHeader.includes('quant') || lowerHeader.includes('qty'))) {
-          columnMap.quantity = header;
-        }
-        
-        // Opzionali: priorità ai match esatti per unità di misura
-        if (lowerHeader === 'unità di misura' || lowerHeader === 'unita di misura' || lowerHeader === 'uom' || lowerHeader === 'u.m.') {
-          columnMap.uom = header;
-        }
-        // Match parziali per unità di misura se non c'è un match esatto
-        else if (!columnMap.uom && (lowerHeader.includes('unità') || lowerHeader.includes('unita') || lowerHeader.includes('unit') || lowerHeader.includes('u.m'))) {
-          columnMap.uom = header;
-        }
-      });
-      
-      console.log("Mappa delle colonne rilevata:", columnMap);
-      
-      // Controllo se abbiamo almeno le colonne essenziali
-      if (!columnMap.level && !columnMap.code) {
-        console.error("Colonne obbligatorie mancanti:", columnMap);
-        return res.status(400).json({ 
-          message: "Il file non contiene le colonne obbligatorie. Assicurarsi che il file contenga almeno le colonne 'Livello' e 'Codice' (o equivalenti)."
-        });
-      }
-      
-      // Log delle intestazioni rilevate
-      console.log("Intestazioni colonne rilevate:", columnMap);
-      
-      // Elabora ogni riga del file
-      for (const row of bomItems) {
-        try {
-          // Recupera i dati dalle colonne mappate o usa colonne standard
-          
-          // Estrazione del livello (obbligatorio)
-          let level = 0;
-          if (columnMap.level) {
-            // Converte in numero e utilizza 0 come default se non è un numero valido
-            const levelValue = row[columnMap.level];
-            if (levelValue !== undefined && levelValue !== null && levelValue !== '') {
-              // Gestisce sia stringhe che numeri
-              level = typeof levelValue === 'number' ? levelValue : parseInt(String(levelValue).trim(), 10);
-              if (isNaN(level)) level = 0; // Fallback se il parsing fallisce
-            }
-          } else {
-            // Fallback se la colonna del livello non è stata identificata
-            level = parseInt(String(row.Livello || row.Level || row['Livello'] || '0').trim(), 10) || 0;
-          }
-          
-          // Estrazione del codice componente (obbligatorio)
-          let code = '';
-          if (columnMap.code) {
-            const codeValue = row[columnMap.code];
-            if (codeValue !== undefined && codeValue !== null) {
-              code = String(codeValue).trim();
-            }
-          } else {
-            code = String(row.Codice || row.Code || row['Codice'] || '').trim();
-          }
-          
-          // Salta le righe senza codice
-          if (!code) {
-            console.log("Riga saltata: codice mancante", row);
-            continue;
-          }
-          
-          // Estrazione della descrizione (opzionale ma importante)
-          let description = '';
-          if (columnMap.description) {
-            const descValue = row[columnMap.description];
-            if (descValue !== undefined && descValue !== null) {
-              description = String(descValue).trim();
-            }
-          } else {
-            description = String(row.Descrizione || row.Description || row['Descrizione'] || '').trim();
-          }
-          
-          // Estrazione della quantità (opzionale, default = 1)
-          let quantity = 1;
-          if (columnMap.quantity) {
-            const qtyValue = row[columnMap.quantity];
-            if (qtyValue !== undefined && qtyValue !== null && qtyValue !== '') {
-              // Gestisce sia stringhe che numeri
-              const parsedQty = typeof qtyValue === 'number' ? qtyValue : parseFloat(String(qtyValue).replace(',', '.').trim());
-              if (!isNaN(parsedQty) && parsedQty > 0) {
-                quantity = parsedQty;
-              }
-            }
-          } else {
-            const qtyFallback = row.Quantità || row.Quantity || row['Quantità'] || row['Quantita'];
-            if (qtyFallback !== undefined && qtyFallback !== null && qtyFallback !== '') {
-              const parsedQty = typeof qtyFallback === 'number' ? qtyFallback : parseFloat(String(qtyFallback).replace(',', '.').trim());
-              if (!isNaN(parsedQty) && parsedQty > 0) {
-                quantity = parsedQty;
-              }
-            }
-          }
-          
-          // Estrazione dell'unità di misura (opzionale)
-          let unitOfMeasure = '';
-          if (columnMap.uom) {
-            const uomValue = row[columnMap.uom];
-            if (uomValue !== undefined && uomValue !== null) {
-              unitOfMeasure = String(uomValue).trim();
-            }
-          } else {
-            unitOfMeasure = String(row["Unità di misura"] || row["Unita di misura"] || row["Unità"] || row.UOM || '').trim();
-          }
-          
-          // Crea il componente se non esiste già
-          let component;
-          
-          // Prima cerca se il componente con lo stesso codice esiste già
-          const existingComponent = await storage.getComponentByCode(code);
-          if (existingComponent) {
-            component = existingComponent;
-          } else {
-            component = await storage.createComponent({
-              code,
-              description,
-              details: {
-                level: level // Salviamo il livello nei dettagli del componente
-              }
-            });
-            components.push(component);
-          }
-          
-          // Aggiungi il componente alla BOM con il livello esplicito
-          bomItemsToCreate.push({
-            bomId: newBom.id,
-            componentId: component.id,
-            quantity,
-            level // Questo livello sarà usato per la visualizzazione gerarchica
-          });
-        } catch (error: any) {
-          console.error(`Errore nell'elaborazione della riga:`, error.message || error);
-        }
-      }
-      
-      try {
-        // Crea gli elementi BOM
-        const createdBomItems = [];
-        for (const item of bomItemsToCreate) {
-          try {
-            const bomItem = await storage.createBomItem(item);
-            createdBomItems.push(bomItem);
-          } catch (err: any) {
-            console.error(`Errore nella creazione del BOM item:`, err.message || err);
-          }
-        }
-        
-        // Elimina il file temporaneo
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-        
-        res.status(201).json({
-          bom: newBom,
-          components: components.length,
-          bomItems: createdBomItems.length,
-          message: `BOM importata con successo. ${createdBomItems.length} componenti importati.`
-        });
-      } catch (err: any) {
-        console.error("Errore nella fase finale dell'importazione BOM:", err.message || err);
-        res.status(500).json({ message: `Errore nella fase finale dell'importazione: ${err.message || 'Errore sconosciuto'}` });
-      }
-    } catch (error: any) {
-      console.error("Errore nell'importazione della BOM:", error.message || error);
-      res.status(500).json({ message: `Errore nell'importazione: ${error.message || 'Errore sconosciuto'}` });
     }
   });
 
@@ -1394,9 +847,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const component = await storage.getComponent(item.componentId);
         return {
           ...item,
-          component,
-          code: component?.code || "",
-          description: component?.description || ""
+          component
         };
       }));
       
@@ -1404,70 +855,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const component = await storage.getComponent(item.componentId);
         return {
           ...item,
-          component,
-          code: component?.code || "",
-          description: component?.description || ""
+          component
         };
       }));
-
-      console.log(`BOM1 items count: ${enhancedItems1.length}`);
-      console.log(`BOM2 items count: ${enhancedItems2.length}`);
-      
-      // Estrai tutti i codici per la ricerca rapida
-      const allCodes1 = enhancedItems1.map(item => (item.code || "").trim().toUpperCase());
-      const allCodes2 = enhancedItems2.map(item => (item.code || "").trim().toUpperCase());
-      
-      console.log(`BOM1 unique codes count: ${new Set(allCodes1).size}`);
-      console.log(`BOM2 unique codes count: ${new Set(allCodes2).size}`);
-      
-      // Lista dei codici comuni
-      const commonCodes = [];
       
       // Find similarities (based on component code and description)
       const similarities = [];
       for (const item1 of enhancedItems1) {
         for (const item2 of enhancedItems2) {
-          const code1 = (item1.code || "").trim().toUpperCase();
-          const code2 = (item2.code || "").trim().toUpperCase();
-          const desc1 = (item1.description || "").trim().toUpperCase();
-          const desc2 = (item2.description || "").trim().toUpperCase();
+          const code1 = item1.component?.code || "";
+          const code2 = item2.component?.code || "";
+          const desc1 = item1.component?.description || "";
+          const desc2 = item2.component?.description || "";
           
           // Calculate similarity
           let similarity = 0;
-          
-          // Check exact match (case-insensitive)
           if (code1 === code2) {
             similarity = 100;
-            // Aggiungi alla lista dei codici comuni (se non già presente)
-            if (!commonCodes.includes(code1)) {
-              commonCodes.push(code1);
-            }
-          } 
-          // Check if codes contain each other (case-insensitive)
-          else if (code1.includes(code2) || code2.includes(code1)) {
+          } else if (code1.includes(code2) || code2.includes(code1)) {
             similarity = 85;
-          } 
-          // Check if codes match without symbols/spaces
-          else if (code1.replace(/[\s\-\.]/g, '') === code2.replace(/[\s\-\.]/g, '')) {
-            similarity = 95;
-            if (!commonCodes.includes(code1)) {
-              commonCodes.push(code1);
-            }
-          }
-          // Check if they match numerically (just the numbers)
-          else if (code1.replace(/\D/g, '') === code2.replace(/\D/g, '') && code1.replace(/\D/g, '').length > 3) {
+          } else if (desc1 === desc2) {
             similarity = 80;
-          }
-          // Description matches
-          else if (desc1 === desc2) {
-            similarity = 80;
-          } 
-          else if (desc1.includes(desc2) || desc2.includes(desc1)) {
+          } else if (desc1.includes(desc2) || desc2.includes(desc1)) {
             similarity = 65;
           }
           
           if (similarity > 50) {
-            console.log(`Match found: ${code1} vs ${code2} - Similarity: ${similarity}`);
             similarities.push({
               item1: { ...item1 },
               item2: { ...item2 },
@@ -1477,48 +890,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      console.log(`Similarities count: ${similarities.length}`);
-      console.log(`Common codes count: ${commonCodes.length}`);
+      // Find unique items in BOM 1
+      const uniqueItems1 = enhancedItems1.filter(item1 => {
+        return !enhancedItems2.some(item2 => item1.componentId === item2.componentId);
+      });
       
-      // Find unique codes in BOM 2 (target)
-      const uniqueTargetCodes = allCodes2.filter(code => !commonCodes.includes(code));
-      console.log(`Unique target codes count: ${uniqueTargetCodes.length}`);
-      
-      // Preparazione dati per il frontend (simile al formato del confronto manuale nel client)
-      const sourceItems = enhancedItems1.map(item => ({
-        id: item.id,
-        componentId: item.componentId, 
-        bomId: item.bomId,
-        level: item.level,
-        parentId: item.parentId,
-        quantity: item.quantity,
-        notes: item.notes,
-        code: item.code,
-        description: item.description
-      }));
-      
-      const targetItems = enhancedItems2.map(item => ({
-        id: item.id,
-        componentId: item.componentId, 
-        bomId: item.bomId,
-        level: item.level,
-        parentId: item.parentId,
-        quantity: item.quantity,
-        notes: item.notes,
-        code: item.code,
-        description: item.description
-      }));
+      // Find unique items in BOM 2
+      const uniqueItems2 = enhancedItems2.filter(item2 => {
+        return !enhancedItems1.some(item1 => item2.componentId === item1.componentId);
+      });
       
       res.json({
         bom1: { id: bomId1, title: bom1.title },
         bom2: { id: bomId2, title: bom2.title },
         similarities,
-        sourceItems,
-        targetItems,
-        commonCodes,
-        uniqueTargetCodes,
-        sourceBomId: bomId1,
-        targetBomId: bomId2
+        uniqueItems1,
+        uniqueItems2
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to compare BOMs" });
@@ -1622,7 +1009,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.query.userId ? Number(req.query.userId) : undefined;
       const languageId = req.query.languageId ? Number(req.query.languageId) : undefined;
       
-      let assignments: any[] = [];
+      let assignments = [];
       if (userId) {
         assignments = await storage.getTranslationAssignmentsByUserId(userId);
       } else if (languageId) {
@@ -1948,139 +1335,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to delete module translation" });
     }
   });
-  
-  // Document translation routes
-  app.get("/api/document-translations", async (req: Request, res: Response) => {
-    try {
-      const documentId = req.query.documentId ? Number(req.query.documentId) : undefined;
-      const languageId = req.query.languageId ? Number(req.query.languageId) : undefined;
-      
-      let translations = [];
-      if (documentId && languageId) {
-        const translation = await storage.getDocumentTranslationByLanguage(documentId, languageId);
-        translations = translation ? [translation] : [];
-      } else if (documentId) {
-        translations = await storage.getDocumentTranslationsByDocumentId(documentId);
-      } else if (languageId) {
-        translations = await storage.getDocumentTranslationsByLanguageId(languageId);
-      } else {
-        // Se non sono specificati documentId o languageId, usa il filtro generico
-        translations = await storage.getDocumentTranslationsByFilter({});
-      }
-      
-      res.json(translations);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch document translations" });
-    }
-  });
-
-  app.get("/api/document-translations/:id", async (req: Request, res: Response) => {
-    try {
-      // Verifica se è stato fornito un parametro languageId
-      const documentId = Number(req.params.id);
-      const languageId = req.query.languageId ? Number(req.query.languageId) : undefined;
-      
-      if (languageId) {
-        // Carica la traduzione specifica per la lingua richiesta
-        const translation = await storage.getDocumentTranslationByLanguage(documentId, languageId);
-        if (!translation) {
-          return res.status(404).json({ message: "Document translation not found for this language" });
-        }
-        return res.json(translation);
-      } else {
-        // Comportamento originale quando non è specificata una lingua
-        const translation = await storage.getDocumentTranslation(documentId);
-        if (!translation) {
-          return res.status(404).json({ message: "Document translation not found" });
-        }
-        return res.json(translation);
-      }
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch document translation" });
-    }
-  });
-  
-  // Aggiunta endpoint per etichette statiche utilizzate nell'esportazione
-  app.get("/api/static-labels", async (req: Request, res: Response) => {
-    try {
-      const languageId = req.query.languageId ? Number(req.query.languageId) : undefined;
-      
-      if (!languageId) {
-        return res.status(400).json({ message: "Language ID is required" });
-      }
-      
-      // Cerca le etichette statiche per la lingua richiesta
-      const staticLabels = await storage.getStaticLabelsByLanguage(languageId);
-      
-      // Se non esistono etichette statiche per questa lingua, restituisci un oggetto vuoto
-      if (!staticLabels) {
-        return res.json({});
-      }
-      
-      return res.json(staticLabels);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch static labels" });
-    }
-  });
-
-  app.post("/api/document-translations", async (req: Request, res: Response) => {
-    try {
-      const { data, error } = validateBody(insertDocumentTranslationSchema, req.body);
-      if (error) {
-        return res.status(400).json({ message: error });
-      }
-      
-      // Verifica se esiste già una traduzione per questo documento e lingua
-      const existingTranslation = await storage.getDocumentTranslationByLanguage(
-        data.documentId, 
-        data.languageId
-      );
-      
-      if (existingTranslation) {
-        return res.status(400).json({ 
-          message: "A translation for this document and language already exists",
-          existingId: existingTranslation.id
-        });
-      }
-      
-      const newTranslation = await storage.createDocumentTranslation(data);
-      res.status(201).json(newTranslation);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to create document translation" });
-    }
-  });
-
-  app.put("/api/document-translations/:id", async (req: Request, res: Response) => {
-    try {
-      const translationId = Number(req.params.id);
-      const { data, error } = validateBody(insertDocumentTranslationSchema.partial(), req.body);
-      if (error) {
-        return res.status(400).json({ message: error });
-      }
-      
-      const translation = await storage.updateDocumentTranslation(translationId, data);
-      if (!translation) {
-        return res.status(404).json({ message: "Document translation not found" });
-      }
-      
-      res.json(translation);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update document translation" });
-    }
-  });
-
-  app.delete("/api/document-translations/:id", async (req: Request, res: Response) => {
-    try {
-      const translationId = Number(req.params.id);
-      const success = await storage.deleteDocumentTranslation(translationId);
-      if (!success) {
-        return res.status(404).json({ message: "Document translation not found" });
-      }
-      res.status(204).end();
-    } catch (error) {
-      res.status(500).json({ message: "Failed to delete document translation" });
-    }
-  });
 
   // Translation import routes
   app.get("/api/translation-imports", async (req: Request, res: Response) => {
@@ -2250,8 +1504,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             
             // Create a mock translation - in real implementation, this would call an AI service
-            let mockContent: any = module.content;
-            if (typeof mockContent === "object" && mockContent !== null) {
+            let mockContent = module.content;
+            if (typeof mockContent === "object") {
               // Handle different module types
               if ("text" in mockContent) {
                 mockContent = { 
@@ -2296,51 +1550,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 translation: mockContent
               }
             });
-          } else if (request.requestType === "document") {
-            const document = await storage.getDocument(request.sourceId);
-            if (!document) {
-              await storage.updateTranslationAIRequest(request.id, {
-                status: "error",
-                details: { error: "Document not found" }
-              });
-              return;
-            }
-            
-            // Create a mock translation - in real implementation, this would call an AI service
-            const mockTranslation = {
-              title: `[${targetLanguage.code}] ${document.title}`,
-              description: document.description ? `[${targetLanguage.code}] ${document.description}` : null
-            };
-            
-            // Check if translation already exists
-            const existingTranslation = await storage.getDocumentTranslationByLanguage(
-              document.id,
-              targetLanguage.id
-            );
-            
-            if (existingTranslation) {
-              await storage.updateDocumentTranslation(existingTranslation.id, {
-                ...mockTranslation,
-                translatedById: request.requestedById
-              });
-            } else {
-              await storage.createDocumentTranslation({
-                documentId: document.id,
-                languageId: targetLanguage.id,
-                title: mockTranslation.title,
-                description: mockTranslation.description,
-                translatedById: request.requestedById,
-                reviewedById: null
-              });
-            }
-            
-            await storage.updateTranslationAIRequest(request.id, {
-              status: "completed",
-              details: { 
-                completed: new Date(),
-                translation: mockTranslation
-              }
-            });
           } else {
             await storage.updateTranslationAIRequest(request.id, {
               status: "error",
@@ -2374,20 +1583,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // File explorer and management endpoints
-  app.get("/api/files", listFiles);
-  app.post("/api/files/create-model-folder", createModelFolder);
-  
   // File upload routes
-  app.post("/api/upload", upload.single("file"), handleWebGLModelUpload, handleZipUpload, saveFileInfo, (req: Request, res: Response) => {
-    // Se il file è stato estratto da un ZIP e abbiamo un URL del visualizzatore, aggiungiamolo alla risposta
-    if (req.viewerUrl) {
-      return res.status(201).json({
-        ...req.uploadedFile,
-        viewerUrl: req.viewerUrl,
-        isExtracted: true
-      });
-    }
+  app.post("/api/upload", upload.single("file"), saveFileInfo, (req: Request, res: Response) => {
     if (!req.uploadedFile) {
       return res.status(400).json({ message: "Upload failed, no file information available" });
     }
@@ -2398,336 +1595,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       url: getFileUrl(req.uploadedFile.filename)
     };
     
-    // Se è un file ZIP e ha estratto i file, includi anche le informazioni sulla cartella
-    if (req.file?.originalname.toLowerCase().endsWith('.zip') && req.uploadedFiles && req.folderName) {
-      return res.status(201).json({
-        ...fileInfo,
-        isZipExtract: true,
-        folderName: req.folderName,
-        allFiles: req.uploadedFiles.map((file: any) => ({
-          ...file,
-          url: getFileUrl(file.filename)
-        })),
-        fileStructure: req.fileStructure || {}
-      });
-    }
-    
-    res.status(201).json(fileInfo);
-  });
-  
-  // Route per caricare una cartella di file (per modelli 3D con HTML)
-  app.post("/api/upload-folder", folderUpload, extractZipFile, processUploadedFolder);
-  
-  // Endpoint dedicato per l'upload di modelli 3D
-  app.post("/api/upload-3d-model", upload3DModel, handle3DModelUpload);
-  
-  /* Vecchia implementazione mantenuta come riferimento */
-  app.post("/api/upload-folder-old", upload.array("files", 50), saveFileInfo, (req: Request, res: Response) => {
-    if (!req.uploadedFile || !req.uploadedFiles) {
-      return res.status(400).json({ message: "Upload failed, no files information available" });
-    }
-    
-    console.log("--------- CARICAMENTO CARTELLA 3D -----------");
-    console.log("File principale:", req.uploadedFile.originalName);
-    console.log("Totale file caricati:", req.uploadedFiles.length);
-    console.log("Nome cartella:", req.folderName);
-    console.log("Struttura cartelle:", req.fileStructure ? Object.keys(req.fileStructure).length : 0, "elementi");
-    
-    // Per ogni file nella cartella, genera un URL corretto
-    const allFilesWithUrls = req.uploadedFiles.map(file => {
-      // Genera l'URL corretto per il file, considerando sottocartelle
-      let fileUrl = getFileUrl(file.filename);
-      
-      // Se è un file in una sottocartella del modello 3D, crea un URL che rispecchia la stessa struttura
-      if (req.fileStructure && req.fileStructure[file.originalName]) {
-        // Ottieni il percorso relativo del file dalla struttura
-        const relativePath = req.fileStructure[file.originalName];
-        console.log(`File ${file.originalName} - percorso relativo: ${relativePath}`);
-      }
-      
-      return {
-        id: file.id,
-        filename: file.filename, 
-        originalName: file.originalName,
-        url: fileUrl,
-        mimeType: file.mimeType,
-        relativePath: req.fileStructure ? req.fileStructure[file.originalName] || '' : ''
-      };
-    });
-    
-    // Restituisci informazioni sul file principale (HTML) e informazioni sulla cartella
-    const fileInfo = {
-      ...req.uploadedFile,
-      url: getFileUrl(req.uploadedFile.filename),
-      folderName: req.folderName,
-      totalFiles: req.uploadedFiles.length,
-      // Include informazioni sulla struttura delle cartelle per il frontend
-      fileStructure: req.fileStructure || {},
-      // Aggiungi un array di tutti i file caricati con URL
-      allFiles: allFilesWithUrls
-    };
-    
-    console.log("URL file principale:", fileInfo.url);
-    console.log("File totali restituiti:", fileInfo.allFiles.length);
-    console.log("----------------------------------------");
-    
     res.status(201).json(fileInfo);
   });
 
   // Route to serve uploaded files
-
-
-  // Endpoint per scaricare il file esportato
-  app.get("/api/exports/:filename", (req: Request, res: Response) => {
-    const filename = req.params.filename;
-    const filePath = path.join(__dirname, "../exports", filename);
-    
-    // Verifica che il file esista
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ message: "File esportato non trovato" });
-    }
-    
-    // Imposta gli header per il download
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    
-    // Invia il file
-    res.sendFile(filePath);
-  });
-  
-  // Endpoint specifico per l'esportazione HTML con post-processing
-  app.post("/api/documents/:id/export/html", async (req: Request, res: Response) => {
-    try {
-      const documentId = Number(req.params.id);
-      const document = await storage.getDocument(documentId);
-      
-      if (!document) {
-        return res.status(404).json({ message: "Document not found" });
-      }
-      
-      // Recupera tutte le sezioni del documento
-      const sections = await storage.getSectionsByDocumentId(documentId);
-      
-      // Recupera i moduli di contenuto delle sezioni
-      const allModules: any[] = [];
-      for (const section of sections) {
-        const modules = await storage.getContentModulesBySectionId(section.id);
-        allModules.push(...modules);
-      }
-      
-      // Ottiene l'HTML fornito dal client (generato nel frontend)
-      const { html } = req.body;
-      
-      if (!html) {
-        return res.status(400).json({ message: "HTML content is missing" });
-      }
-      
-      // Applica il post-processing all'HTML
-      const processedHtml = applyPostProcessing(document, sections, html);
-      
-      // Salva l'HTML processato (per riferimento)
-      const timestamp = new Date().getTime();
-      const filename = `document_${documentId}_${timestamp}.html`;
-      saveExportedHtml(processedHtml, filename);
-      
-      // Restituisci l'HTML processato
-      res.status(200).json({ 
-        html: processedHtml,
-        filename,
-        exportUrl: `/api/exports/${filename}`
-      });
-    } catch (error) {
-      console.error("Error exporting document to HTML:", error);
-      res.status(500).json({ message: "Failed to export document to HTML" });
-    }
-  });
-
-  // Rotta specifica per il download dei file ZIP dei modelli 3D
-  app.get("/downloads/:modelName\\.:extension", (req: Request, res: Response) => {
-    if (req.params.extension !== 'zip') {
-      return res.status(404).json({ message: "Solo file ZIP supportati" });
-    }
-    const modelName = req.params.modelName;
-    const uploadsDir = path.join(process.cwd(), "uploads");
-    
-    // Cerca il file ZIP corrispondente
-    let zipFilePath = path.join(uploadsDir, `${modelName}.zip`);
-    
-    // Se non esiste, cerca tra i file con timestamp
-    if (!fs.existsSync(zipFilePath)) {
-      const files = fs.readdirSync(uploadsDir);
-      const matchingZip = files.find(file => 
-        file.endsWith('.zip') && file.includes(modelName)
-      );
-      
-      if (matchingZip) {
-        zipFilePath = path.join(uploadsDir, matchingZip);
-      }
-    }
-    
-    // Verifica se il file esiste
-    if (!fs.existsSync(zipFilePath)) {
-      return res.status(404).json({ message: "File ZIP non trovato" });
-    }
-    
-    // Imposta headers per il download
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename="${modelName}.zip"`);
-    
-    // Invia il file
-    res.sendFile(zipFilePath, (err) => {
-      if (err) {
-        console.error('Errore nel download del file ZIP:', err);
-        if (!res.headersSent) {
-          res.status(500).json({ message: "Errore nel download del file" });
-        }
-      }
-    });
-  });
-
   app.use("/uploads", (req: Request, res: Response, next: NextFunction) => {
-    // Path richiesto originale
-    const requestedPath = req.path;
-    
-    // Verifica se il path richiesto è nella forma /NOME_CARTELLA/NOME_CARTELLA.htm
-    const modelFolderMatch = requestedPath.match(/^\/([^\/]+)\/\1\.(htm|html)$/i);
-    
-    // Path completo al file richiesto
-    let filePath = path.join(process.cwd(), "uploads", requestedPath);
-    
-    // Se stiamo cercando di accedere a un modello 3D nel formato specifico
-    if (modelFolderMatch) {
-      // Estrai il nome della cartella/file dal path
-      const folderName = modelFolderMatch[1];
-      const extension = modelFolderMatch[2];
-      
-      console.log(`Richiesto modello 3D: ${folderName}.${extension} - Verifico se esiste: ${filePath}`);
-      
-      if (!fs.existsSync(filePath)) {
-        console.log(`File non trovato: ${filePath}`);
-        
-        // 1. Verifica se esiste un file caricato direttamente (senza cartella) con nome simile
-        const uploadsDir = path.join(process.cwd(), "uploads");
-        const files = fs.readdirSync(uploadsDir);
-        
-        // Cerca un file che termina con lo stesso nome di file
-        const matchingFile = files.find(file => {
-          return file.endsWith(`${folderName}.${extension}`) && fs.statSync(path.join(uploadsDir, file)).isFile();
-        });
-        
-        if (matchingFile) {
-          console.log(`Trovato file corrispondente: ${matchingFile}`);
-          
-          // Crea la cartella per il modello se non esiste
-          const modelDir = path.join(uploadsDir, folderName);
-          if (!fs.existsSync(modelDir)) {
-            fs.mkdirSync(modelDir, { recursive: true });
-          }
-          
-          // Crea anche le sottocartelle richieste per WebGL
-          const subfolders = ["res", "test", "treeview"];
-          for (const subfolder of subfolders) {
-            const subfolderPath = path.join(modelDir, subfolder);
-            if (!fs.existsSync(subfolderPath)) {
-              fs.mkdirSync(subfolderPath, { recursive: true });
-            }
-          }
-          
-          // Copia il file nella posizione corretta con il nome corretto
-          const sourceFile = path.join(uploadsDir, matchingFile);
-          const targetFile = path.join(modelDir, `${folderName}.${extension}`);
-          
-          if (!fs.existsSync(targetFile)) {
-            try {
-              fs.copyFileSync(sourceFile, targetFile);
-              console.log(`File copiato da ${sourceFile} a ${targetFile}`);
-              
-              // Aggiorna il percorso del file da servire
-              filePath = targetFile;
-            } catch (error) {
-              console.error(`Errore nella copia del file: ${error}`);
-            }
-          } else {
-            // Il file esiste già nella posizione target, usa quello
-            filePath = targetFile;
-          }
-        } else {
-          // Verifica se esiste un file ZIP con lo stesso nome di base
-          const zipFile = files.find(file => {
-            return file === `${folderName}.zip` && fs.statSync(path.join(uploadsDir, file)).isFile();
-          });
-          
-          if (zipFile) {
-            console.log(`Trovato file ZIP corrispondente: ${zipFile}`);
-            
-            try {
-              // Estrai il file ZIP nella cartella
-              const modelDir = path.join(uploadsDir, folderName);
-              if (!fs.existsSync(modelDir)) {
-                fs.mkdirSync(modelDir, { recursive: true });
-              }
-              
-              // Normalmente qui ci sarebbe un'estrazione ZIP, ma per semplicità
-              // assumiamo che i file siano già stati estratti
-              
-              // Verifica se ora esiste il file target
-              const targetFile = path.join(modelDir, `${folderName}.${extension}`);
-              if (fs.existsSync(targetFile)) {
-                console.log(`File trovato dopo l'estrazione: ${targetFile}`);
-                filePath = targetFile;
-              }
-            } catch (error) {
-              console.error(`Errore nell'estrazione del file ZIP: ${error}`);
-            }
-          }
-        }
-      }
-    }
-    
-    // Verifica l'esistenza del file
+    const filePath = path.join(process.cwd(), "uploads", req.path);
     fs.access(filePath, fs.constants.F_OK, (err) => {
       if (err) {
         return res.status(404).json({ message: "File not found" });
       }
-      
-      // Configura MIME types aggiuntivi per file 3D e supporto WebGL
-      const ext = path.extname(filePath).toLowerCase();
-      if (ext === '.gltf') {
-        res.setHeader('Content-Type', 'model/gltf+json');
-      } else if (ext === '.glb') {
-        res.setHeader('Content-Type', 'model/gltf-binary');
-      } else if (ext === '.html' || ext === '.htm') {
-        res.setHeader('Content-Type', 'text/html');
-      } else if (ext === '.js') {
-        res.setHeader('Content-Type', 'application/javascript');
-      } else if (ext === '.css') {
-        res.setHeader('Content-Type', 'text/css');
-      } else if (ext === '.obj') {
-        res.setHeader('Content-Type', 'text/plain');
-      } else if (ext === '.stl') {
-        // STL può essere binario o ASCII, ma usiamo application/octet-stream per sicurezza
-        res.setHeader('Content-Type', 'application/octet-stream');
-      }
-      
-      // Configurazione CORS per consentire l'accesso da iframe
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      
-      // Servi il file direttamente senza passare a express.static
-      res.sendFile(filePath);
+      next();
     });
-  }, express.static(path.join(process.cwd(), "uploads"), {
-    // Opzioni aggiuntive per express.static
-    setHeaders: (res, filePath) => {
-      // Aggiungi cache control per migliorare le prestazioni
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-      
-      // Assicurati che tutti i file HTML e JS possano essere caricati in un iframe
-      const ext = path.extname(filePath).toLowerCase();
-      if (ext === '.html' || ext === '.htm' || ext === '.js') {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-      }
-    }
-  }));
+  }, express.static(path.join(process.cwd(), "uploads")));
 
   // Get file information
   app.get("/api/files/:id", async (req: Request, res: Response) => {
@@ -2748,26 +1628,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(fileWithUrl);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch file information" });
-    }
-  });
-  
-  // Get recent files - questa route deve venire PRIMA della route con il parametro :id
-  app.get("/api/files/recent", async (req: Request, res: Response) => {
-    try {
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-      const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
-      
-      const files = await storage.getUploadedFiles(limit, userId);
-      
-      // Add URL to each file
-      const filesWithUrls = files.map(file => ({
-        ...file,
-        url: getFileUrl(file.filename)
-      }));
-      
-      res.json(filesWithUrls);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch recent files" });
     }
   });
 
@@ -2796,36 +1656,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).end();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete file" });
-    }
-  });
-
-  // Export routes
-  app.get("/api/documents/:id/export/word", async (req: Request, res: Response) => {
-    try {
-      const documentId = Number(req.params.id);
-      const languageId = req.query.languageId ? Number(req.query.languageId) : undefined;
-      
-      const document = await storage.getDocument(documentId);
-      if (!document) {
-        return res.status(404).json({ message: "Document not found" });
-      }
-      
-      // Generate the Word document
-      const filename = await createWordDocument(documentId, languageId);
-      
-      // Set the path to the generated file
-      const filePath = path.join(__dirname, "../exports", filename);
-      
-      // Send the file as a download
-      res.download(filePath, filename, (err) => {
-        if (err) {
-          console.error("Error sending file:", err);
-          res.status(500).json({ message: "Failed to send file" });
-        }
-      });
-    } catch (error) {
-      console.error("Error exporting document to Word:", error);
-      res.status(500).json({ message: "Failed to export document to Word" });
     }
   });
 
