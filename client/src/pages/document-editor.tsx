@@ -9,22 +9,13 @@ import DocumentTreeView from "@/components/document-tree-view";
 import ModuleToolbar from "@/components/module-toolbar";
 import ContentModule from "@/components/content-module";
 import DocumentDetails from "@/components/document-details";
-import VersionComparison from "@/components/version-comparison";
-import BomManager from "@/components/bom-manager";
-import SectionBomAssociator from "@/components/section-bom-associator";
 import SectionBomSummary from "@/components/section-bom-summary";
-import DocumentSectionPreview from "@/components/DocumentSectionPreview";
-import TranslatedDocumentSectionPreview from "@/components/TranslatedDocumentSectionPreview";
-import LanguageSelector from "@/components/language-selector";
 
 import { useUserContext } from "../contexts/UserContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-// import { createDocumentVersion } from "@/lib/document-utils"; // Non più necessario
 import { Trash2, X } from "lucide-react";
 import { useOpenDocuments } from "@/App";
 import { 
@@ -113,7 +104,6 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   const [showTrashBin, setShowTrashBin] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<string>("editor");
-  const [selectedLanguage, setSelectedLanguage] = useState<string>("0"); // Lingua predefinita (originale)
   
   // Fetch document data
   const { data: document, isLoading: documentLoading } = useQuery<any>({
@@ -299,101 +289,18 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     }
     navigate('/');
   };
-  
-  // Handle section selection
-  const handleSectionSelect = (section: any) => {
-    setSelectedSection(section);
-  };
-  
-  // Handle section update
-  const handleSectionUpdate = () => {
-    if (!selectedSection) return;
-    
-    updateSectionMutation.mutate({
-      title: sectionTitle,
-      description: sectionDescription
-    });
-  };
-  
-  // Handle module deletion
-  const handleDeleteModule = (moduleId: number) => {
-    deleteModuleMutation.mutate(moduleId);
-  };
-  
-  // Handle module update
-  const handleUpdateModule = (moduleId: number, data: any) => {
-    queryClient.invalidateQueries({ queryKey: [`/api/sections/${selectedSection?.id}/modules`] });
-  };
-  
-  // Handle module added
-  const handleModuleAdded = (module: any) => {
-    queryClient.invalidateQueries({ queryKey: [`/api/sections/${selectedSection?.id}/modules`] });
-  };
-  
-  // Handle document save
-  const handleSaveDocument = async () => {
-    if (id === 'new') return;
-    
-    try {
-      if (!document) return;
-      
-      // Get the full document structure
-      const documentData = {
-        id: Number(id),
-        version: document.version,
-        title: document.title,
-        description: document.description,
-        status: document.status
-      };
-      
-      // Create a snapshot of the current document state
-      const versionData = {
-        documentId: Number(id),
-        version: document.version,
-        content: documentData,
-        createdById: selectedUser?.id || 1,
-        notes: "Salvataggio manuale"
-      };
-      
-      createVersionMutation.mutate(versionData);
-      
-    } catch (error) {
-      toast({
-        title: "Errore",
-        description: `Errore durante il salvataggio: ${error}`,
-        variant: "destructive"
-      });
-    }
-  };
-  
-  // Handle drag over for drop zone
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (dropZoneRef.current) {
-      dropZoneRef.current.classList.add('drag-over');
-    }
-  };
-  
-  // Handle drag leave for drop zone
-  const handleDragLeave = () => {
-    if (dropZoneRef.current) {
-      dropZoneRef.current.classList.remove('drag-over');
-    }
-  };
-  
-  // Create new module mutation (dichiarata a livello del componente)
+
+  // Handle module creation at specific position mutation
   const createModuleAtPositionMutation = useMutation({
     mutationFn: async (moduleData: any) => {
       const res = await apiRequest('POST', '/api/modules', moduleData);
       return await res.json();
     },
-    onSuccess: (data) => {
-      if (selectedSection) {
-        queryClient.invalidateQueries({ queryKey: [`/api/sections/${selectedSection.id}/modules`] });
-      }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/sections/${selectedSection?.id}/modules`] });
       toast({
         title: "Modulo aggiunto",
-        description: "Il modulo è stato aggiunto nella posizione specifica"
+        description: "Il modulo è stato aggiunto con successo"
       });
     },
     onError: (error) => {
@@ -405,6 +312,55 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
     }
   });
   
+  // Handle section selection
+  const handleSectionSelect = (section: any) => {
+    setSelectedSection(section);
+  };
+
+  // Handle section update
+  const handleSectionUpdate = () => {
+    updateSectionMutation.mutate({
+      title: sectionTitle,
+      description: sectionDescription
+    });
+  };
+
+  // Handle module delete
+  const handleDeleteModule = (moduleId: number) => {
+    deleteModuleMutation.mutate(moduleId);
+  };
+
+  // Handle module update
+  const handleUpdateModule = () => {
+    queryClient.invalidateQueries({ queryKey: [`/api/sections/${selectedSection?.id}/modules`] });
+  };
+
+  // Handle module added
+  const handleModuleAdded = () => {
+    queryClient.invalidateQueries({ queryKey: [`/api/sections/${selectedSection?.id}/modules`] });
+  };
+
+  // Handle save document
+  const handleSaveDocument = () => {
+    // Implementation for saving document
+  };
+
+  // Handle drag over
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (dropZoneRef.current) {
+      dropZoneRef.current.classList.add('drag-over');
+    }
+  };
+
+  // Handle drag leave
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (dropZoneRef.current) {
+      dropZoneRef.current.classList.remove('drag-over');
+    }
+  };
+
   // Handle drop for adding new modules
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -528,9 +484,6 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   const handleDeleteSection = (sectionId: number) => {
     deleteSectionMutation.mutate(sectionId);
   };
-  
-  // I permessi sono ora derivati direttamente dal contesto utente, non servono più useEffect
-  // per gestire i permessi
 
   // Effect to handle drag events for trash bin
   useEffect(() => {
@@ -548,465 +501,245 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   
   return (
     <>
-      {/* Sistema di selezione utente ora gestito tramite contesto globale */}
-      
       <Header 
         title={documentTitle} 
         documentId={id}
         status={document?.status}
         showTabs={true}
-        selectedLanguage={selectedLanguage}
         onSave={handleSaveDocument}
         onClose={handleCloseDocument}
         toggleSidebar={toggleSidebar}
       />
       
       <main className="flex-1 overflow-y-auto bg-neutral-lightest">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-            <TabsList className="px-4 border-b border-neutral-light">
-              {/* Tab Editor, disponibile solo per admin ed editor */}
-              <TabsTrigger 
-                value="editor" 
-                disabled={!canEdit}
-                title={!canEdit ? "Non hai permessi per modificare il contenuto" : ""}
-              >
-                Editor
-              </TabsTrigger>
-              
-              {/* Tab Anteprima, disponibile per tutti i ruoli */}
-              <TabsTrigger value="preview">Anteprima</TabsTrigger>
-              
-              {/* Tab Elenco Componenti, disponibile per tutti i ruoli */}
-              <TabsTrigger value="bom">Elenco Componenti</TabsTrigger>
-              
-              {/* Tab Associa BOM, disponibile solo per admin ed editor */}
-              <TabsTrigger 
-                value="bom-section" 
-                disabled={!canEdit}
-                title={!canEdit ? "Non hai permessi per associare componenti" : ""}
-              >
-                Associa BOM
-              </TabsTrigger>
-              
-              {/* Tab Permessi, disponibile solo per admin */}
-              <TabsTrigger 
-                value="permissions" 
-                disabled={!canManageUsers}
-                title={!canManageUsers ? "Non hai permessi per gestire utenti" : ""}
-              >
-                Permessi
-              </TabsTrigger>
-              
-              {/* Tab Cronologia, disponibile per tutti */}
-              <TabsTrigger value="history">Cronologia</TabsTrigger>
-            </TabsList>
+        <div className="flex h-full">
+          {/* Left sidebar with document tree */}
+          <div className="w-64 bg-white shadow-inner border-r border-neutral-light p-4 overflow-y-auto">
+            {id !== 'new' ? (
+              <DocumentTreeView 
+                documentId={id}
+                onSectionSelect={handleSectionSelect}
+                selectedSectionId={selectedSection?.id}
+              />
+            ) : (
+              <div className="text-sm text-neutral-medium">
+                Salva il documento per aggiungere sezioni.
+              </div>
+            )}
+          </div>
           
-          <TabsContent value="editor" className="h-full">
-            <div className="flex h-full">
-              {/* Left sidebar with document tree */}
-              <div className="w-64 bg-white shadow-inner border-r border-neutral-light p-4 overflow-y-auto">
-                {id !== 'new' ? (
-                  <DocumentTreeView 
-                    documentId={id}
-                    onSectionSelect={handleSectionSelect}
-                    selectedSectionId={selectedSection?.id}
+          {/* Main content area */}
+          <div className="flex-1 p-6 overflow-y-auto">
+            {id === 'new' ? (
+              <Card className="max-w-2xl mx-auto">
+                <CardHeader>
+                  <CardTitle>Crea nuovo documento</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <DocumentDetails 
+                    document={null} 
+                    userId={selectedUser?.id || 1}
                   />
-                ) : (
-                  <div className="text-sm text-neutral-medium">
-                    Salva il documento per aggiungere sezioni.
+                </CardContent>
+              </Card>
+            ) : (
+              selectedSection ? (
+                // Section editor
+                <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-sm mb-6">
+                  <div className="px-6 py-4 border-b border-neutral-light flex justify-between items-center">
+                    <h3 className="text-lg font-medium">{selectedSection.title}</h3>
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        className={`p-1.5 rounded has-tooltip ${canEdit 
+                          ? 'text-neutral-dark hover:bg-neutral-lightest' 
+                          : 'text-neutral-light cursor-not-allowed'}`}
+                        disabled={!canEdit}
+                        title={!canEdit ? "Non hai permessi per modificare" : ""}
+                      >
+                        <span className="material-icons">content_copy</span>
+                        <span className="tooltip -mt-10">Duplica sezione</span>
+                      </button>
+                      <button 
+                        className={`p-1.5 rounded has-tooltip ${canEdit 
+                          ? 'text-neutral-dark hover:bg-neutral-lightest' 
+                          : 'text-neutral-light cursor-not-allowed'}`}
+                        disabled={!canEdit}
+                        title={!canEdit ? "Non hai permessi per modificare" : ""}
+                      >
+                        <span className="material-icons">save</span>
+                        <span className="tooltip -mt-10">Salva come modulo</span>
+                      </button>
+                      <button 
+                        className={`p-1.5 rounded has-tooltip ${canEdit 
+                          ? 'text-neutral-dark hover:bg-neutral-lightest' 
+                          : 'text-neutral-light cursor-not-allowed'}`}
+                        onClick={canEdit ? () => setSectionToDelete(selectedSection.id) : undefined}
+                        disabled={!canEdit}
+                        title={!canEdit ? "Non hai permessi per eliminare" : ""}
+                      >
+                        <span className="material-icons">delete</span>
+                        <span className="tooltip -mt-10">Elimina sezione</span>
+                      </button>
+                    </div>
                   </div>
-                )}
-              </div>
-              
-              {/* Main content area */}
-              <div className="flex-1 p-6 overflow-y-auto">
-                {id === 'new' ? (
-                  <Card className="max-w-2xl mx-auto">
-                    <CardHeader>
-                      <CardTitle>Crea nuovo documento</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <DocumentDetails 
-                        document={null} 
-                        userId={selectedUser?.id || 1}
-                      />
-                    </CardContent>
-                  </Card>
-                ) : (
-                  selectedSection ? (
-                    // Section editor
-                    <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-sm mb-6">
-                      <div className="px-6 py-4 border-b border-neutral-light flex justify-between items-center">
-                        <h3 className="text-lg font-medium">{selectedSection.title}</h3>
-                        <div className="flex items-center space-x-2">
-                          <button 
-                            className={`p-1.5 rounded has-tooltip ${canEdit 
-                              ? 'text-neutral-dark hover:bg-neutral-lightest' 
-                              : 'text-neutral-light cursor-not-allowed'}`}
-                            disabled={!canEdit}
-                            title={!canEdit ? "Non hai permessi per modificare" : ""}
-                          >
-                            <span className="material-icons">content_copy</span>
-                            <span className="tooltip -mt-10">Duplica sezione</span>
-                          </button>
-                          <button 
-                            className={`p-1.5 rounded has-tooltip ${canEdit 
-                              ? 'text-neutral-dark hover:bg-neutral-lightest' 
-                              : 'text-neutral-light cursor-not-allowed'}`}
-                            disabled={!canEdit}
-                            title={!canEdit ? "Non hai permessi per modificare" : ""}
-                          >
-                            <span className="material-icons">save</span>
-                            <span className="tooltip -mt-10">Salva come modulo</span>
-                          </button>
-                          <button 
-                            className={`p-1.5 rounded has-tooltip ${canEdit 
-                              ? 'text-neutral-dark hover:bg-neutral-lightest' 
-                              : 'text-neutral-light cursor-not-allowed'}`}
-                            onClick={canEdit ? () => setSectionToDelete(selectedSection.id) : undefined}
-                            disabled={!canEdit}
-                            title={!canEdit ? "Non hai permessi per eliminare" : ""}
-                          >
-                            <span className="material-icons">delete</span>
-                            <span className="tooltip -mt-10">Elimina sezione</span>
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="p-6">
-                        <div className="mb-4">
-                          <Label htmlFor="section-title">Titolo sezione</Label>
-                          <Input
-                            id="section-title"
-                            value={sectionTitle}
-                            onChange={(e) => setSectionTitle(e.target.value)}
-                            className={`w-full p-2 border rounded-md ${
-                              canEdit 
-                                ? 'border-neutral-light focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary' 
-                                : 'border-neutral-light bg-neutral-lightest text-neutral-medium'
-                            }`}
-                            disabled={!canEdit}
-                            title={!canEdit ? "Non hai permessi per modificare" : ""}
-                          />
-                        </div>
-                        
-                        <div className="mb-4">
-                          <Label htmlFor="section-description">Descrizione</Label>
-                          <Textarea
-                            id="section-description"
-                            value={sectionDescription}
-                            onChange={(e) => setSectionDescription(e.target.value)}
-                            className={`w-full p-2 border rounded-md ${
-                              canEdit 
-                                ? 'border-neutral-light focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary' 
-                                : 'border-neutral-light bg-neutral-lightest text-neutral-medium'
-                            }`}
-                            disabled={!canEdit}
-                            title={!canEdit ? "Non hai permessi per modificare" : ""}
-                            rows={3}
-                          />
-                        </div>
-                        
-                        <button 
-                          className={`mb-4 px-4 py-1.5 rounded-md flex items-center text-sm ${
-                            canEdit 
-                              ? 'bg-primary hover:bg-primary-dark text-white' 
-                              : 'bg-neutral-light text-neutral-medium cursor-not-allowed'
-                          }`}
-                          onClick={canEdit ? handleSectionUpdate : undefined}
-                          disabled={!canEdit}
-                          title={!canEdit ? "Non hai permessi per aggiornare la sezione" : ""}
-                        >
-                          <span className="material-icons text-sm mr-1">save</span>
-                          Aggiorna sezione
-                        </button>
-                        
-                        {/* Componenti BOM associati */}
-                        <SectionBomSummary 
-                          sectionId={selectedSection.id} 
-                          onSwitchTab={(tab) => setActiveTab(tab)} 
-                        />
-                        
-                        {/* Module toolbar */}
-                        <ModuleToolbar 
-                          sectionId={selectedSection.id}
-                          onModuleAdded={handleModuleAdded}
-                          disabled={!canEdit}
-                        />
-                        
-                        {/* Content modules */}
-                        <div className="space-y-4">
-                          {modulesLoading ? (
-                            <div>Caricamento moduli...</div>
-                          ) : contentModules && contentModules.length > 0 ? (
-                            contentModules.map((module: any) => (
-                              <ContentModule 
-                                key={module.id}
-                                module={module}
-                                onDelete={handleDeleteModule}
-                                onUpdate={handleUpdateModule}
-                                documentId={id}
-                                disabled={!canEdit}
-                              />
-                            ))
-                          ) : (
-                            <div className="text-neutral-dark text-center py-4">
-                              Nessun modulo in questa sezione. Aggiungi un modulo dalla barra degli strumenti.
-                            </div>
-                          )}
-                          
-                          {/* Drop zone for new modules */}
-                          <div 
-                            ref={dropZoneRef}
-                            className="border border-dashed border-neutral-light rounded-md p-4 text-center hover:bg-neutral-lightest transition cursor-pointer drag-zone"
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            onDrop={handleDrop}
-                            onClick={() => {
-                              // Implementiamo anche la funzionalità di click per aggiungere moduli
-                              // Lo faremo mostrando un menu a tendina con i tipi di moduli disponibili
-                              // o iniziamo con un tipo di modulo predefinito (text)
-                              if (selectedSection) {
-                                const moduleType = "text"; // Predefinito per ora - si potrebbe fare un menu
-                                // Calcola l'ordine corretto per aggiungere alla fine
-                                let newModuleOrder = 0;
-                                if (contentModules && contentModules.length > 0) {
-                                  // Se ci sono moduli esistenti, posiziona questo modulo dopo l'ultimo
-                                  const lastModule = [...contentModules].sort((a, b) => a.order - b.order).pop();
-                                  newModuleOrder = lastModule ? lastModule.order + 1 : 0;
-                                }
-                                const defaultContent = { text: "" };
-                                
-                                createModuleAtPositionMutation.mutate({
-                                  sectionId: selectedSection.id,
-                                  type: moduleType,
-                                  content: defaultContent,
-                                  order: newModuleOrder
-                                });
-                              }
-                            }}
-                          >
-                            <span className="material-icons text-neutral-medium">add_circle_outline</span>
-                            <p className="text-neutral-medium text-sm mt-1">Trascina un modulo qui o clicca per aggiungere</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    // No section selected
-                    <div className="text-center p-10">
-                      <span className="material-icons text-5xl text-neutral-medium mb-3">menu_book</span>
-                      <h3 className="text-xl font-medium text-neutral-dark mb-2">Seleziona una sezione</h3>
-                      <p className="text-neutral-medium">
-                        Seleziona una sezione dal menu a sinistra o crea una nuova sezione per iniziare.
-                      </p>
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="preview">
-            <div className="p-6">
-              <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-sm">
-                <div className="px-6 py-4 border-b border-neutral-light flex justify-between items-center">
-                  <h3 className="text-lg font-medium">Anteprima documento</h3>
                   
-                  {/* Selettore lingua per traduzione */}
-                  {sections && sections.length > 0 && (
-                    <LanguageSelector 
-                      documentId={id} 
-                      onLanguageChange={setSelectedLanguage} 
-                    />
-                  )}
-                </div>
-                <div className="p-6">
-                  {id === 'new' ? (
-                    <div className="text-center py-8">
-                      <p>Salva il documento per visualizzare l'anteprima.</p>
+                  <div className="p-6">
+                    <div className="mb-4">
+                      <Label htmlFor="section-title">Titolo sezione</Label>
+                      <Input
+                        id="section-title"
+                        value={sectionTitle}
+                        onChange={(e) => setSectionTitle(e.target.value)}
+                        className={`w-full p-2 border rounded-md ${
+                          canEdit 
+                            ? 'border-neutral-light focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary' 
+                            : 'border-neutral-light bg-neutral-lightest text-neutral-medium'
+                        }`}
+                        disabled={!canEdit}
+                        title={!canEdit ? "Non hai permessi per modificare" : ""}
+                      />
                     </div>
-                  ) : (
-                    <div>
-                      <h1 className="text-2xl font-bold mb-2">{document?.title}</h1>
-                      <p className="text-neutral-dark mb-6">{document?.description}</p>
-                      
-                      {/* Render documento completo con tutte le sezioni e moduli */}
-                      {sections && sections.length > 0 ? (
-                        <div className="document-preview">
-                          {sections
-                            .filter((section: any) => !section.parentId) // Solo sezioni di primo livello
-                            .sort((a: any, b: any) => a.order - b.order)
-                            .map((section: any) => (
-                              selectedLanguage && selectedLanguage !== '0' ? (
-                                <TranslatedDocumentSectionPreview 
-                                  key={section.id} 
-                                  section={section} 
-                                  allSections={sections}
-                                  documentId={id}
-                                  level={0}
-                                  languageId={selectedLanguage}
-                                  highlightMissingTranslations={true}
-                                  userRole={selectedUser?.role || 'viewer'}
-                                  userId={selectedUser?.id || 1}
-                                />
-                              ) : (
-                                <DocumentSectionPreview 
-                                  key={section.id} 
-                                  section={section} 
-                                  allSections={sections}
-                                  documentId={id}
-                                  level={0}
-                                  userRole={selectedUser?.role || 'viewer'}
-                                  userId={selectedUser?.id || 1}
-                                  selectedLanguage={selectedLanguage} // Passa la lingua selezionata
-                                />
-                              )
-                            ))}
-                        </div>
+                    
+                    <div className="mb-4">
+                      <Label htmlFor="section-description">Descrizione</Label>
+                      <Textarea
+                        id="section-description"
+                        value={sectionDescription}
+                        onChange={(e) => setSectionDescription(e.target.value)}
+                        className={`w-full p-2 border rounded-md ${
+                          canEdit 
+                            ? 'border-neutral-light focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary' 
+                            : 'border-neutral-light bg-neutral-lightest text-neutral-medium'
+                        }`}
+                        disabled={!canEdit}
+                        title={!canEdit ? "Non hai permessi per modificare" : ""}
+                        rows={3}
+                      />
+                    </div>
+                    
+                    <button 
+                      className={`mb-4 px-4 py-1.5 rounded-md flex items-center text-sm ${
+                        canEdit 
+                          ? 'bg-primary hover:bg-primary-dark text-white' 
+                          : 'bg-neutral-light text-neutral-medium cursor-not-allowed'
+                      }`}
+                      onClick={canEdit ? handleSectionUpdate : undefined}
+                      disabled={!canEdit}
+                      title={!canEdit ? "Non hai permessi per aggiornare la sezione" : ""}
+                    >
+                      <span className="material-icons text-sm mr-1">save</span>
+                      Aggiorna sezione
+                    </button>
+                    
+                    {/* Componenti BOM associati */}
+                    <SectionBomSummary 
+                      sectionId={selectedSection.id} 
+                      onSwitchTab={(tab) => setActiveTab(tab)} 
+                    />
+                    
+                    {/* Module toolbar */}
+                    <ModuleToolbar 
+                      sectionId={selectedSection.id}
+                      onModuleAdded={handleModuleAdded}
+                      disabled={!canEdit}
+                    />
+                    
+                    {/* Content modules */}
+                    <div className="space-y-4">
+                      {modulesLoading ? (
+                        <div>Caricamento moduli...</div>
+                      ) : contentModules && contentModules.length > 0 ? (
+                        contentModules.map((module: any) => (
+                          <ContentModule 
+                            key={module.id}
+                            module={module}
+                            onDelete={handleDeleteModule}
+                            onUpdate={handleUpdateModule}
+                            documentId={id}
+                            disabled={!canEdit}
+                          />
+                        ))
                       ) : (
-                        <div className="text-center py-8">
-                          <p>Questo documento non ha ancora sezioni.</p>
+                        <div className="text-neutral-dark text-center py-4">
+                          Nessun modulo in questa sezione. Aggiungi un modulo dalla barra degli strumenti.
                         </div>
                       )}
+                      
+                      {/* Drop zone for new modules */}
+                      <div 
+                        ref={dropZoneRef}
+                        className="border border-dashed border-neutral-light rounded-md p-4 text-center hover:bg-neutral-lightest transition cursor-pointer drag-zone"
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onClick={() => {
+                          if (selectedSection) {
+                            const moduleType = "text";
+                            let newModuleOrder = 0;
+                            if (contentModules && contentModules.length > 0) {
+                              const lastModule = [...contentModules].sort((a, b) => a.order - b.order).pop();
+                              newModuleOrder = lastModule ? lastModule.order + 1 : 0;
+                            }
+                            const defaultContent = { text: "" };
+                            
+                            createModuleAtPositionMutation.mutate({
+                              sectionId: selectedSection.id,
+                              type: moduleType,
+                              content: defaultContent,
+                              order: newModuleOrder
+                            });
+                          }
+                        }}
+                      >
+                        <span className="material-icons text-neutral-medium">add_circle_outline</span>
+                        <p className="text-neutral-medium text-sm mt-1">Trascina un modulo qui o clicca per aggiungere</p>
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="bom">
-            <div className="p-6">
-              <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-sm">
-                <div className="px-6 py-4 border-b border-neutral-light">
-                  <h3 className="text-lg font-medium">Gestione Elenchi Componenti</h3>
-                </div>
-                <BomManager documentId={id} />
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="bom-section">
-            <div className="flex h-full">
-              {/* Left sidebar with document tree for section selection */}
-              <div className="w-64 bg-white shadow-inner border-r border-neutral-light p-4 overflow-y-auto">
-                {id !== 'new' ? (
-                  <div>
-                    <h3 className="text-sm font-medium text-neutral-darkest mb-2">Seleziona una sezione</h3>
-                    <DocumentTreeView 
-                      documentId={id}
-                      onSectionSelect={handleSectionSelect}
-                      selectedSectionId={selectedSection?.id}
-                    />
-                  </div>
-                ) : (
-                  <div className="text-sm text-neutral-medium">
-                    Salva il documento per aggiungere sezioni.
-                  </div>
-                )}
-              </div>
-              
-              {/* Main content area for BOM association */}
-              <div className="flex-1 overflow-y-auto">
-                {id === 'new' ? (
-                  <div className="p-6 text-center">
-                    <p>Salva il documento prima di associare gli elenchi componenti.</p>
-                  </div>
-                ) : selectedSection ? (
-                  <div className="max-w-5xl mx-auto bg-white shadow-sm">
-                    <div className="px-6 py-4 border-b border-neutral-light">
-                      <h3 className="text-lg font-medium">
-                        Associa componenti BOM alla sezione: <span className="text-primary">{selectedSection.title}</span>
-                      </h3>
-                      <p className="text-sm text-neutral-medium mt-1">
-                        In questa sezione puoi associare i componenti di un elenco componenti alla sezione selezionata.
-                      </p>
-                    </div>
-                    <SectionBomAssociator sectionId={selectedSection.id} />
-                  </div>
-                ) : (
-                  <div className="text-center p-10">
-                    <span className="material-icons text-5xl text-neutral-medium mb-3">view_list</span>
-                    <h3 className="text-xl font-medium text-neutral-dark mb-2">Seleziona una sezione</h3>
-                    <p className="text-neutral-medium">
-                      Seleziona una sezione dal menu a sinistra per associare componenti di un elenco componenti.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="permissions">
-            <div className="p-6">
-              <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-sm">
-                <div className="px-6 py-4 border-b border-neutral-light">
-                  <h3 className="text-lg font-medium">Impostazioni permessi</h3>
-                </div>
-                <div className="p-6">
-                  <p className="text-center py-8 text-neutral-medium">
-                    Funzionalità in sviluppo.
+              ) : (
+                // No section selected
+                <div className="text-center p-10">
+                  <span className="material-icons text-5xl text-neutral-medium mb-3">menu_book</span>
+                  <h3 className="text-xl font-medium text-neutral-dark mb-2">Seleziona una sezione</h3>
+                  <p className="text-neutral-medium">
+                    Scegli una sezione dal menu a sinistra per iniziare a modificarne il contenuto.
                   </p>
                 </div>
-              </div>
-            </div>
-          </TabsContent>
+              )
+            )}
+          </div>
+        </div>
           
-          <TabsContent value="history">
-            <div className="p-6">
-              <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-sm">
-                <div className="px-6 py-4 border-b border-neutral-light flex justify-between items-center">
-                  <h3 className="text-lg font-medium">Cronologia e Versioni</h3>
-                  <div className="flex space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        window.open(`/api/documents/${id}/export/word`, '_blank');
-                      }}
-                      className="flex items-center"
-                    >
-                      <span className="material-icons text-sm mr-1">download</span>
-                      Esporta Word
-                    </Button>
-                  </div>
-                </div>
-                <VersionComparison documentId={id} />
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-          
-          {/* Alert Dialog for section deletion confirmation */}
-          <AlertDialog open={sectionToDelete !== null} onOpenChange={(open) => !open && setSectionToDelete(null)}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Sei sicuro di voler eliminare questa sezione? Questa azione non può essere annullata.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Annulla</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={() => {
-                    if (sectionToDelete) {
-                      handleDeleteSection(sectionToDelete);
-                    }
-                  }}
-                >
-                  Elimina
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+        {/* Alert Dialog for section deletion confirmation */}
+        <AlertDialog open={sectionToDelete !== null} onOpenChange={(open) => !open && setSectionToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
+              <AlertDialogDescription>
+                Sei sicuro di voler eliminare questa sezione? Questa azione non può essere annullata.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annulla</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => {
+                  if (sectionToDelete) {
+                    handleDeleteSection(sectionToDelete);
+                  }
+                }}
+              >
+                Elimina
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
-          {/* Trash Bin */}
-          <TrashBin
-            showTrashBin={showTrashBin}
-            onDeleteRequest={(id) => setSectionToDelete(id)}
-          />
+        {/* Trash Bin */}
+        <TrashBin
+          showTrashBin={showTrashBin}
+          onDeleteRequest={(id) => setSectionToDelete(id)}
+        />
       </main>
     </>
   );
