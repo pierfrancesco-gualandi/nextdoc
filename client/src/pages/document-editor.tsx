@@ -647,9 +647,9 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
       }
       
       // Aggiorna lo stato locale per mantenerlo sincronizzato col contesto
-      setCurrentUserRole(contextUserRole);
+      setCurrentUserRole(selectedUser.role);
     }
-  }, [contextUserRole]);
+  }, [selectedUser?.role]);
 
   // Effect to handle drag events for trash bin
   useEffect(() => {
