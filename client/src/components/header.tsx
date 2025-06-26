@@ -8,6 +8,8 @@ import { LogOut } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import DocumentStatusSelector from "./document-status-selector";
+import { canChangeDocumentStatus, canEditDocument, getPermissionErrorMessage } from "@/lib/permissions";
+import type { Document } from "@shared/schema";
 
 interface HeaderProps {
   title?: string;
@@ -49,7 +51,7 @@ export default function Header({
   });
 
   // Fetch current document data to get the status
-  const { data: currentDocument } = useQuery({
+  const { data: currentDocument } = useQuery<Document>({
     queryKey: documentId ? [`/api/documents/${documentId}`] : ["no-document"],
     enabled: !!documentId && documentId !== 'new',
   });

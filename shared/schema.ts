@@ -23,6 +23,8 @@ export const users = pgTable("users", {
   role: text("role").notNull().default("reader"), // "admin" (full access), "editor" (content editing), "translator" (translation-only), "reader" (view-only)
   name: text("name").notNull(),
   email: text("email").notNull(),
+  isActive: boolean("is_active").default(true),
+  permissions: jsonb("permissions").default('{}'), // Permessi specifici per utente
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -31,6 +33,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   role: true,
   name: true,
   email: true,
+  isActive: true,
+  permissions: true,
 });
 
 // Document schema
@@ -53,6 +57,23 @@ export const insertDocumentSchema = createInsertSchema(documents).pick({
   version: true,
   createdById: true,
   updatedById: true,
+});
+
+// Document permissions schema - permessi specifici per documento
+export const documentPermissions = pgTable("document_permissions", {
+  id: serial("id").primaryKey(),
+  documentId: integer("document_id").notNull(),
+  userId: integer("user_id").notNull(),
+  permission: text("permission").notNull(), // "read", "edit", "admin", "translate"
+  grantedById: integer("granted_by_id").notNull(),
+  grantedAt: timestamp("granted_at").notNull().defaultNow(),
+});
+
+export const insertDocumentPermissionSchema = createInsertSchema(documentPermissions).pick({
+  documentId: true,
+  userId: true,
+  permission: true,
+  grantedById: true,
 });
 
 // Section schema
