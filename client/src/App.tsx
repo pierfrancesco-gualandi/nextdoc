@@ -17,7 +17,7 @@ import Sidebar from "@/components/sidebar";
 import React, { useState, createContext, useContext, useEffect } from "react";
 import SettingsRedirect from "@/pages/settings-redirect";
 import SettingsPage from "@/pages/settings-page";
-import { UserProvider, useUserContext } from "./contexts/UserContext";
+import { UserProvider, useUser } from "./contexts/UserContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -56,7 +56,7 @@ function Router() {
   const [location] = useLocation();
   const [showSidebar, setShowSidebar] = useState(true);
   const [currentDocumentId, setCurrentDocumentId] = useState<number | null>(null);
-  const { isUserSelected } = useUserContext();
+  const { isUserSelected } = useUser();
   
   // Recupera documenti aperti dal localStorage all'avvio
   const [openDocuments, setOpenDocuments] = useState<OpenDocument[]>(() => {

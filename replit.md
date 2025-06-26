@@ -129,9 +129,11 @@ Changelog:
 - June 26, 2025. Implementato sistema di selezione persistente dell'utente
   - Creato UserContext per gestire la persistenza dell'utente selezionato
   - Aggiunto UserSelector per selezione iniziale obbligatoria
-  - Integrato UserDisplay nella sidebar per mostrare utente corrente
-  - Selezione salvata nel localStorage e ripristinata automaticamente
-  - L'utente viene scelto una volta all'inizio e rimane fisso finché non cambiato manualmente
+  - Migrato sistema utente dalla sidebar all'header
+  - Cambiato da localStorage a sessionStorage per persistenza sessione
+  - Implementato click diretto per cambio utente nell'header
+  - Selezione persiste durante tutta la sessione senza richiedere nuove selezioni
+  - L'utente viene scelto una volta per sessione e rimane fisso finché non cambiato
 ```
 
 ## User Preferences
