@@ -1,82 +1,59 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation, Link } from "wouter";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
+import { useOpenDocuments } from "@/App";
 import Header from "@/components/header";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatDocumentStatus } from "@/lib/document-utils";
-import { useOpenDocuments } from "@/App";
-import { queryClient } from "@/lib/queryClient";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
-} from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
-interface DashboardProps {
-  toggleSidebar?: () => void;
+interface DocumentsProps {
+  toggleSidebar: () => void;
 }
 
-export default function Dashboard({ toggleSidebar }: DashboardProps) {
+export default function Documents({ toggleSidebar }: DocumentsProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<any>(null);
-  const { toast } = useToast();
-  
-  // Accesso al context per i documenti aperti
-  const { openDocuments, addOpenDocument, removeOpenDocument, isDocumentOpen, getLastOpenDocument } = useOpenDocuments();
-  
-  // Al caricamento della dashboard, controlla se ci sono documenti aperti
-  useEffect(() => {
-    const lastOpenDocument = getLastOpenDocument();
-    // Se c'è un documento aperto e siamo alla root o a /documents, naviga al documento
-    if (lastOpenDocument && (window.location.pathname === '/' || window.location.pathname === '/documents')) {
-      navigate(`/documents/${lastOpenDocument.id}`);
-      console.log(`Navigazione automatica al documento aperto: ${lastOpenDocument.id}`);
-    }
-  }, []);
-  
-  // Debug: stampa i documenti aperti nel localStorage
-  useEffect(() => {
-    console.log('Dashboard - Documenti aperti:', openDocuments);
-    try {
-      const savedDocs = localStorage.getItem('openDocuments');
-      console.log('Dashboard - Documenti nel localStorage:', savedDocs);
-      
-      // Se abbiamo documenti nel localStorage ma non nel contesto, aggiungiamoli
-      const storedDocs = JSON.parse(savedDocs || '[]');
-      if (storedDocs.length > 0 && openDocuments.length === 0) {
-        console.log('Ripristino documenti aperti dal localStorage:', storedDocs);
-        storedDocs.forEach((doc: any) => {
-          addOpenDocument({
-            id: doc.id,
-            title: doc.title
-          });
-        });
-      }
-    } catch (error) {
-      console.error('Errore nel leggere i documenti dal localStorage:', error);
-    }
-  }, []);
-  
-  const { data: documents, isLoading } = useQuery({
-    queryKey: ['/api/documents', searchQuery],
-    queryFn: async ({ queryKey }) => {
-      const [_, query] = queryKey;
-      const url = query ? `/api/documents?q=${encodeURIComponent(query)}` : '/api/documents';
-      const res = await fetch(url, { credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to fetch documents');
-      return await res.json();
-    },
+
+  const { openDocuments, addOpenDocument, removeOpenDocument, isDocumentOpen } = useOpenDocuments();
+
+  // Fetch documents
+  const { data: documents, isLoading } = useQuery<any[]>({
+    queryKey: ['/api/documents'],
   });
-  
+
+  // Filtra i documenti in base alla ricerca
+  const filteredDocuments = documents ? documents.filter((doc: any) =>
+    doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    doc.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  ) : [];
+
+  // Status formatting
+  const formatDocumentStatus = (status: string) => {
+    switch (status) {
+      case 'draft':
+        return { label: 'Bozza', bgClass: 'bg-yellow-100 text-yellow-800' };
+      case 'review':
+        return { label: 'In Revisione', bgClass: 'bg-blue-100 text-blue-800' };
+      case 'published':
+        return { label: 'Pubblicato', bgClass: 'bg-green-100 text-green-800' };
+      case 'archived':
+        return { label: 'Archiviato', bgClass: 'bg-gray-100 text-gray-800' };
+      default:
+        return { label: status, bgClass: 'bg-gray-100 text-gray-800' };
+    }
+  };
+
+  // Delete document mutation
   const deleteDocumentMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await fetch(`/api/documents/${id}`, {
@@ -87,10 +64,8 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
       return id;
     },
     onSuccess: (id) => {
-      // Aggiorna la cache dopo l'eliminazione
       queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
       
-      // Se il documento era aperto, rimuoverlo dalla lista
       if (isDocumentOpen(id)) {
         removeOpenDocument(id);
       }
@@ -112,36 +87,34 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
       });
     }
   });
-  
+
   const handleCreateNew = () => {
     navigate('/documents/new');
   };
-  
+
   const handleOpenDocument = (doc: any) => {
-    // Aggiungi il documento al contesto
     addOpenDocument({
       id: doc.id,
       title: doc.title
     });
     
-    // Naviga al documento
     navigate(`/documents/${doc.id}`);
   };
-  
+
   const confirmDeleteDocument = (doc: any) => {
     setDocumentToDelete(doc);
     setDeleteDialogOpen(true);
   };
-  
+
   const handleDeleteDocument = () => {
     if (documentToDelete) {
       deleteDocumentMutation.mutate(documentToDelete.id);
     }
   };
-  
+
   return (
     <>
-      <Header title="Dashboard" toggleSidebar={toggleSidebar} />
+      <Header title="Documenti" toggleSidebar={toggleSidebar} />
       
       <main className="flex-1 overflow-y-auto bg-neutral-lightest p-6">
         <div className="max-w-7xl mx-auto">
@@ -149,8 +122,8 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
           <div className="mb-8">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
-                <h1 className="text-3xl font-bold text-neutral-darkest tracking-tight">I tuoi documenti</h1>
-                <p className="text-lg text-neutral-medium">Gestisci e crea documenti di istruzioni visive</p>
+                <h1 className="text-3xl font-bold text-neutral-darkest tracking-tight">Documenti</h1>
+                <p className="text-lg text-neutral-medium">Gestisci le sezioni dei tuoi documenti</p>
               </div>
               <Button onClick={handleCreateNew} size="lg" className="mt-2">
                 <span className="material-icons text-sm mr-2">add</span>
@@ -159,7 +132,7 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
             </div>
           </div>
           
-          {/* Visualizza i documenti aperti se presenti */}
+          {/* Documenti aperti */}
           {openDocuments.length > 0 && (
             <div className="mb-6">
               <h2 className="text-lg font-medium text-neutral-dark mb-3">Documenti Aperti</h2>
@@ -167,9 +140,12 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
                 <div className="grid gap-1 p-2">
                   {openDocuments.map(doc => (
                     <div key={doc.id} className="flex items-center justify-between p-2 rounded hover:bg-neutral-50">
-                      <Link href={`/documents/${doc.id}`} className="text-blue-600 hover:underline truncate flex-1">
+                      <button 
+                        onClick={() => navigate(`/documents/${doc.id}`)}
+                        className="text-blue-600 hover:underline truncate flex-1 text-left"
+                      >
                         {doc.title}
-                      </Link>
+                      </button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -187,29 +163,33 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
               </div>
             </div>
           )}
-          
-          <Tabs defaultValue="grid" className="mb-6">
-            <div className="flex justify-between items-center">
+
+          {/* Barra di ricerca e controlli */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="flex-1">
+              <Input
+                placeholder="Cerca documenti..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as "grid" | "list")}>
               <TabsList>
                 <TabsTrigger value="grid">
-                  <span className="material-icons text-sm mr-1">grid_view</span> Griglia
+                  <span className="material-icons text-sm mr-1">grid_view</span>
+                  Griglia
                 </TabsTrigger>
                 <TabsTrigger value="list">
-                  <span className="material-icons text-sm mr-1">view_list</span> Lista
+                  <span className="material-icons text-sm mr-1">view_list</span>
+                  Lista
                 </TabsTrigger>
               </TabsList>
-              
-              <div className="relative w-64">
-                <Input
-                  className="pl-10"
-                  placeholder="Cerca per titolo o descrizione..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <span className="material-icons absolute left-3 top-2.5 text-neutral-medium">search</span>
-              </div>
-            </div>
-            
+            </Tabs>
+          </div>
+
+          {/* Contenuto documenti */}
+          <Tabs value={viewMode} className="space-y-4">
             <TabsContent value="grid" className="mt-4">
               {isLoading ? (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -221,7 +201,7 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
                       </CardHeader>
                       <CardContent>
                         <div className="h-4 bg-neutral-light rounded w-full mb-2"></div>
-                        <div className="h-4 bg-neutral-light rounded w-3/4"></div>
+                        <div className="h-4 bg-neutral-light rounded w-2/3"></div>
                       </CardContent>
                       <CardFooter>
                         <div className="h-8 bg-neutral-light rounded w-full"></div>
@@ -231,18 +211,18 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
                 </div>
               ) : (
                 <>
-                  {documents && documents.length > 0 ? (
+                  {filteredDocuments && filteredDocuments.length > 0 ? (
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                      {documents.map((doc: any) => {
+                      {filteredDocuments.map((doc: any) => {
                         const statusDisplay = formatDocumentStatus(doc.status);
                         return (
                           <Card key={doc.id} className="hover:shadow-md transition-shadow">
                             <CardHeader>
                               <div className="flex justify-between items-start">
                                 <CardTitle className="text-lg">{doc.title}</CardTitle>
-                                <span className={`status-badge ${statusDisplay.bgClass}`}>
+                                <Badge className={statusDisplay.bgClass}>
                                   {statusDisplay.label}
-                                </span>
+                                </Badge>
                               </div>
                               <CardDescription>
                                 Versione {doc.version}
@@ -307,7 +287,7 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
                 </div>
               ) : (
                 <>
-                  {documents && documents.length > 0 ? (
+                  {filteredDocuments && filteredDocuments.length > 0 ? (
                     <div className="overflow-hidden rounded-md border border-neutral-200">
                       <table className="w-full bg-white">
                         <thead>
@@ -320,36 +300,39 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
                           </tr>
                         </thead>
                         <tbody>
-                          {documents.map((doc: any) => {
+                          {filteredDocuments.map((doc: any) => {
                             const statusDisplay = formatDocumentStatus(doc.status);
                             return (
                               <tr key={doc.id} className="border-b border-neutral-100 hover:bg-neutral-50">
                                 <td className="px-4 py-3 text-sm text-neutral-darkest">{doc.title}</td>
                                 <td className="px-4 py-3 text-sm text-neutral-dark">{doc.version}</td>
                                 <td className="px-4 py-3 text-sm">
-                                  <span className={`status-badge ${statusDisplay.bgClass}`}>
+                                  <Badge className={statusDisplay.bgClass}>
                                     {statusDisplay.label}
-                                  </span>
+                                  </Badge>
                                 </td>
-                                <td className="px-4 py-3 text-sm text-neutral-medium">
+                                <td className="px-4 py-3 text-sm text-neutral-dark">
                                   {new Date(doc.updatedAt).toLocaleDateString()}
                                 </td>
-                                <td className="px-4 py-3 text-sm flex justify-center gap-2">
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => handleOpenDocument(doc)}
-                                  >
-                                    <span className="material-icons text-sm">edit</span>
-                                  </Button>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    className="text-red-500 hover:bg-red-50"
-                                    onClick={() => confirmDeleteDocument(doc)}
-                                  >
-                                    <span className="material-icons text-sm">delete</span>
-                                  </Button>
+                                <td className="px-4 py-3 text-center">
+                                  <div className="flex gap-2 justify-center">
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => handleOpenDocument(doc)}
+                                    >
+                                      <span className="material-icons text-sm mr-1">edit</span>
+                                      Modifica
+                                    </Button>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      className="text-red-500 hover:bg-red-50"
+                                      onClick={() => confirmDeleteDocument(doc)}
+                                    >
+                                      <span className="material-icons text-sm">delete</span>
+                                    </Button>
+                                  </div>
                                 </td>
                               </tr>
                             );
@@ -390,22 +373,8 @@ export default function Dashboard({ toggleSidebar }: DashboardProps) {
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               Annulla
             </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleDeleteDocument}
-              disabled={deleteDocumentMutation.isPending}
-            >
-              {deleteDocumentMutation.isPending ? (
-                <>
-                  <span className="animate-spin material-icons text-sm mr-1">sync</span>
-                  Eliminazione in corso...
-                </>
-              ) : (
-                <>
-                  <span className="material-icons text-sm mr-1">delete</span>
-                  Elimina
-                </>
-              )}
+            <Button variant="destructive" onClick={handleDeleteDocument}>
+              Elimina
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
+import Documents from "@/pages/documents";
 import DocumentEditor from "@/pages/document-editor";
 import ModulesLibrary from "@/pages/modules-library";
 import BomManagement from "@/pages/bom-management";
@@ -166,7 +167,7 @@ function Router() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <Switch>
             <Route path="/" component={() => <Dashboard toggleSidebar={toggleSidebar} />} />
-            <Route path="/documents" component={() => <Dashboard toggleSidebar={toggleSidebar} />} />
+            <Route path="/documents" component={() => <Documents toggleSidebar={toggleSidebar} />} />
             <Route path="/documents/:id" component={({ params }) => <DocumentEditor id={params.id} toggleSidebar={toggleSidebar} />} />
             <Route path="/modules" component={() => <ModulesLibrary toggleSidebar={toggleSidebar} />} />
             <Route path="/components" component={() => <BomManagement toggleSidebar={toggleSidebar} />} />
