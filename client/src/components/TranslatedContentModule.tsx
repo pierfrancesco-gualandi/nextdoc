@@ -156,12 +156,76 @@ export default function TranslatedContentModule({
       translatedContent = updatedContent;
     }
     
+    // Per moduli non testuali, mantieni il contenuto visuale originale e applica solo le traduzioni testuali
+    let mergedContent = translatedContent;
+    
+    // Identifica i tipi di modulo che necessitano di preservare contenuto visuale
+    const visualModuleTypes = ['image', 'video', 'table', '3d-model', 'pdf', 'bom'];
+    
+    if (visualModuleTypes.includes(module.type)) {
+      // Estrai il contenuto originale
+      let originalContent;
+      try {
+        originalContent = typeof module.content === 'string' 
+          ? JSON.parse(module.content) 
+          : module.content;
+      } catch (e) {
+        originalContent = module.content;
+      }
+      
+      // Merge intelligente: mantieni il contenuto visuale originale e applica solo le traduzioni
+      mergedContent = {
+        ...originalContent, // Mantieni tutto il contenuto originale (URL, strutture, ecc.)
+        ...translatedContent, // Sovrascrivi solo i campi tradotti
+        
+        // Per tabelle: mantieni la struttura originale se la traduzione è incompleta
+        ...(module.type === 'table' && {
+          headers: translatedContent.headers || originalContent.headers,
+          rows: translatedContent.rows || originalContent.rows
+        }),
+        
+        // Per BOM: mantieni sempre i riferimenti originali
+        ...(module.type === 'bom' && {
+          bomId: originalContent.bomId,
+          filter: originalContent.filter,
+          levelFilter: originalContent.levelFilter,
+          useFilters: originalContent.useFilters,
+          filteredComponentCodes: originalContent.filteredComponentCodes,
+          filterSettings: originalContent.filterSettings
+        }),
+        
+        // Per immagini e video: mantieni sempre src e URL originali
+        ...((['image', 'video'].includes(module.type)) && {
+          src: originalContent.src,
+          url: originalContent.url,
+          fileId: originalContent.fileId
+        }),
+        
+        // Per modelli 3D: mantieni sempre i riferimenti ai file
+        ...(module.type === '3d-model' && {
+          src: originalContent.src,
+          url: originalContent.url,
+          fileId: originalContent.fileId,
+          folderPath: originalContent.folderPath,
+          format: originalContent.format,
+          controls: originalContent.controls
+        }),
+        
+        // Per PDF: mantieni sempre il riferimento al file
+        ...(module.type === 'pdf' && {
+          src: originalContent.src,
+          url: originalContent.url,
+          fileId: originalContent.fileId
+        })
+      };
+    }
+
     // Crea una copia del modulo originale con i contenuti tradotti
     const moduleWithTranslation = {
       ...module,
       translation: translation, // Aggiungi la traduzione completa
       original: { ...module }, // Mantieni l'originale per la visualizzazione del testo originale se richiesto
-      content: translatedContent // Sostituisci il contenuto con quello tradotto
+      content: mergedContent // Usa il contenuto merged invece di quello solo tradotto
     };
     
     return (
@@ -177,10 +241,26 @@ export default function TranslatedContentModule({
     );
   }
   
-  // Altrimenti mostra il contenuto originale
+  // Se non c'è traduzione, mostra il contenuto originale
+  // Ma assicurati che il modulo sia sempre renderizzabile
+  const moduleForDisplay = {
+    ...module,
+    // Assicurati che il contenuto sia sempre un oggetto valido
+    content: typeof module.content === 'string' 
+      ? (() => {
+          try {
+            return JSON.parse(module.content);
+          } catch (e) {
+            console.error("Errore nel parsing del contenuto originale:", e);
+            return module.content;
+          }
+        })()
+      : module.content
+  };
+  
   return (
     <ContentModule
-      module={module}
+      module={moduleForDisplay}
       onDelete={() => {}} // Funzione vuota perché in anteprima non serve
       onUpdate={() => {}} // Funzione vuota perché in anteprima non serve
       documentId={documentId}

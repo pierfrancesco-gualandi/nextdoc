@@ -44,16 +44,23 @@ export default function ThreeDModelTranslationEditor({
   
   // Effetto per salvare automaticamente le modifiche
   useEffect(() => {
-    const translatedContent = {
-      title,
-      caption,
-      labels: {
-        view: viewLabel
-      }
-    };
-    
-    // Salva la traduzione
-    saveTranslation(translatedContent);
+    try {
+      const translatedContent = {
+        title,
+        caption,
+        labels: {
+          view: viewLabel
+        }
+      };
+      
+      // Verifica che il contenuto sia serializzabile in JSON
+      JSON.stringify(translatedContent);
+      
+      // Salva la traduzione
+      saveTranslation(translatedContent);
+    } catch (error) {
+      console.error('Errore nel salvataggio della traduzione del modello 3D:', error);
+    }
   }, [title, caption, viewLabel, saveTranslation]);
   
   return (

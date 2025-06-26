@@ -90,7 +90,13 @@ const parseTranslation = (module: any, selectedLanguage?: string, moduleTranslat
       if (translation && translation.content) {
         let translationContent;
         if (typeof translation.content === 'string') {
-          translationContent = JSON.parse(translation.content);
+          try {
+            translationContent = JSON.parse(translation.content);
+          } catch (jsonError) {
+            console.error(`Errore nel parsing JSON della traduzione per modulo ${module.id}:`, jsonError);
+            console.error(`Contenuto problematico:`, translation.content);
+            return undefined;
+          }
         } else {
           translationContent = translation.content;
         }
@@ -133,7 +139,13 @@ const parseTranslation = (module: any, selectedLanguage?: string, moduleTranslat
       let translationContent;
       
       if (typeof module.translation.content === 'string') {
-        translationContent = JSON.parse(module.translation.content);
+        try {
+          translationContent = JSON.parse(module.translation.content);
+        } catch (jsonError) {
+          console.error(`Errore nel parsing JSON della traduzione diretta per modulo ${module.id}:`, jsonError);
+          console.error(`Contenuto problematico:`, module.translation.content);
+          return undefined;
+        }
       } else {
         translationContent = module.translation.content;
       }

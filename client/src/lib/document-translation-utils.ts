@@ -11,12 +11,12 @@
 export async function getDocumentWithTranslations(documentId: string | number, languageId?: string | number) {
   try {
     console.log(`Recupero documento ${documentId} con traduzioni per lingua ${languageId}`);
-    
+
     // 1. Recupera il documento di base
     const documentResponse = await fetch(`/api/documents/${documentId}`);
     if (!documentResponse.ok) throw new Error('Errore nel recupero del documento');
     const document = await documentResponse.json();
-    
+
     // 1.1 Recupera la traduzione del documento (titolo, versione, descrizione)
     if (languageId) {
       try {
@@ -27,7 +27,7 @@ export async function getDocumentWithTranslations(documentId: string | number, l
             // Sostituisci i campi principali del documento con le traduzioni
             const translation = documentTranslations[0];
             console.log(`Trovata traduzione documento: ${translation.title}`);
-            
+
             // SEMPRE usa i campi tradotti, anche se vuoti
             document.title = translation.title || "";
             document.description = translation.description || "";
@@ -42,11 +42,11 @@ export async function getDocumentWithTranslations(documentId: string | number, l
     const sectionsResponse = await fetch(`/api/documents/${documentId}/sections`);
     if (!sectionsResponse.ok) throw new Error('Errore nel recupero delle sezioni');
     const sections = await sectionsResponse.json();
-    
+
     // 3. Preparazione mappe per traduzioni (se richieste)
     let sectionTranslations: Record<number, any> = {};
     let moduleTranslations: Record<number, any> = {};
-    
+
     if (languageId) {
       try {
         // 3.1 Recupera le traduzioni delle sezioni
@@ -58,7 +58,7 @@ export async function getDocumentWithTranslations(documentId: string | number, l
             return acc;
           }, {});
         }
-        
+
         // 3.2 Recupera le traduzioni dei moduli usando l'endpoint esistente
         const moduleTranslationsResponse = await fetch(`/api/module-translations?languageId=${languageId}`);
         if (moduleTranslationsResponse.ok) {
@@ -72,7 +72,7 @@ export async function getDocumentWithTranslations(documentId: string | number, l
         console.error('Errore nel recupero delle traduzioni:', error);
       }
     }
-    
+
     // 4. Per ogni sezione, recupera i moduli e applica traduzioni
     const sectionsWithContent = await Promise.all(sections.map(async (section: any) => {
       // 4.1 Recupera moduli della sezione
@@ -81,7 +81,7 @@ export async function getDocumentWithTranslations(documentId: string | number, l
       if (modulesResponse.ok) {
         modules = await modulesResponse.json();
       }
-      
+
       // 4.2 Applica traduzioni alla sezione
       if (languageId && sectionTranslations[section.id]) {
         const translation = sectionTranslations[section.id];
@@ -90,31 +90,38 @@ export async function getDocumentWithTranslations(documentId: string | number, l
         section.title = translation.title || '';  // Se non c'è traduzione, usa stringa vuota
         section.description = translation.description || ''; // Se non c'è traduzione, usa stringa vuota
       }
-      
+
       // 4.3 Applica traduzioni ai moduli
       const modulesWithTranslations = modules.map((module: any) => {
         const moduleTranslation = moduleTranslations[module.id];
-        if (languageId && moduleTranslation) {
+        if (languageId && moduleTranslations[module.id]) {
           try {
             let translatedContent;
             if (typeof moduleTranslation.content === 'string') {
-              translatedContent = JSON.parse(moduleTranslation.content);
+              try {
+                translatedContent = JSON.parse(moduleTranslation.content);
+              } catch (parseError) {
+                console.error(`Errore nel parsing della traduzione per il modulo ${module.id}:`, parseError);
+                console.error(`Contenuto problematico:`, moduleTranslation.content);
+                translatedContent = {};
+              }
             } else {
-              translatedContent = moduleTranslation.content;
+              translatedContent = moduleTranslation.content || {};
             }
-            
+
             // Estrai il content originale
             let originalContent;
             if (typeof module.content === 'string') {
               try {
                 originalContent = JSON.parse(module.content);
               } catch (e) {
+                console.error(`Errore nel parsing del contenuto originale per il modulo ${module.id}:`, e);
                 originalContent = module.content;
               }
             } else {
-              originalContent = module.content;
+              originalContent = module.content || {};
             }
-            
+
             // Applica traduzioni in base al tipo di modulo
             // NUOVO APPROCCIO: uso ESCLUSIVO delle traduzioni dove disponibili
             switch (module.type) {
@@ -122,7 +129,7 @@ export async function getDocumentWithTranslations(documentId: string | number, l
                 // Per moduli di testo, sostituisci SEMPRE il campo text
                 originalContent.text = translatedContent.text || '';
                 break;
-                
+
               case 'image':
               case 'video':
               case 'pdf':
@@ -132,7 +139,7 @@ export async function getDocumentWithTranslations(documentId: string | number, l
                 originalContent.alt = translatedContent.alt || originalContent.alt || '';
                 originalContent.title = translatedContent.title || '';
                 break;
-                
+
               case 'warning':
               case 'danger':
               case 'warning-alert':
@@ -144,11 +151,11 @@ export async function getDocumentWithTranslations(documentId: string | number, l
                 originalContent.message = translatedContent.message || '';
                 originalContent.description = translatedContent.description || '';
                 break;
-                
+
               case 'table':
                 // Per tabelle, usa SOLO intestazioni e celle tradotte
                 originalContent.caption = translatedContent.caption || '';
-                
+
                 // Gestione intestazioni - SOLO traduzioni
                 if (translatedContent.headers && Array.isArray(originalContent.headers)) {
                   // Sostituisci tutte le intestazioni con le versioni tradotte o stringhe vuote
@@ -156,7 +163,7 @@ export async function getDocumentWithTranslations(documentId: string | number, l
                     originalContent.headers[i] = (translatedContent.headers && translatedContent.headers[i]) || '';
                   }
                 }
-                
+
                 // Gestione righe e celle - SOLO traduzioni
                 if (Array.isArray(originalContent.rows)) {
                   for (let i = 0; i < originalContent.rows.length; i++) {
@@ -171,33 +178,33 @@ export async function getDocumentWithTranslations(documentId: string | number, l
                   }
                 }
                 break;
-                
+
               case 'checklist':
                 // Per checklist, usa SOLO testi tradotti
                 originalContent.title = translatedContent.title || '';
-                
+
                 if (Array.isArray(originalContent.items)) {
                   for (let i = 0; i < originalContent.items.length; i++) {
                     // Usa solo testi tradotti per ciascun elemento
                     const originalItem = originalContent.items[i] || {};
                     const translatedItem = (translatedContent.items && translatedContent.items[i]) || {};
-                    
+
                     originalItem.text = translatedItem.text || '';
                     originalContent.items[i] = originalItem;
                   }
                 }
                 break;
-                
+
               case 'link':
                 // Per link, usa SOLO testo e descrizione tradotti
                 originalContent.text = translatedContent.text || '';
                 originalContent.description = translatedContent.description || '';
                 break;
-                
+
               case 'bom':
                 // Per BOM, usa SOLO elementi tradotti
                 originalContent.title = translatedContent.title || '';
-                
+
                 // Gestione intestazioni di colonne - SOLO traduzioni
                 if (originalContent.headers) {
                   if (translatedContent.headers) {
@@ -216,7 +223,7 @@ export async function getDocumentWithTranslations(documentId: string | number, l
                     originalContent.headers = emptyHeaders;
                   }
                 }
-                
+
                 // Gestione descrizioni componenti - SOLO traduzioni
                 if (originalContent.descriptions) {
                   if (translatedContent.descriptions) {
@@ -235,7 +242,7 @@ export async function getDocumentWithTranslations(documentId: string | number, l
                     originalContent.descriptions = emptyDescriptions;
                   }
                 }
-                
+
                 // Gestione messaggi - SOLO traduzioni
                 if (originalContent.messages) {
                   if (translatedContent.messages) {
@@ -255,29 +262,29 @@ export async function getDocumentWithTranslations(documentId: string | number, l
                   }
                 }
                 break;
-                
+
               default:
                 // Per altri tipi di moduli, sostituisci completamente con la traduzione
                 // Se non ci sono campi tradotti specifici, usa oggetto vuoto
                 originalContent = translatedContent || {};
             }
-            
+
             // Applica il contenuto tradotto al modulo
             module.content = originalContent;
           } catch (error) {
             console.error(`Errore nell'applicazione della traduzione al modulo ${module.id}:`, error);
           }
         }
-        
+
         return module;
       });
-      
+
       return {
         ...section,
         modules: modulesWithTranslations
       };
     }));
-    
+
     return {
       document,
       sections: sectionsWithContent
