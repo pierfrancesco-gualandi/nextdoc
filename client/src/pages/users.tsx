@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/UserContext";
@@ -575,6 +576,73 @@ export default function Users({ toggleSidebar }: UsersProps) {
               disabled={updateUserMutation.isPending}
             >
               {updateUserMutation.isPending ? 'Aggiornamento...' : 'Aggiorna'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Document Assignment Dialog */}
+      <Dialog open={isDocumentManageDialogOpen} onOpenChange={setIsDocumentManageDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Gestisci Documenti - {managingUser?.name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="max-h-96 overflow-y-auto space-y-3">
+            <p className="text-sm text-gray-600 mb-4">
+              Seleziona i documenti che l'utente può visualizzare:
+            </p>
+            
+            {allDocuments && allDocuments.length > 0 ? (
+              allDocuments.map((document: any) => (
+                <div key={document.id} className="flex items-center space-x-3 p-3 border rounded-lg">
+                  <Checkbox
+                    id={`document-${document.id}`}
+                    checked={selectedDocuments.includes(document.id)}
+                    onCheckedChange={(checked) => 
+                      handleDocumentSelectionChange(document.id, !!checked)
+                    }
+                  />
+                  <div className="flex-1">
+                    <Label 
+                      htmlFor={`document-${document.id}`}
+                      className="font-medium cursor-pointer"
+                    >
+                      {document.title}
+                    </Label>
+                    {document.description && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        {document.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">
+                Nessun documento disponibile
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsDocumentManageDialogOpen(false);
+                setManagingUser(null);
+                setSelectedDocuments([]);
+              }}
+            >
+              Annulla
+            </Button>
+            <Button 
+              onClick={handleSaveDocumentAssignments}
+              disabled={saveDocumentAssignmentsMutation.isPending}
+            >
+              {saveDocumentAssignmentsMutation.isPending ? 'Salvataggio...' : 'Salva Assegnazioni'}
             </Button>
           </DialogFooter>
         </DialogContent>
