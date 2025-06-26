@@ -247,14 +247,22 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
           console.warn(`Impossibile caricare la traduzione per la sezione ${section.id}`, err);
         }
         
-        // Carica i moduli della sezione
+        // Carica i moduli della sezione se non sono già presenti
         try {
-          const modulesResponse = await fetch(`/api/sections/${section.id}/modules`);
-          if (modulesResponse.ok) {
-            const modules = await modulesResponse.json();
-            
-            // Carica le traduzioni dei moduli
-            for (const module of modules) {
+          // Se la sezione non ha già i moduli caricati, caricali
+          if (!section.modules) {
+            const modulesResponse = await fetch(`/api/sections/${section.id}/modules`);
+            if (modulesResponse.ok) {
+              const modules = await modulesResponse.json();
+              // Ordiniamo i moduli per il campo 'order' per mantenere l'ordine originale
+              const sortedModules = [...modules].sort((a: any, b: any) => a.order - b.order);
+              section.modules = sortedModules;
+            }
+          }
+          
+          // Ora carica le traduzioni dei moduli (se esistono moduli)
+          if (section.modules && section.modules.length > 0) {
+            for (const module of section.modules) {
               try {
                 const moduleTransResponse = await fetch(`/api/module-translations?moduleId=${module.id}&languageId=${selectedLanguage}`);
                 if (moduleTransResponse.ok) {
@@ -283,8 +291,12 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
   // Gestisce il cambio della lingua selezionata
   const handleLanguageChange = (value: string) => {
     setSelectedLanguage(value);
+    // Resetta le traduzioni quando cambi lingua - le nuove verranno caricate automaticamente
     setSectionTranslations({});
     setModuleTranslations({});
+    
+    // Assicurati che le sezioni mantengano i loro moduli caricati
+    // Non resettare la struttura delle sezioni, solo le traduzioni
   };
   
   // Salva solo le informazioni del documento (titolo, versione, descrizione)
