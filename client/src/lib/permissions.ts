@@ -181,6 +181,8 @@ export function canPerformAction(user: AuthenticatedUser | null, action: string)
   const permissions = getUserPermissions(user);
   
   switch (action) {
+    case 'view-documents':
+      return permissions.canViewDocuments;
     case 'edit-documents':
       return permissions.canEditDocuments;
     case 'create-documents':

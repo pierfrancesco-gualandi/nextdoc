@@ -72,8 +72,8 @@ export default function Sidebar({ activePath }: SidebarProps) {
             </li>
           )}
 
-          {/* Documenti - tutti tranne traduttore puro possono vedere documenti */}
-          {(canPerformAction(selectedUser, 'viewDocument') || selectedUser?.role === 'reader') && (
+          {/* Documenti - tutti i ruoli possono vedere documenti */}
+          {canPerformAction(selectedUser, 'view-documents') && (
             <li>
               <div
                 onClick={(e) => {
