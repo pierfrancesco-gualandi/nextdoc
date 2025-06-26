@@ -67,25 +67,25 @@ export default function TranslatedContentModule({
       });
       
       // Per tutti i moduli BOM in tutte le sezioni, assicurati che ci siano valori predefiniti per:
-      // - intestazioni colonne (headers)
-      // - messaggi (messages)
-      // - didascalia (caption)
-      const defaultHeaders = {
+      // - intestazioni colonne tradotte (headers)
+      // - messaggi tradotti (messages)
+      // - didascalia tradotta (caption)
+      const defaultHeaders = translatedContent?.headers || {
         number: "N°",
-        level: "Livello",
+        level: "Livello", 
         code: "Codice",
         description: "Descrizione",
         quantity: "Quantità"
       };
       
-      const defaultMessages = {
+      const defaultMessages = translatedContent?.messages || {
         loading: "Caricamento elenco componenti...",
-        notFound: "Elenco componenti non trovato",
+        notFound: "Elenco componenti non trovato", 
         empty: "Nessun componente disponibile",
         noResults: "Nessun risultato per i filtri selezionati"
       };
       
-      // Inizializza il contenuto aggiornato con valori predefiniti per qualsiasi sezione
+      // Inizializza il contenuto aggiornato con valori tradotti
       const updatedContent = {
         ...translatedContent,
         // Proprietà fondamentali

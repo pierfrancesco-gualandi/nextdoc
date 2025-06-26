@@ -2190,6 +2190,45 @@ export default function DocumentTranslationManager({ documentId }: DocumentTrans
         <div className="p-4">
           {isEditing ? (
             <div>
+              {/* Campo per il titolo del modulo */}
+              {module.title && (
+                <div className="mb-4 p-4 border rounded bg-blue-50">
+                  <Label htmlFor={`module-title-${module.id}`} className="font-semibold">Titolo del modulo</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="p-3 bg-white rounded border text-sm">
+                      <span className="text-neutral-600">Originale:</span>
+                      <div className="mt-1 font-medium">{module.title}</div>
+                    </div>
+                    <TranslationEditableField
+                      originalValue={module.title}
+                      translatedValue={translation?.title || ''}
+                      onChange={(value) => {
+                        // Aggiorna il campo title separatamente dal content
+                        const updatedTranslation = {
+                          ...translation,
+                          title: value,
+                          moduleId: module.id,
+                          languageId: parseInt(selectedLanguage),
+                          content: translation?.content || {},
+                          status: 'translated'
+                        };
+                        
+                        // Salva immediatamente la traduzione del titolo
+                        saveModuleTranslation.mutate({
+                          id: translation?.id,
+                          exists: !!translation?.id,
+                          translation: updatedTranslation
+                        });
+                      }}
+                      placeholder="Inserisci la traduzione del titolo del modulo..."
+                      errorCondition={module.title && !translation?.title}
+                      rows={1}
+                      fieldId={`module-title-${module.id}`}
+                    />
+                  </div>
+                </div>
+              )}
+              
               {renderModuleTranslationForm()}
               <div className="flex justify-end mt-4">
                 <Button

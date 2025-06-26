@@ -423,6 +423,7 @@ export const contentModuleTranslations = pgTable("content_module_translations", 
   id: serial("id").primaryKey(),
   moduleId: integer("module_id").notNull(),
   languageId: integer("language_id").notNull(),
+  title: text("title"), // Titolo tradotto del modulo
   content: jsonb("content").notNull(),
   status: text("status").notNull().default("not_translated"), // not_translated, ai_suggested, in_review, approved
   translatedById: integer("translated_by_id"),
@@ -433,6 +434,7 @@ export const contentModuleTranslations = pgTable("content_module_translations", 
 export const insertContentModuleTranslationSchema = createInsertSchema(contentModuleTranslations).pick({
   moduleId: true,
   languageId: true,
+  title: true,
   content: true,
   status: true,
   translatedById: true,
