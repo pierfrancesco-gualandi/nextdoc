@@ -21,6 +21,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, like, or, desc, asc, isNull, count, inArray } from "drizzle-orm";
+import { hashPassword } from "./auth-utils";
 
 export interface IStorage {
   // User operations
@@ -1502,7 +1503,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const [newUser] = await db.insert(users).values(user).returning();
+    // Hash the password before storing
+    const hashedPassword = await hashPassword(user.password);
+    const userWithHashedPassword = {
+      ...user,
+      password: hashedPassword
+    };
+    
+    const [newUser] = await db.insert(users).values(userWithHashedPassword).returning();
     return newUser;
   }
 
@@ -1511,9 +1519,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined> {
+    // Hash the password if it's being updated
+    let updateData = { ...user };
+    if (user.password) {
+      updateData.password = await hashPassword(user.password);
+    }
+    
     const [updatedUser] = await db
       .update(users)
-      .set(user)
+      .set(updateData)
       .where(eq(users.id, id))
       .returning();
     return updatedUser;

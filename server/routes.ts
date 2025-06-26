@@ -1,6 +1,7 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { verifyPassword } from "./auth-utils";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { upload, saveFileInfo, getFileUrl } from "./upload";
@@ -208,6 +209,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).end();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  // Authentication routes
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username e password sono richiesti" });
+      }
+      
+      // Trova l'utente per username
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(401).json({ message: "Credenziali non valide" });
+      }
+      
+      // Verifica che l'utente sia attivo
+      if (!user.isActive) {
+        return res.status(401).json({ message: "Account disabilitato" });
+      }
+      
+      // Verifica la password
+      const isValidPassword = await verifyPassword(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Credenziali non valide" });
+      }
+      
+      // Autenticazione riuscita - restituisci i dati utente senza password
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({
+        message: "Login effettuato con successo",
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error("Errore durante il login:", error);
+      res.status(500).json({ message: "Errore interno del server" });
+    }
+  });
+
+  app.post("/api/auth/verify", async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID richiesto" });
+      }
+      
+      // Verifica che l'utente esista e sia attivo
+      const user = await storage.getUser(Number(userId));
+      if (!user) {
+        return res.status(401).json({ message: "Utente non trovato" });
+      }
+      
+      if (!user.isActive) {
+        return res.status(401).json({ message: "Account disabilitato" });
+      }
+      
+      // Restituisci i dati utente senza password
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error("Errore durante la verifica:", error);
+      res.status(500).json({ message: "Errore interno del server" });
     }
   });
 
