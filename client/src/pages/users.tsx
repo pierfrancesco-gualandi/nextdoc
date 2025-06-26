@@ -29,6 +29,9 @@ export default function Users({ toggleSidebar }: UsersProps) {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDocumentManageDialogOpen, setIsDocumentManageDialogOpen] = useState(false);
+  const [managingUser, setManagingUser] = useState<User | null>(null);
+  const [selectedDocuments, setSelectedDocuments] = useState<number[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { selectedUser } = useUser();
@@ -47,6 +50,28 @@ export default function Users({ toggleSidebar }: UsersProps) {
   // Fetch users
   const { data: users, isLoading } = useQuery({
     queryKey: ['/api/users'],
+  });
+
+  // Fetch all documents
+  const { data: allDocuments } = useQuery({
+    queryKey: ['/api/documents'],
+    queryFn: async () => {
+      const res = await fetch('/api/documents', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch documents');
+      return await res.json();
+    },
+  });
+
+  // Fetch user document assignments
+  const { data: userDocuments } = useQuery({
+    queryKey: ['/api/user-document-assignments', managingUser?.id],
+    queryFn: async () => {
+      if (!managingUser?.id) return [];
+      const res = await fetch(`/api/user-document-assignments?userId=${managingUser.id}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch user documents');
+      return await res.json();
+    },
+    enabled: !!managingUser?.id,
   });
   
   // Create user mutation
@@ -107,6 +132,30 @@ export default function Users({ toggleSidebar }: UsersProps) {
       toast({
         title: "Utente eliminato",
         description: "L'utente è stato eliminato con successo"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore",
+        description: `Si è verificato un errore: ${error}`,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Save document assignments mutation
+  const saveDocumentAssignmentsMutation = useMutation({
+    mutationFn: async (data: { userId: number; documentIds: number[] }) => {
+      await apiRequest('POST', '/api/user-document-assignments', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user-document-assignments'] });
+      setIsDocumentManageDialogOpen(false);
+      setManagingUser(null);
+      setSelectedDocuments([]);
+      toast({
+        title: "Assegnazioni salvate",
+        description: "Le assegnazioni documenti sono state aggiornate con successo"
       });
     },
     onError: (error) => {
@@ -181,6 +230,41 @@ export default function Users({ toggleSidebar }: UsersProps) {
       deleteUserMutation.mutate(userId);
     }
   };
+
+  // Handle managing documents for a user
+  const handleManageDocuments = (user: User) => {
+    setManagingUser(user);
+    setIsDocumentManageDialogOpen(true);
+  };
+
+  // Handle document selection change
+  const handleDocumentSelectionChange = (documentId: number, checked: boolean) => {
+    setSelectedDocuments(prev => {
+      if (checked) {
+        return [...prev, documentId];
+      } else {
+        return prev.filter(id => id !== documentId);
+      }
+    });
+  };
+
+  // Handle saving document assignments
+  const handleSaveDocumentAssignments = () => {
+    if (!managingUser) return;
+    
+    saveDocumentAssignmentsMutation.mutate({
+      userId: managingUser.id,
+      documentIds: selectedDocuments
+    });
+  };
+
+  // Effect to load existing document assignments when dialog opens
+  useEffect(() => {
+    if (userDocuments && managingUser) {
+      const assignedDocumentIds = userDocuments.map((assignment: any) => assignment.documentId);
+      setSelectedDocuments(assignedDocumentIds);
+    }
+  }, [userDocuments, managingUser]);
 
   // Get role badge variant
   const getRoleBadgeVariant = (role: string) => {
@@ -384,6 +468,15 @@ export default function Users({ toggleSidebar }: UsersProps) {
                             >
                               Modifica
                             </Button>
+                            {user.role !== 'admin' && (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => handleManageDocuments(user)}
+                              >
+                                Gestisci Documenti
+                              </Button>
+                            )}
                             {user.id !== selectedUser?.id && (
                               <Button
                                 variant="destructive"
