@@ -223,6 +223,7 @@ export default function TranslatedContentModule({
     // Crea una copia del modulo originale con i contenuti tradotti
     const moduleWithTranslation = {
       ...module,
+      title: translation.title || module.title, // Usa il titolo tradotto se disponibile
       translation: translation, // Aggiungi la traduzione completa
       original: { ...module }, // Mantieni l'originale per la visualizzazione del testo originale se richiesto
       content: mergedContent // Usa il contenuto merged invece di quello solo tradotto
