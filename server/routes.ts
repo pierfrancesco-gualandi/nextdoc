@@ -247,7 +247,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Credenziali non valide" });
       }
       
-      // Autenticazione riuscita - restituisci i dati utente senza password
+      // Autenticazione riuscita - salva l'ID utente nella sessione
+      (req.session as any).selectedUserId = user.id;
+      
+      // Restituisci i dati utente senza password
       const { password: _, ...userWithoutPassword } = user;
       res.json({
         message: "Login effettuato con successo",

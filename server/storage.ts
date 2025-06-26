@@ -1407,24 +1407,54 @@ export class MemStorage implements IStorage {
 
   // User-Document assignment operations (stub implementations for MemStorage)
   async getUserDocumentAssignments(userId: number): Promise<UserDocumentAssignment[]> {
-    return [];
+    return Array.from(this.userDocumentAssignments.values())
+      .filter(assignment => assignment.userId === userId);
   }
 
   async getDocumentAssignments(documentId: number): Promise<UserDocumentAssignment[]> {
-    return [];
+    return Array.from(this.userDocumentAssignments.values())
+      .filter(assignment => assignment.documentId === documentId);
   }
 
   async createUserDocumentAssignment(assignment: InsertUserDocumentAssignment): Promise<UserDocumentAssignment> {
-    const id = 1;
-    return { ...assignment, id, assignedAt: new Date() };
+    // Verifica se l'assegnazione esiste già
+    const existing = Array.from(this.userDocumentAssignments.values())
+      .find(a => a.userId === assignment.userId && a.documentId === assignment.documentId);
+    
+    if (existing) {
+      return existing; // Restituisce l'assegnazione esistente
+    }
+
+    const id = this.currentUserDocumentAssignmentId++;
+    const newAssignment: UserDocumentAssignment = {
+      ...assignment,
+      id,
+      assignedAt: new Date()
+    };
+    
+    this.userDocumentAssignments.set(id, newAssignment);
+    return newAssignment;
   }
 
   async deleteUserDocumentAssignment(userId: number, documentId: number): Promise<boolean> {
-    return true;
+    const assignment = Array.from(this.userDocumentAssignments.values())
+      .find(a => a.userId === userId && a.documentId === documentId);
+    
+    if (assignment) {
+      this.userDocumentAssignments.delete(assignment.id);
+      return true;
+    }
+    return false;
   }
 
   async getAssignedDocumentsForUser(userId: number): Promise<Document[]> {
-    return Array.from(this.documents.values());
+    // Ottieni tutte le assegnazioni per questo utente
+    const assignments = await this.getUserDocumentAssignments(userId);
+    const assignedDocumentIds = assignments.map(a => a.documentId);
+    
+    // Restituisci i documenti assegnati
+    return Array.from(this.documents.values())
+      .filter(doc => assignedDocumentIds.includes(doc.id));
   }
 }
 
