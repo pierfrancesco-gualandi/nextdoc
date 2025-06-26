@@ -318,21 +318,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/user-document-assignments", async (req: Request, res: Response) => {
     try {
-      const { userId, documentId } = req.body;
+      const { userId, documentIds } = req.body;
       const assignedById = (req as any).userId || 1; // ID dell'utente che effettua l'assegnazione
       
-      if (!userId || !documentId) {
-        return res.status(400).json({ message: "userId and documentId are required" });
+      if (!userId || !documentIds || !Array.isArray(documentIds)) {
+        return res.status(400).json({ message: "userId and documentIds are required" });
       }
       
-      const assignment = await storage.createUserDocumentAssignment({ 
-        userId, 
-        documentId, 
-        assignedById 
-      });
-      res.status(201).json(assignment);
+      // First, delete all existing assignments for this user
+      const existingAssignments = await storage.getUserDocumentAssignments(userId);
+      for (const assignment of existingAssignments) {
+        await storage.deleteUserDocumentAssignment(userId, assignment.documentId);
+      }
+      
+      // Then create new assignments
+      const assignments = [];
+      for (const documentId of documentIds) {
+        const assignment = await storage.createUserDocumentAssignment({ 
+          userId, 
+          documentId, 
+          assignedById 
+        });
+        assignments.push(assignment);
+      }
+      
+      res.status(201).json(assignments);
     } catch (error) {
-      res.status(500).json({ message: "Failed to create user document assignment" });
+      console.error("Error managing user document assignments:", error);
+      res.status(500).json({ message: "Failed to create user document assignments" });
     }
   });
 
