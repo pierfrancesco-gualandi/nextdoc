@@ -14,6 +14,7 @@ import Translations from "@/pages/translations";
 import ModuleTranslation from "@/pages/module-translation";
 import DocumentTranslationExport from "@/pages/document-translation-export";
 import DocumentTranslationTree from "@/pages/document-translation-tree";
+import Login from "@/pages/login";
 import Sidebar from "@/components/sidebar";
 import React, { useState, createContext, useContext, useEffect } from "react";
 import SettingsRedirect from "@/pages/settings-redirect";
@@ -166,6 +167,7 @@ function Router() {
         {showSidebar && <Sidebar activePath={location} />}
         <div className="flex-1 flex flex-col overflow-hidden">
           <Switch>
+            <Route path="/login" component={Login} />
             <Route path="/" component={() => <Dashboard toggleSidebar={toggleSidebar} />} />
             <Route path="/documents" component={() => <Documents toggleSidebar={toggleSidebar} />} />
             <Route path="/documents/:id" component={({ params }) => <DocumentEditor id={params.id} toggleSidebar={toggleSidebar} />} />

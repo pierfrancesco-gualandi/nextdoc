@@ -1,18 +1,37 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import type { User } from '@shared/schema';
+import { getAuthenticatedUser, clearAuthenticatedUser } from '@/lib/auth';
+
+// Tipo per l'utente autenticato (senza password)
+export interface AuthenticatedUser {
+  id: number;
+  username: string;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  permissions: unknown;
+}
 
 interface UserContextType {
-  selectedUser: User | null;
-  setSelectedUser: (user: User | null) => void;
+  selectedUser: AuthenticatedUser | null;
+  setSelectedUser: (user: AuthenticatedUser | null) => void;
   isUserSelected: boolean;
   clearUserSelection: () => void;
+  isAuthenticated: boolean;
 }
 
 const UserContext = createContext<UserContextType | null>(null);
 
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Inizializza direttamente dal sessionStorage per evitare problemi di timing
-  const [selectedUser, setSelectedUserState] = useState<User | null>(() => {
+  // Inizializza dall'utente autenticato
+  const [selectedUser, setSelectedUserState] = useState<AuthenticatedUser | null>(() => {
+    const authenticatedUser = getAuthenticatedUser();
+    if (authenticatedUser) {
+      console.log('Utente autenticato ripristinato:', authenticatedUser);
+      return authenticatedUser;
+    }
+    
+    // Fallback per retrocompatibilità con il vecchio sistema
     try {
       const savedUser = sessionStorage.getItem('selectedUser');
       if (savedUser) {
@@ -27,14 +46,15 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return null;
   });
 
-  // Funzione per impostare l'utente selezionato (solo al primo accesso)
-  const setSelectedUser = (user: User | null) => {
+  // Funzione per impostare l'utente selezionato
+  const setSelectedUser = (user: AuthenticatedUser | null) => {
     setSelectedUserState(user);
     if (user) {
       sessionStorage.setItem('selectedUser', JSON.stringify(user));
       console.log('Utente selezionato e salvato:', user);
     } else {
       sessionStorage.removeItem('selectedUser');
+      clearAuthenticatedUser();
       console.log('Selezione utente cancellata');
     }
   };
@@ -45,6 +65,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const isUserSelected = selectedUser !== null;
+  const isAuthenticated = getAuthenticatedUser() !== null;
 
   return (
     <UserContext.Provider 
