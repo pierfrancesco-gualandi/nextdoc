@@ -127,7 +127,6 @@ export default function Documents({ toggleSidebar }: DocumentsProps) {
                   <p className="text-lg text-neutral-medium">Gestisci e riutilizza moduli salvati nei tuoi documenti</p>
                 </div>
               </div>
-            </div>
               <Button onClick={handleCreateNew} size="lg" className="mt-2">
                 <span className="material-icons text-sm mr-2">add</span>
                 Nuovo Documento
