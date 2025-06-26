@@ -1,7 +1,7 @@
 import type { AuthenticatedUser } from '@/contexts/UserContext';
 
 // Definizione dei ruoli disponibili
-export type UserRole = 'admin' | 'editor' | 'traduttore' | 'reader';
+export type UserRole = 'admin' | 'editor' | 'translator' | 'reader';
 
 // Interfaccia per la definizione dei permessi
 export interface Permission {
@@ -49,7 +49,7 @@ const rolePermissions: Record<UserRole, Permission> = {
     canEditModulesLibrary: true,
     canExportDocuments: true,
   },
-  traduttore: {
+  translator: {
     canViewDocuments: true,
     canEditDocuments: false,
     canCreateDocuments: false,
