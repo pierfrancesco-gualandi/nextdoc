@@ -126,6 +126,12 @@ This is a full-stack web application built for creating, managing, and translati
 ```
 Changelog:
 - June 25, 2025. Initial setup
+- June 26, 2025. Implementato sistema di selezione persistente dell'utente
+  - Creato UserContext per gestire la persistenza dell'utente selezionato
+  - Aggiunto UserSelector per selezione iniziale obbligatoria
+  - Integrato UserDisplay nella sidebar per mostrare utente corrente
+  - Selezione salvata nel localStorage e ripristinata automaticamente
+  - L'utente viene scelto una volta all'inizio e rimane fisso finché non cambiato manualmente
 ```
 
 ## User Preferences

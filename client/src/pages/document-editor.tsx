@@ -616,10 +616,10 @@ export default function DocumentEditor({ id, toggleSidebar }: DocumentEditorProp
   
   // Effect to update permissions when user role changes in the context
   useEffect(() => {
-    if (contextUserRole) {
-      console.log('User role changed to:', contextUserRole);
+    if (selectedUser?.role) {
+      console.log('User role changed to:', selectedUser.role);
       // Aggiorna le variabili di permesso in base al nuovo ruolo
-      switch(contextUserRole) {
+      switch(selectedUser.role) {
         case 'admin':
           setCanEdit(true);
           setCanManageUsers(true);

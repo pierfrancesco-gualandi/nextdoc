@@ -120,20 +120,14 @@ export default function Header({
                 {statusDisplay.label}
               </span>
             )}
-            {displayName && (
+            {selectedUser && (
               <div 
-                className="flex items-center ml-4 px-3 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity"
-                style={{ 
-                  backgroundColor: `${userBadgeColor}20`,
-                  color: userBadgeColor,
-                  borderColor: `${userBadgeColor}40`,
-                  border: "1px solid"
-                }}
+                className="flex items-center ml-4 px-3 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity bg-primary/10 text-primary border border-primary/20"
                 onClick={() => setUserSelectorOpen(true)}
                 title="Clicca per cambiare utente"
               >
                 <User className="w-4 h-4 mr-1" />
-                <span className="text-sm font-medium">{displayName}</span>
+                <span className="text-sm font-medium">{selectedUser.name}</span>
               </div>
             )}
             
