@@ -117,14 +117,17 @@ export default function Documents({ toggleSidebar }: DocumentsProps) {
       <Header title="Documenti" toggleSidebar={toggleSidebar} />
       
       <main className="flex-1 overflow-y-auto bg-neutral-lightest p-6">
-        <div className="max-w-7xl mx-auto">
-          {/* Header principale della pagina */}
-          <div className="mb-8">
-            <div className="flex justify-between items-start">
-              <div className="space-y-1">
-                <h1 className="text-3xl font-bold text-neutral-darkest tracking-tight">Documenti</h1>
-                <p className="text-lg text-neutral-medium">Gestisci le sezioni dei tuoi documenti</p>
+        <main className="flex-1 overflow-y-auto bg-neutral-lightest p-6">
+          <div className="max-w-7xl mx-auto">
+            {/* Header principale della pagina */}
+            <div className="mb-8">
+              <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                  <h1 className="text-3xl font-bold text-neutral-darkest tracking-tight">Libreria Moduli</h1>
+                  <p className="text-lg text-neutral-medium">Gestisci e riutilizza moduli salvati nei tuoi documenti</p>
+                </div>
               </div>
+            </div>
               <Button onClick={handleCreateNew} size="lg" className="mt-2">
                 <span className="material-icons text-sm mr-2">add</span>
                 Nuovo Documento
