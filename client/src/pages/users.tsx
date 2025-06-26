@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useUser } from "@/contexts/UserContext";
+import { canPerformAction } from "@/lib/permissions";
+import type { User } from "@shared/schema";
 
 interface UsersProps {
   toggleSidebar?: () => void;
@@ -22,9 +25,24 @@ export default function Users({ toggleSidebar }: UsersProps) {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [newRole, setNewRole] = useState("viewer");
+  const [newRole, setNewRole] = useState("reader");
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { selectedUser } = useUser();
+
+  // Verifica permessi - solo admin può accedere
+  useEffect(() => {
+    if (!canPerformAction(selectedUser, 'manageUsers')) {
+      toast({
+        title: "Accesso negato",
+        description: "Non hai i permessi per accedere alla gestione utenti",
+        variant: "destructive",
+      });
+    }
+  }, [selectedUser, toast]);
   
   // Fetch users
   const { data: users, isLoading } = useQuery({
@@ -40,9 +58,55 @@ export default function Users({ toggleSidebar }: UsersProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       resetForm();
+      setIsCreateDialogOpen(false);
       toast({
         title: "Utente creato",
         description: "L'utente è stato creato con successo"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore",
+        description: `Si è verificato un errore: ${error}`,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Update user mutation
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await apiRequest('PUT', `/api/users/${id}`, data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setEditingUser(null);
+      setIsEditDialogOpen(false);
+      toast({
+        title: "Utente aggiornato",
+        description: "L'utente è stato aggiornato con successo"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore",
+        description: `Si è verificato un errore: ${error}`,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest('DELETE', `/api/users/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: "Utente eliminato",
+        description: "L'utente è stato eliminato con successo"
       });
     },
     onError: (error) => {
@@ -60,7 +124,12 @@ export default function Users({ toggleSidebar }: UsersProps) {
     setNewName("");
     setNewEmail("");
     setNewPassword("");
-    setNewRole("viewer");
+    setNewRole("reader");
+  };
+
+  // Reset edit form
+  const resetEditForm = () => {
+    setEditingUser(null);
   };
   
   // Handle creating a new user
@@ -79,197 +148,344 @@ export default function Users({ toggleSidebar }: UsersProps) {
       name: newName,
       email: newEmail,
       password: newPassword,
-      role: newRole
+      role: newRole,
+      isActive: true
     });
   };
-  
-  // Get role badge color
-  const getRoleBadgeColor = (role: string) => {
-    switch(role) {
-      case "admin": return "bg-error bg-opacity-10 text-error";
-      case "editor": return "bg-warning bg-opacity-10 text-warning";
-      case "translator": return "bg-success bg-opacity-10 text-success";
-      case "reader": return "bg-info bg-opacity-10 text-info";
-      default: return "bg-neutral-light text-neutral-dark";
+
+  // Handle editing a user
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setIsEditDialogOpen(true);
+  };
+
+  // Handle updating a user
+  const handleUpdateUser = () => {
+    if (!editingUser) return;
+
+    updateUserMutation.mutate({
+      id: editingUser.id,
+      data: {
+        username: editingUser.username,
+        name: editingUser.name,
+        email: editingUser.email,
+        role: editingUser.role,
+        isActive: editingUser.isActive
+      }
+    });
+  };
+
+  // Handle deleting a user
+  const handleDeleteUser = (userId: number) => {
+    if (confirm('Sei sicuro di voler eliminare questo utente?')) {
+      deleteUserMutation.mutate(userId);
     }
   };
-  
+
+  // Get role badge variant
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case 'admin': return 'default';
+      case 'editor': return 'secondary';
+      case 'translator': return 'outline';
+      case 'reader': return 'destructive';
+      default: return 'secondary';
+    }
+  };
+
   // Get role display name
   const getRoleDisplayName = (role: string) => {
-    switch(role) {
-      case "admin": return "Amministratore";
-      case "editor": return "Editore";
-      case "translator": return "Traduttore";
-      case "reader": return "Lettore";
+    switch (role) {
+      case 'admin': return 'Amministratore';
+      case 'editor': return 'Editor';
+      case 'translator': return 'Traduttore';
+      case 'reader': return 'Lettore';
       default: return role;
     }
   };
-  
-  // Filter users based on search query
-  const filteredUsers = users && Array.isArray(users) ? 
-    users.filter((user: any) => 
-      user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
-    ) : [];
-  
-  return (
-    <>
-      <Header title="Gestione Utenti" toggleSidebar={toggleSidebar} />
-      
-      <main className="flex-1 overflow-y-auto bg-neutral-lightest p-6">
-        <div className="max-w-7xl mx-auto">
-          {/* Header principale della pagina */}
-          <div className="mb-8">
-            <div className="flex justify-between items-start">
-              <div className="space-y-1">
-                <h1 className="text-3xl font-bold text-neutral-darkest tracking-tight">Gestione Utenti</h1>
-                <p className="text-lg text-neutral-medium">Amministra utenti e permessi del sistema</p>
+
+  // Filter users based on search
+  const filteredUsers = users?.filter((user: User) =>
+    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
+
+  // Check if user has access
+  if (!canPerformAction(selectedUser, 'manageUsers')) {
+    return (
+      <div className="flex flex-col min-h-screen bg-neutral-lightest">
+        <Header toggleSidebar={toggleSidebar} />
+        <div className="flex-1 flex items-center justify-center">
+          <Card className="w-96">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <h2 className="text-xl font-semibold mb-2">Accesso negato</h2>
+                <p className="text-neutral-medium">
+                  Non hai i permessi per accedere alla gestione utenti.
+                </p>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col min-h-screen bg-neutral-lightest">
+      <Header toggleSidebar={toggleSidebar} />
+      
+      <div className="flex-1 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-neutral-dark">Gestione Utenti</h1>
+              <p className="text-neutral-medium mt-1">
+                Gestisci gli utenti del sistema e i loro permessi
+              </p>
             </div>
+            
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-primary hover:bg-primary/90">
+                  Aggiungi Utente
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Crea Nuovo Utente</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div>
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      value={newUsername}
+                      onChange={(e) => setNewUsername(e.target.value)}
+                      placeholder="Inserisci username"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="name">Nome</Label>
+                    <Input
+                      id="name"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      placeholder="Inserisci nome completo"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="Inserisci email"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Inserisci password"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="role">Ruolo</Label>
+                    <Select value={newRole} onValueChange={setNewRole}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleziona ruolo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">Amministratore</SelectItem>
+                        <SelectItem value="editor">Editor</SelectItem>
+                        <SelectItem value="translator">Traduttore</SelectItem>
+                        <SelectItem value="reader">Lettore</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setIsCreateDialogOpen(false);
+                      resetForm();
+                    }}
+                  >
+                    Annulla
+                  </Button>
+                  <Button 
+                    onClick={handleCreateUser}
+                    disabled={createUserMutation.isPending}
+                  >
+                    {createUserMutation.isPending ? 'Creazione...' : 'Crea Utente'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
-          
+
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Utenti</CardTitle>
-              <div className="flex space-x-2">
-                <div className="relative">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Lista Utenti</CardTitle>
+                <div className="w-72">
                   <Input
                     placeholder="Cerca utenti..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
                   />
-                  <span className="material-icons absolute left-3 top-2 text-neutral-medium">search</span>
                 </div>
-                
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <span className="material-icons text-sm mr-1">person_add</span>
-                      Nuovo
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Crea Nuovo Utente</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                      <div>
-                        <Label htmlFor="user-username">Username</Label>
-                        <Input 
-                          id="user-username" 
-                          value={newUsername}
-                          onChange={(e) => setNewUsername(e.target.value)}
-                          placeholder="username"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="user-name">Nome completo</Label>
-                        <Input 
-                          id="user-name"
-                          value={newName}
-                          onChange={(e) => setNewName(e.target.value)}
-                          placeholder="Nome Cognome"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="user-email">Email</Label>
-                        <Input 
-                          id="user-email"
-                          type="email"
-                          value={newEmail}
-                          onChange={(e) => setNewEmail(e.target.value)}
-                          placeholder="email@example.com"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="user-password">Password</Label>
-                        <Input 
-                          id="user-password"
-                          type="password"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          placeholder="••••••••"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="user-role">Ruolo</Label>
-                        <Select value={newRole} onValueChange={setNewRole}>
-                          <SelectTrigger id="user-role">
-                            <SelectValue placeholder="Seleziona ruolo" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin">Amministratore</SelectItem>
-                            <SelectItem value="editor">Editore</SelectItem>
-                            <SelectItem value="translator">Traduttore</SelectItem>
-                            <SelectItem value="reader">Lettore</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button onClick={handleCreateUser}>Crea Utente</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Utente</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Ruolo</TableHead>
-                    <TableHead className="w-[100px]">Azioni</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
+              {isLoading ? (
+                <div className="text-center py-8">Caricamento...</div>
+              ) : (
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4">
-                        Caricamento utenti...
-                      </TableCell>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Username</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Ruolo</TableHead>
+                      <TableHead>Stato</TableHead>
+                      <TableHead className="text-right">Azioni</TableHead>
                     </TableRow>
-                  ) : filteredUsers.length > 0 ? (
-                    filteredUsers.map((user: any) => (
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((user: User) => (
                       <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell>{user.username}</TableCell>
+                        <TableCell>{user.email || 'N/A'}</TableCell>
                         <TableCell>
-                          <div className="font-medium">{user.name}</div>
-                          <div className="text-sm text-neutral-medium">@{user.username}</div>
-                        </TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <Badge className={getRoleBadgeColor(user.role)}>
+                          <Badge variant={getRoleBadgeVariant(user.role)}>
                             {getRoleDisplayName(user.role)}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="sm">
-                            <span className="material-icons text-sm">edit</span>
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <span className="material-icons text-sm">delete</span>
-                          </Button>
+                          <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                            {user.isActive ? 'Attivo' : 'Inattivo'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditUser(user)}
+                            >
+                              Modifica
+                            </Button>
+                            {user.id !== selectedUser?.id && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteUser(user.id)}
+                                disabled={deleteUserMutation.isPending}
+                              >
+                                Elimina
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4 text-neutral-medium">
-                        {searchQuery ? 
-                          `Nessun risultato per "${searchQuery}"` : 
-                          "Nessun utente disponibile"}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </div>
-      </main>
-    </>
+      </div>
+
+      {/* Edit User Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Modifica Utente</DialogTitle>
+          </DialogHeader>
+          {editingUser && (
+            <div className="grid gap-4 py-4">
+              <div>
+                <Label htmlFor="edit-username">Username</Label>
+                <Input
+                  id="edit-username"
+                  value={editingUser.username}
+                  onChange={(e) => setEditingUser({...editingUser, username: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-name">Nome</Label>
+                <Input
+                  id="edit-name"
+                  value={editingUser.name}
+                  onChange={(e) => setEditingUser({...editingUser, name: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editingUser.email || ''}
+                  onChange={(e) => setEditingUser({...editingUser, email: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-role">Ruolo</Label>
+                <Select 
+                  value={editingUser.role} 
+                  onValueChange={(value) => setEditingUser({...editingUser, role: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Amministratore</SelectItem>
+                    <SelectItem value="editor">Editor</SelectItem>
+                    <SelectItem value="translator">Traduttore</SelectItem>
+                    <SelectItem value="reader">Lettore</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-active"
+                  checked={editingUser.isActive ?? true}
+                  onChange={(e) => setEditingUser({...editingUser, isActive: e.target.checked})}
+                />
+                <Label htmlFor="edit-active">Utente attivo</Label>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsEditDialogOpen(false);
+                resetEditForm();
+              }}
+            >
+              Annulla
+            </Button>
+            <Button 
+              onClick={handleUpdateUser}
+              disabled={updateUserMutation.isPending}
+            >
+              {updateUserMutation.isPending ? 'Aggiornamento...' : 'Aggiorna'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
