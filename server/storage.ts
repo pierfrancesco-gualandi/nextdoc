@@ -35,7 +35,7 @@ export interface IStorage {
 
   // Document operations
   getDocument(id: number): Promise<Document | undefined>;
-  getDocuments(): Promise<Document[]>;
+  getDocuments(userId?: number): Promise<Document[]>;
   createDocument(document: InsertDocument): Promise<Document>;
   updateDocument(id: number, document: Partial<InsertDocument>): Promise<Document | undefined>;
   deleteDocument(id: number): Promise<boolean>;
@@ -191,6 +191,13 @@ export interface IStorage {
   getUploadedFiles(limit?: number, userId?: number): Promise<UploadedFile[]>;
   createUploadedFile(file: InsertUploadedFile): Promise<UploadedFile>;
   deleteUploadedFile(id: number): Promise<boolean>;
+
+  // User-Document assignment operations
+  getUserDocumentAssignments(userId: number): Promise<UserDocumentAssignment[]>;
+  getDocumentAssignments(documentId: number): Promise<UserDocumentAssignment[]>;
+  createUserDocumentAssignment(assignment: InsertUserDocumentAssignment): Promise<UserDocumentAssignment>;
+  deleteUserDocumentAssignment(userId: number, documentId: number): Promise<boolean>;
+  getAssignedDocumentsForUser(userId: number): Promise<Document[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -1390,6 +1397,28 @@ export class MemStorage implements IStorage {
       reviewedModules
     };
   }
+
+  // User-Document assignment operations (stub implementations for MemStorage)
+  async getUserDocumentAssignments(userId: number): Promise<UserDocumentAssignment[]> {
+    return [];
+  }
+
+  async getDocumentAssignments(documentId: number): Promise<UserDocumentAssignment[]> {
+    return [];
+  }
+
+  async createUserDocumentAssignment(assignment: InsertUserDocumentAssignment): Promise<UserDocumentAssignment> {
+    const id = 1;
+    return { ...assignment, id, assignedAt: new Date() };
+  }
+
+  async deleteUserDocumentAssignment(userId: number, documentId: number): Promise<boolean> {
+    return true;
+  }
+
+  async getAssignedDocumentsForUser(userId: number): Promise<Document[]> {
+    return Array.from(this.documents.values());
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1552,8 +1581,20 @@ export class DatabaseStorage implements IStorage {
     return document;
   }
 
-  async getDocuments(): Promise<Document[]> {
-    return db.select().from(documents);
+  async getDocuments(userId?: number): Promise<Document[]> {
+    // Se non è fornito userId o l'utente è admin, restituisce tutti i documenti
+    if (!userId) {
+      return db.select().from(documents);
+    }
+
+    // Verifica se l'utente è admin
+    const user = await this.getUser(userId);
+    if (user?.role === 'admin') {
+      return db.select().from(documents);
+    }
+
+    // Per utenti non-admin, restituisce solo i documenti assegnati
+    return this.getAssignedDocumentsForUser(userId);
   }
 
   async createDocument(document: InsertDocument): Promise<Document> {
