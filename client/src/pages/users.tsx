@@ -236,6 +236,12 @@ export default function Users({ toggleSidebar }: UsersProps) {
   const handleManageDocuments = (user: User) => {
     setManagingUser(user);
     setIsDocumentManageDialogOpen(true);
+    
+    // Pre-select documents that are already assigned to this user
+    if (userDocuments) {
+      const assignedDocumentIds = userDocuments.map((assignment: any) => assignment.documentId);
+      setSelectedDocuments(assignedDocumentIds);
+    }
   };
 
   // Handle document selection change

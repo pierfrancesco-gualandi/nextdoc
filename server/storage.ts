@@ -194,6 +194,7 @@ export interface IStorage {
 
   // User-Document assignment operations
   getUserDocumentAssignments(userId: number): Promise<UserDocumentAssignment[]>;
+  getAllUserDocumentAssignments(): Promise<UserDocumentAssignment[]>;
   getDocumentAssignments(documentId: number): Promise<UserDocumentAssignment[]>;
   createUserDocumentAssignment(assignment: InsertUserDocumentAssignment): Promise<UserDocumentAssignment>;
   deleteUserDocumentAssignment(userId: number, documentId: number): Promise<boolean>;
@@ -1427,6 +1428,10 @@ export class MemStorage implements IStorage {
       .filter(assignment => assignment.userId === userId);
   }
 
+  async getAllUserDocumentAssignments(): Promise<UserDocumentAssignment[]> {
+    return Array.from(this.userDocumentAssignments.values());
+  }
+
   async getDocumentAssignments(documentId: number): Promise<UserDocumentAssignment[]> {
     return Array.from(this.userDocumentAssignments.values())
       .filter(assignment => assignment.documentId === documentId);
@@ -1546,51 +1551,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
   
-  // File upload operations
-  async getUploadedFile(id: number): Promise<UploadedFile | undefined> {
-    const [file] = await db.select().from(uploadedFiles).where(eq(uploadedFiles.id, id));
-    return file;
-  }
 
-  async getUploadedFiles(limit?: number, userId?: number): Promise<UploadedFile[]> {
-    let query = db
-      .select()
-      .from(uploadedFiles)
-      .orderBy(desc(uploadedFiles.uploadedAt));
-    
-    // Filtra per utente se specificato
-    if (userId !== undefined) {
-      query = query.where(eq(uploadedFiles.uploadedById, userId));
-    }
-    
-    // Limita i risultati se specificato
-    if (limit !== undefined) {
-      query = query.limit(limit);
-    }
-    
-    return await query;
-  }
-
-  async createUploadedFile(file: InsertUploadedFile): Promise<UploadedFile> {
-    const [newFile] = await db.insert(uploadedFiles).values(file).returning();
-    return newFile;
-  }
-
-  async deleteUploadedFile(id: number): Promise<boolean> {
-    const result = await db.delete(uploadedFiles).where(eq(uploadedFiles.id, id));
-    return result.rowCount > 0;
-  }
-  
-  // User operations
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
-  }
 
   async createUser(user: InsertUser): Promise<User> {
     // Hash the password before storing
@@ -2771,6 +2732,12 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(userDocumentAssignments)
       .where(eq(userDocumentAssignments.userId, userId));
+  }
+
+  async getAllUserDocumentAssignments(): Promise<UserDocumentAssignment[]> {
+    return db
+      .select()
+      .from(userDocumentAssignments);
   }
 
   async getDocumentAssignments(documentId: number): Promise<UserDocumentAssignment[]> {
