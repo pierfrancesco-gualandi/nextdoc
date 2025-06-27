@@ -2063,11 +2063,18 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSectionComponent(id: number): Promise<boolean> {
     try {
+      console.log(`[Storage] Eliminando section component ${id}...`);
       const result = await db.delete(sectionComponents).where(eq(sectionComponents.id, id));
-      // Postgres può restituire rowCount come numero o undefined/null
-      return result.rowCount !== undefined && result.rowCount !== null && result.rowCount > 0;
+      console.log(`[Storage] Risultato DELETE:`, result);
+      
+      // Drizzle può restituire diversi formati di risultato
+      // Controlliamo sia rowCount che count e changes
+      const affected = result.rowCount || result.count || result.changes || 0;
+      console.log(`[Storage] Righe eliminate:`, affected);
+      
+      return affected > 0;
     } catch (error) {
-      console.error(`Errore eliminando section component ${id}:`, error);
+      console.error(`[Storage] Errore eliminando section component ${id}:`, error);
       return false;
     }
   }
