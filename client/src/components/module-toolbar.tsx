@@ -24,11 +24,8 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
   const [uploadType, setUploadType] = useState<"image" | "video" | "pdf" | "3d-model">("image");
   const [uploadingFile, setUploadingFile] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedFolderFiles, setSelectedFolderFiles] = useState<FileList | null>(null);
   const [fileDescription, setFileDescription] = useState('');
-  const [showFolderUpload, setShowFolderUpload] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const folderFilesInputRef = useRef<HTMLInputElement>(null);
   
   const moduleTypes = [
     { id: "text", icon: "text_fields", label: "Testo" },
@@ -720,50 +717,7 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
               />
             </div>
             
-            {uploadType === "3d-model" && selectedFile && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="folder-files">File aggiuntivi (cartella)</Label>
-                  <button
-                    type="button"
-                    className="text-xs text-primary"
-                    onClick={() => setShowFolderUpload(!showFolderUpload)}
-                  >
-                    {showFolderUpload ? "Nascondi" : "Mostra"} opzioni avanzate
-                  </button>
-                </div>
-                
-                {showFolderUpload && (
-                  <div className="space-y-2">
-                    <div className="text-xs text-neutral-medium mb-1">
-                      Per modelli 3D HTML che richiedono file aggiuntivi, seleziona anche i file della cartella.
-                    </div>
-                    <input
-                      ref={folderFilesInputRef}
-                      type="file"
-                      className="w-full text-xs"
-                      multiple
-                      // @ts-ignore - webkitdirectory è una proprietà non standard
-                      webkitdirectory=""
-                      directory=""
-                      onChange={handleFolderFilesChange}
-                    />
-                    <div className="text-xs text-neutral-medium">
-                      {selectedFolderFiles ? `${selectedFolderFiles.length} file selezionati` : 'Seleziona una cartella'}
-                    </div>
-                    <Button 
-                      type="button" 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={uploadFolder}
-                      disabled={uploadingFile || !selectedFolderFiles}
-                    >
-                      {uploadingFile ? "Caricamento in corso..." : "Carica cartella"}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
+
             
             <div className="space-y-2">
               <Label htmlFor="description">Descrizione (opzionale)</Label>
