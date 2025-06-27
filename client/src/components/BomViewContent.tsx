@@ -190,8 +190,37 @@ const BomViewContent = ({
     
     // Cerca codici padre e figli se è specificato un filtro per codice
     let childCodes: string[] = [];
-    if (codeFilter) {
-      // Trova prima il componente che corrisponde esattamente al filtro
+    let foundParentAtLevel = false;
+    
+    if (codeFilter && levelFilterValue !== undefined) {
+      // Trova componenti al livello specificato che corrispondono al filtro
+      const potentialParents = bomItems.filter((item: any) => 
+        item.component && 
+        item.level === levelFilterValue &&
+        (codeFilterType === 'equals' 
+          ? item.component.code.toLowerCase() === codeFilter.toLowerCase()
+          : codeFilterType === 'startsWith'
+          ? item.component.code.toLowerCase().startsWith(codeFilter.toLowerCase())
+          : item.component.code.toLowerCase().includes(codeFilter.toLowerCase())
+        )
+      );
+      
+      if (potentialParents.length > 0) {
+        console.log("Trovati componenti padre al livello", levelFilterValue, ":", potentialParents.map(p => p.component.code));
+        foundParentAtLevel = true;
+        
+        // Per ogni componente padre al livello specificato, includi tutti i suoi figli
+        for (const parent of potentialParents) {
+          const parentChildCodes = findChildComponents(bomItems, parent.component.code);
+          childCodes.push(...parentChildCodes);
+        }
+        
+        // Rimuovi duplicati
+        childCodes = [...new Set(childCodes)];
+        console.log("Tutti i codici inclusi (padre + figli):", childCodes);
+      }
+    } else if (codeFilter) {
+      // Logica originale per filtro solo codice (senza livello)
       const parentItem = bomItems.find((item: any) => 
         item.component && 
         item.component.code.toLowerCase() === codeFilter.toLowerCase()
@@ -199,27 +228,29 @@ const BomViewContent = ({
       
       if (parentItem) {
         console.log("Trovato codice padre:", parentItem.component.code);
-        // Trova tutti i componenti figli
         childCodes = findChildComponents(bomItems, parentItem.component.code);
         console.log("Codici inclusi nel ramo:", childCodes);
       }
     }
     
-    // Applica filtri con logica gerarchica
+    // Applica filtri con logica gerarchica intelligente
     return bomItems.filter((item: any) => {
       if (!item || !item.component) return false;
       
       const code = item.component.code || '';
       const description = item.component.description || '';
       
-      // Gestione speciale per filtro codice se abbiamo trovato una gerarchia
+      // Gestione speciale per filtro codice con logica gerarchica
       let codeMatch = true;  // Predefinito a true se non c'è filtro
+      let isHierarchicalMatch = false;
+      
       if (codeFilter) {
         if (childCodes.length > 0) {
-          // Usa la logica gerarchica se abbiamo trovato il codice specificato
-          codeMatch = childCodes.includes(code);
-        } else {
-          // Altrimenti usa il filtro normale
+          // Logica gerarchica: se abbiamo trovato figli, mostra padre + tutti i figli
+          isHierarchicalMatch = childCodes.includes(code);
+          codeMatch = isHierarchicalMatch;
+        } else if (!foundParentAtLevel) {
+          // Filtro normale per codice solo se non abbiamo trovato padre al livello
           switch (codeFilterType) {
             case 'equals':
               codeMatch = code.toLowerCase() === codeFilter.toLowerCase();
@@ -232,6 +263,9 @@ const BomViewContent = ({
               codeMatch = code.toLowerCase().includes(codeFilter.toLowerCase());
               break;
           }
+        } else {
+          // Se abbiamo trovato padre al livello ma nessun figlio, non mostrare niente
+          codeMatch = false;
         }
       }
       
@@ -252,17 +286,23 @@ const BomViewContent = ({
         }
       }
       
-      // Applica il filtro per livello
+      // Logica livello INTELLIGENTE:
+      // Se siamo in modalità gerarchica (childCodes trovati), ignora il filtro livello
+      // Se non siamo in modalità gerarchica, applica il filtro livello normalmente
       let levelMatch = true;
-      if (levelFilterValue !== undefined) {
+      if (levelFilterValue !== undefined && !isHierarchicalMatch) {
+        // Applica filtro livello solo se NON siamo in modalità gerarchica
         levelMatch = item.level === levelFilterValue;
         console.log(`🔍 ${code}: levelMatch (${item.level} === ${levelFilterValue}) = ${levelMatch}`);
+      } else if (levelFilterValue !== undefined && isHierarchicalMatch) {
+        // In modalità gerarchica, accetta tutti i livelli dei componenti nel ramo
+        levelMatch = true;
+        console.log(`🔍 ${code}: levelMatch (gerarchica - accetta tutti i livelli) = ${levelMatch}`);
       }
       
       const finalResult = codeMatch && descriptionMatch && levelMatch;
-      console.log(`🔍 ${code}: FINALE = ${finalResult} (code: ${codeMatch}, desc: ${descriptionMatch}, level: ${levelMatch})`);
+      console.log(`🔍 ${code}: FINALE = ${finalResult} (code: ${codeMatch}, desc: ${descriptionMatch}, level: ${levelMatch}, gerarchica: ${isHierarchicalMatch})`);
       
-      // Tutte le condizioni devono essere soddisfatte
       return finalResult;
     });
   }, [bomItems, codeFilter, codeFilterType, descriptionFilter, descriptionFilterType, levelFilterValue, enableFiltering, filterSettings]);
