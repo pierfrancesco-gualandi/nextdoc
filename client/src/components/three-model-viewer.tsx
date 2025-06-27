@@ -378,11 +378,7 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
       originalSrc: modelData.src
     });
     
-    // Nuovo approccio: iframe incorporato per anteprima del modello WebGL
-    const [showIframe, setShowIframe] = useState(false);
-    const [iframeError, setIframeError] = useState(false);
-    
-    // Se il modello proviene da un ZIP estratto, prova a mostrare un'anteprima incorporata
+    // Se il modello proviene da un ZIP estratto, mostriamo le informazioni aggiuntive
     const canShowPreview = modelData.allFiles && modelData.allFiles.length > 1;
     
     return (
@@ -412,75 +408,73 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
         </div>
         
         {/* Area di visualizzazione del modello */}
-        <div style={{ flex: 1, position: 'relative' }}>
-          {showIframe && !iframeError ? (
-            <iframe
-              src={modelUrl}
-              style={{
-                width: '100%',
-                height: '100%',
-                border: 'none',
-                backgroundColor: '#f5f5f5'
-              }}
-              onError={() => {
-                setIframeError(true);
-                console.log('Errore caricamento iframe, fallback al pulsante');
-              }}
-              title={`Modello 3D: ${modelData.title}`}
-            />
-          ) : (
+        <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ 
+            padding: '20px', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            height: '100%',
+            gap: '16px',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '64px', opacity: 0.4, marginBottom: '8px' }}>🎮</div>
+            
             <div style={{ 
-              padding: '20px', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              justifyContent: 'center', 
-              alignItems: 'center',
-              height: '100%',
-              gap: '16px'
+              fontSize: '16px', 
+              fontWeight: '600', 
+              color: '#333',
+              marginBottom: '8px' 
             }}>
-              <div style={{ fontSize: '48px', opacity: 0.3 }}>🎯</div>
-              
-              {canShowPreview && !showIframe ? (
-                <button
-                  onClick={() => setShowIframe(true)}
-                  style={{
-                    backgroundColor: '#0d7855',
-                    color: 'white',
-                    padding: '12px 24px',
-                    borderRadius: '6px',
-                    border: 'none',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                  }}
-                >
-                  Mostra anteprima modello
-                </button>
-              ) : (
-                <div style={{ textAlign: 'center', fontSize: '13px', color: '#666' }}>
-                  {iframeError ? 'Anteprima non disponibile' : 'Modello WebGL pronto'}
-                </div>
-              )}
-              
-              <a
-                href={modelUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  backgroundColor: showIframe ? '#666' : '#0d7855',
-                  color: 'white',
-                  padding: '8px 16px',
-                  borderRadius: '4px',
-                  textDecoration: 'none',
-                  fontSize: '13px',
-                  fontWeight: '500'
-                }}
-              >
-                Apri in nuova finestra
-              </a>
+              Modello 3D Interattivo
             </div>
-          )}
+            
+            <div style={{ 
+              fontSize: '13px', 
+              color: '#666',
+              lineHeight: '1.4',
+              maxWidth: '280px',
+              marginBottom: '20px'
+            }}>
+              Questo modello WebGL interattivo richiede una finestra dedicata per funzionare correttamente con tutti i controlli 3D.
+            </div>
+            
+            <a
+              href={modelUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                backgroundColor: '#0d7855',
+                color: 'white',
+                padding: '14px 28px',
+                borderRadius: '6px',
+                textDecoration: 'none',
+                fontSize: '15px',
+                fontWeight: '600',
+                boxShadow: '0 3px 8px rgba(13, 120, 85, 0.3)',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <span>🚀</span>
+              Visualizza Modello 3D
+            </a>
+            
+            {canShowPreview && (
+              <div style={{ 
+                fontSize: '11px', 
+                color: '#999',
+                marginTop: '12px'
+              }}>
+                {modelData.allFiles?.length} file estratti da archivio ZIP
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
