@@ -652,7 +652,11 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
   
   // Calcola lo stato di avanzamento del confronto
   const getComparisonSummary = () => {
-    if (!comparisonResult) return null;
+    console.log("getComparisonSummary chiamata, comparisonResult:", comparisonResult);
+    if (!comparisonResult) {
+      console.log("getComparisonSummary: comparisonResult è null, ritorno null");
+      return null;
+    }
     
     const { commonCodes = [], targetItems = [] } = comparisonResult;
     
