@@ -131,13 +131,43 @@ export const handleZipUpload = async (req: Request, res: Response, next: NextFun
     req.folderPath = extractDir;
     req.fileStructure = relativeFiles;
     
-    // Aggiungi l'URL del visualizzatore
+    // Copia i file estratti nella cartella finale per il servizio
+    const finalDir = path.join(process.cwd(), 'uploads', folderName);
+    
+    // Crea la cartella finale se non esiste
+    if (!fs.existsSync(finalDir)) {
+      fs.mkdirSync(finalDir, { recursive: true });
+    }
+    
+    // Copia tutti i file mantenendo la struttura delle cartelle
+    for (const extractedFilePath of extractedFiles) {
+      const relativePath = path.relative(extractDir, extractedFilePath);
+      const finalFilePath = path.join(finalDir, relativePath);
+      
+      // Crea la cartella di destinazione se necessaria
+      const finalFileDir = path.dirname(finalFilePath);
+      if (!fs.existsSync(finalFileDir)) {
+        fs.mkdirSync(finalFileDir, { recursive: true });
+      }
+      
+      // Copia il file
+      try {
+        fs.copyFileSync(extractedFilePath, finalFilePath);
+        console.log(`File copiato: ${relativePath} -> ${finalFilePath}`);
+      } catch (err) {
+        console.error(`Errore copia file ${relativePath}:`, err);
+      }
+    }
+    
+    // Aggiorna l'URL del file HTML principale per usare la cartella finale
     const mainHtmlFilename = path.basename(htmlFiles[0]);
-    const viewerUrl = `/uploads/viewer/index.html?modelUrl=${encodeURIComponent('/uploads/extracts/' + folderName + '/' + mainHtmlFilename)}&title=${encodeURIComponent(path.basename(folderName))}`;
+    const finalHtmlPath = path.join(finalDir, mainHtmlFilename);
+    const viewerUrl = `/uploads/${folderName}/${mainHtmlFilename}`;
     req.viewerUrl = viewerUrl;
     
-    console.log(`URL Visualizzatore: ${viewerUrl}`);
-    console.log(`File HTML principale: ${htmlFiles[0]}`);
+    console.log(`URL Visualizzatore aggiornato: ${viewerUrl}`);
+    console.log(`File HTML principale copiato in: ${finalHtmlPath}`);
+    console.log(`Totale file copiati: ${extractedFiles.length}`);
 
     next();
   } catch (err) {
