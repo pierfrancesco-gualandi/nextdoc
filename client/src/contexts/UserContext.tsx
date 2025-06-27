@@ -18,6 +18,7 @@ interface UserContextType {
   isUserSelected: boolean;
   clearUserSelection: () => void;
   isAuthenticated: boolean;
+  currentUserRole: string | null;
 }
 
 const UserContext = createContext<UserContextType | null>(null);
@@ -74,7 +75,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setSelectedUser, 
         isUserSelected,
         clearUserSelection,
-        isAuthenticated
+        isAuthenticated,
+        currentUserRole: selectedUser?.role || null
       }}
     >
       {children}
