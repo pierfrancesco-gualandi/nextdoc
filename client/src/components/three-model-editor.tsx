@@ -66,46 +66,59 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
       const file = e.target.files[0];
       setSelectedFile(file);
       
-      // Verifica se è un formato supportato
-      const validExtensions = ['.glb', '.gltf', '.html', '.htm'];
-      const isValid = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
-      
-      if (isValid) {
-        // Imposta il formato in base all'estensione del file
-        let format: 'glb' | 'gltf' | 'html' | 'webgl' = 'glb';
+      // Per i modelli WebGL, accetta solo file ZIP
+      if (file.name.toLowerCase().endsWith('.zip')) {
+        // Estrai il nome del modello dal nome del file ZIP
+        const modelPattern = /^([A-Z]\d[A-Z]\d+)\.zip$/i;
+        const match = file.name.match(modelPattern);
         
-        if (file.name.endsWith('.glb')) {
-          format = 'glb';
-        } else if (file.name.endsWith('.gltf')) {
-          format = 'gltf';
-        } else if (file.name.endsWith('.html') || file.name.endsWith('.htm')) {
-          format = 'html';
+        if (match) {
+          const modelName = match[1];
+          console.log(`Rilevato modello WebGL ZIP: ${modelName}`);
           
-          // Estrai il nome del modello 3D dal nome del file per i file HTML/HTM
-          const modelPattern = /^([A-Z]\d[A-Z]\d+)\.(?:htm|html)$/i;
-          const match = file.name.match(modelPattern);
+          // Imposta automaticamente i campi per modello WebGL
+          setValue('folderPath', modelName);
+          setValue('format', 'html');
           
-          if (match) {
-            const modelName = match[1];
-            console.log(`Rilevato modello 3D WebGL: ${modelName}`);
-            
-            // Imposta automaticamente il campo folderPath
-            setValue('folderPath', modelName);
-            
-            toast({
-              title: "Modello 3D rilevato",
-              description: `Rilevato modello con codice ${modelName}. Il sistema gestirà automaticamente la creazione delle cartelle necessarie.`
-            });
-          }
+          toast({
+            title: "Modello WebGL ZIP rilevato",
+            description: `Rilevato modello ${modelName}. Il sistema estrarrà automaticamente tutti i file necessari.`
+          });
+        } else {
+          toast({
+            title: "Nome file ZIP non valido",
+            description: "Il file ZIP deve avere un nome nel formato A4B12345.zip",
+            variant: "destructive",
+          });
         }
-        
-        setValue('format', format);
       } else {
-        toast({
-          title: "Formato file non supportato",
-          description: "Per favore seleziona un file .glb, .gltf o .html",
-          variant: "destructive",
-        });
+        // Verifica se è un formato supportato per modelli non-WebGL
+        const validExtensions = ['.glb', '.gltf'];
+        const isValid = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+        
+        if (isValid) {
+          // Imposta il formato in base all'estensione del file
+          let format: 'glb' | 'gltf' = 'glb';
+          
+          if (file.name.endsWith('.glb')) {
+            format = 'glb';
+          } else if (file.name.endsWith('.gltf')) {
+            format = 'gltf';
+          }
+          
+          setValue('format', format);
+          
+          toast({
+            title: "Modello 3D rilevato",
+            description: `File ${format.toUpperCase()} caricato correttamente`
+          });
+        } else {
+          toast({
+            title: "Formato file non supportato",
+            description: "Per modelli WebGL usa file ZIP (A4B12345.zip). Per altri modelli usa .glb o .gltf",
+            variant: "destructive",
+          });
+        }
       }
     }
   };
@@ -467,11 +480,11 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                             <Input
                               id="model-file"
                               type="file"
-                              accept=".glb,.gltf,.html,.htm"
+                              accept=".glb,.gltf,.zip"
                               onChange={handleFileChange}
                             />
                             <p className="text-sm text-gray-500">
-                              Formati supportati: .glb, .gltf, .html (WebGL)
+                              Formati supportati: .glb, .gltf, .zip (per modelli WebGL)
                             </p>
                           </div>
                           
@@ -494,14 +507,14 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                           <div className="border-t pt-4 mt-4">
                             <div className="font-medium mb-2">Modalità di caricamento</div>
                             
-                            {selectedFile && (selectedFile.name.endsWith('.html') || selectedFile.name.endsWith('.htm')) ? (
+                            {selectedFile && selectedFile.name.endsWith('.zip') ? (
                               <div className="space-y-4">
-                                <div className="p-3 bg-blue-50 rounded-md border border-blue-100">
-                                  <p className="text-sm text-blue-800 font-medium">
-                                    Rilevato file HTML/WebGL che potrebbe richiedere file aggiuntivi
+                                <div className="p-3 bg-green-50 rounded-md border border-green-100">
+                                  <p className="text-sm text-green-800 font-medium">
+                                    File ZIP per modello WebGL rilevato
                                   </p>
-                                  <p className="text-sm text-blue-600 mt-1">
-                                    Per i modelli 3D WebGL, è necessario caricare tutti i file di supporto necessari
+                                  <p className="text-sm text-green-600 mt-1">
+                                    Il sistema estrarrà automaticamente tutti i file necessari per il modello 3D
                                   </p>
                                 </div>
                                 
@@ -698,10 +711,12 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                 {previewUrl ? (
                   <div className="rounded-md overflow-hidden border bg-gray-50">
                     <ThreeModelViewer
-                      src={previewUrl}
-                      format={currentValues.format}
-                      folderPath={currentValues.folderPath}
-                      controls={currentValues.controls}
+                      modelData={{
+                        src: previewUrl,
+                        format: currentValues.format || 'html',
+                        folderPath: currentValues.folderPath,
+                        controls: currentValues.controls
+                      }}
                     />
                   </div>
                 ) : (
