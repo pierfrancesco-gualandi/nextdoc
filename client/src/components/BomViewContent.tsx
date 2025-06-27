@@ -58,35 +58,47 @@ interface BomViewContentProps {
 
 function findChildComponents(items: any[], parentCode: string): string[] {
   const childCodes: string[] = [];
-  let currentLevel = -1;
-  let isChildren = false;
   
-  // Prima identifica il livello del codice padre
-  for (const item of items) {
-    if (item.component && item.component.code === parentCode) {
-      currentLevel = item.level;
-      isChildren = true;
-      childCodes.push(parentCode); // Includi anche il codice padre
+  // Prima trova l'indice e il livello del componente padre
+  let parentIndex = -1;
+  let parentLevel = -1;
+  
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].component && items[i].component.code === parentCode) {
+      parentIndex = i;
+      parentLevel = items[i].level;
+      childCodes.push(parentCode);
       break;
     }
   }
   
-  // Se il codice padre è stato trovato, cerca tutti i figli
-  if (isChildren) {
-    for (const item of items) {
-      if (item.level > currentLevel) {
-        // Questo è un figlio del codice padre
-        if (item.component && item.component.code) {
-          childCodes.push(item.component.code);
-        }
-      } else if (item.level <= currentLevel && childCodes.length > 1) {
-        // Abbiamo trovato un elemento successivo di livello uguale o superiore
-        // dopo aver già aggiunto dei figli, quindi siamo fuori dal ramo
-        break;
-      }
+  // Se il padre non è stato trovato, restituisci array vuoto
+  if (parentIndex === -1) {
+    return childCodes;
+  }
+  
+  console.log(`🔍 findChildComponents per ${parentCode}: padre trovato all'indice ${parentIndex}, livello ${parentLevel}`);
+  
+  // Trova tutti i componenti che seguono il padre e sono a livello immediatamente inferiore
+  const targetChildLevel = parentLevel + 1;
+  
+  for (let i = parentIndex + 1; i < items.length; i++) {
+    const currentItem = items[i];
+    
+    // Se troviamo un altro componente allo stesso livello del padre o superiore, fermiamoci
+    if (currentItem.level <= parentLevel) {
+      console.log(`🔍 findChildComponents per ${parentCode}: fermato a ${currentItem.component?.code || 'N/A'} (livello ${currentItem.level})`);
+      break;
+    }
+    
+    // Se è al livello target (padre + 1), è un figlio diretto
+    if (currentItem.level === targetChildLevel && currentItem.component && currentItem.component.code) {
+      childCodes.push(currentItem.component.code);
+      console.log(`🔍 findChildComponents per ${parentCode}: aggiunto figlio diretto ${currentItem.component.code} (livello ${currentItem.level})`);
     }
   }
   
+  console.log(`🔍 findChildComponents per ${parentCode}: figli trovati:`, childCodes);
   return childCodes;
 }
 
@@ -206,7 +218,7 @@ const BomViewContent = ({
       );
       
       if (potentialParents.length > 0) {
-        console.log("Trovati componenti padre al livello", levelFilterValue, ":", potentialParents.map(p => p.component.code));
+        console.log("🔍 Trovati componenti padre al livello", levelFilterValue, ":", potentialParents.map(p => p.component.code));
         foundParentAtLevel = true;
         
         // Per ogni componente padre al livello specificato, includi solo i figli al livello immediatamente successivo
