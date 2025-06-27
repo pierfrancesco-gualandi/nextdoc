@@ -194,10 +194,8 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
       
       // Reset state
       setSelectedFile(null);
-      setSelectedFolderFiles(null);
       setFileDescription('');
       setShowFileUpload(false);
-      setShowFolderUpload(false);
       setUploadingFile(false);
     },
     onError: (error) => {
@@ -262,10 +260,8 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
       
       // Reset state
       setSelectedFile(null);
-      setSelectedFolderFiles(null);
       setFileDescription('');
       setShowFileUpload(false);
-      setShowFolderUpload(false);
       setUploadingFile(false);
       
       toast({
@@ -301,7 +297,6 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
       
       // Per i modelli 3D, mostra sempre l'opzione per caricare la cartella
       if (type === "3d-model") {
-        setShowFolderUpload(true);
       }
       
       return;
@@ -434,7 +429,6 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
         duration: 8000
       });
       // Non blocchiamo il caricamento, ma evidenziamo la necessità di caricare la cartella
-      setShowFolderUpload(true);
     }
     
     setUploadingFile(true);
@@ -465,7 +459,6 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
   // Gestisce la selezione di file aggiuntivi per i modelli HTML
   const handleFolderFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setSelectedFolderFiles(e.target.files);
       
       // Debug per vedere da dove provengono i file (cartella diretta o selezione multipla)
       const files = Array.from(e.target.files);
