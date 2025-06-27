@@ -2666,7 +2666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/files/create-model-folder", createModelFolder);
   
   // File upload routes
-  app.post("/api/upload", upload.single("file"), handleWebGLModelUpload, handleZipUpload, saveFileInfo, (req: Request, res: Response) => {
+  app.post("/api/upload", upload.single("file"), saveFileInfo, (req: Request, res: Response) => {
     // Se il file è stato estratto da un ZIP e abbiamo un URL del visualizzatore, aggiungiamolo alla risposta
     if (req.viewerUrl) {
       return res.status(201).json({
