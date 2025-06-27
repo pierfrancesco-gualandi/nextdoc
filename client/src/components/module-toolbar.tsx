@@ -111,10 +111,12 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
           originalName: data.originalName
         };
       } else if (uploadType === "3d-model") {
+        // Per i modelli 3D, i file ZIP vengono estratti e contengono modelli WebGL HTML
+        // quindi impostiamo sempre il formato su 'html' per mostrare il pulsante di navigazione
         moduleContent = {
           src: `/uploads/${data.filename}`,
           title: fileDescription || data.originalName,
-          format: data.filename.toLowerCase().endsWith('.html') || data.filename.toLowerCase().endsWith('.htm') ? 'html' : 'model',
+          format: 'html', // Tutti i modelli 3D caricati sono HTML WebGL
           controls: {
             pan: true,
             zoom: true,
