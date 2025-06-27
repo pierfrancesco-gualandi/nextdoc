@@ -207,31 +207,20 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
       
       const data = await response.json();
       
-      // Se è un file HTML, imposta il folderPath
-      if (selectedFile.name.endsWith('.html') || selectedFile.name.endsWith('.htm')) {
-        let folderName;
-        
-        if (is3DModel) {
-          folderName = modelName;
-          // Per un modello 3D standard, usa il percorso corretto
-          setValue('src', `/uploads/${modelName}/${modelName}.htm`);
-        } else {
-          folderName = selectedFile.name.split('.')[0];
-        }
-        
-        setValue('folderPath', folderName);
+      // Per i file ZIP, imposta automaticamente il percorso
+      if (selectedFile.name.endsWith('.zip')) {
+        const modelName = selectedFile.name.replace('.zip', '');
+        setValue('src', `/uploads/${modelName}/${modelName}.htm`);
         
         toast({
-          title: "File HTML caricato con successo",
-          description: is3DModel 
-            ? `Il modello WebGL ${modelName} è stato caricato correttamente con la struttura di cartelle necessaria`
-            : "Il modello WebGL è stato caricato correttamente",
+          title: "File ZIP caricato con successo",
+          description: `Il modello WebGL ${modelName} è stato caricato e estratto correttamente`,
         });
         
         setIsUploadDialogOpen(false);
         return {
-          src: is3DModel ? `/uploads/${modelName}/${modelName}.htm` : `/uploads/${data.filename}`,
-          folderPath: folderName
+          src: `/uploads/${modelName}/${modelName}.htm`,
+          folderPath: modelName
         };
       }
       
