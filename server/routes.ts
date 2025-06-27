@@ -79,15 +79,27 @@ async function syncComponentsFromBoms() {
       console.log(`📦 BOM "${bom.title}" contiene ${bomItems.length} componenti`);
       
       for (const item of bomItems) {
-        // Aggiungi il codice componente alla lista dei componenti utilizzati
-        usedComponentCodes.add(item.code);
+        console.log(`🔍 Elaborando BOM item: componentId=${item.componentId}`);
         
-        // Memorizza i dati del componente (codice e descrizione)
-        if (!componentData.has(item.code)) {
-          componentData.set(item.code, {
-            code: item.code,
-            description: item.description || `Componente ${item.code}`
-          });
+        // Recupera i dati del componente dal database
+        const component = await storage.getComponent(item.componentId);
+        console.log(`📝 Componente trovato:`, component);
+        
+        if (component && component.code) {
+          console.log(`✅ Componente valido: ${component.code} - ${component.description}`);
+          
+          // Aggiungi il codice componente alla lista dei componenti utilizzati
+          usedComponentCodes.add(component.code);
+          
+          // Memorizza i dati del componente (codice e descrizione)
+          if (!componentData.has(component.code)) {
+            componentData.set(component.code, {
+              code: component.code,
+              description: component.description || `Componente ${component.code}`
+            });
+          }
+        } else {
+          console.log(`❌ Componente non trovato o senza codice per componentId: ${item.componentId}`);
         }
       }
     }
