@@ -143,6 +143,9 @@ Changelog:
   - Creato script SQL automatico per setup database Supabase
   - Configurazione database adattiva (Neon/Supabase detection automatico)
   - Sistema password-based con hash bcrypt per tutti gli utenti
+  - Risolto sistema ZIP per modelli WebGL: ora accetta solo file ZIP per creazione/modifica
+  - Sistema estrazione ZIP automatica con copia file nella cartella servizio
+  - Modelli WebGL ora funzionano correttamente con tutti i file JavaScript necessari
 ```
 
 ## User Preferences

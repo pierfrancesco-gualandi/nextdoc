@@ -382,6 +382,7 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
   };
 
   return (
+    <>
     <Card className="w-full">
       <CardHeader>
         <CardTitle>Editor Modello 3D</CardTitle>
@@ -714,8 +715,7 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                       modelData={{
                         src: previewUrl,
                         format: currentValues.format || 'html',
-                        folderPath: currentValues.folderPath,
-                        controls: currentValues.controls
+                        folderPath: currentValues.folderPath
                       }}
                     />
                   </div>
