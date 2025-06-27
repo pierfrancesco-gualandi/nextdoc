@@ -12,7 +12,22 @@ if (!process.env.DATABASE_URL) {
 }
 
 // Determina se stiamo usando Supabase o Neon
-const isSupabase = process.env.DATABASE_URL.includes('supabase.co');
+const databaseUrl = process.env.DATABASE_URL;
+const isSupabase = databaseUrl.includes('supabase.com') || 
+                   databaseUrl.includes('supabase.co') ||
+                   databaseUrl.includes('pooler.supabase.com') ||
+                   databaseUrl.includes('tylixamvjebauztnjknq');
+
+console.log('🔍 Database URL check:', {
+  url: databaseUrl?.substring(0, 50) + '...',
+  isSupabase,
+  includes: {
+    supabasecom: databaseUrl.includes('supabase.com'),
+    supabaseco: databaseUrl.includes('supabase.co'),
+    pooler: databaseUrl.includes('pooler.supabase.com'),
+    project: databaseUrl.includes('tylixamvjebauztnjknq')
+  }
+});
 
 let db;
 let pool;
