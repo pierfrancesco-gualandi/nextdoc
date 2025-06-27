@@ -873,11 +873,15 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
                             <Button 
                               variant="outline" 
                               onClick={() => setShowNewDocumentDialog(false)}
+                              disabled={createDocumentMutation.isPending}
                             >
                               Annulla
                             </Button>
-                            <Button onClick={handleCreateDocument}>
-                              Crea Documento
+                            <Button 
+                              onClick={handleCreateDocument}
+                              disabled={createDocumentMutation.isPending || !newDocumentTitle.trim()}
+                            >
+                              {createDocumentMutation.isPending ? "Creazione in corso..." : "Crea Documento"}
                             </Button>
                           </DialogFooter>
                         </DialogContent>
