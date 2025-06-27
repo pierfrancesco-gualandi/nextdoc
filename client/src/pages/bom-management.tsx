@@ -177,6 +177,28 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
     }
   });
   
+  // Sync components from BOMs mutation
+  const syncComponentsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/components/sync-from-boms');
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/components'] });
+      toast({
+        title: "Sincronizzazione completata",
+        description: data.message || "I componenti sono stati sincronizzati con le BOM"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore sincronizzazione",
+        description: `Si è verificato un errore: ${error}`,
+        variant: "destructive"
+      });
+    }
+  });
+
   // Add component to BOM mutation
   const addComponentToBomMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -258,6 +280,11 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
       componentId: selectedComponent.id,
       quantity: 1
     });
+  };
+
+  // Handle syncing components from BOMs
+  const handleSyncComponents = () => {
+    syncComponentsMutation.mutate();
   };
   
   return (
@@ -581,6 +608,15 @@ export default function BomManagement({ toggleSidebar }: BomManagementProps) {
                       />
                       <span className="material-icons absolute left-3 top-2 text-neutral-medium">search</span>
                     </div>
+                    
+                    <Button 
+                      variant="outline"
+                      onClick={handleSyncComponents}
+                      className="mr-2"
+                    >
+                      <span className="material-icons text-sm mr-1">sync</span>
+                      Sincronizza dalle BOM
+                    </Button>
                     
                     <Dialog>
                       <DialogTrigger asChild>
