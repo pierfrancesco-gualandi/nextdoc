@@ -604,23 +604,13 @@ export default function ContentModule({
           );
         }
         
-        // Determina il formato corretto per i modelli 3D
-        let modelFormat = content.format || "html";
-        
-        // Se il modello ha un'estensione ZIP o se non ha formato specificato,
-        // assumiamo che sia un modello HTML WebGL da visualizzare in una nuova finestra
-        if (!content.format || modelUrl.includes('.zip') || content.title?.endsWith('.zip')) {
-          modelFormat = "html";
-        }
-        
         return (
           <div className="my-2">
             <ThreeModelViewer
               modelData={{
                 src: modelUrl,
-                format: modelFormat,
-                title: content.title || "Modello 3D",
-                folderPath: content.folderPath
+                format: content.format || "html", // Usa il formato specifico dal contenuto se disponibile
+                title: content.title || "Modello 3D"
               }}
               height={400} // Altezza aumentata per modelli WebGL
             />
