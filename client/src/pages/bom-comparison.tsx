@@ -312,325 +312,100 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
     });
   };
   
-  // Funzione per duplicare la struttura del documento
+  // Funzione per creare la struttura del documento dal confronto BOM
   const createDocumentStructure = async (newDocumentId: number) => {
     try {
       console.log("Inizio processo di creazione documento da confronto BOM");
       
-      // Recuperiamo i codici comuni
+      // Recuperiamo i codici comuni dal confronto
       const { commonCodes = [] } = comparisonResult || {};
       console.log("Codici comuni tra le distinte:", commonCodes);
       
       if (!commonCodes?.length) {
-        throw new Error("Nessun codice comune trovato tra le distinte base");
+        console.log("Nessun codice comune trovato, creo documento vuoto con sezione BOM");
       }
-      
-      // 1. Recupera tutte le sezioni del documento sorgente
-      const sectionsResponse = await fetch(`/api/documents/${selectedDocumentId}/sections`);
-      if (!sectionsResponse.ok) throw new Error("Errore nel recupero delle sezioni");
-      const sections = await sectionsResponse.json();
-      console.log(`Recuperate ${sections.length} sezioni dal documento originale`);
-      
-      // 2. Recuperiamo tutti i moduli di tutte le sezioni e i loro componenti associati
-      const sectionModulesMap = new Map();
-      const sectionComponentsMap = new Map();
-      const sectionWithComponentMap = new Map();
-      
-      // Crea una mappa di componenti per codice per rapida ricerca
-      const componentCodeMap: {[key: string]: any} = {};
-      
-      // Prima recuperiamo i componenti associati alle sezioni
-      for (const section of sections) {
-        const componentsResponse = await fetch(`/api/sections/${section.id}/components`);
-        if (componentsResponse.ok) {
-          const components = await componentsResponse.json();
-          sectionComponentsMap.set(section.id, components);
-          
-          // Marca le sezioni che hanno componenti con codici comuni
-          const hasCommonComponents = components.some((comp: any) => 
-            comp.component && commonCodes.includes(comp.component.code)
-          );
-          
-          if (hasCommonComponents) {
-            sectionWithComponentMap.set(section.id, true);
-            console.log(`Sezione ${section.id} (${section.title}) ha componenti comuni`);
-          }
-          
-          // Aggiungi i componenti alla mappa per codice
-          for (const comp of components) {
-            if (comp.component && comp.component.code) {
-              componentCodeMap[comp.component.code] = comp.component;
-            }
-          }
-        }
-        
-        // Recupera anche i moduli della sezione
-        const modulesResponse = await fetch(`/api/sections/${section.id}/modules`);
-        if (modulesResponse.ok) {
-          const modules = await modulesResponse.json();
-          sectionModulesMap.set(section.id, modules);
-          
-          // Marca le sezioni che hanno moduli BOM con riferimento alla distinta sorgente
-          const hasBomModule = modules.some((module: any) => {
-            if (module.type !== 'bom') return false;
-            
-            try {
-              const content = typeof module.content === 'string' 
-                ? JSON.parse(module.content) 
-                : module.content;
-                
-              return content.bomId === parseInt(selectedSourceBomId);
-            } catch (e) {
-              return false;
-            }
-          });
-          
-          if (hasBomModule) {
-            sectionWithComponentMap.set(section.id, true);
-            console.log(`Sezione ${section.id} (${section.title}) ha moduli BOM rilevanti`);
-          }
-        }
-      }
-      
-      // 3. Costruisci un grafo delle sezioni e determina le dipendenze gerarchiche
-      const sectionChildren = new Map();
-      const rootSections = [];
-      
-      for (const section of sections) {
-        if (!section.parentId) {
-          rootSections.push(section);
-        } else {
-          if (!sectionChildren.has(section.parentId)) {
-            sectionChildren.set(section.parentId, []);
-          }
-          sectionChildren.get(section.parentId).push(section);
-        }
-      }
-      
-      // 4. Funzione ricorsiva per verificare se una sezione ha associazioni dirette a componenti comuni
-      // o se ha moduli BOM con riferimento alla distinta sorgente
-      const shouldIncludeSection = (sectionId: number): boolean => {
-        // Verifica diretta - deve avere componenti associati o moduli BOM specifici
-        return sectionWithComponentMap.has(sectionId);
+
+      // Invece di duplicare sezioni da un documento esistente, creiamo sezioni standard per il confronto
+      // 1. Sezione principale con il modulo BOM del confronto
+      const mainSectionData = {
+        documentId: newDocumentId,
+        title: "Confronto Distinte Base",
+        content: "Questa sezione contiene il confronto tra le distinte base selezionate.",
+        order: 1,
+        parentId: null
       };
       
-      // 5. Mappa per tenere traccia degli ID vecchi -> nuovi delle sezioni
-      const sectionIdMap = new Map();
+      const mainSectionResponse = await apiRequest('POST', '/api/sections', mainSectionData);
+      if (!mainSectionResponse.ok) throw new Error("Errore nella creazione della sezione principale");
+      const mainSection = await mainSectionResponse.json();
+      console.log("Creata sezione principale:", mainSection.id);
       
-      // 6. Funzione ricorsiva per creare la struttura gerarchica nel nuovo documento
-      const createSectionHierarchy = async (section: any, parentId: number | null = null) => {
-        // Se questa sezione o i suoi discendenti non contengono componenti comuni, salta
-        if (!shouldIncludeSection(section.id)) {
-          console.log(`Sezione ${section.id} (${section.title}) saltata: nessun componente comune`);
-          return;
-        }
-        
-        console.log(`Creando sezione ${section.id} (${section.title}) nel nuovo documento`);
-        
-        // Crea la sezione nel nuovo documento
-        const newSectionData = {
+      // 2. Creiamo un modulo di testo introduttivo
+      const introModuleData = {
+        sectionId: mainSection.id,
+        type: "text",
+        content: JSON.stringify({
+          text: `<p>Questo documento è stato generato automaticamente dal confronto tra le distinte base <strong>#${selectedSourceBomId}</strong> e <strong>#${selectedTargetBomId}</strong>.</p>
+                 <p>Le distinte base confrontate hanno <strong>${commonCodes.length} componenti in comune</strong>.</p>`
+        }),
+        order: 1
+      };
+      
+      await apiRequest('POST', '/api/modules', introModuleData);
+      console.log("Creato modulo introduttivo");
+      
+      // 3. Creiamo un modulo BOM che mostra la distinta target
+      const bomModuleData = {
+        sectionId: mainSection.id,
+        type: "bom",
+        content: JSON.stringify({
+          bomId: parseInt(selectedTargetBomId),
+          filter: commonCodes.join(',') // Filtro per mostrare solo i componenti comuni
+        }),
+        order: 2
+      };
+      
+      await apiRequest('POST', '/api/modules', bomModuleData);
+      console.log("Creato modulo BOM con filtro sui componenti comuni");
+      
+      // 4. Se ci sono componenti comuni, creiamo una sezione aggiuntiva con dettagli
+      if (commonCodes.length > 0) {
+        const detailSectionData = {
           documentId: newDocumentId,
-          title: section.title,
-          description: section.description,
-          order: section.order,
-          parentId: parentId,
-          isModule: section.isModule
+          title: "Componenti Comuni",
+          content: "Dettagli sui componenti presenti in entrambe le distinte base.",
+          order: 2,
+          parentId: null
         };
         
-        const newSectionResponse = await apiRequest('POST', '/api/sections', newSectionData);
-        if (!newSectionResponse.ok) throw new Error("Errore nella creazione della sezione");
-        
-        const newSection = await newSectionResponse.json();
-        sectionIdMap.set(section.id, newSection.id);
-        
-        // Duplicate i moduli, prestando attenzione a quelli BOM
-        const modules = sectionModulesMap.get(section.id) || [];
-        for (const module of modules) {
-          try {
-            let moduleContent = typeof module.content === 'string' 
-              ? JSON.parse(module.content) 
-              : module.content;
-            
-            // Se è un modulo BOM, aggiorna il riferimento alla BOM target
-            if (module.type === 'bom') {
-              if (moduleContent.bomId === parseInt(selectedSourceBomId)) {
-                moduleContent.bomId = parseInt(selectedTargetBomId);
-                console.log(`Aggiornato modulo BOM in sezione ${newSection.id}, bomId ${moduleContent.bomId} -> ${selectedTargetBomId}`);
-              }
-            }
-            
-            const newModuleData = {
-              sectionId: newSection.id,
-              type: module.type,
-              content: JSON.stringify(moduleContent),
-              order: module.order
-            };
-            
-            await apiRequest('POST', '/api/modules', newModuleData);
-          } catch (e) {
-            console.error("Errore nella creazione del modulo:", e);
-          }
-        }
-        
-        // Copiamo i componenti originali della sezione che si trovano nei codici comuni
-        const components = sectionComponentsMap.get(section.id) || [];
-        
-        // Log dei componenti prima di copiarli
-        console.log(`Sezione ${section.id} (${section.title}): Trovati ${components.length} componenti da copiare`);
-        
-        // Copiamo i componenti del documento di origine che sono nei codici comuni
-        for (const comp of components) {
-          try {
-            // Nel database, i componenti hanno una struttura come questa:
-            // {
-            //   "id": 15,               // ID dell'associazione section-component
-            //   "sectionId": 1,
-            //   "component": {           // Oggetto componente annidato
-            //     "id": 14,              // ID del componente stesso
-            //     "code": "A8B25040509",
-            //     "description": "...",
-            //     "details": {}
-            //   },
-            //   "quantity": 1,
-            //   "notes": null
-            // }
-            
-            // Assicuriamoci di estrarre l'ID del componente dall'oggetto annidato
-            if (!comp.component || !comp.component.id) {
-              console.error("Componente senza oggetto component o ID valido:", comp);
-              continue;
-            }
-            
-            const componentId = comp.component.id;
-            const componentCode = comp.component.code;
-            
-            // Verifichiamo se il componente è nella lista dei codici comuni
-            const isCommonCode = componentCode && commonCodes.includes(componentCode);
-            
-            if (isCommonCode) {
-              const newComponentData = {
-                sectionId: newSection.id,
-                componentId: componentId,
-                quantity: comp.quantity || 1,
-                notes: comp.notes || null
-              };
-              
-              console.log(`Tentativo di associare componente ${componentCode} (ID: ${componentId}) alla sezione ${newSection.id}`, newComponentData);
-              
-              const response = await apiRequest('POST', '/api/section-components', newComponentData);
-              
-              if (response.ok) {
-                console.log(`SUCCESSO: Copiato componente comune ${componentCode} (ID ${componentId}) alla sezione ${newSection.id}`);
-              } else {
-                const errorText = await response.text();
-                console.error(`Errore nell'assegnazione del componente: ${errorText}`);
-              }
-            } else {
-              console.log(`Componente ${componentCode || 'senza codice'} non nei codici comuni, non copiato alla nuova sezione`);
-            }
-          } catch (e) {
-            console.error("Errore nell'assegnazione del componente:", e);
-          }
-        }
-        
-        // Nota: NON aggiungiamo altri codici comuni alla sezione
-        // Manteniamo esattamente le stesse associazioni del documento originale
-        // Solo i componenti che erano già associati alla sezione originale e sono nei codici comuni
-        // vengono copiati nella nuova sezione
-        
-        // Log dei codici componenti copiati per questa sezione
-        try {
-          // Ottieni i codici già associati a questa sezione
-          const associatedCodes = components
-            .filter((comp: any) => comp.component && comp.component.code && commonCodes.includes(comp.component.code))
-            .map((comp: any) => comp.component.code);
+        const detailSectionResponse = await apiRequest('POST', '/api/sections', detailSectionData);
+        if (detailSectionResponse.ok) {
+          const detailSection = await detailSectionResponse.json();
           
-          if (associatedCodes.length > 0) {
-            console.log(`Sezione ${newSection.id} (${newSection.title}): Codici componenti copiati: ${associatedCodes.join(', ')}`);
-          } else {
-            console.log(`Sezione ${newSection.id} (${newSection.title}): Nessun codice componente comune copiato`);
-          }
-        } catch (e) {
-          console.error("Errore durante il logging dei codici componenti:", e);
-        }
-        
-        // Copia le traduzioni delle sezioni
-        try {
-          const translationsResponse = await fetch(`/api/section-translations?sectionId=${section.id}`);
-          if (translationsResponse.ok) {
-            const translations = await translationsResponse.json();
-            console.log(`Trovate ${translations.length} traduzioni per la sezione ${section.id}`);
-            
-            for (const translation of translations) {
-              const newTranslationData = {
-                sectionId: newSection.id,
-                languageId: translation.languageId,
-                title: translation.title,
-                description: translation.description,
-                status: translation.status,
-                translatedById: translation.translatedById,
-                reviewedById: translation.reviewedById
-              };
-              
-              const transResponse = await apiRequest('POST', '/api/section-translations', newTranslationData);
-              if (transResponse.ok) {
-                console.log(`Copiata traduzione in lingua ${translation.languageId} per sezione ${newSection.id}`);
-              } else {
-                console.error(`Errore nella copia della traduzione: ${await transResponse.text()}`);
-              }
-            }
-          }
-        } catch (e) {
-          console.error("Errore nella copia delle traduzioni della sezione:", e);
-        }
-        
-        // Copia le traduzioni dei moduli
-        try {
-          const modules = sectionModulesMap.get(section.id) || [];
+          // Aggiungi un modulo di testo con l'elenco dei codici comuni
+          const codesListModuleData = {
+            sectionId: detailSection.id,
+            type: "text",
+            content: JSON.stringify({
+              text: `<h3>Codici componenti comuni:</h3>
+                     <ul>${commonCodes.map((code: string) => `<li><strong>${code}</strong></li>`).join('')}</ul>
+                     <p>Totale componenti comuni: <strong>${commonCodes.length}</strong></p>`
+            }),
+            order: 1
+          };
           
-          for (const module of modules) {
-            // Recupera le traduzioni per questo modulo
-            const moduleTranslationsResponse = await fetch(`/api/module-translations?moduleId=${module.id}`);
-            if (moduleTranslationsResponse.ok) {
-              const moduleTranslations = await moduleTranslationsResponse.json();
-              
-              // Trova il modulo corrispondente nella nuova sezione
-              const sectModulesResponse = await fetch(`/api/sections/${newSection.id}/modules`);
-              if (sectModulesResponse.ok) {
-                const newSectionModules = await sectModulesResponse.json();
-                
-                // Trova il modulo corrispondente con lo stesso tipo e ordine
-                const newModule = newSectionModules.find((m: any) => 
-                  m.type === module.type && m.order === module.order);
-                
-                if (newModule) {
-                  // Copia le traduzioni per questo modulo
-                  for (const modTrans of moduleTranslations) {
-                    try {
-                      const newModuleTranslationData = {
-                        moduleId: newModule.id,
-                        languageId: modTrans.languageId,
-                        content: modTrans.content,
-                        status: modTrans.status,
-                        translatedById: modTrans.translatedById,
-                        reviewedById: modTrans.reviewedById
-                      };
-                      
-                      await apiRequest('POST', '/api/module-translations', newModuleTranslationData);
-                      console.log(`Copiata traduzione per modulo ${newModule.id} (tipo: ${module.type})`);
-                    } catch (e) {
-                      console.error(`Errore nella copia delle traduzioni del modulo: ${e}`);
-                    }
-                  }
-                }
-              }
-            }
-          }
-        } catch (e) {
-          console.error("Errore nella copia delle traduzioni dei moduli:", e);
+          await apiRequest('POST', '/api/modules', codesListModuleData);
+          console.log("Creata sezione dettagli con elenco componenti comuni");
         }
-        
-        // Procedi ricorsivamente con i figli
+      }
+      
+      console.log("Struttura documento creata con successo");
+      
+    } catch (error) {
+      console.error("Errore nella creazione della struttura del documento:", error);
+      throw error;
+    }
+  };
         const children = sectionChildren.get(section.id) || [];
         for (const childSection of children) {
           await createSectionHierarchy(childSection, newSection.id);
