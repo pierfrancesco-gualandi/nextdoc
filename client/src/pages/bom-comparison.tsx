@@ -665,81 +665,55 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
   // Calcola lo stato di avanzamento del confronto
   const getComparisonSummary = () => {
     console.log("getComparisonSummary chiamata, comparisonResult:", comparisonResult);
-    if (!comparisonResult) {
-      console.log("getComparisonSummary: comparisonResult è null, ritorno null");
+    if (!comparisonResult || !comparisonResult.targetItems) {
+      console.log("getComparisonSummary: dati insufficienti");
       return null;
     }
+
+    // Usa i dati reali dalla comparisonResult
+    const targetItems = comparisonResult.targetItems;
+    const totalTargetCodes = targetItems.length;
     
-    const { commonCodes = [], targetItems = [] } = comparisonResult;
+    // Ricostruisce commonCodes dalle similarities con match perfetti (100%)
+    const commonCodes: string[] = [];
+    if (comparisonResult.similarities) {
+      comparisonResult.similarities.forEach((similarity: any) => {
+        if (similarity.similarity === 100) { // Solo match perfetti
+          const code = similarity.item2?.code || similarity.item2?.component?.code;
+          if (code && !commonCodes.includes(code)) {
+            commonCodes.push(code);
+          }
+        }
+      });
+    }
     
-    // Correzione hardcoded per il confronto specifico
-    const totalTargetCodes = 12; // Numero totale di componenti nella distinta target
-    const commonCodesCount = commonCodes?.length || 10; // Abbiamo 10 codici comuni
+    const commonCodesCount = commonCodes.length;
+    const uniqueCodesCount = totalTargetCodes - commonCodesCount;
     
-    // Identificazione manuale dei codici non associati (specificati dall'utente)
-    const nonAssociatedCodes = [
-      {
-        id: 99,
-        code: "A0BT231538G1",
-        description: "TETRIS ON FX6",
-        level: 0,
-        quantity: 1
-      },
-      {
-        id: 100,
-        code: "A4B12005",
-        description: "MACHINE MODULE 20 CD",
-        level: 1,
-        quantity: 1
-      }
-    ];
-    
-    const uniqueCodesCount = nonAssociatedCodes.length; // Dovrebbe essere 2
+    // Trova i codici non associati (presenti nella target BOM ma non comuni)
+    const nonAssociatedCodes = targetItems
+      .filter((item: any) => {
+        const itemCode = item.code || item.component?.code;
+        return itemCode && !commonCodes.includes(itemCode);
+      })
+      .map((item: any) => ({
+        id: item.id,
+        code: item.code || item.component?.code,
+        description: item.description || item.component?.description,
+        level: item.level || 0,
+        quantity: item.quantity || 1,
+      }));
     
     // Calcola la percentuale di corrispondenza (quanti codici sono comuni rispetto al totale)
-    const matchPercentage = Math.round((commonCodesCount / totalTargetCodes) * 100);
+    const matchPercentage = totalTargetCodes > 0 ? Math.round((commonCodesCount / totalTargetCodes) * 100) : 0;
     
-    console.log("Dati di riepilogo corretti:", { 
+    console.log("Dati di riepilogo dinamici:", { 
       totalTargetCodes,
       commonCodesCount, 
       uniqueCodesCount,
       matchPercentage,
-      nonAssociatedCodes
+      nonAssociatedCodes: nonAssociatedCodes.slice(0, 3) // Solo primi 3 per debug
     });
-    
-    // Modifica anche targetItems per assicurarsi che i valori hardcoded siano utilizzati
-    // Questo aiuterà a visualizzare correttamente i dati nella tabella
-    if (comparisonResult && comparisonResult.targetItems) {
-      // Aggiorna il riferimento ai codici non associati nella tabella
-      nonAssociatedCodes.forEach(nonAssociatedCode => {
-        const index = comparisonResult.targetItems.findIndex((item: any) => 
-          item.code === nonAssociatedCode.code || 
-          (item.component && item.component.code === nonAssociatedCode.code)
-        );
-        
-        if (index >= 0) {
-          // Aggiorna l'elemento esistente
-          comparisonResult.targetItems[index].code = nonAssociatedCode.code;
-          comparisonResult.targetItems[index].description = nonAssociatedCode.description;
-        } else {
-          // Se l'elemento non esiste, aggiungiamolo manualmente
-          comparisonResult.targetItems.push({
-            id: nonAssociatedCode.id,
-            bomId: comparisonResult.bom2?.id || 14,
-            code: nonAssociatedCode.code,
-            description: nonAssociatedCode.description,
-            level: nonAssociatedCode.level,
-            quantity: nonAssociatedCode.quantity,
-            component: {
-              id: nonAssociatedCode.id,
-              code: nonAssociatedCode.code,
-              description: nonAssociatedCode.description,
-              details: {}
-            }
-          });
-        }
-      });
-    }
     
     return {
       totalTargetCodes,
