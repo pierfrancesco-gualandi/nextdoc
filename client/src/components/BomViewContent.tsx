@@ -209,15 +209,33 @@ const BomViewContent = ({
         console.log("Trovati componenti padre al livello", levelFilterValue, ":", potentialParents.map(p => p.component.code));
         foundParentAtLevel = true;
         
-        // Per ogni componente padre al livello specificato, includi tutti i suoi figli
+        // Per ogni componente padre al livello specificato, includi solo i figli al livello immediatamente successivo
+        const maxAllowedLevel = levelFilterValue + 1;
+        
         for (const parent of potentialParents) {
-          const parentChildCodes = findChildComponents(bomItems, parent.component.code);
-          childCodes.push(...parentChildCodes);
+          // Aggiungi il padre stesso
+          childCodes.push(parent.component.code);
+          
+          // Trova tutti i figli diretti e indiretti usando la funzione esistente
+          const allChildren = findChildComponents(bomItems, parent.component.code);
+          console.log(`Padre ${parent.component.code}: tutti i figli trovati:`, allChildren);
+          
+          // Filtra solo i figli al livello massimo consentito (livello padre + 1)
+          const filteredChildren = bomItems
+            .filter((item: any) => 
+              item.component && 
+              allChildren.includes(item.component.code) &&
+              item.level <= maxAllowedLevel
+            )
+            .map((item: any) => item.component.code);
+          
+          console.log(`Padre ${parent.component.code}: figli al livello <= ${maxAllowedLevel}:`, filteredChildren);
+          childCodes.push(...filteredChildren);
         }
         
         // Rimuovi duplicati
         childCodes = [...new Set(childCodes)];
-        console.log("Tutti i codici inclusi (padre + figli):", childCodes);
+        console.log(`Codici inclusi (livello ${levelFilterValue} + max ${maxAllowedLevel}):`, childCodes);
       }
     } else if (codeFilter) {
       // Logica originale per filtro solo codice (senza livello)
