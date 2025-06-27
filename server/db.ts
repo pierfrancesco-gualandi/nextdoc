@@ -11,8 +11,12 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+// Override per utilizzare Supabase invece di Neon
+const SUPABASE_URL = "postgresql://postgres.tylixamvjebauztnjknq:STSERV_2025!@aws-0-eu-north-1.pooler.supabase.com:6543/postgres";
+const USE_SUPABASE = true; // Cambia a false per tornare a Neon
+
 // Determina se stiamo usando Supabase o Neon
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = USE_SUPABASE ? SUPABASE_URL : process.env.DATABASE_URL;
 const isSupabase = databaseUrl.includes('supabase.com') || 
                    databaseUrl.includes('supabase.co') ||
                    databaseUrl.includes('pooler.supabase.com') ||
