@@ -89,7 +89,19 @@ const FileSelector: React.FC<FileSelectorProps> = ({
         const modelId = file.name.replace(/\.(html|htm)$/i, '');
         formData.append('modelId', modelId);
         
-        console.log('Caricamento modello WebGL:', modelId);
+        console.log('Caricamento modello WebGL HTML:', modelId);
+      }
+      
+      // Se è un file ZIP, potrebbe contenere un modello WebGL completo
+      if (file.name.toLowerCase().endsWith('.zip')) {
+        // Prova a estrarre il nome del modello dal nome del file ZIP
+        const modelId = file.name.replace(/\.zip$/i, '');
+        
+        // Aggiungiamo flag per indicare che è un modello WebGL da ZIP
+        formData.append('webglModel', 'true');
+        formData.append('modelName', modelId);
+        
+        console.log('Caricamento modello WebGL da ZIP:', modelId);
       }
       
       const response = await fetch('/api/upload', {

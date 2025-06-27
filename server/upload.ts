@@ -175,6 +175,76 @@ const prepare3DModelFolder = (modelName: string, originalFilePath: string): stri
   }
 };
 
+// Funzione per gestire l'upload di file ZIP contenenti modelli WebGL
+const handleWebGLZipUpload = async (file: Express.Multer.File, modelName: string): Promise<string | null> => {
+  try {
+    console.log(`Gestione ZIP WebGL: ${file.originalname} per modello ${modelName}`);
+    
+    // Estrai il modello da ZIP
+    const zip = new AdmZip(file.path);
+    const zipEntries = zip.getEntries();
+    
+    // Crea la cartella del modello
+    const modelDir = path.join(uploadsDir, modelName);
+    if (!fs.existsSync(modelDir)) {
+      fs.mkdirSync(modelDir, { recursive: true });
+    }
+    
+    // Lista dei file trovati nel ZIP
+    const extractedFiles: string[] = [];
+    let htmlFileName = '';
+    
+    // Estrai tutti i file dal ZIP mantenendo la struttura delle cartelle
+    for (const entry of zipEntries) {
+      if (!entry.isDirectory) {
+        const fileName = entry.entryName;
+        const fullPath = path.join(modelDir, fileName);
+        
+        // Crea le cartelle intermedie se necessarie
+        const dirPath = path.dirname(fullPath);
+        if (!fs.existsSync(dirPath)) {
+          fs.mkdirSync(dirPath, { recursive: true });
+        }
+        
+        // Estrai il file
+        zip.extractEntryTo(entry, dirPath, false, true);
+        extractedFiles.push(fileName);
+        
+        // Identifica il file HTML principale
+        if (fileName.toLowerCase().endsWith('.html') || fileName.toLowerCase().endsWith('.htm')) {
+          if (fileName.toLowerCase().includes(modelName.toLowerCase()) || !htmlFileName) {
+            htmlFileName = fileName;
+          }
+        }
+        
+        console.log(`Estratto: ${fileName}`);
+      }
+    }
+    
+    // Se non troviamo un file HTML specifico, cerca il primo HTML disponibile
+    if (!htmlFileName) {
+      htmlFileName = extractedFiles.find(f => f.toLowerCase().endsWith('.html') || f.toLowerCase().endsWith('.htm')) || '';
+    }
+    
+    // Rimuovi il file ZIP temporaneo
+    fs.unlinkSync(file.path);
+    
+    if (htmlFileName) {
+      const finalPath = path.join(modelName, htmlFileName);
+      console.log(`Modello WebGL estratto con successo: ${finalPath}`);
+      console.log(`File estratti: ${extractedFiles.length} file`);
+      return finalPath;
+    } else {
+      console.error('Nessun file HTML trovato nel ZIP');
+      return null;
+    }
+    
+  } catch (error) {
+    console.error(`Errore nell'estrazione del ZIP per modello ${modelName}:`, error);
+    return null;
+  }
+};
+
 // Middleware per salvare le informazioni del file nel database
 export const saveFileInfo = async (req: Request, res: Response, next: NextFunction) => {
   if (!req.file && (!req.files || Object.keys(req.files || {}).length === 0)) {
@@ -186,8 +256,31 @@ export const saveFileInfo = async (req: Request, res: Response, next: NextFuncti
     
     // Gestisce un singolo file
     if (req.file) {
-      // Verifica se il nome del file corrisponde a un modello 3D standard
+      // Verifica se è un file ZIP contenente un modello 3D
+      const isZipFile = req.file.originalname.toLowerCase().endsWith('.zip');
       const modelNameFromFileName = extract3DModelName(req.file.originalname);
+      
+      // Se è un file ZIP che contiene un modello WebGL, gestiscilo
+      if (isZipFile && (req.body.webglModel === 'true' || modelNameFromFileName)) {
+        console.log(`Rilevato ZIP modello WebGL: ${req.file.originalname}`);
+        const extractedModelPath = await handleWebGLZipUpload(req.file, modelNameFromFileName || req.body.modelName);
+        
+        if (extractedModelPath) {
+          const fileData: InsertUploadedFile = {
+            filename: extractedModelPath,
+            originalName: req.file.originalname,
+            path: extractedModelPath,
+            mimetype: 'text/html',
+            size: req.file.size,
+            uploadedById: userId,
+          };
+          
+          const [savedFile] = await db.insert(uploadedFiles).values(fileData).returning();
+          return res.status(201).json(savedFile);
+        } else {
+          return res.status(400).json({ message: 'Errore nell\'estrazione del modello WebGL' });
+        }
+      }
       
       // Determina se il file è un modello 3D in base ai flag o al nome del file
       const isHtmlFile = req.file.originalname.toLowerCase().match(/\.(html|htm)$/i);

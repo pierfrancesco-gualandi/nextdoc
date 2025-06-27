@@ -378,8 +378,13 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
       originalSrc: modelData.src
     });
     
-    // Utilizziamo un pulsante per aprire il modello 3D in una nuova finestra,
-    // poiché il modello richiede file esterni nella stessa cartella
+    // Nuovo approccio: iframe incorporato per anteprima del modello WebGL
+    const [showIframe, setShowIframe] = useState(false);
+    const [iframeError, setIframeError] = useState(false);
+    
+    // Se il modello proviene da un ZIP estratto, prova a mostrare un'anteprima incorporata
+    const canShowPreview = modelData.allFiles && modelData.allFiles.length > 1;
+    
     return (
       <div
         style={{
@@ -391,61 +396,91 @@ const ThreeModelViewer: React.FC<ThreeModelViewerProps> = ({
           border: '1px solid #ccc',
           backgroundColor: '#fff',
           display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: '20px'
+          flexDirection: 'column'
         }}
       >
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <div style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '10px' }}>
+        {/* Header del modello */}
+        <div style={{ padding: '12px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+          <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '4px' }}>
             {modelData.title || 'Modello 3D WebGL'}
           </div>
-          <div style={{ fontSize: '14px', color: '#666', maxWidth: '80%', margin: '0 auto' }}>
-            Questo modello 3D richiede file esterni specifici per funzionare correttamente.
-            Utilizza il pulsante qui sotto per visualizzare il modello con tutti i componenti.
-          </div>
+          {canShowPreview && (
+            <div style={{ fontSize: '12px', color: '#666' }}>
+              {modelData.allFiles?.length} file estratti da ZIP
+            </div>
+          )}
         </div>
         
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-          <a
-            href={modelUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              backgroundColor: '#0d7855',
-              color: 'white',
-              padding: '12px 24px',
-              borderRadius: '4px',
-              fontWeight: 'bold',
-              textDecoration: 'none',
-              display: 'inline-flex',
+        {/* Area di visualizzazione del modello */}
+        <div style={{ flex: 1, position: 'relative' }}>
+          {showIframe && !iframeError ? (
+            <iframe
+              src={modelUrl}
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                backgroundColor: '#f5f5f5'
+              }}
+              onError={() => {
+                setIframeError(true);
+                console.log('Errore caricamento iframe, fallback al pulsante');
+              }}
+              title={`Modello 3D: ${modelData.title}`}
+            />
+          ) : (
+            <div style={{ 
+              padding: '20px', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              justifyContent: 'center', 
               alignItems: 'center',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-              transition: 'all 0.2s ease',
-              fontSize: '15px',
-              textAlign: 'center',
-              width: '100%',
-              justifyContent: 'center'
-            }}
-          >
-            Visualizza modello 3D con tutti i componenti
-          </a>
-        </div>
-        
-        <div style={{ marginTop: '15px', fontSize: '13px', color: '#777', textAlign: 'center' }}>
-          <a 
-            href={`/downloads/${folderName}.zip`}
-            style={{
-              display: 'inline-block',
-              marginTop: '10px',
-              color: '#0366d6',
-              textDecoration: 'none',
-              fontWeight: 'bold'
-            }}
-          >
-            Scarica il modello completo (.zip)
-          </a>
+              height: '100%',
+              gap: '16px'
+            }}>
+              <div style={{ fontSize: '48px', opacity: 0.3 }}>🎯</div>
+              
+              {canShowPreview && !showIframe ? (
+                <button
+                  onClick={() => setShowIframe(true)}
+                  style={{
+                    backgroundColor: '#0d7855',
+                    color: 'white',
+                    padding: '12px 24px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  Mostra anteprima modello
+                </button>
+              ) : (
+                <div style={{ textAlign: 'center', fontSize: '13px', color: '#666' }}>
+                  {iframeError ? 'Anteprima non disponibile' : 'Modello WebGL pronto'}
+                </div>
+              )}
+              
+              <a
+                href={modelUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  backgroundColor: showIframe ? '#666' : '#0d7855',
+                  color: 'white',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  textDecoration: 'none',
+                  fontSize: '13px',
+                  fontWeight: '500'
+                }}
+              >
+                Apri in nuova finestra
+              </a>
+            </div>
+          )}
         </div>
       </div>
     );
