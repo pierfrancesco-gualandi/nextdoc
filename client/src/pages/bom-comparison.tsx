@@ -755,6 +755,7 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
   // Debug per visualizzare la risposta completa
   console.log("Dati di confronto completi:", comparisonResult);
   console.log("Codici comuni trovati:", comparisonResult?.commonCodes);
+  console.log("Summary calcolato:", summary);
   
   return (
     <>
