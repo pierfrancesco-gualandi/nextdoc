@@ -141,12 +141,13 @@ const WarningModule: React.FC<WarningModuleProps> = ({
       </div>
       <div className="message-body" style={bodyStyle}>
         <div 
+          className="warning-content"
           style={{...paragraphStyle, color: '#ffffff'}} 
           dangerouslySetInnerHTML={{ __html: displayMessage }} 
         />
         {cleanDescription && cleanMessage && cleanDescription !== cleanMessage && (
           <div 
-            className="warning-description" 
+            className="warning-content warning-description" 
             style={{...descriptionStyle, color: '#ffffff'}} 
             dangerouslySetInnerHTML={{ __html: cleanDescription }} 
           />
