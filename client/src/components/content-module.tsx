@@ -234,15 +234,16 @@ export default function ContentModule({
   const [isEditing, setIsEditingState] = useState(false);
   const [content, setContent] = useState(module.content);
   
-  // Ottieni il ruolo utente dal contesto
-  const { currentUserRole } = useUser();
+  // Ottieni l'utente dal contesto
+  const { selectedUser } = useUser();
   
   // Wrapper per setIsEditing che controlla i permessi
   const setIsEditing = (value: boolean) => {
     // Non permettere di entrare in modalità di modifica se:
     // 1. Il modulo è disabilitato (props), oppure
     // 2. L'utente non ha il ruolo di admin o editor
-    if (value && (disabled || (currentUserRole !== 'admin' && currentUserRole !== 'editor'))) {
+    const userRole = selectedUser?.role;
+    if (value && (disabled || (userRole !== 'admin' && userRole !== 'editor'))) {
       toast({
         title: "Permesso negato",
         description: "Non hai i permessi per modificare questo modulo",
