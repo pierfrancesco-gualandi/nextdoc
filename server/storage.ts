@@ -2062,8 +2062,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteSectionComponent(id: number): Promise<boolean> {
-    const result = await db.delete(sectionComponents).where(eq(sectionComponents.id, id));
-    return result.rowCount ? result.rowCount > 0 : false;
+    try {
+      const result = await db.delete(sectionComponents).where(eq(sectionComponents.id, id));
+      // Postgres può restituire rowCount come numero o undefined/null
+      return result.rowCount !== undefined && result.rowCount !== null && result.rowCount > 0;
+    } catch (error) {
+      console.error(`Errore eliminando section component ${id}:`, error);
+      return false;
+    }
   }
 
   async deleteSectionComponentsBySectionId(sectionId: number): Promise<boolean> {

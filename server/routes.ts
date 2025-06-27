@@ -1559,12 +1559,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/section-components/:id", async (req: Request, res: Response) => {
     try {
       const id = Number(req.params.id);
+      console.log(`[DELETE section-component] Tentativo eliminazione ID: ${id}`);
+      
+      // Prima verifica se esiste
+      const existing = await storage.getSectionComponent(id);
+      console.log(`[DELETE section-component] Componente esistente:`, existing ? 'TROVATO' : 'NON TROVATO');
+      
+      if (!existing) {
+        console.log(`[DELETE section-component] Componente ${id} non trovato prima dell'eliminazione`);
+        return res.status(404).json({ message: "Section component not found" });
+      }
+      
       const success = await storage.deleteSectionComponent(id);
+      console.log(`[DELETE section-component] Risultato eliminazione:`, success ? 'SUCCESS' : 'FAILED');
+      
       if (!success) {
         return res.status(404).json({ message: "Section component not found" });
       }
       res.status(204).end();
     } catch (error) {
+      console.error(`[DELETE section-component] Errore:`, error);
       res.status(500).json({ message: "Failed to delete section component" });
     }
   });
