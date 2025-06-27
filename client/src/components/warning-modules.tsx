@@ -121,7 +121,9 @@ const WarningModule: React.FC<WarningModuleProps> = ({
 
   // Applica il testo maiuscolo per i titoli (errore, avvertenza, nota)
   const formattedTitle = title || defaultTitles[level];
-  const displayMessage = stripHtmlTags(message || description || "Messaggio non specificato");
+  const cleanMessage = stripHtmlTags(message || "");
+  const cleanDescription = stripHtmlTags(description || "");
+  const displayMessage = cleanMessage || cleanDescription || "Messaggio non specificato";
   
   return (
     <div 
@@ -134,8 +136,8 @@ const WarningModule: React.FC<WarningModuleProps> = ({
       </div>
       <div className="message-body" style={bodyStyle}>
         <p style={paragraphStyle}>{displayMessage}</p>
-        {description && description !== message && description !== displayMessage && (
-          <p className="warning-description" style={descriptionStyle}>{stripHtmlTags(description)}</p>
+        {cleanDescription && cleanMessage && cleanDescription !== cleanMessage && (
+          <p className="warning-description" style={descriptionStyle}>{cleanDescription}</p>
         )}
       </div>
     </div>
