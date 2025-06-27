@@ -325,94 +325,219 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
     });
   };
   
-  // Funzione per creare la struttura del documento dal confronto BOM
+  // Funzione per duplicare la struttura del documento
   const createDocumentStructure = async (newDocumentId: number) => {
     try {
       console.log("Inizio processo di creazione documento da confronto BOM");
       
-      // Recuperiamo i codici comuni dal confronto
+      // Recuperiamo i codici comuni
       const { commonCodes = [] } = comparisonResult || {};
       console.log("Codici comuni tra le distinte:", commonCodes);
       
       if (!commonCodes?.length) {
-        console.log("Nessun codice comune trovato, creo documento vuoto con sezione BOM");
+        throw new Error("Nessun codice comune trovato tra le distinte base");
       }
-
-      // Invece di duplicare sezioni da un documento esistente, creiamo sezioni standard per il confronto
-      // 1. Sezione principale con il modulo BOM del confronto
-      const mainSectionData = {
-        documentId: newDocumentId,
-        title: "Confronto Distinte Base",
-        content: "Questa sezione contiene il confronto tra le distinte base selezionate.",
-        order: 1,
-        parentId: null
-      };
       
-      const mainSectionResponse = await apiRequest('POST', '/api/sections', mainSectionData);
-      if (!mainSectionResponse.ok) throw new Error("Errore nella creazione della sezione principale");
-      const mainSection = await mainSectionResponse.json();
-      console.log("Creata sezione principale:", mainSection.id);
+      // 1. Recupera tutte le sezioni del documento sorgente
+      const sectionsResponse = await fetch(`/api/documents/${selectedDocumentId}/sections`);
+      if (!sectionsResponse.ok) throw new Error("Errore nel recupero delle sezioni");
+      const sections = await sectionsResponse.json();
+      console.log(`Recuperate ${sections.length} sezioni dal documento originale`);
       
-      // 2. Creiamo un modulo di testo introduttivo
-      const introModuleData = {
-        sectionId: mainSection.id,
-        type: "text",
-        content: JSON.stringify({
-          text: `<p>Questo documento è stato generato automaticamente dal confronto tra le distinte base <strong>#${selectedSourceBomId}</strong> e <strong>#${selectedTargetBomId}</strong>.</p>
-                 <p>Le distinte base confrontate hanno <strong>${commonCodes.length} componenti in comune</strong>.</p>`
-        }),
-        order: 1
-      };
+      // 2. Recuperiamo tutti i moduli di tutte le sezioni e i loro componenti associati
+      const sectionModulesMap = new Map();
+      const sectionComponentsMap = new Map();
+      const sectionWithComponentMap = new Map();
       
-      await apiRequest('POST', '/api/modules', introModuleData);
-      console.log("Creato modulo introduttivo");
+      // Crea una mappa di componenti per codice per rapida ricerca
+      const componentCodeMap: {[key: string]: any} = {};
       
-      // 3. Creiamo un modulo BOM che mostra la distinta target
-      const bomModuleData = {
-        sectionId: mainSection.id,
-        type: "bom",
-        content: JSON.stringify({
-          bomId: parseInt(selectedTargetBomId),
-          filter: commonCodes.join(',') // Filtro per mostrare solo i componenti comuni
-        }),
-        order: 2
-      };
-      
-      await apiRequest('POST', '/api/modules', bomModuleData);
-      console.log("Creato modulo BOM con filtro sui componenti comuni");
-      
-      // 4. Se ci sono componenti comuni, creiamo una sezione aggiuntiva con dettagli
-      if (commonCodes.length > 0) {
-        const detailSectionData = {
-          documentId: newDocumentId,
-          title: "Componenti Comuni",
-          content: "Dettagli sui componenti presenti in entrambe le distinte base.",
-          order: 2,
-          parentId: null
-        };
+      // Prima recuperiamo i componenti associati alle sezioni
+      for (const section of sections) {
+        const componentsResponse = await fetch(`/api/sections/${section.id}/components`);
+        if (componentsResponse.ok) {
+          const components = await componentsResponse.json();
+          sectionComponentsMap.set(section.id, components);
+          
+          // Marca le sezioni che hanno componenti con codici comuni
+          const hasCommonComponents = components.some((comp: any) => 
+            comp.component && commonCodes.includes(comp.component.code)
+          );
+          
+          if (hasCommonComponents) {
+            sectionWithComponentMap.set(section.id, true);
+            console.log(`Sezione ${section.id} (${section.title}) ha componenti comuni`);
+          }
+          
+          // Aggiungi i componenti alla mappa per codice
+          for (const comp of components) {
+            if (comp.component && comp.component.code) {
+              componentCodeMap[comp.component.code] = comp.component;
+            }
+          }
+        }
         
-        const detailSectionResponse = await apiRequest('POST', '/api/sections', detailSectionData);
-        if (detailSectionResponse.ok) {
-          const detailSection = await detailSectionResponse.json();
+        // Recupera anche i moduli della sezione
+        const modulesResponse = await fetch(`/api/sections/${section.id}/modules`);
+        if (modulesResponse.ok) {
+          const modules = await modulesResponse.json();
+          sectionModulesMap.set(section.id, modules);
           
-          // Aggiungi un modulo di testo con l'elenco dei codici comuni
-          const codesListModuleData = {
-            sectionId: detailSection.id,
-            type: "text",
-            content: JSON.stringify({
-              text: `<h3>Codici componenti comuni:</h3>
-                     <ul>${commonCodes.map((code: string) => `<li><strong>${code}</strong></li>`).join('')}</ul>
-                     <p>Totale componenti comuni: <strong>${commonCodes.length}</strong></p>`
-            }),
-            order: 1
-          };
+          // Marca le sezioni che hanno moduli BOM con riferimento alla distinta sorgente
+          const hasBomModule = modules.some((module: any) => {
+            if (module.type !== 'bom') return false;
+            
+            try {
+              const content = typeof module.content === 'string' 
+                ? JSON.parse(module.content) 
+                : module.content;
+                
+              return content.bomId === parseInt(selectedSourceBomId);
+            } catch (e) {
+              return false;
+            }
+          });
           
-          await apiRequest('POST', '/api/modules', codesListModuleData);
-          console.log("Creata sezione dettagli con elenco componenti comuni");
+          if (hasBomModule) {
+            sectionWithComponentMap.set(section.id, true);
+            console.log(`Sezione ${section.id} (${section.title}) ha moduli BOM rilevanti`);
+          }
         }
       }
       
-      console.log("Struttura documento creata con successo");
+      // 3. Costruisci un grafo delle sezioni e determina le dipendenze gerarchiche
+      const sectionChildren = new Map();
+      const rootSections = [];
+      
+      for (const section of sections) {
+        if (!section.parentId) {
+          rootSections.push(section);
+        } else {
+          if (!sectionChildren.has(section.parentId)) {
+            sectionChildren.set(section.parentId, []);
+          }
+          sectionChildren.get(section.parentId).push(section);
+        }
+      }
+      
+      // 4. Funzione ricorsiva per verificare se una sezione ha associazioni dirette a componenti comuni
+      // o se ha moduli BOM con riferimento alla distinta sorgente
+      const shouldIncludeSection = (sectionId: number): boolean => {
+        // Verifica diretta - deve avere componenti associati o moduli BOM specifici
+        return sectionWithComponentMap.has(sectionId);
+      };
+      
+      // 5. Mappa per tenere traccia degli ID vecchi -> nuovi delle sezioni
+      const sectionIdMap = new Map();
+      
+      // 6. Funzione ricorsiva per creare la struttura gerarchica nel nuovo documento
+      const createSectionHierarchy = async (section: any, parentId: number | null = null) => {
+        // Se questa sezione o i suoi discendenti non contengono componenti comuni, salta
+        if (!shouldIncludeSection(section.id)) {
+          console.log(`Sezione ${section.id} (${section.title}) saltata: nessun componente comune`);
+          return;
+        }
+        
+        console.log(`Creando sezione ${section.id} (${section.title}) nel nuovo documento`);
+        
+        // Crea la sezione nel nuovo documento
+        const newSectionData = {
+          documentId: newDocumentId,
+          title: section.title,
+          content: section.content,
+          order: section.order,
+          parentId: parentId
+        };
+        
+        const newSectionResponse = await apiRequest('POST', '/api/sections', newSectionData);
+        if (!newSectionResponse.ok) throw new Error("Errore nella creazione della sezione");
+        
+        const newSection = await newSectionResponse.json();
+        sectionIdMap.set(section.id, newSection.id);
+        
+        // Duplica i moduli, prestando attenzione a quelli BOM
+        const modules = sectionModulesMap.get(section.id) || [];
+        for (const module of modules) {
+          try {
+            let moduleContent = typeof module.content === 'string' 
+              ? JSON.parse(module.content) 
+              : module.content;
+            
+            // Se è un modulo BOM, aggiorna il riferimento alla BOM target
+            if (module.type === 'bom') {
+              if (moduleContent.bomId === parseInt(selectedSourceBomId)) {
+                moduleContent.bomId = parseInt(selectedTargetBomId);
+                console.log(`Aggiornato modulo BOM in sezione ${newSection.id}, bomId ${moduleContent.bomId} -> ${selectedTargetBomId}`);
+              }
+            }
+            
+            const newModuleData = {
+              sectionId: newSection.id,
+              type: module.type,
+              content: JSON.stringify(moduleContent),
+              order: module.order
+            };
+            
+            await apiRequest('POST', '/api/modules', newModuleData);
+          } catch (e) {
+            console.error("Errore nella creazione del modulo:", e);
+          }
+        }
+        
+        // Copiamo i componenti originali della sezione che si trovano nei codici comuni
+        const components = sectionComponentsMap.get(section.id) || [];
+        
+        // Copiamo i componenti del documento di origine che sono nei codici comuni
+        for (const comp of components) {
+          try {
+            if (!comp.component || !comp.component.id) {
+              console.error("Componente senza oggetto component o ID valido:", comp);
+              continue;
+            }
+            
+            const componentId = comp.component.id;
+            const componentCode = comp.component.code;
+            
+            // Verifichiamo se il componente è nella lista dei codici comuni
+            const isCommonCode = componentCode && commonCodes.includes(componentCode);
+            
+            if (isCommonCode) {
+              const newComponentData = {
+                sectionId: newSection.id,
+                componentId: componentId,
+                quantity: comp.quantity || 1,
+                notes: comp.notes || null
+              };
+              
+              console.log(`Tentativo di associare componente ${componentCode} (ID: ${componentId}) alla sezione ${newSection.id}`, newComponentData);
+              
+              const response = await apiRequest('POST', '/api/section-components', newComponentData);
+              
+              if (response.ok) {
+                console.log(`SUCCESSO: Copiato componente comune ${componentCode} (ID ${componentId}) alla sezione ${newSection.id}`);
+              } else {
+                const errorText = await response.text();
+                console.error(`Errore nell'assegnazione del componente: ${errorText}`);
+              }
+            } else {
+              console.log(`Componente ${componentCode || 'senza codice'} non nei codici comuni, non copiato alla nuova sezione`);
+            }
+          } catch (e) {
+            console.error("Errore nell'assegnazione del componente:", e);
+          }
+        }
+        
+        // Procedi ricorsivamente con i figli
+        const children = sectionChildren.get(section.id) || [];
+        for (const childSection of children) {
+          await createSectionHierarchy(childSection, newSection.id);
+        }
+      };
+      
+      // 7. Crea la gerarchia partendo dalle sezioni radice
+      for (const rootSection of rootSections) {
+        await createSectionHierarchy(rootSection);
+      }
       
     } catch (error) {
       console.error("Errore nella creazione della struttura del documento:", error);
@@ -519,19 +644,40 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
                 </CardHeader>
                 
                 <CardContent className="space-y-6">
+                  {/* Selezione documento di riferimento */}
+                  <div className="space-y-2">
+                    <Label htmlFor="document-select">Documento di Riferimento</Label>
+                    <Select 
+                      value={selectedDocumentId} 
+                      onValueChange={setSelectedDocumentId}
+                    >
+                      <SelectTrigger id="document-select">
+                        <SelectValue placeholder="Seleziona il documento contenente la BOM di partenza" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {documents?.map(doc => (
+                          <SelectItem key={doc.id} value={doc.id.toString()}>
+                            {doc.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Selezione BOM sorgente */}
                     <div className="space-y-2">
-                      <Label htmlFor="source-bom-select">Prima Distinta Base</Label>
+                      <Label htmlFor="source-bom-select">Distinta Base di Origine</Label>
                       <Select 
                         value={selectedSourceBomId} 
                         onValueChange={setSelectedSourceBomId}
+                        disabled={!selectedDocumentId}
                       >
                         <SelectTrigger id="source-bom-select">
-                          <SelectValue placeholder="Seleziona la prima distinta" />
+                          <SelectValue placeholder="Seleziona la distinta di partenza" />
                         </SelectTrigger>
                         <SelectContent>
-                          {allBoms?.map(bom => (
+                          {documentBoms?.map(bom => (
                             <SelectItem key={bom.id} value={bom.id.toString()}>
                               {bom.title}
                             </SelectItem>
@@ -542,14 +688,14 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
                     
                     {/* Selezione BOM target */}
                     <div className="space-y-2">
-                      <Label htmlFor="target-bom-select">Seconda Distinta Base</Label>
+                      <Label htmlFor="target-bom-select">Nuova Distinta Base</Label>
                       <Select 
                         value={selectedTargetBomId} 
                         onValueChange={setSelectedTargetBomId}
                         disabled={!allBoms?.length}
                       >
                         <SelectTrigger id="target-bom-select">
-                          <SelectValue placeholder="Seleziona la seconda distinta" />
+                          <SelectValue placeholder="Seleziona la nuova distinta da confrontare" />
                         </SelectTrigger>
                         <SelectContent>
                           {allBoms?.map(bom => (
@@ -566,7 +712,7 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
                 <CardFooter className="flex justify-end">
                   <Button 
                     onClick={compareBoms}
-                    disabled={!selectedSourceBomId || !selectedTargetBomId}
+                    disabled={!selectedDocumentId || !selectedSourceBomId || !selectedTargetBomId}
                   >
                     Confronta Distinte Base
                   </Button>
