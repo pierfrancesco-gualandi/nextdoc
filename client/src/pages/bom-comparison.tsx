@@ -76,15 +76,18 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
     enabled: !!selectedDocumentId,
     queryFn: async () => {
       try {
+        console.log(`Caricando BOM per documento ${selectedDocumentId}`);
         // Qui assumiamo che esista un endpoint per ottenere le BOM associate a un documento
         // Se non esiste, dovremmo fare una query alle sezioni del documento e poi filtrare le BOM
         const response = await fetch(`/api/documents/${selectedDocumentId}/boms`);
         if (!response.ok) {
+          console.log(`Endpoint /api/documents/${selectedDocumentId}/boms non disponibile, uso logica alternativa`);
           // Alternativa: recuperare tutte le sezioni e i moduli, quindi filtrare per moduli di tipo BOM
           const sectionsResponse = await fetch(`/api/documents/${selectedDocumentId}/sections`);
           if (!sectionsResponse.ok) throw new Error("Errore nel recupero delle sezioni");
           
           const sections = await sectionsResponse.json();
+          console.log(`Trovate ${sections.length} sezioni nel documento ${selectedDocumentId}:`, sections.map(s => s.title));
           
           // Raccogliamo tutti gli ID delle sezioni
           const sectionIds = sections.map((section: any) => section.id);
@@ -98,21 +101,30 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
           
           const modulesBySection = await Promise.all(modulesPromises);
           
+          console.log(`Moduli trovati in tutte le sezioni:`, modulesBySection.flat());
+          
           // Filtriamo per moduli di tipo 'bom' e recuperiamo i bomId
           const bomModules = modulesBySection
             .flat()
-            .filter((module: any) => module.type === 'bom' && module.content)
+            .filter((module: any) => {
+              console.log(`Checking module tipo ${module.type}, content:`, module.content);
+              return module.type === 'bom' && module.content;
+            })
             .map((module: any) => {
               try {
                 const content = typeof module.content === 'string' 
                   ? JSON.parse(module.content) 
                   : module.content;
+                console.log(`Modulo BOM trovato con bomId: ${content.bomId}`);
                 return { bomId: content.bomId, sectionId: module.sectionId };
               } catch (e) {
+                console.error(`Errore parsing contenuto modulo BOM:`, e);
                 return null;
               }
             })
             .filter(Boolean);
+          
+          console.log(`Moduli BOM estratti:`, bomModules);
           
           // Recuperiamo i dettagli delle BOM - evitando l'uso di Set
           const bomIdsMap: {[key: number]: boolean} = {};
@@ -774,68 +786,47 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
                 </CardHeader>
                 
                 <CardContent className="space-y-6">
-                  {/* Selezione documento */}
-                  <div className="space-y-2">
-                    <Label htmlFor="document-select">Documento di riferimento</Label>
-                    <Select value={selectedDocumentId} onValueChange={setSelectedDocumentId}>
-                      <SelectTrigger id="document-select">
-                        <SelectValue placeholder="Seleziona un documento" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {documents?.map(doc => (
-                          <SelectItem key={doc.id} value={doc.id.toString()}>
-                            {doc.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Selezione BOM sorgente (dal documento) */}
-                  <div className="space-y-2">
-                    <Label htmlFor="source-bom-select">Distinta Base di Origine</Label>
-                    <Select 
-                      value={selectedSourceBomId} 
-                      onValueChange={setSelectedSourceBomId}
-                      disabled={!selectedDocumentId || !documentBoms?.length}
-                    >
-                      <SelectTrigger id="source-bom-select">
-                        <SelectValue placeholder="Seleziona una distinta base dal documento" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {documentBoms?.map(bom => (
-                          <SelectItem key={bom.id} value={bom.id.toString()}>
-                            {bom.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {selectedDocumentId && (!documentBoms || documentBoms.length === 0) && (
-                      <p className="text-red-500 text-sm mt-1">
-                        Nessuna distinta base trovata per questo documento
-                      </p>
-                    )}
-                  </div>
-                  
-                  {/* Selezione BOM target (tra tutte le BOM) */}
-                  <div className="space-y-2">
-                    <Label htmlFor="target-bom-select">Nuova Distinta Base</Label>
-                    <Select 
-                      value={selectedTargetBomId} 
-                      onValueChange={setSelectedTargetBomId}
-                      disabled={!allBoms?.length}
-                    >
-                      <SelectTrigger id="target-bom-select">
-                        <SelectValue placeholder="Seleziona la nuova distinta base" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allBoms?.map(bom => (
-                          <SelectItem key={bom.id} value={bom.id.toString()}>
-                            {bom.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Selezione BOM sorgente */}
+                    <div className="space-y-2">
+                      <Label htmlFor="source-bom-select">Prima Distinta Base</Label>
+                      <Select 
+                        value={selectedSourceBomId} 
+                        onValueChange={setSelectedSourceBomId}
+                      >
+                        <SelectTrigger id="source-bom-select">
+                          <SelectValue placeholder="Seleziona la prima distinta" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allBoms?.map(bom => (
+                            <SelectItem key={bom.id} value={bom.id.toString()}>
+                              {bom.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Selezione BOM target */}
+                    <div className="space-y-2">
+                      <Label htmlFor="target-bom-select">Seconda Distinta Base</Label>
+                      <Select 
+                        value={selectedTargetBomId} 
+                        onValueChange={setSelectedTargetBomId}
+                        disabled={!allBoms?.length}
+                      >
+                        <SelectTrigger id="target-bom-select">
+                          <SelectValue placeholder="Seleziona la seconda distinta" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allBoms?.map(bom => (
+                            <SelectItem key={bom.id} value={bom.id.toString()}>
+                              {bom.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </CardContent>
                 
