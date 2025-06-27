@@ -900,8 +900,12 @@ function SectionItem({
       {isOverTop && (
         <div 
           ref={dropTop}
-          className="absolute top-0 left-0 w-full h-1 bg-primary z-10"
-        />
+          className="absolute top-0 left-0 w-full h-2 bg-blue-500 z-10 shadow-sm"
+        >
+          <div className="text-xs text-white bg-blue-600 px-2 py-0.5 rounded-sm inline-block transform -translate-y-1">
+            Inserisci sopra
+          </div>
+        </div>
       )}
       
       <div 
@@ -974,8 +978,13 @@ function SectionItem({
             `}>
               {section.title}
               {window._highlightedDropTarget === section.id && 
-                <span className="ml-1 text-xs bg-blue-600 text-white px-1 py-0.5 rounded-sm whitespace-nowrap">
-                  Rilascia qui
+                <span className="ml-1 text-xs bg-green-600 text-white px-1 py-0.5 rounded-sm whitespace-nowrap">
+                  Rilascia come sottosezione
+                </span>
+              }
+              {isOverChild && window._highlightedDropTarget !== section.id &&
+                <span className="ml-1 text-xs bg-green-500 text-white px-1 py-0.5 rounded-sm whitespace-nowrap">
+                  Drop come figlio
                 </span>
               }
             </span>
@@ -1237,8 +1246,12 @@ function SectionItem({
       {isOverBottom && (
         <div 
           ref={dropBottom}
-          className="absolute bottom-0 left-0 w-full h-1 bg-primary z-10"
-        />
+          className="absolute bottom-0 left-0 w-full h-2 bg-blue-500 z-10 shadow-sm"
+        >
+          <div className="text-xs text-white bg-blue-600 px-2 py-0.5 rounded-sm inline-block transform translate-y-1">
+            Inserisci sotto
+          </div>
+        </div>
       )}
     </div>
   );
