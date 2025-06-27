@@ -75,7 +75,7 @@ async function syncComponentsFromBoms() {
     const componentData = new Map<string, { code: string, description: string }>();
     
     for (const bom of allBoms) {
-      const bomItems = await storage.getBomItems(bom.id);
+      const bomItems = await storage.getBomItemsByBomId(bom.id);
       console.log(`📦 BOM "${bom.title}" contiene ${bomItems.length} componenti`);
       
       for (const item of bomItems) {
@@ -1012,6 +1012,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).end();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete component" });
+    }
+  });
+
+  // Endpoint per sincronizzare manualmente i componenti dalle BOM
+  app.post("/api/components/sync-from-boms", async (req: Request, res: Response) => {
+    try {
+      console.log("🔄 Richiesta sincronizzazione manuale componenti...");
+      await syncComponentsFromBoms();
+      res.json({ 
+        message: "Componenti sincronizzati con successo dalle BOM presenti",
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("❌ Errore durante sincronizzazione manuale:", error);
+      res.status(500).json({ message: "Failed to sync components from BOMs" });
     }
   });
 
