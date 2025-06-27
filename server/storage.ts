@@ -1551,7 +1551,49 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
   
+  // File upload operations
+  async getUploadedFile(id: number): Promise<UploadedFile | undefined> {
+    const [file] = await db.select().from(uploadedFiles).where(eq(uploadedFiles.id, id));
+    return file;
+  }
 
+  async getUploadedFiles(limit?: number, userId?: number): Promise<UploadedFile[]> {
+    let query = db
+      .select()
+      .from(uploadedFiles)
+      .orderBy(desc(uploadedFiles.uploadedAt));
+    
+    if (userId !== undefined) {
+      query = query.where(eq(uploadedFiles.uploadedById, userId));
+    }
+    
+    if (limit !== undefined) {
+      query = query.limit(limit);
+    }
+    
+    return await query;
+  }
+
+  async createUploadedFile(file: InsertUploadedFile): Promise<UploadedFile> {
+    const [newFile] = await db.insert(uploadedFiles).values(file).returning();
+    return newFile;
+  }
+
+  async deleteUploadedFile(id: number): Promise<boolean> {
+    const result = await db.delete(uploadedFiles).where(eq(uploadedFiles.id, id));
+    return result.rowCount > 0;
+  }
+  
+  // User operations
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
 
   async createUser(user: InsertUser): Promise<User> {
     // Hash the password before storing
