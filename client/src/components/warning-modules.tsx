@@ -113,16 +113,21 @@ const WarningModule: React.FC<WarningModuleProps> = ({
     color: '#ffffff'
   };
   
-  // Funzione per rimuovere tag HTML dal testo
-  const stripHtmlTags = (text: string) => {
+  // Funzione per rimuovere solo i tag HTML strutturali mantenendo la formattazione
+  const cleanStructuralTags = (text: string) => {
     if (!text) return text;
-    return text.replace(/<[^>]*>/g, '');
+    // Rimuove solo tag strutturali come <p>, <div>, ma mantiene formattazione come <strong>, <em>, <br>
+    return text
+      .replace(/<\/?p[^>]*>/gi, '') // Rimuove tag <p>
+      .replace(/<\/?div[^>]*>/gi, '') // Rimuove tag <div>
+      .replace(/<\/?span[^>]*>/gi, '') // Rimuove tag <span>
+      .trim();
   };
 
   // Applica il testo maiuscolo per i titoli (errore, avvertenza, nota)
   const formattedTitle = title || defaultTitles[level];
-  const cleanMessage = stripHtmlTags(message || "");
-  const cleanDescription = stripHtmlTags(description || "");
+  const cleanMessage = cleanStructuralTags(message || "");
+  const cleanDescription = cleanStructuralTags(description || "");
   const displayMessage = cleanMessage || cleanDescription || "Messaggio non specificato";
   
   return (
@@ -135,9 +140,9 @@ const WarningModule: React.FC<WarningModuleProps> = ({
         <h4 style={titleStyle}>{formattedTitle}</h4>
       </div>
       <div className="message-body" style={bodyStyle}>
-        <p style={paragraphStyle}>{displayMessage}</p>
+        <div style={paragraphStyle} dangerouslySetInnerHTML={{ __html: displayMessage }} />
         {cleanDescription && cleanMessage && cleanDescription !== cleanMessage && (
-          <p className="warning-description" style={descriptionStyle}>{cleanDescription}</p>
+          <div className="warning-description" style={descriptionStyle} dangerouslySetInnerHTML={{ __html: cleanDescription }} />
         )}
       </div>
     </div>
