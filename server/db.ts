@@ -39,7 +39,7 @@ let pool;
 if (isSupabase) {
   // Configurazione per Supabase (PostgreSQL standard)
   console.log('🔌 Connecting to Supabase database...');
-  const client = postgres(process.env.DATABASE_URL);
+  const client = postgres(databaseUrl);
   db = drizzlePostgres(client, { schema });
 } else {
   // Configurazione per Neon (serverless)
