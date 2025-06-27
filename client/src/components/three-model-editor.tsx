@@ -177,14 +177,15 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
         formData.append('format', currentValues.format);
       }
       
-      // Se è un modello 3D WebGL, includi le informazioni sulla cartella
-      const is3DModel = selectedFile.name.endsWith('.html') || selectedFile.name.endsWith('.htm');
-      const modelName = currentValues.folderPath || selectedFile.name.split('.')[0];
-      
-      if (is3DModel) {
-        // Includi info sulla cartella
+      // Per i file ZIP (modelli WebGL), estrai il nome e imposta folderPath
+      if (selectedFile.name.endsWith('.zip')) {
+        const modelName = selectedFile.name.replace('.zip', '');
         formData.append('folderPath', modelName);
         formData.append('sourceModelName', currentValues.sourceModelName || '');
+        
+        // Aggiorna automaticamente il titolo con il nome del file ZIP
+        setValue('title', `${modelName}.zip`);
+        setValue('folderPath', modelName);
       }
       
       // Includi eventuali file di supporto
@@ -481,11 +482,11 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                             <Input
                               id="model-file"
                               type="file"
-                              accept=".glb,.gltf,.zip"
+                              accept=".zip"
                               onChange={handleFileChange}
                             />
                             <p className="text-sm text-gray-500">
-                              Formati supportati: .glb, .gltf, .zip (per modelli WebGL)
+                              Solo file ZIP per modelli WebGL
                             </p>
                           </div>
                           
@@ -556,39 +557,9 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                                 </div>
                                 
                                 <div>
-                                  <div className="flex items-center justify-between">
-                                    <Label htmlFor="folder-files">File aggiuntivi per il modello</Label>
-                                    {selectedFolderFiles && (
-                                      <div className="text-sm text-green-700">
-                                        {selectedFolderFiles.length} file selezionati
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="mt-2 border border-dashed rounded-md p-6 flex flex-col items-center justify-center text-center">
-                                    <div className="mx-auto h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center mb-2">
-                                      <FolderOpen className="h-6 w-6 text-blue-500" />
-                                    </div>
-                                    <div className="space-y-1">
-                                      <p className="text-sm font-medium">
-                                        Seleziona altri file di supporto
-                                      </p>
-                                      <p className="text-xs text-gray-500">
-                                        Seleziona tutti i file JavaScript, CSS e risorse richieste dal modello 3D
-                                      </p>
-                                    </div>
-                                    <Input
-                                      id="folder-files"
-                                      type="file"
-                                      multiple
-                                      className="hidden"
-                                      onChange={handleFolderFilesChange}
-                                    />
-                                    <label htmlFor="folder-files">
-                                      <div className="mt-3 inline-flex items-center rounded-md bg-blue-50 px-3 py-1 text-xs font-medium text-blue-800 cursor-pointer hover:bg-blue-100">
-                                        Seleziona file
-                                      </div>
-                                    </label>
-                                  </div>
+                                  <p className="text-sm text-gray-500">
+                                    I file di supporto saranno estratti automaticamente dal file ZIP caricato.
+                                  </p>
                                 </div>
                               </div>
                             ) : (
@@ -636,20 +607,21 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
               </div>
               
               <div>
-                <Label htmlFor="folderPath">Cartella del modello WebGL</Label>
+                <Label htmlFor="folderPath">Cartella del modello</Label>
                 <Controller
                   name="folderPath"
                   control={control}
                   render={({ field }) => (
                     <Input 
                       id="folderPath" 
-                      placeholder="Nome della cartella contenente i file del modello (per WebGL)" 
+                      placeholder="Nome cartella (viene impostato automaticamente dal file ZIP)" 
                       {...field} 
+                      disabled
                     />
                   )}
                 />
                 <p className="text-sm text-gray-500 mt-1">
-                  Necessario solo per i modelli in formato HTML/WebGL
+                  Viene impostato automaticamente dal nome del file ZIP caricato
                 </p>
               </div>
             </TabsContent>
