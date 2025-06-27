@@ -316,6 +316,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user document assignments (for admin interface)
+  app.get("/api/user-document-assignments", async (req: Request, res: Response) => {
+    try {
+      const userId = req.query.userId ? Number(req.query.userId) : undefined;
+      
+      if (userId) {
+        // Get assignments for specific user
+        const assignments = await storage.getUserDocumentAssignments(userId);
+        res.json(assignments);
+      } else {
+        // Get all assignments (for admin interface)
+        const allAssignments = await storage.getAllUserDocumentAssignments();
+        res.json(allAssignments);
+      }
+    } catch (error) {
+      console.error("Error fetching user document assignments:", error);
+      res.status(500).json({ message: "Failed to fetch user document assignments" });
+    }
+  });
+
   app.post("/api/user-document-assignments", async (req: Request, res: Response) => {
     try {
       const { userId, documentIds } = req.body;
