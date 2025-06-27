@@ -13,42 +13,6 @@
 }
 
 @layer components {
-  /* Stili per warning modules - mantiene formattazioni editor preservando stili inline */
-  .warning-content {
-    color: #ffffff !important;
-  }
-  
-  .warning-content * {
-    color: inherit !important;
-  }
-  
-  .warning-content strong {
-    font-weight: bold !important;
-  }
-  
-  .warning-content em {
-    font-style: italic !important;
-  }
-  
-  .warning-content ul {
-    list-style-type: disc !important;
-    margin-left: 1rem !important;
-  }
-  
-  .warning-content ol {
-    list-style-type: decimal !important;
-    margin-left: 1rem !important;
-  }
-  
-  .warning-content li {
-    margin-left: 0.5rem !important;
-  }
-  
-  /* Gli stili inline dell'editor hanno precedenza su font-size, line-height, etc */
-  .warning-content [style*="font-size"] {
-    font-size: inherit !important;
-  }
-  
   /* Soluzione definitiva: nascondi l'indicatore "Da tradurre" nei moduli 3D */
   .threeDModel-container .ml-auto.border-red-300 {
     display: none !important;

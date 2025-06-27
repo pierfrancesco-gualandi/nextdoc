@@ -141,14 +141,14 @@ const WarningModule: React.FC<WarningModuleProps> = ({
       </div>
       <div className="message-body" style={bodyStyle}>
         <div 
-          className="warning-content"
-          style={{...paragraphStyle, color: '#ffffff'}} 
+          className="prose prose-sm max-w-none text-white [&>*]:text-white [&>p]:mb-2 [&>strong]:font-bold [&>em]:italic [&>ul]:list-disc [&>ol]:list-decimal [&>li]:ml-4" 
+          style={paragraphStyle} 
           dangerouslySetInnerHTML={{ __html: displayMessage }} 
         />
         {cleanDescription && cleanMessage && cleanDescription !== cleanMessage && (
           <div 
-            className="warning-content warning-description" 
-            style={{...descriptionStyle, color: '#ffffff'}} 
+            className="warning-description prose prose-sm max-w-none text-white [&>*]:text-white [&>p]:mb-2 [&>strong]:font-bold [&>em]:italic [&>ul]:list-disc [&>ol]:list-decimal [&>li]:ml-4" 
+            style={descriptionStyle} 
             dangerouslySetInnerHTML={{ __html: cleanDescription }} 
           />
         )}
