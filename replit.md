@@ -135,6 +135,14 @@ Changelog:
   - Selezione persiste durante tutta la sessione senza richiedere nuove selezioni
   - L'utente viene scelto una volta per sessione e rimane fisso finché non cambiato
   - Risolto problema di timing nell'inizializzazione per evitare UserSelector duplicato
+- June 27, 2025. Sistema assegnazione documenti e migrazione Supabase
+  - Completato sistema di assegnazione documenti utente-specifici
+  - Implementata interfaccia admin per gestire documenti visibili per ogni utente
+  - Risolto bug API per gestire array di documentIds nelle assegnazioni
+  - Aggiunto supporto completo per migrazione a Supabase
+  - Creato script SQL automatico per setup database Supabase
+  - Configurazione database adattiva (Neon/Supabase detection automatico)
+  - Sistema password-based con hash bcrypt per tutti gli utenti
 ```
 
 ## User Preferences
