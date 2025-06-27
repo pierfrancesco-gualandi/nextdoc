@@ -113,9 +113,15 @@ const WarningModule: React.FC<WarningModuleProps> = ({
     color: '#ffffff'
   };
   
+  // Funzione per rimuovere tag HTML dal testo
+  const stripHtmlTags = (text: string) => {
+    if (!text) return text;
+    return text.replace(/<[^>]*>/g, '');
+  };
+
   // Applica il testo maiuscolo per i titoli (errore, avvertenza, nota)
   const formattedTitle = title || defaultTitles[level];
-  const displayMessage = message || description || "Messaggio non specificato";
+  const displayMessage = stripHtmlTags(message || description || "Messaggio non specificato");
   
   return (
     <div 
@@ -129,7 +135,7 @@ const WarningModule: React.FC<WarningModuleProps> = ({
       <div className="message-body" style={bodyStyle}>
         <p style={paragraphStyle}>{displayMessage}</p>
         {description && description !== message && description !== displayMessage && (
-          <p className="warning-description" style={descriptionStyle}>{description}</p>
+          <p className="warning-description" style={descriptionStyle}>{stripHtmlTags(description)}</p>
         )}
       </div>
     </div>
