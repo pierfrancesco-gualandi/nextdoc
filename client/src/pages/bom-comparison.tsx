@@ -272,14 +272,27 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
       const response = await apiRequest('POST', '/api/documents', data);
       return await response.json();
     },
-    onSuccess: (data) => {
-      toast({
-        title: "Documento creato",
-        description: "Il nuovo documento è stato creato con successo",
-      });
-      
-      // Procediamo con la creazione delle sezioni e dei moduli
-      createDocumentStructure(data.id);
+    onSuccess: async (data) => {
+      try {
+        // Procediamo con la creazione delle sezioni e dei moduli
+        await createDocumentStructure(data.id);
+        
+        // Aggiorna la dashboard per mostrare il nuovo documento
+        queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
+        
+        toast({
+          title: "Documento creato",
+          description: "Il nuovo documento è stato creato con successo. Ora puoi accedervi dalla dashboard.",
+        });
+        
+        setShowNewDocumentDialog(false);
+      } catch (error) {
+        toast({
+          title: "Errore",
+          description: `Si è verificato un errore durante la creazione della struttura del documento: ${error}`,
+          variant: "destructive",
+        });
+      }
     },
     onError: (error) => {
       toast({
@@ -404,36 +417,6 @@ export default function BomComparison({ toggleSidebar }: BomComparisonProps) {
     } catch (error) {
       console.error("Errore nella creazione della struttura del documento:", error);
       throw error;
-    }
-  };
-        const children = sectionChildren.get(section.id) || [];
-        for (const childSection of children) {
-          await createSectionHierarchy(childSection, newSection.id);
-        }
-      };
-      
-      // 7. Crea la gerarchia partendo dalle sezioni radice
-      for (const rootSection of rootSections) {
-        await createSectionHierarchy(rootSection);
-      }
-      
-      // 8. Aggiorna la dashboard per mostrare il nuovo documento
-      // Questo forzera un reload dei documenti disponibili
-      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
-      
-      toast({
-        title: "Documento creato",
-        description: "Il nuovo documento è stato creato con successo. Ora puoi accedervi dalla dashboard.",
-      });
-      
-      setShowNewDocumentDialog(false);
-    } catch (error) {
-      console.error("Errore nella creazione della struttura del documento:", error);
-      toast({
-        title: "Errore",
-        description: `Si è verificato un errore durante la creazione della struttura del documento: ${error}`,
-        variant: "destructive",
-      });
     }
   };
   
