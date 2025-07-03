@@ -79,7 +79,9 @@ function findChildComponents(items: any[], parentCode: string): string[] {
   
   console.log(`🔍 findChildComponents per ${parentCode}: padre trovato all'indice ${parentIndex}, livello ${parentLevel}`);
   
-  // Trova tutti i componenti che seguono il padre e hanno livello superiore (sono nel sottoramo)
+  // Trova tutti i componenti che seguono il padre e sono a livello immediatamente inferiore
+  const targetChildLevel = parentLevel + 1;
+  
   for (let i = parentIndex + 1; i < items.length; i++) {
     const currentItem = items[i];
     
@@ -89,14 +91,14 @@ function findChildComponents(items: any[], parentCode: string): string[] {
       break;
     }
     
-    // Se è a un livello inferiore (maggiore), è parte del sottoramo
-    if (currentItem.level > parentLevel && currentItem.component && currentItem.component.code) {
+    // Se è al livello target (padre + 1), è un figlio diretto
+    if (currentItem.level === targetChildLevel && currentItem.component && currentItem.component.code) {
       childCodes.push(currentItem.component.code);
-      console.log(`🔍 findChildComponents per ${parentCode}: aggiunto componente del sottoramo ${currentItem.component.code} (livello ${currentItem.level})`);
+      console.log(`🔍 findChildComponents per ${parentCode}: aggiunto figlio diretto ${currentItem.component.code} (livello ${currentItem.level})`);
     }
   }
   
-  console.log(`🔍 findChildComponents per ${parentCode}: tutti i componenti nel sottoramo:`, childCodes);
+  console.log(`🔍 findChildComponents per ${parentCode}: figli trovati:`, childCodes);
   return childCodes;
 }
 

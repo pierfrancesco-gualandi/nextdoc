@@ -1,1 +1,0 @@
-// File di supporto iv3d.js mancante - Il modello potrebbe non funzionare correttamente

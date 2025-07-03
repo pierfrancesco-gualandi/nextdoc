@@ -651,7 +651,7 @@ export default function ModuleToolbar({ sectionId, onModuleAdded, disabled = fal
           <div className="text-xs text-muted-foreground">
             {uploadType === "image" ? "Immagini (.jpg, .png, .gif, .svg)" :
              uploadType === "video" ? "Video (.mp4, .webm)" :
-             uploadType === "3d-model" ? "Modelli 3D (solo .zip)" :
+             uploadType === "3d-model" ? "Modelli 3D (.glb, .gltf, .obj, .stl, .html, .zip, .jt)" :
              "Documenti PDF (.pdf)"}
           </div>
         </div>

@@ -481,11 +481,11 @@ const ThreeModelEditor: React.FC<ThreeModelEditorProps> = ({
                             <Input
                               id="model-file"
                               type="file"
-                              accept=".zip"
+                              accept=".glb,.gltf,.zip"
                               onChange={handleFileChange}
                             />
                             <p className="text-sm text-gray-500">
-                              Accetta solo file ZIP
+                              Formati supportati: .glb, .gltf, .zip (per modelli WebGL)
                             </p>
                           </div>
                           

@@ -104,41 +104,47 @@ export default function BomTreeView({
       };
     });
     
-    // NON ordiniamo - manteniamo l'ordine originale del file Excel
-    // che riflette la gerarchia corretta
+    // Ordina elementi per livello e poi per codice
+    processedItems.sort((a, b) => {
+      if (a.level !== b.level) return a.level - b.level;
+      return a.code.localeCompare(b.code);
+    });
     
-    // Stack per tenere traccia degli elementi a ciascun livello nella sequenza corretta
-    const parentStack: TreeItem[] = [];
+    // Mappa per tenere traccia dell'ultimo elemento a ciascun livello
+    const lastAtLevel: Record<number, TreeItem | null> = {};
     
     // Array risultato per gli elementi di primo livello
     const result: TreeItem[] = [];
     
-    // Elabora gli elementi nell'ordine originale
+    // Elabora gli elementi in ordine
     processedItems.forEach(item => {
-      // Rimuovi elementi dallo stack se siamo a un livello uguale o superiore
-      while (parentStack.length > 0 && parentStack[parentStack.length - 1].level >= item.level) {
-        parentStack.pop();
-      }
-      
       if (item.level === 0) {
         // Gli elementi di livello 0 vanno alla radice
         result.push(item);
-        parentStack.push(item);
+        lastAtLevel[0] = item;
       } else {
-        // Per gli elementi di livello > 0, il genitore è l'ultimo nello stack
-        const parent = parentStack[parentStack.length - 1];
+        // Per gli elementi di livello > 0, trova il genitore appropriato
+        const parentLevel = item.level - 1;
+        const parent = lastAtLevel[parentLevel];
         
-        if (parent && parent.level === item.level - 1) {
-          // Aggiungi l'elemento come figlio del genitore appropriato
+        if (parent) {
+          // Aggiungi l'elemento come figlio dell'ultimo elemento del livello precedente
           parent.children = parent.children || [];
           parent.children.push(item);
-          item.parentId = parent.id;
-          parentStack.push(item);
+          item.parentId = parent.id; // Imposta il parentId esplicito
         } else {
-          // Se non c'è un genitore appropriato, aggiungi alla radice
+          // Se non troviamo un genitore appropriato, mettiamo l'elemento alla radice
           result.push(item);
-          parentStack.push(item);
         }
+      }
+      
+      // Aggiorna l'ultimo elemento a questo livello
+      lastAtLevel[item.level] = item;
+      
+      // Azzera tutti i livelli successivi quando cambia il livello corrente
+      // Questo assicura che i figli siano collegati al genitore più recente
+      for (let i = item.level + 1; i < 20; i++) {
+        lastAtLevel[i] = null;
       }
     });
     

@@ -1245,10 +1245,10 @@ export default function ContentModule({
                       });
                     }
                   }}
-                  accept=".zip"
+                  accept=".html,.htm,.gltf,.glb,.obj"
                 />
                 <div className="text-xs text-neutral-medium mt-1">
-                  Accetta solo file ZIP
+                  Accetta file HTML, GLTF, GLB e OBJ. Per modelli WebGL carica un file HTML o carica un archivio ZIP.
                 </div>
               </div>
             </div>

@@ -113,22 +113,9 @@ const WarningModule: React.FC<WarningModuleProps> = ({
     color: '#ffffff'
   };
   
-  // Funzione per rimuovere solo i tag HTML strutturali mantenendo la formattazione
-  const cleanStructuralTags = (text: string) => {
-    if (!text) return text;
-    // Rimuove solo tag strutturali come <p>, <div>, ma mantiene formattazione come <strong>, <em>, <br>
-    return text
-      .replace(/<\/?p[^>]*>/gi, '') // Rimuove tag <p>
-      .replace(/<\/?div[^>]*>/gi, '') // Rimuove tag <div>
-      .replace(/<\/?span[^>]*>/gi, '') // Rimuove tag <span>
-      .trim();
-  };
-
   // Applica il testo maiuscolo per i titoli (errore, avvertenza, nota)
   const formattedTitle = title || defaultTitles[level];
-  const cleanMessage = cleanStructuralTags(message || "");
-  const cleanDescription = cleanStructuralTags(description || "");
-  const displayMessage = cleanMessage || cleanDescription || "Messaggio non specificato";
+  const displayMessage = message || description || "Messaggio non specificato";
   
   return (
     <div 
@@ -140,17 +127,9 @@ const WarningModule: React.FC<WarningModuleProps> = ({
         <h4 style={titleStyle}>{formattedTitle}</h4>
       </div>
       <div className="message-body" style={bodyStyle}>
-        <div 
-          className="prose prose-sm max-w-none text-white [&>*]:text-white [&>p]:mb-2 [&>strong]:font-bold [&>em]:italic [&>ul]:list-disc [&>ol]:list-decimal [&>li]:ml-4" 
-          style={paragraphStyle} 
-          dangerouslySetInnerHTML={{ __html: displayMessage }} 
-        />
-        {cleanDescription && cleanMessage && cleanDescription !== cleanMessage && (
-          <div 
-            className="warning-description prose prose-sm max-w-none text-white [&>*]:text-white [&>p]:mb-2 [&>strong]:font-bold [&>em]:italic [&>ul]:list-disc [&>ol]:list-decimal [&>li]:ml-4" 
-            style={descriptionStyle} 
-            dangerouslySetInnerHTML={{ __html: cleanDescription }} 
-          />
+        <p style={paragraphStyle}>{displayMessage}</p>
+        {description && description !== message && description !== displayMessage && (
+          <p className="warning-description" style={descriptionStyle}>{description}</p>
         )}
       </div>
     </div>

@@ -58,89 +58,6 @@ function validateBody(schema: any, data: any) {
   }
 }
 
-/**
- * Sincronizza automaticamente i componenti basandosi sulle BOM presenti nel sistema
- * Aggiunge nuovi componenti dalle BOM e rimuove quelli non più utilizzati
- */
-async function syncComponentsFromBoms() {
-  try {
-    console.log("🔄 Iniziando sincronizzazione componenti dalle BOM...");
-    
-    // 1. Ottenere tutte le BOM presenti nel sistema
-    const allBoms = await storage.getBoms();
-    console.log(`📋 Trovate ${allBoms.length} BOM nel sistema`);
-    
-    // 2. Raccogliere tutti i componenti utilizzati nelle BOM
-    const usedComponentCodes = new Set<string>();
-    const componentData = new Map<string, { code: string, description: string }>();
-    
-    for (const bom of allBoms) {
-      const bomItems = await storage.getBomItemsByBomId(bom.id);
-      console.log(`📦 BOM "${bom.title}" contiene ${bomItems.length} componenti`);
-      
-      for (const item of bomItems) {
-        // Recupera i dati del componente dal database
-        const component = await storage.getComponent(item.componentId);
-        
-        if (component && component.code) {
-          // Aggiungi il codice componente alla lista dei componenti utilizzati
-          usedComponentCodes.add(component.code);
-          
-          // Memorizza i dati del componente (codice e descrizione)
-          if (!componentData.has(component.code)) {
-            componentData.set(component.code, {
-              code: component.code,
-              description: component.description || `Componente ${component.code}`
-            });
-          }
-        }
-      }
-    }
-    
-    console.log(`🎯 Trovati ${usedComponentCodes.size} componenti unici nelle BOM`);
-    
-    // 3. Ottenere tutti i componenti esistenti nel database
-    const existingComponents = await storage.getComponents();
-    const existingComponentCodes = new Set(existingComponents.map(c => c.code));
-    
-    // 4. Aggiungere nuovi componenti che sono nelle BOM ma non nel database
-    let addedCount = 0;
-    for (const [code, data] of componentData) {
-      if (!existingComponentCodes.has(code)) {
-        try {
-          await storage.createComponent({
-            code: data.code,
-            description: data.description
-          });
-          addedCount++;
-          console.log(`➕ Aggiunto nuovo componente: ${code} - ${data.description}`);
-        } catch (error) {
-          console.error(`❌ Errore aggiungendo componente ${code}:`, error);
-        }
-      }
-    }
-    
-    // 5. Rimuovere componenti che non sono più utilizzati in nessuna BOM
-    let removedCount = 0;
-    for (const existingComponent of existingComponents) {
-      if (!usedComponentCodes.has(existingComponent.code)) {
-        try {
-          await storage.deleteComponent(existingComponent.id);
-          removedCount++;
-          console.log(`➖ Rimosso componente inutilizzato: ${existingComponent.code}`);
-        } catch (error) {
-          console.error(`❌ Errore rimuovendo componente ${existingComponent.code}:`, error);
-        }
-      }
-    }
-    
-    console.log(`✅ Sincronizzazione completata: +${addedCount} componenti, -${removedCount} componenti`);
-    
-  } catch (error) {
-    console.error("❌ Errore durante sincronizzazione componenti:", error);
-  }
-}
-
 export async function registerRoutes(app: Express): Promise<Server> {
   // Middleware per estrarre l'ID utente dalla sessione
   app.use((req: Request, res: Response, next: NextFunction) => {
@@ -644,17 +561,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Section routes
-  app.get("/api/documents/sections", async (req: Request, res: Response) => {
-    try {
-      // Return empty array for now, since this endpoint shouldn't be called
-      // The frontend should use /api/documents/:documentId/sections instead
-      res.json([]);
-    } catch (error) {
-      console.error("Error fetching all sections:", error);
-      res.status(500).json({ message: "Failed to fetch document sections" });
-    }
-  });
-
   app.get("/api/documents/:documentId/sections", async (req: Request, res: Response) => {
     try {
       const documentId = Number(req.params.documentId);
@@ -1020,21 +926,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint per sincronizzare manualmente i componenti dalle BOM
-  app.post("/api/components/sync-from-boms", async (req: Request, res: Response) => {
-    try {
-      console.log("🔄 Richiesta sincronizzazione manuale componenti...");
-      await syncComponentsFromBoms();
-      res.json({ 
-        message: "Componenti sincronizzati con successo dalle BOM presenti",
-        timestamp: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error("❌ Errore durante sincronizzazione manuale:", error);
-      res.status(500).json({ message: "Failed to sync components from BOMs" });
-    }
-  });
-
   // BOM routes
   app.get("/api/boms", async (req: Request, res: Response) => {
     try {
@@ -1137,10 +1028,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const bom = await storage.createBom(data);
-      
-      // Sincronizza automaticamente i componenti dopo la creazione della BOM
-      await syncComponentsFromBoms();
-      
       res.status(201).json(bom);
     } catch (error) {
       res.status(500).json({ message: "Failed to create BOM" });
@@ -1178,9 +1065,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(404).json({ message: "BOM not found" });
       }
-      
-      // Sincronizza automaticamente i componenti dopo l'eliminazione della BOM
-      await syncComponentsFromBoms();
       
       // Risposta senza body per 204 No Content
       res.status(204).end();
@@ -2782,7 +2666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/files/create-model-folder", createModelFolder);
   
   // File upload routes
-  app.post("/api/upload", upload.single("file"), saveFileInfo, (req: Request, res: Response) => {
+  app.post("/api/upload", upload.single("file"), handleWebGLModelUpload, handleZipUpload, saveFileInfo, (req: Request, res: Response) => {
     // Se il file è stato estratto da un ZIP e abbiamo un URL del visualizzatore, aggiungiamolo alla risposta
     if (req.viewerUrl) {
       return res.status(201).json({

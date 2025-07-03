@@ -694,8 +694,6 @@ function SectionItem({
       const hoverClientY = (clientOffset?.y || 0) - hoverBoundingRect.top;
       
       if (hoverClientY > hoverMiddleY) return;
-      
-      console.log(`Drag TOP hover: ${item.id} sopra ${section.id}`);
     },
     drop(item: DragItem, monitor) {
       // Verifica se un drop figlio è già avvenuto
@@ -889,14 +887,6 @@ function SectionItem({
   
   // Connect the drop ref with the drag ref
   drag(drop(ref));
-  
-  // Create separate refs for drop zones
-  const topDropRef = useRef<HTMLDivElement>(null);
-  const bottomDropRef = useRef<HTMLDivElement>(null);
-  
-  // Connect drop zones
-  dropTop(topDropRef);
-  dropBottom(bottomDropRef);
 
   // Calculate padding based on level
   const levelPadding = level > 0 ? `${Math.min(level * 0.5, 5)}rem` : '0';
@@ -906,18 +896,13 @@ function SectionItem({
       className={`relative ${isDragging ? 'opacity-50' : 'opacity-100'}`}
       ref={ref}
     >
-      {/* Top drop zone - larger area */}
-      <div 
-        ref={topDropRef}
-        className={`absolute top-0 left-0 w-full h-3 z-20 ${isOverTop ? 'bg-blue-500' : 'bg-transparent'}`}
-        style={{ marginTop: '-6px' }}
-      >
-        {isOverTop && (
-          <div className="text-xs text-white bg-blue-600 px-2 py-0.5 rounded-sm inline-block">
-            Inserisci sopra
-          </div>
-        )}
-      </div>
+      {/* Drop zone indicator for top */}
+      {isOverTop && (
+        <div 
+          ref={dropTop}
+          className="absolute top-0 left-0 w-full h-1 bg-primary z-10"
+        />
+      )}
       
       <div 
         className={`
@@ -989,13 +974,8 @@ function SectionItem({
             `}>
               {section.title}
               {window._highlightedDropTarget === section.id && 
-                <span className="ml-1 text-xs bg-green-600 text-white px-1 py-0.5 rounded-sm whitespace-nowrap">
-                  Rilascia come sottosezione
-                </span>
-              }
-              {isOverChild && window._highlightedDropTarget !== section.id &&
-                <span className="ml-1 text-xs bg-green-500 text-white px-1 py-0.5 rounded-sm whitespace-nowrap">
-                  Drop come figlio
+                <span className="ml-1 text-xs bg-blue-600 text-white px-1 py-0.5 rounded-sm whitespace-nowrap">
+                  Rilascia qui
                 </span>
               }
             </span>
@@ -1253,18 +1233,13 @@ function SectionItem({
         </div>
       </div>
       
-      {/* Bottom drop zone - larger area */}
-      <div 
-        ref={bottomDropRef}
-        className={`absolute bottom-0 left-0 w-full h-3 z-20 ${isOverBottom ? 'bg-blue-500' : 'bg-transparent'}`}
-        style={{ marginBottom: '-6px' }}
-      >
-        {isOverBottom && (
-          <div className="text-xs text-white bg-blue-600 px-2 py-0.5 rounded-sm inline-block">
-            Inserisci sotto
-          </div>
-        )}
-      </div>
+      {/* Drop zone indicator for bottom */}
+      {isOverBottom && (
+        <div 
+          ref={dropBottom}
+          className="absolute bottom-0 left-0 w-full h-1 bg-primary z-10"
+        />
+      )}
     </div>
   );
 }
