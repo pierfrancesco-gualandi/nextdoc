@@ -43,15 +43,60 @@ export const handleSimpleZipUpload = async (req: Request, res: Response, next: N
     // Crea la cartella finale
     fs.mkdirSync(finalDir, { recursive: true });
     
-    // Estrai il ZIP direttamente nella cartella finale
+    // Estrai il ZIP in una cartella temporanea per gestire strutture annidate
+    const tempDir = path.join(process.cwd(), 'uploads', `temp_${Date.now()}`);
     const zip = new AdmZip(zipFilePath);
-    zip.extractAllTo(finalDir, true);
+    zip.extractAllTo(tempDir, true);
     
-    // Ottieni la lista dei file estratti
-    const zipEntries = zip.getEntries();
-    const extractedFiles = zipEntries
-      .filter(entry => !entry.isDirectory)
-      .map(entry => path.join(finalDir, entry.entryName));
+    // Controlla se tutto è contenuto in una singola cartella
+    const tempContents = fs.readdirSync(tempDir);
+    let sourceDir = tempDir;
+    
+    if (tempContents.length === 1 && fs.statSync(path.join(tempDir, tempContents[0])).isDirectory()) {
+      // Se c'è una sola cartella, usa quella come sorgente
+      sourceDir = path.join(tempDir, tempContents[0]);
+    }
+    
+    // Copia tutti i file dalla sorgente alla destinazione finale
+    const copyRecursively = (src: string, dest: string) => {
+      const items = fs.readdirSync(src);
+      
+      items.forEach(item => {
+        const srcPath = path.join(src, item);
+        const destPath = path.join(dest, item);
+        
+        if (fs.statSync(srcPath).isDirectory()) {
+          fs.mkdirSync(destPath, { recursive: true });
+          copyRecursively(srcPath, destPath);
+        } else {
+          fs.copyFileSync(srcPath, destPath);
+        }
+      });
+    };
+    
+    copyRecursively(sourceDir, finalDir);
+    
+    // Rimuovi la cartella temporanea
+    fs.rmSync(tempDir, { recursive: true, force: true });
+    
+    // Ottieni la lista dei file estratti (ora nella cartella finale)
+    const getAllFiles = (dir: string): string[] => {
+      const files: string[] = [];
+      const items = fs.readdirSync(dir);
+      
+      items.forEach(item => {
+        const fullPath = path.join(dir, item);
+        if (fs.statSync(fullPath).isDirectory()) {
+          files.push(...getAllFiles(fullPath));
+        } else {
+          files.push(fullPath);
+        }
+      });
+      
+      return files;
+    };
+    
+    const extractedFiles = getAllFiles(finalDir);
 
     // Trova i file HTML
     const htmlFiles = extractedFiles.filter(file => 
