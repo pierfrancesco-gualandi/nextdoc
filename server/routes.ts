@@ -5,8 +5,8 @@ import { verifyPassword } from "./auth-utils";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { upload, saveFileInfo, getFileUrl } from "./upload";
-import { handleZipUpload, handleMultiZipUpload } from "./zip-handler";
-import { handleWebGLModelUpload, initializeWebGLModelFiles } from "./webgl-model-handler";
+import { handleSimpleZipUpload } from "./simple-zip-handler";
+// import { handleWebGLModelUpload, initializeWebGLModelFiles } from "./webgl-model-handler";
 import { upload as folderUpload, processUploadedFolder, extractZipFile } from "./api/upload-folder";
 import { upload3DModel, handle3DModelUpload } from "./api/upload-3d-model";
 import { listFiles, createModelFolder } from "./api/files";
@@ -2666,7 +2666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/files/create-model-folder", createModelFolder);
   
   // File upload routes
-  app.post("/api/upload", upload.single("file"), handleWebGLModelUpload, handleZipUpload, saveFileInfo, (req: Request, res: Response) => {
+  app.post("/api/upload", upload.single("file"), handleSimpleZipUpload, saveFileInfo, (req: Request, res: Response) => {
     // Se il file è stato estratto da un ZIP e abbiamo un URL del visualizzatore, aggiungiamolo alla risposta
     if (req.viewerUrl) {
       return res.status(201).json({

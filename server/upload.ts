@@ -260,26 +260,12 @@ export const saveFileInfo = async (req: Request, res: Response, next: NextFuncti
       const isZipFile = req.file.originalname.toLowerCase().endsWith('.zip');
       const modelNameFromFileName = extract3DModelName(req.file.originalname);
       
-      // Se è un file ZIP che contiene un modello WebGL, gestiscilo
-      if (isZipFile && (req.body.webglModel === 'true' || modelNameFromFileName)) {
-        console.log(`Rilevato ZIP modello WebGL: ${req.file.originalname}`);
-        const extractedModelPath = await handleWebGLZipUpload(req.file, modelNameFromFileName || req.body.modelName);
-        
-        if (extractedModelPath) {
-          const fileData: InsertUploadedFile = {
-            filename: extractedModelPath,
-            originalName: req.file.originalname,
-            path: extractedModelPath,
-            mimetype: 'text/html',
-            size: req.file.size,
-            uploadedById: userId,
-          };
-          
-          const [savedFile] = await db.insert(uploadedFiles).values(fileData).returning();
-          return res.status(201).json(savedFile);
-        } else {
-          return res.status(400).json({ message: 'Errore nell\'estrazione del modello WebGL' });
-        }
+      // Se è un file ZIP, sarà gestito dal middleware zip-handler
+      // Non facciamo nulla qui, lasciamo che il middleware gestisca tutto
+      if (isZipFile && req.body.webglModel === 'true') {
+        // Il middleware zip-handler si è già occupato dell'estrazione
+        // Non fare nulla qui, il processo continuerà normalmente
+        console.log(`ZIP modello WebGL sarà gestito dal middleware: ${req.file.originalname}`);
       }
       
       // Determina se il file è un modello 3D in base ai flag o al nome del file
