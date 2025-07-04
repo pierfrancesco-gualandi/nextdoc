@@ -2691,6 +2691,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...fileInfo,
         isZipExtract: true,
         folderName: req.folderName,
+        folderPath: req.folderName, // Aggiungi folderPath per compatibilità con il frontend
         allFiles: req.uploadedFiles.map((file: any) => ({
           ...file,
           url: getFileUrl(file.filename)
